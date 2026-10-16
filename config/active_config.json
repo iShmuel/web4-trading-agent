@@ -1,0 +1,11 @@
+{
+  "symbol": "BTC/USDT",
+  "timeframe": "1h",
+  "breakout_lookback": 24,
+  "ema_trend_filter": 200,
+  "atr_period": 14,
+  "atr_multiplier": 2.5,
+  "account_risk_pct": 0.02,
+  "fee_pct": 0.0006,
+  "slippage_pct": 0.0004
+}
