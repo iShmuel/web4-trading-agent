@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Data & Backtest Cache
+data/
+*.csv
+*.parquet
+*.sqlite3
+*.db
+
+# Logs & Secrets
+*.log
+.env
+config.local.json
+.secrets/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
