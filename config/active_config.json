@@ -1,6 +1,14 @@
 {
+  "watchlist": [
+    "BTC/USDT",
+    "ETH/USDT",
+    "SOL/USDT",
+    "NVDA",
+    "SPY"
+  ],
   "symbol": "BTC/USDT",
   "timeframe": "1h",
+  "max_concurrent_positions": 3,
   "breakout_lookback": 24,
   "ema_trend_filter": 200,
   "atr_period": 14,

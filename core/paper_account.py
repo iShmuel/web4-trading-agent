@@ -1,5 +1,6 @@
-"""Paper trading portfolio manager.
-Tracks simulated cash, open positions, trade history, and portfolio equity.
+"""Multi-asset paper trading portfolio manager.
+Tracks simulated cash, multiple concurrent open positions across Crypto and Stocks,
+trade history, and portfolio equity.
 Persists state to data/paper_portfolio.json.
 """
 
@@ -24,21 +25,35 @@ class PaperAccount:
         if PORTFOLIO_FILE.exists():
             try:
                 with open(PORTFOLIO_FILE, "r") as f:
-                    return json.load(f)
+                    state = json.load(f)
+
+                # Migration: convert single "position" key to "positions" dict
+                if "position" in state and "positions" not in state:
+                    state["positions"] = {}
+                    if state["position"]:
+                        sym = state["position"]["symbol"]
+                        state["positions"][sym] = state["position"]
+                    del state["position"]
+                    self._save(state)
+
+                if "positions" not in state:
+                    state["positions"] = {}
+
+                return state
             except Exception as e:
                 print(f"[PaperAccount] Notice: Corrupt portfolio file ({e}). Initializing fresh account.")
 
         initial_state = {
             "initial_capital": self.initial_capital,
             "cash": self.initial_capital,
-            "position": None,  # Active open position dict
+            "positions": {},  # symbol -> position dict
             "closed_trades": [],
             "equity_history": [
                 {
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "total_equity": self.initial_capital,
                     "cash": self.initial_capital,
-                    "position_value": 0.0,
+                    "positions_value": 0.0,
                 }
             ],
         }
@@ -58,14 +73,14 @@ class PaperAccount:
         self.state = {
             "initial_capital": capital,
             "cash": capital,
-            "position": None,
+            "positions": {},
             "closed_trades": [],
             "equity_history": [
                 {
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "total_equity": capital,
                     "cash": capital,
-                    "position_value": 0.0,
+                    "positions_value": 0.0,
                 }
             ],
         }
@@ -77,16 +92,25 @@ class PaperAccount:
         return self.state["cash"]
 
     @property
-    def position(self) -> Optional[Dict[str, Any]]:
-        return self.state.get("position")
+    def positions(self) -> Dict[str, Any]:
+        return self.state.get("positions", {})
 
-    def get_total_equity(self, current_price: float) -> float:
-        """Calculate total account equity (cash + open position value)."""
-        pos = self.position
-        if not pos:
-            return self.cash
-        position_value = pos["units"] * current_price
-        return self.cash + position_value
+    def has_position(self, symbol: str) -> bool:
+        return symbol in self.positions
+
+    def get_position(self, symbol: str) -> Optional[Dict[str, Any]]:
+        return self.positions.get(symbol)
+
+    def get_total_equity(self, current_prices: Optional[Dict[str, float]] = None) -> float:
+        """Calculate total account equity (cash + all open positions value)."""
+        total = self.cash
+        if not current_prices:
+            current_prices = {}
+
+        for sym, pos in self.positions.items():
+            price = current_prices.get(sym, pos["entry_price"])
+            total += pos["units"] * price
+        return total
 
     def open_position(
         self,
@@ -95,11 +119,15 @@ class PaperAccount:
         units: float,
         stop_loss: float,
         dollar_risk: float,
+        max_concurrent_positions: int = 3,
         fee_pct: float = 0.0006,
     ) -> Dict[str, Any]:
-        """Execute paper buy order."""
-        if self.position is not None:
-            raise RuntimeError("Cannot open position: an active position already exists.")
+        """Execute paper buy order for a specific symbol."""
+        if self.has_position(symbol):
+            raise RuntimeError(f"Cannot open position: an active position for {symbol} already exists.")
+
+        if len(self.positions) >= max_concurrent_positions:
+            raise RuntimeError(f"Position limit reached: already holding {len(self.positions)} / {max_concurrent_positions} positions.")
 
         order_cost = units * entry_price
         fee = order_cost * fee_pct
@@ -120,13 +148,13 @@ class PaperAccount:
             "highest_price": entry_price,
             "fees_paid": fee,
         }
-        self.state["position"] = pos
+        self.state["positions"][symbol] = pos
         self._save()
         return pos
 
-    def update_trailing_stop(self, new_stop: float, current_price: float):
-        """Update ratcheted trailing stop level."""
-        pos = self.position
+    def update_trailing_stop(self, symbol: str, new_stop: float, current_price: float):
+        """Update ratcheted trailing stop level for a specific symbol."""
+        pos = self.get_position(symbol)
         if not pos:
             return
         if new_stop > pos["trailing_stop"]:
@@ -137,14 +165,15 @@ class PaperAccount:
 
     def close_position(
         self,
+        symbol: str,
         exit_price: float,
         exit_reason: str = "Trailing Stop",
         fee_pct: float = 0.0006,
     ) -> Dict[str, Any]:
-        """Execute paper sell order."""
-        pos = self.position
+        """Execute paper sell order for a specific symbol."""
+        pos = self.get_position(symbol)
         if not pos:
-            raise RuntimeError("Cannot close position: No open position.")
+            raise RuntimeError(f"Cannot close position: No open position for {symbol}.")
 
         units = pos["units"]
         entry_price = pos["entry_price"]
@@ -160,7 +189,7 @@ class PaperAccount:
         return_pct = (exit_price - entry_price) / entry_price
 
         trade_record = {
-            "symbol": pos["symbol"],
+            "symbol": symbol,
             "entry_time": pos["entry_time"],
             "exit_time": datetime.now(timezone.utc).isoformat(),
             "entry_price": entry_price,
@@ -174,6 +203,6 @@ class PaperAccount:
         }
 
         self.state["closed_trades"].append(trade_record)
-        self.state["position"] = None
+        del self.state["positions"][symbol]
         self._save()
         return trade_record
