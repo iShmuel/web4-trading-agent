@@ -29,12 +29,13 @@ class RiskEngine:
         atr: float,
         atr_multiplier: float = 2.5,
         risk_pct: float = None,
+        is_short: bool = False,
     ) -> Tuple[float, float, float]:
         """
         Calculate position size and initial stop loss based on Van Tharp's R-Risk model.
 
         Returns:
-            units: Quantity of asset to buy.
+            units: Quantity of asset to trade.
             initial_stop: Stop-loss price level.
             dollar_risk: Exact dollar amount risked if stop is triggered.
         """
@@ -48,7 +49,10 @@ class RiskEngine:
         if stop_distance <= 0:
             raise ValueError("Stop distance must be positive.")
 
-        initial_stop = max(0.0, entry_price - stop_distance)
+        if is_short:
+            initial_stop = entry_price + stop_distance
+        else:
+            initial_stop = max(0.0, entry_price - stop_distance)
 
         # Units = Dollar Risk / Stop Distance
         units = dollar_risk / stop_distance
@@ -61,10 +65,16 @@ class RiskEngine:
         current_atr: float,
         atr_multiplier: float,
         existing_stop: float,
+        is_short: bool = False,
     ) -> float:
         """
-        Ratchets the trailing stop loss upward as price moves in our favor.
-        The stop NEVER moves downward.
+        Ratchets the trailing stop loss as price moves in our favor.
+        For LONG: Stop ratchets upward and never moves downward.
+        For SHORT: Stop ratchets downward and never moves upward.
         """
-        candidate_stop = current_price - (current_atr * atr_multiplier)
-        return max(existing_stop, candidate_stop)
+        if is_short:
+            candidate_stop = current_price + (current_atr * atr_multiplier)
+            return min(existing_stop, candidate_stop)
+        else:
+            candidate_stop = current_price - (current_atr * atr_multiplier)
+            return max(existing_stop, candidate_stop)

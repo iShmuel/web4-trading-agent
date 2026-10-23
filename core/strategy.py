@@ -36,8 +36,11 @@ def compute_indicators(
     """
     df = df.copy()
 
-    # Donchian Breakout Line: highest high of previous N bars (excluding current candle)
+    # Donchian Breakout High: highest high of previous N bars (excluding current candle)
     df["breakout_high"] = df["high"].shift(1).rolling(window=breakout_lookback).max()
+
+    # Donchian Breakdown Low: lowest low of previous N bars (excluding current candle)
+    df["breakdown_low"] = df["low"].shift(1).rolling(window=breakout_lookback).min()
 
     # Macro Trend Filter: 200 EMA
     df["ema_filter"] = calculate_ema(df["close"], period=ema_trend_filter)
@@ -45,10 +48,15 @@ def compute_indicators(
     # Volatility: ATR
     df["atr"] = calculate_atr(df, period=atr_period)
 
-    # Long Trend Condition: price above 200 EMA
+    # Trend Conditions
     df["in_uptrend"] = df["close"] > df["ema_filter"]
+    df["in_downtrend"] = df["close"] < df["ema_filter"]
 
-    # Entry Trigger: price breaks out above previous N-period high while in uptrend
-    df["entry_signal"] = df["in_uptrend"] & (df["close"] > df["breakout_high"])
+    # Entry Triggers
+    df["long_signal"] = df["in_uptrend"] & (df["close"] > df["breakout_high"])
+    df["short_signal"] = df["in_downtrend"] & (df["close"] < df["breakdown_low"])
+
+    # Maintain entry_signal for backwards compatibility with long-only calls
+    df["entry_signal"] = df["long_signal"]
 
     return df

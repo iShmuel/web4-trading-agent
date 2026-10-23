@@ -206,3 +206,53 @@ class PaperAccount:
         del self.state["positions"][symbol]
         self._save()
         return trade_record
+
+    def partial_close_position(
+        self,
+        symbol: str,
+        exit_price: float,
+        exit_units: float,
+        exit_reason: str = "Partial Take Profit",
+        fee_pct: float = 0.0006,
+    ) -> Dict[str, Any]:
+        """Execute a partial scale-out for an open position."""
+        pos = self.get_position(symbol)
+        if not pos:
+            raise RuntimeError(f"Cannot partially close position: No open position for {symbol}.")
+
+        orig_units = pos["units"]
+        exit_units = min(exit_units, orig_units)
+        entry_price = pos["entry_price"]
+        gross_value = exit_units * exit_price
+        exit_fee = gross_value * fee_pct
+        net_cash_received = gross_value - exit_fee
+
+        self.state["cash"] += net_cash_received
+
+        portion_fee = pos["fees_paid"] * (exit_units / orig_units)
+        pos["fees_paid"] -= portion_fee
+        pos["units"] -= exit_units
+
+        total_fees = portion_fee + exit_fee
+        gross_pnl = (exit_price - entry_price) * exit_units
+        net_pnl = gross_pnl - total_fees
+        return_pct = (exit_price - entry_price) / entry_price
+
+        trade_record = {
+            "symbol": symbol,
+            "entry_time": pos["entry_time"],
+            "exit_time": datetime.now(timezone.utc).isoformat(),
+            "entry_price": entry_price,
+            "exit_price": exit_price,
+            "units": exit_units,
+            "dollar_risk": round(pos["dollar_risk"] * (exit_units / orig_units), 2),
+            "pnl": round(net_pnl, 2),
+            "return_pct": round(return_pct * 100, 2),
+            "exit_reason": exit_reason,
+            "fees": round(total_fees, 2),
+        }
+
+        self.state["closed_trades"].append(trade_record)
+        self._save()
+        return trade_record
+

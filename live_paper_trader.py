@@ -87,6 +87,30 @@ def print_status(account: PaperAccount, current_prices: Dict[str, float] = None)
     log("=" * 68)
 
 
+def get_asset_profile(symbol: str, config: dict) -> dict:
+    """Return asset-specific strategy parameters (e.g. 50 EMA for crypto, 2x ATR TP for stocks)."""
+    profiles = config.get("asset_profiles", {})
+    for profile_name, prof in profiles.items():
+        if symbol in prof.get("symbols", []):
+            merged = dict(config)
+            merged.update(prof)
+            return merged
+
+    # Fallback heuristics
+    merged = dict(config)
+    if "/" in symbol or "USDT" in symbol:
+        merged.setdefault("ema_trend_filter", 50)
+        merged.setdefault("atr_multiplier", 3.0)
+        merged.setdefault("take_profit_atr_mult", 0.0)
+        merged.setdefault("take_profit_ratio", 0.0)
+    else:
+        merged.setdefault("ema_trend_filter", 100)
+        merged.setdefault("atr_multiplier", 2.5)
+        merged.setdefault("take_profit_atr_mult", 2.0)
+        merged.setdefault("take_profit_ratio", 0.5)
+    return merged
+
+
 def evaluate_asset(
     symbol: str,
     account: PaperAccount,
@@ -94,19 +118,25 @@ def evaluate_asset(
     max_positions: int,
     current_prices: Dict[str, float],
 ):
-    timeframe = config.get("timeframe", "1h")
-    risk_pct = config.get("account_risk_pct", 0.02)
-    atr_mult = config.get("atr_multiplier", 2.5)
-    fee_pct = config.get("fee_pct", 0.0006)
-    slippage_pct = config.get("slippage_pct", 0.0004)
+    asset_cfg = get_asset_profile(symbol, config)
+    timeframe = asset_cfg.get("timeframe", "1h")
+    risk_pct = asset_cfg.get("account_risk_pct", 0.02)
+    atr_mult = asset_cfg.get("atr_multiplier", 3.0 if "/" in symbol else 2.5)
+    ema_period = asset_cfg.get("ema_trend_filter", 50 if "/" in symbol else 100)
+    lookback = asset_cfg.get("breakout_lookback", 24)
+    atr_period = asset_cfg.get("atr_period", 14)
+    tp_mult = asset_cfg.get("take_profit_atr_mult", 0.0)
+    tp_ratio = asset_cfg.get("take_profit_ratio", 0.5)
+    fee_pct = asset_cfg.get("fee_pct", 0.0006)
+    slippage_pct = asset_cfg.get("slippage_pct", 0.0004)
 
     # Fetch ~30 days of data
     df = fetch_ohlcv(symbol=symbol, timeframe=timeframe, days=30, force_refresh=True)
     data = compute_indicators(
         df,
-        breakout_lookback=config.get("breakout_lookback", 24),
-        ema_trend_filter=config.get("ema_trend_filter", 200),
-        atr_period=config.get("atr_period", 14),
+        breakout_lookback=lookback,
+        ema_trend_filter=ema_period,
+        atr_period=atr_period,
     )
 
     latest_bar = data.iloc[-1]
@@ -125,6 +155,28 @@ def evaluate_asset(
     if is_holding:
         pos = account.get_position(symbol)
         trailing_stop = float(pos["trailing_stop"])
+        entry_price = float(pos["entry_price"])
+        tp_target = float(pos.get("tp_target", 0.0))
+        tp_hit = bool(pos.get("tp_hit", False))
+
+        # Check Partial Take-Profit (for stocks / configured assets)
+        if tp_mult > 0 and not tp_hit and tp_target > 0 and cur_price >= tp_target:
+            scale_units = pos["units"] * tp_ratio
+            if scale_units > 0:
+                exec_tp = cur_price * (1.0 - slippage_pct)
+                trade = account.partial_close_position(
+                    symbol=symbol,
+                    exit_price=exec_tp,
+                    exit_units=scale_units,
+                    exit_reason=f"Take Profit ({int(tp_ratio*100)}% Scale-Out)",
+                    fee_pct=fee_pct,
+                )
+                log(f"\n🎯 [PAPER ALERT] TAKE PROFIT HIT FOR {symbol}!")
+                log(f"   Scaled out {scale_units:.5f} units @ ${exec_tp:,.2f} | PnL: ${trade['pnl']:+,.2f} | Stop moved to Breakeven (${entry_price:,.2f})")
+                pos["tp_hit"] = True
+                new_stop = max(trailing_stop, entry_price)
+                account.update_trailing_stop(symbol, new_stop, cur_price)
+                trailing_stop = new_stop
 
         if latest_bar["low"] <= trailing_stop or cur_price <= trailing_stop:
             exec_exit = min(cur_price, trailing_stop) * (1.0 - slippage_pct)
@@ -185,6 +237,7 @@ def evaluate_asset(
             units = min(units, max_units)
 
             if units > 0 and (units * exec_entry) <= account.cash:
+                tp_target = exec_entry + (tp_mult * cur_atr) if tp_mult > 0 else 0.0
                 log(f"\n🚀 [PAPER ALERT] BREAKOUT DETECTED ON {symbol}! EXECUTING BUY...")
                 new_pos = account.open_position(
                     symbol=symbol,
@@ -195,18 +248,24 @@ def evaluate_asset(
                     max_concurrent_positions=max_positions,
                     fee_pct=fee_pct,
                 )
+                new_pos["tp_target"] = tp_target
+                new_pos["tp_hit"] = False
+                account._save()
+
+                tp_str = f" | TP Target: ${tp_target:,.2f}" if tp_target > 0 else ""
                 log(
                     f"   Bought {units:.5f} {symbol} at ${exec_entry:,.2f}\n"
-                    f"   Stop-Loss: ${initial_stop:,.2f} (Max Risk: ${dollar_risk:,.2f} / {risk_pct*100:.1f}%)\n"
+                    f"   Stop-Loss: ${initial_stop:,.2f} (Max Risk: ${dollar_risk:,.2f} / {risk_pct*100:.1f}%){tp_str}\n"
                     f"   Remaining Cash: ${account.cash:,.2f}"
                 )
         else:
             dist = ((breakout_high - cur_price) / cur_price) * 100.0
             trend_str = "Uptrend" if in_uptrend else "Downtrend"
             log(
-                f"   SCANNING {symbol:<8} Price: ${cur_price:>9.2f} | "
-                f"Breakout: ${breakout_high:>9.2f} ({dist:+.2f}%) | 200 EMA ({trend_str})"
+                f"   SCANNING {symbol:<8} ({timeframe}) Price: ${cur_price:>9.2f} | "
+                f"Breakout: ${breakout_high:>9.2f} ({dist:+.2f}%) | {ema_period} EMA ({trend_str})"
             )
+
 
 
 def run_portfolio_tick(account: PaperAccount) -> Dict[str, float]:
