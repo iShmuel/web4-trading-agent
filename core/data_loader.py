@@ -1,12 +1,13 @@
 """Data loader module for fetching and caching historical OHLCV price feeds.
 Supports both Crypto (via CCXT/Binance) and US Stocks/ETFs (via yfinance).
+Provides data validation, staleness checks, and quality assurance.
 """
 
 import os
 import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import pandas as pd
 import ccxt
@@ -23,7 +24,52 @@ def get_data_dir() -> Path:
 
 def is_crypto_symbol(symbol: str) -> bool:
     """Check if the symbol is a crypto trading pair."""
-    return "/" in symbol or symbol.endswith("USDT") or symbol.endswith("USD") and "-" in symbol
+    sym = symbol.strip().upper()
+    return ("/" in sym) or sym.endswith("USDT") or ("-" in sym and sym.endswith("USD"))
+
+
+def check_data_quality(
+    df: Optional[pd.DataFrame],
+    max_stale_minutes: int = 120,
+    min_bars: int = 30,
+) -> Tuple[bool, str]:
+    """Validate DataFrame integrity, freshness, and absence of anomalies.
+
+    Returns:
+        (is_valid, reason)
+    """
+    if df is None or df.empty:
+        return False, "Dataframe is empty or None"
+
+    if len(df) < min_bars:
+        return False, f"Insufficient data: {len(df)} bars < {min_bars} minimum"
+
+    required_cols = ["open", "high", "low", "close"]
+    for col in required_cols:
+        if col not in df.columns:
+            return False, f"Missing required column: {col}"
+        if df[col].isna().any():
+            return False, f"Column '{col}' contains NaN values"
+        if (df[col] <= 0).any():
+            return False, f"Column '{col}' contains non-positive values"
+
+    # Check high >= low invariant
+    if (df["high"] < df["low"]).any():
+        return False, "Data anomaly: high price is lower than low price"
+
+    # Check chronological index
+    if not df.index.is_monotonic_increasing:
+        return False, "Timestamps are not strictly monotonically increasing"
+
+    # Staleness check
+    last_ts = df.index[-1]
+    if hasattr(last_ts, "tzinfo") and last_ts.tzinfo is not None:
+        now_utc = datetime.now(timezone.utc)
+        age_minutes = (now_utc - last_ts).total_seconds() / 60.0
+        if max_stale_minutes > 0 and age_minutes > max_stale_minutes:
+            return False, f"Data is stale: last bar was {age_minutes:.1f} minutes ago (limit: {max_stale_minutes}m)"
+
+    return True, "Data quality passed"
 
 
 def fetch_crypto_ohlcv(

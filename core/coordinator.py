@@ -1,0 +1,282 @@
+"""Authoritative Multi-Strategy Portfolio Coordinator.
+
+Reconciles proposals from independent strategy engines (Momentum and Mean Reversion),
+resolves conflicts, prevents duplicate orders, enforces centralized risk limits,
+and coordinates paper execution and portfolio accounting.
+"""
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Dict, Any, List, Optional, Tuple
+import pandas as pd
+
+from core.signals import TradingSignal, SignalDirection, SignalStatus
+from core.risk_engine import RiskEngine, RiskVerdict
+from core.paper_account import PaperAccount
+from strategies.momentum import MomentumStrategy
+from strategies.mean_reversion import MeanReversionStrategy
+
+
+@dataclass
+class CoordinatorDecision:
+    symbol: str
+    action: str  # "ENTER_LONG", "ENTER_SHORT", "EXIT", "HOLD", "REJECTED", "CONFLICT"
+    strategy_id: str
+    units: float = 0.0
+    price: float = 0.0
+    stop_loss: float = 0.0
+    take_profit: float = 0.0
+    reason: str = ""
+    signal: Optional[TradingSignal] = None
+    risk_verdict: Optional[RiskVerdict] = None
+
+
+@dataclass
+class CycleReport:
+    timestamp: datetime
+    symbols_evaluated: int
+    signals_generated: int
+    conflicts_detected: int
+    orders_executed: int
+    decisions: List[CoordinatorDecision] = field(default_factory=list)
+    portfolio_equity: float = 0.0
+    available_cash: float = 0.0
+    open_positions: int = 0
+
+
+class PortfolioCoordinator:
+    """Central authority coordinating multiple trading strategies into one portfolio."""
+
+    def __init__(
+        self,
+        account: PaperAccount,
+        risk_engine: RiskEngine,
+        config: Dict[str, Any],
+    ):
+        self.account = account
+        self.risk_engine = risk_engine
+        self.config = config
+
+        # Instantiate independent strategy engines
+        self.momentum_strategy = MomentumStrategy(config)
+        self.mean_reversion_strategy = MeanReversionStrategy(config)
+
+    def reconcile_signals(
+        self,
+        symbol: str,
+        momentum_sig: TradingSignal,
+        mr_sig: TradingSignal,
+    ) -> Tuple[Optional[TradingSignal], str]:
+        """Reconcile signals from both strategies for a single asset.
+
+        Rules:
+        1. If one strategy wants ENTRY and the other is NO_TRADE/HOLD, take the entry.
+        2. If both want ENTRY in OPPOSITE directions (LONG vs SHORT):
+           Thesis clash! Reject both signals to avoid trading against internal conflict.
+        3. If both want ENTRY in the SAME direction:
+           Pick the strategy with the higher signal_strength.
+        4. If neither wants ENTRY, return the most informative signal.
+        """
+        mom_entry = (momentum_sig.status == SignalStatus.ENTRY)
+        mr_entry = (mr_sig.status == SignalStatus.ENTRY)
+
+        # Case 1: Both propose entries
+        if mom_entry and mr_entry:
+            if momentum_sig.direction != mr_sig.direction:
+                # Opposite directions: CONFLICT
+                return None, f"Conflict: Momentum proposes {momentum_sig.direction.value} while MeanReversion proposes {mr_sig.direction.value}"
+            else:
+                # Same direction: pick strongest signal
+                if mr_sig.signal_strength > momentum_sig.signal_strength:
+                    return mr_sig, f"Both agree on {mr_sig.direction.value}; selected MeanReversion (strength {mr_sig.signal_strength:.2f} > {momentum_sig.signal_strength:.2f})"
+                else:
+                    return momentum_sig, f"Both agree on {momentum_sig.direction.value}; selected Momentum (strength {momentum_sig.signal_strength:.2f} >= {mr_sig.signal_strength:.2f})"
+
+        # Case 2: Momentum entry only
+        if mom_entry:
+            return momentum_sig, "Momentum entry proposed"
+
+        # Case 3: Mean Reversion entry only
+        if mr_entry:
+            return mr_sig, "Mean Reversion entry proposed"
+
+        # Case 4: Neither proposes entry
+        return None, "No entry signal proposed"
+
+    def process_symbol(
+        self,
+        symbol: str,
+        df: pd.DataFrame,
+        current_prices: Dict[str, float],
+    ) -> CoordinatorDecision:
+        """Evaluate one symbol across strategies and execute valid actions."""
+        if df is None or len(df) == 0:
+            return CoordinatorDecision(
+                symbol=symbol,
+                action="REJECTED",
+                strategy_id="coordinator",
+                reason="No market data provided",
+            )
+
+        cur_price = float(df.iloc[-1]["close"])
+        current_prices[symbol] = cur_price
+        existing_pos = self.account.get_position(symbol)
+
+        # 1. Evaluate exit conditions if already holding
+        if existing_pos is not None:
+            pos_strategy = existing_pos.get("strategy_id", "momentum")
+            if pos_strategy == MeanReversionStrategy.STRATEGY_ID:
+                sig = self.mean_reversion_strategy.evaluate(symbol, df, existing_position=existing_pos)
+            else:
+                sig = self.momentum_strategy.evaluate(symbol, df, existing_position=existing_pos)
+
+            if sig.status == SignalStatus.EXIT:
+                trade = self.account.close_position(
+                    symbol=symbol,
+                    exit_price=cur_price * (0.9996 if sig.direction == SignalDirection.LONG else 1.0004),
+                    exit_reason=sig.exit_reason or "Strategy Exit Signal",
+                    fee_pct=self.config.get("fee_pct", 0.0006),
+                )
+                return CoordinatorDecision(
+                    symbol=symbol,
+                    action="EXIT",
+                    strategy_id=pos_strategy,
+                    units=trade["units"],
+                    price=trade["exit_price"],
+                    reason=sig.exit_reason or "Exit signal executed",
+                    signal=sig,
+                )
+            else:
+                # Ratchet trailing stop if applicable
+                atr = sig.atr if sig.atr > 0 else (cur_price * 0.02)
+                atr_mult = self.config.get("atr_multiplier", 2.5)
+                new_stop = self.risk_engine.update_trailing_stop(
+                    current_price=cur_price,
+                    current_atr=atr,
+                    atr_multiplier=atr_mult,
+                    existing_stop=existing_pos["trailing_stop"],
+                    is_short=(existing_pos.get("side", "LONG") == "SHORT"),
+                )
+                self.account.update_trailing_stop(symbol, new_stop, cur_price)
+                return CoordinatorDecision(
+                    symbol=symbol,
+                    action="HOLD",
+                    strategy_id=pos_strategy,
+                    units=existing_pos["units"],
+                    price=cur_price,
+                    stop_loss=new_stop,
+                    reason="Position active, trailing stop updated",
+                    signal=sig,
+                )
+
+        # 2. No open position: generate signals from both strategies
+        mom_sig = self.momentum_strategy.evaluate(symbol, df, existing_position=None)
+        mr_sig = self.mean_reversion_strategy.evaluate(symbol, df, existing_position=None)
+
+        chosen_sig, reason = self.reconcile_signals(symbol, mom_sig, mr_sig)
+
+        if chosen_sig is None:
+            action = "CONFLICT" if "Conflict" in reason else "REJECTED"
+            return CoordinatorDecision(
+                symbol=symbol,
+                action=action,
+                strategy_id="coordinator",
+                price=cur_price,
+                reason=reason,
+            )
+
+        # 3. Validate chosen proposal through RiskEngine
+        total_equity = self.account.get_total_equity(current_prices)
+        risk_verdict = self.risk_engine.validate_proposed_entry(
+            symbol=symbol,
+            side=chosen_sig.direction.value,
+            strategy_id=chosen_sig.strategy_id,
+            entry_price=chosen_sig.reference_price,
+            suggested_stop=chosen_sig.suggested_stop,
+            atr=chosen_sig.atr,
+            atr_multiplier=self.config.get("atr_multiplier", 2.5),
+            equity=total_equity,
+            cash=self.account.cash,
+            active_positions=self.account.positions,
+            fee_pct=chosen_sig.estimated_fee_pct,
+            requested_risk_pct=self.config.get("account_risk_pct", 0.02),
+        )
+
+        if not risk_verdict.approved:
+            return CoordinatorDecision(
+                symbol=symbol,
+                action="REJECTED",
+                strategy_id=chosen_sig.strategy_id,
+                price=cur_price,
+                reason=f"Risk check blocked: {risk_verdict.reason}",
+                signal=chosen_sig,
+                risk_verdict=risk_verdict,
+            )
+
+        # 4. Execute approved paper entry
+        slippage_factor = 1.0 + (chosen_sig.estimated_slippage_pct if chosen_sig.direction == SignalDirection.LONG else -chosen_sig.estimated_slippage_pct)
+        exec_price = cur_price * slippage_factor
+
+        new_pos = self.account.open_position(
+            symbol=symbol,
+            entry_price=exec_price,
+            units=risk_verdict.suggested_units,
+            stop_loss=risk_verdict.suggested_stop,
+            dollar_risk=risk_verdict.dollar_risk,
+            max_concurrent_positions=self.risk_engine.max_open_positions,
+            fee_pct=chosen_sig.estimated_fee_pct,
+            side=chosen_sig.direction.value,
+            strategy_id=chosen_sig.strategy_id,
+        )
+
+        action_name = "ENTER_LONG" if chosen_sig.direction == SignalDirection.LONG else "ENTER_SHORT"
+        return CoordinatorDecision(
+            symbol=symbol,
+            action=action_name,
+            strategy_id=chosen_sig.strategy_id,
+            units=new_pos["units"],
+            price=exec_price,
+            stop_loss=new_pos["trailing_stop"],
+            take_profit=chosen_sig.suggested_take_profit,
+            reason=f"Executed {action_name} via {chosen_sig.strategy_id} ({reason})",
+            signal=chosen_sig,
+            risk_verdict=risk_verdict,
+        )
+
+    def run_cycle(
+        self,
+        market_data: Dict[str, pd.DataFrame],
+    ) -> CycleReport:
+        """Run a coordinated portfolio evaluation cycle across all symbols."""
+        now = datetime.now(timezone.utc)
+        current_prices: Dict[str, float] = {}
+        decisions: List[CoordinatorDecision] = []
+
+        conflicts = 0
+        executed = 0
+        signals_count = 0
+
+        for symbol, df in market_data.items():
+            decision = self.process_symbol(symbol, df, current_prices)
+            decisions.append(decision)
+
+            if decision.action == "CONFLICT":
+                conflicts += 1
+            if decision.action in ("ENTER_LONG", "ENTER_SHORT", "EXIT"):
+                executed += 1
+            if decision.signal is not None and decision.signal.is_actionable:
+                signals_count += 1
+
+        total_equity = self.account.get_total_equity(current_prices)
+
+        return CycleReport(
+            timestamp=now,
+            symbols_evaluated=len(market_data),
+            signals_generated=signals_count,
+            conflicts_detected=conflicts,
+            orders_executed=executed,
+            decisions=decisions,
+            portfolio_equity=total_equity,
+            available_cash=self.account.cash,
+            open_positions=len(self.account.positions),
+        )
