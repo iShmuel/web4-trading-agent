@@ -146,6 +146,27 @@ class PortfolioCoordinator:
                     reason=sig.exit_reason or "Exit signal executed",
                     signal=sig,
                 )
+            elif sig.status == SignalStatus.PARTIAL_EXIT:
+                ratio = sig.take_profit_ratio if sig.take_profit_ratio > 0 else 0.5
+                scale_units = existing_pos["units"] * ratio
+                exec_price = cur_price * (0.9996 if sig.direction == SignalDirection.LONG else 1.0004)
+                trade = self.account.partial_close_position(
+                    symbol=symbol,
+                    exit_price=exec_price,
+                    exit_units=scale_units,
+                    exit_reason=sig.exit_reason or "Partial Scale-Out Take-Profit",
+                    fee_pct=self.config.get("fee_pct", 0.0006),
+                )
+                existing_pos["tp_hit"] = True
+                return CoordinatorDecision(
+                    symbol=symbol,
+                    action="PARTIAL_EXIT",
+                    strategy_id=pos_strategy,
+                    units=trade["units"],
+                    price=trade["exit_price"],
+                    reason=sig.exit_reason or "Partial take-profit executed",
+                    signal=sig,
+                )
             else:
                 # Ratchet trailing stop if applicable
                 atr = sig.atr if sig.atr > 0 else (cur_price * 0.02)

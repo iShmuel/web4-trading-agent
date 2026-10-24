@@ -133,6 +133,9 @@ def run_portfolio_tick(
             side_str = "BUY (LONG)" if d.action == "ENTER_LONG" else "SELL SHORT"
             log(f"\n🚀 [PAPER ALERT] {side_str} ORDER EXECUTED ON {sym} via {d.strategy_id}!")
             log(f"   Units: {d.units:.5f} @ ${price:,.2f} | Stop: ${d.stop_loss:,.2f} | Reason: {d.reason}")
+        elif d.action == "PARTIAL_EXIT":
+            log(f"\n🎯 [PAPER ALERT] PARTIAL TAKE-PROFIT (50% BANKED) ON {sym} via {d.strategy_id}!")
+            log(f"   Scaled out {d.units:.5f} units @ ${price:,.2f} | Reason: {d.reason}")
         elif d.action == "EXIT":
             log(f"\n🚨 [PAPER ALERT] EXIT EXECUTED ON {sym} via {d.strategy_id}!")
             log(f"   Closed {d.units:.5f} units @ ${price:,.2f} | Reason: {d.reason}")

@@ -117,3 +117,23 @@ def test_mean_reversion_strategy_suppression_on_strong_trend():
     # Must be NO_TRADE due to trend filter
     assert sig.status == SignalStatus.NO_TRADE
     assert "trend" in sig.no_trade_reason.lower() or "no mean reversion" in sig.no_trade_reason.lower()
+
+
+def test_mean_reversion_halfway_scale_out_take_profit():
+    # Construct oscillating df where entry was at 90, SMA is at 100, and current price reaches 96 (over halfway)
+    df = create_range_ohlcv(bars=100, amplitude=5.0)
+    config = {"mr_scale_out_enabled": True, "mr_scale_out_ratio": 0.5, "max_stale_minutes": 0}
+    strategy = MeanReversionStrategy(config)
+
+    pos = {
+        "symbol": "SOL/USDT",
+        "entry_price": 90.0,
+        "trailing_stop": 85.0,
+        "side": "LONG",
+        "tp_hit": False,
+    }
+    # Current close is 100, well above halfway target (95)
+    sig = strategy.evaluate("SOL/USDT", df, existing_position=pos)
+    assert sig.status == SignalStatus.PARTIAL_EXIT
+    assert sig.take_profit_ratio == 0.5
+    assert "Halfway Scale-Out" in sig.exit_reason

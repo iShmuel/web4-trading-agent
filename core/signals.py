@@ -19,6 +19,7 @@ class SignalDirection(Enum):
 class SignalStatus(Enum):
     ENTRY = "ENTRY"
     EXIT = "EXIT"
+    PARTIAL_EXIT = "PARTIAL_EXIT"
     NO_TRADE = "NO_TRADE"
     HOLD = "HOLD"
 
@@ -66,8 +67,8 @@ class TradingSignal:
 
     @property
     def is_actionable(self) -> bool:
-        """Whether this signal proposes an action (entry or exit)."""
-        return self.status in (SignalStatus.ENTRY, SignalStatus.EXIT)
+        """Whether this signal proposes an action (entry, exit, or partial scale-out)."""
+        return self.status in (SignalStatus.ENTRY, SignalStatus.EXIT, SignalStatus.PARTIAL_EXIT)
 
     @property
     def estimated_cost_pct(self) -> float:

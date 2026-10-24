@@ -56,6 +56,8 @@ class MeanReversionStrategy:
         self.slippage_pct = config.get("slippage_pct", 0.0004)
         self.min_bb_width = config.get("min_bb_width", 0.005)  # minimum band width
         self.max_stale_minutes = config.get("max_stale_minutes", 120)
+        self.scale_out_enabled = config.get("mr_scale_out_enabled", True)
+        self.scale_out_ratio = config.get("mr_scale_out_ratio", 0.5)
 
     def evaluate(
         self,
@@ -270,6 +272,40 @@ class MeanReversionStrategy:
                 exit_reason="Stop Loss Hit",
                 indicators=indicators,
             )
+
+        # Partial Take-Profit check: scale out 50% halfway to the SMA mean
+        tp_hit = position.get("tp_hit", False)
+        if self.scale_out_enabled and not tp_hit:
+            if side == "LONG":
+                halfway_target = entry_price + (bb_sma - entry_price) * 0.5
+                if price >= halfway_target:
+                    return TradingSignal(
+                        strategy_id=self.STRATEGY_ID,
+                        symbol=symbol,
+                        timestamp=now,
+                        direction=SignalDirection.LONG,
+                        status=SignalStatus.PARTIAL_EXIT,
+                        reference_price=price,
+                        atr=atr,
+                        take_profit_ratio=self.scale_out_ratio,
+                        exit_reason=f"Halfway Scale-Out Take-Profit ({int(self.scale_out_ratio*100)}% Banked)",
+                        indicators=indicators,
+                    )
+            elif side == "SHORT":
+                halfway_target = entry_price - (entry_price - bb_sma) * 0.5
+                if price <= halfway_target:
+                    return TradingSignal(
+                        strategy_id=self.STRATEGY_ID,
+                        symbol=symbol,
+                        timestamp=now,
+                        direction=SignalDirection.SHORT,
+                        status=SignalStatus.PARTIAL_EXIT,
+                        reference_price=price,
+                        atr=atr,
+                        take_profit_ratio=self.scale_out_ratio,
+                        exit_reason=f"Halfway Scale-Out Take-Profit ({int(self.scale_out_ratio*100)}% Banked)",
+                        indicators=indicators,
+                    )
 
         # Mean reversion target: price returned to SMA
         if side == "LONG" and price >= bb_sma:

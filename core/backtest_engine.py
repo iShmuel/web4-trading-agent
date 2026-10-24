@@ -358,6 +358,7 @@ def run_mean_reversion_backtest(
     adx_period: int = 14,
     adx_threshold: float = 25.0,
     max_hold_bars: int = 48,
+    scale_out_ratio: float = 0.5,
     allow_short: bool = False,
     fee_pct: float = 0.0006,
     slippage_pct: float = 0.0004,
@@ -387,6 +388,7 @@ def run_mean_reversion_backtest(
     units = 0.0
     dollar_risk = 0.0
     stop_loss = 0.0
+    tp_hit = False
 
     trades: List[TradeRecord] = []
     equity_curve: List[float] = [equity]
@@ -433,6 +435,7 @@ def run_mean_reversion_backtest(
                         entry_time = idx
                         bars_held = 0
                         stop_loss = initial_stop
+                        tp_hit = False
 
                 # Short entry: overbought reversal setup
                 elif allow_short and close >= bb_upper and rsi > rsi_overbought:
@@ -458,6 +461,7 @@ def run_mean_reversion_backtest(
                         entry_time = idx
                         bars_held = 0
                         stop_loss = initial_stop
+                        tp_hit = False
 
         else:
             bars_held += 1
@@ -466,6 +470,36 @@ def run_mean_reversion_backtest(
             exit_reason = ""
 
             if pos_side == "LONG":
+                # 0. Partial Take-Profit check (halfway to SMA)
+                halfway = entry_price + (bb_sma - entry_price) * 0.5
+                if scale_out_ratio > 0 and not tp_hit and high >= halfway:
+                    exec_tp_price = halfway * (1.0 - slippage_pct)
+                    tp_units = units * scale_out_ratio
+                    exit_fee = (tp_units * exec_tp_price) * fee_pct
+                    total_fees += exit_fee
+                    gross_pnl = (exec_tp_price - entry_price) * tp_units
+                    net_pnl = gross_pnl - exit_fee
+                    equity += net_pnl
+                    ret_pct = (exec_tp_price - entry_price) / entry_price
+
+                    trades.append(
+                        TradeRecord(
+                            entry_time=entry_time,
+                            exit_time=idx,
+                            entry_price=entry_price,
+                            exit_price=exec_tp_price,
+                            units=tp_units,
+                            dollar_risk=dollar_risk * scale_out_ratio,
+                            pnl=net_pnl,
+                            return_pct=ret_pct,
+                            exit_reason=f"Halfway Take Profit ({int(scale_out_ratio*100)}% Scale-Out)",
+                            side="LONG",
+                            strategy_id="mean_reversion",
+                        )
+                    )
+                    units -= tp_units
+                    tp_hit = True
+
                 # 1. Stop loss hit
                 if low <= stop_loss:
                     exit_triggered = True
@@ -497,7 +531,7 @@ def run_mean_reversion_backtest(
                             entry_price=entry_price,
                             exit_price=exit_price,
                             units=units,
-                            dollar_risk=dollar_risk,
+                            dollar_risk=dollar_risk * (1.0 - (scale_out_ratio if tp_hit else 0.0)),
                             pnl=net_pnl,
                             return_pct=ret_pct,
                             exit_reason=exit_reason,
@@ -509,6 +543,36 @@ def run_mean_reversion_backtest(
                     units = 0.0
 
             elif pos_side == "SHORT":
+                # 0. Partial Take-Profit check (halfway to SMA)
+                halfway = entry_price - (entry_price - bb_sma) * 0.5
+                if scale_out_ratio > 0 and not tp_hit and low <= halfway:
+                    exec_tp_price = halfway * (1.0 + slippage_pct)
+                    tp_units = units * scale_out_ratio
+                    exit_fee = (tp_units * exec_tp_price) * fee_pct
+                    total_fees += exit_fee
+                    gross_pnl = (entry_price - exec_tp_price) * tp_units
+                    net_pnl = gross_pnl - exit_fee
+                    equity += net_pnl
+                    ret_pct = (entry_price - exec_tp_price) / entry_price
+
+                    trades.append(
+                        TradeRecord(
+                            entry_time=entry_time,
+                            exit_time=idx,
+                            entry_price=entry_price,
+                            exit_price=exec_tp_price,
+                            units=tp_units,
+                            dollar_risk=dollar_risk * scale_out_ratio,
+                            pnl=net_pnl,
+                            return_pct=ret_pct,
+                            exit_reason=f"Halfway Take Profit ({int(scale_out_ratio*100)}% Scale-Out)",
+                            side="SHORT",
+                            strategy_id="mean_reversion",
+                        )
+                    )
+                    units -= tp_units
+                    tp_hit = True
+
                 # 1. Stop loss hit
                 if high >= stop_loss:
                     exit_triggered = True
@@ -540,7 +604,7 @@ def run_mean_reversion_backtest(
                             entry_price=entry_price,
                             exit_price=exit_price,
                             units=units,
-                            dollar_risk=dollar_risk,
+                            dollar_risk=dollar_risk * (1.0 - (scale_out_ratio if tp_hit else 0.0)),
                             pnl=net_pnl,
                             return_pct=ret_pct,
                             exit_reason=exit_reason,
