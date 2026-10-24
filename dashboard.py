@@ -176,7 +176,7 @@ def render() -> str:
     )
     wr = f"{wins / len(trades) * 100:.0f}%" if trades else "n/a"
     out.append(
-        f"  Realized P&L: {signed(realized, f'${realized:+,.2f}')}   Closed trades: {len(trades)}"
+        f"  Realized P&L: {signed(realized, f'${realized:+,.2f}')}   Closed fills: {len(trades)} {dim('(50% take-profits count as a fill)')}"
         f"   Win rate: {wr} ({wins}W / {len(trades) - wins}L)"
     )
     out.append(rule)
@@ -201,9 +201,15 @@ def render() -> str:
             pnl_pct = pnl / (entry * p["units"]) * 100.0 if entry else 0.0
             pnl_txt = signed(pnl, f"{f'${pnl:+,.2f}':>10} {pnl_pct:+.1f}%")
             stop_txt = red(f"{to_stop:.2f}%") if to_stop < 0.5 else f"{to_stop:.2f}%"
+            # A partial take-profit is recorded as a closed trade sharing this position's entry_time.
+            banked = [t for t in trades if t.get("symbol") == sym and t.get("entry_time") == p.get("entry_time")]
+            banked_txt = ""
+            if banked:
+                banked_pnl = sum(t.get("pnl", 0.0) for t in banked)
+                banked_txt = "  " + green("✓ 50% banked ") + signed(banked_pnl, f"${banked_pnl:+,.2f}")
             out.append(
                 f"  {sym:<10}{p.get('strategy_id', '?'):<15}{side:<6}{p['units']:>10.4f}"
-                f"{entry:>12,.2f}{cur:>12,.2f}{stop:>12,.2f}  {pnl_txt}  {stop_txt}"
+                f"{entry:>12,.2f}{cur:>12,.2f}{stop:>12,.2f}  {pnl_txt}  {stop_txt}{banked_txt}"
             )
     out.append(rule)
 
