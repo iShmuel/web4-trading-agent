@@ -17,12 +17,15 @@ from core.paper_account import PaperAccount
 from core.risk_engine import RiskEngine
 from core.coordinator import PortfolioCoordinator
 from core.data_loader import fetch_ohlcv, check_data_quality
+from core.process_lock import SingleInstanceLock, AlreadyRunningError
 from agent.optimizer import run_optimization_cycle
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = PROJECT_ROOT / "config" / "active_config.json"
 DATA_DIR = PROJECT_ROOT / "data"
 LOG_FILE = DATA_DIR / "live_trader.log"
+LOCK_FILE = DATA_DIR / "live_trader.lock"
+STATUS_FILE = DATA_DIR / "live_status.json"
 
 
 def log(msg: str):
@@ -147,7 +150,43 @@ def run_portfolio_tick(
             log(f"   SCANNING {sym:<8} Price: ${price:>9.2f} | {d.reason}")
 
     log(f"   Portfolio Equity: ${cycle_report.portfolio_equity:,.2f} | Cash: ${cycle_report.available_cash:,.2f} | Open: {cycle_report.open_positions}")
+    write_live_status(account, cycle_report, current_prices, watchlist)
     return current_prices
+
+
+def write_live_status(account: PaperAccount, cycle_report, current_prices: Dict[str, float], watchlist: List[str]):
+    """Write a read-only snapshot of the latest tick for the dashboard.
+
+    This is a separate file from the portfolio; it is never read back by the bot.
+    """
+    try:
+        assets = {}
+        for d in cycle_report.decisions:
+            assets[d.symbol] = {
+                "action": d.action,
+                "strategy_id": d.strategy_id,
+                "price": d.price,
+                "stop_loss": d.stop_loss,
+                "take_profit": d.take_profit,
+                "reason": d.reason,
+            }
+        for sym in watchlist:
+            assets.setdefault(sym, {"action": "NO_DATA", "price": current_prices.get(sym), "reason": "Data unavailable or stale"})
+
+        snapshot = {
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "pid": os.getpid(),
+            "equity": cycle_report.portfolio_equity,
+            "cash": cycle_report.available_cash,
+            "open_positions": cycle_report.open_positions,
+            "prices": current_prices,
+            "assets": assets,
+        }
+        tmp = STATUS_FILE.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(snapshot, indent=2, default=str))
+        os.replace(tmp, STATUS_FILE)
+    except Exception as e:
+        log(f"   ⚠️ Could not write live status snapshot: {e}")
 
 
 def main():
@@ -160,6 +199,25 @@ def main():
     parser.add_argument("--loop", action="store_true", help="Run continuous monitoring loop")
     args = parser.parse_args()
 
+    # --status is read-only and may run alongside the bot.
+    if args.status:
+        _run(args)
+        return
+
+    # Every other mode writes the portfolio file, so only one process may run.
+    # The lock is taken BEFORE the portfolio is loaded, so we never start from
+    # a stale in-memory copy of another process's state.
+    try:
+        with SingleInstanceLock(LOCK_FILE):
+            _run(args)
+    except AlreadyRunningError as e:
+        print(f"\n❌ {e}", file=sys.stderr)
+        print("   Only one bot may write data/paper_portfolio.json at a time.", file=sys.stderr)
+        print("   Watch it live with:  python dashboard.py", file=sys.stderr)
+        sys.exit(1)
+
+
+def _run(args):
     account = PaperAccount(initial_capital=10000.0)
 
     if args.reset:
