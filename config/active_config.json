@@ -3,8 +3,11 @@
     "BTC/USDT",
     "ETH/USDT",
     "SOL/USDT",
+    "AVAX/USDT",
+    "BNB/USDT",
     "NVDA",
-    "SPY"
+    "SPY",
+    "QQQ"
   ],
   "symbol": "BTC/USDT",
   "timeframe": "1h",
