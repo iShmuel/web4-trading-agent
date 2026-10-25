@@ -37,7 +37,7 @@ LOG_FILE = DATA_DIR / "live_trader.log"
 LOCK_FILE = DATA_DIR / "live_trader.lock"
 
 STALE_AFTER_SECONDS = 180
-WIDTH = 104
+WIDTH = 114
 
 USE_COLOR = sys.stdout.isatty() and os.environ.get("NO_COLOR") is None
 
@@ -215,9 +215,9 @@ def render() -> str:
 
     # ── Watchlist ─────────────────────────────────────────────────
     out.append(bold(" WATCHLIST (Real-time Market Telemetry & Signal Proximity)"))
-    header = f"  {'SYMBOL':<10} {'PRICE':>10}  {'STATUS':<11} {'TRIGGER GAP':<13} {'MOMENTUM (24h/EMA)':<24} {'MEAN REV (RSI/ADX)':<22}"
+    header = f"  {'SYMBOL':<10} │ {'PRICE':>10} │ {'STATUS':<11} │ {'TRIGGER GAP':<13} │ {'MOMENTUM (24h / EMA50)':<25} │ {'MEAN REV (RSI / ADX)':<25}"
     out.append(dim(header))
-    out.append(dim("  " + "·" * (WIDTH - 4)))
+    out.append(dim("  " + "─" * (WIDTH - 4)))
 
     assets: Dict[str, Dict[str, Any]] = status.get("assets", {}) or {}
     if not assets:
@@ -266,7 +266,8 @@ def render() -> str:
         else:
             mr_telemetry = dim("—")
 
-        out.append(f"  {sym:<10} {price_txt}  {tag:<20} {trigger_txt:<20} {mom_telemetry:<32} {mr_telemetry}")
+        pipe = dim("│")
+        out.append(f"  {sym:<10} {pipe} {price_txt} {pipe} {tag:<20} {pipe} {trigger_txt:<20} {pipe} {mom_telemetry:<33} {pipe} {mr_telemetry}")
     out.append(rule)
 
     # ── Recent events ─────────────────────────────────────────────
