@@ -29,6 +29,8 @@ class CoordinatorDecision:
     reason: str = ""
     signal: Optional[TradingSignal] = None
     risk_verdict: Optional[RiskVerdict] = None
+    indicators: Dict[str, Any] = field(default_factory=dict)
+
 
 
 @dataclass
@@ -232,6 +234,15 @@ class PortfolioCoordinator:
         mom_sig = momentum_strategy.evaluate(symbol, df, existing_position=None)
         mr_sig = mean_reversion_strategy.evaluate(symbol, df, existing_position=None)
 
+        # Merge indicator snapshot from both strategies for full transparency
+        merged_ind = {}
+        if mom_sig and mom_sig.indicators:
+            merged_ind.update(mom_sig.indicators)
+        if mr_sig and mr_sig.indicators:
+            for k, v in mr_sig.indicators.items():
+                if k not in merged_ind:
+                    merged_ind[k] = v
+
         chosen_sig, reason = self.reconcile_signals(symbol, mom_sig, mr_sig)
 
         if chosen_sig is None:
@@ -242,6 +253,7 @@ class PortfolioCoordinator:
                 strategy_id="coordinator",
                 price=cur_price,
                 reason=reason,
+                indicators=merged_ind,
             )
 
         # 3. Validate chosen proposal through RiskEngine
@@ -270,6 +282,7 @@ class PortfolioCoordinator:
                 reason=f"Risk check blocked: {risk_verdict.reason}",
                 signal=chosen_sig,
                 risk_verdict=risk_verdict,
+                indicators=merged_ind,
             )
 
         # 4. Execute approved paper entry
@@ -309,6 +322,7 @@ class PortfolioCoordinator:
             reason=f"Executed {action_name} via {chosen_sig.strategy_id} ({reason})",
             signal=chosen_sig,
             risk_verdict=risk_verdict,
+            indicators=merged_ind,
         )
 
     def run_cycle(

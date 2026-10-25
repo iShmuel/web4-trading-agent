@@ -169,6 +169,7 @@ def write_live_status(account: PaperAccount, cycle_report, current_prices: Dict[
                 "stop_loss": d.stop_loss,
                 "take_profit": d.take_profit,
                 "reason": d.reason,
+                "indicators": getattr(d, "indicators", {}) or {},
             }
         for sym in watchlist:
             assets.setdefault(sym, {"action": "NO_DATA", "price": current_prices.get(sym), "reason": "Data unavailable or stale"})

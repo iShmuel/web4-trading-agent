@@ -37,7 +37,7 @@ LOG_FILE = DATA_DIR / "live_trader.log"
 LOCK_FILE = DATA_DIR / "live_trader.lock"
 
 STALE_AFTER_SECONDS = 180
-WIDTH = 92
+WIDTH = 104
 
 USE_COLOR = sys.stdout.isatty() and os.environ.get("NO_COLOR") is None
 
@@ -214,25 +214,59 @@ def render() -> str:
     out.append(rule)
 
     # ── Watchlist ─────────────────────────────────────────────────
-    out.append(bold(" WATCHLIST (latest scan)"))
+    out.append(bold(" WATCHLIST (Real-time Market Telemetry & Signal Proximity)"))
+    header = f"  {'SYMBOL':<10} {'PRICE':>10}  {'STATUS':<11} {'TRIGGER GAP':<13} {'MOMENTUM (24h/EMA)':<24} {'MEAN REV (RSI/ADX)':<22}"
+    out.append(dim(header))
+    out.append(dim("  " + "·" * (WIDTH - 4)))
+
     assets: Dict[str, Dict[str, Any]] = status.get("assets", {}) or {}
     if not assets:
         out.append(dim("  No scan snapshot yet (it appears after the bot's next scan)."))
     for sym, a in assets.items():
         price = a.get("price")
-        price_txt = f"${price:>11,.2f}" if isinstance(price, (int, float)) and price else f"{'—':>12}"
+        price_txt = f"${price:>9,.2f}" if isinstance(price, (int, float)) and price else f"{'—':>10}"
         action = a.get("action", "?")
         reason = str(a.get("reason", ""))
+        ind = a.get("indicators", {}) or {}
+
         if action == "REJECTED" and reason.lower().startswith("no entry signal"):
             action = "WAITING"
         tag = {
-            "ENTER_LONG": green("BUY"), "ENTER_SHORT": red("SHORT"), "EXIT": red("EXIT"),
-            "PARTIAL_EXIT": green("TAKE 50%"), "HOLD": bold("HOLDING"), "CONFLICT": yellow("CONFLICT"),
-            "REJECTED": yellow("BLOCKED"), "NO_DATA": dim("NO DATA"), "WAITING": dim("waiting"),
-        }.get(action, dim("scanning"))
-        if len(reason) > 52:
-            reason = reason[:49] + "..."
-        out.append(f"  {sym:<10}{price_txt}   {tag:<20} {dim(reason)}")
+            "ENTER_LONG": green("● BUY"), "ENTER_SHORT": red("● SHORT"), "EXIT": red("● EXIT"),
+            "PARTIAL_EXIT": green("● TAKE 50%"), "HOLD": bold("● HOLDING"), "CONFLICT": yellow("⚡ CONFLICT"),
+            "REJECTED": yellow("⚠ BLOCKED"), "NO_DATA": dim("○ NO DATA"), "WAITING": dim("○ WAITING"),
+        }.get(action, dim(action))
+
+        # Format trigger gap and technical indicators
+        bh = ind.get("breakout_high")
+        ema = ind.get("ema_filter")
+        rsi = ind.get("rsi")
+        adx = ind.get("adx")
+        bb_low = ind.get("bb_lower")
+
+        if isinstance(price, (int, float)) and price > 0 and isinstance(bh, (int, float)) and bh > 0:
+            gap = ((bh - price) / price) * 100
+            gap_txt = green(f"{gap:>+5.2f}%") if gap <= 0.5 else (yellow(f"{gap:>+5.2f}%") if gap <= 1.5 else f"{gap:>+5.2f}%")
+            trigger_txt = f"Mom {gap_txt}"
+        else:
+            trigger_txt = dim("—")
+
+        if isinstance(bh, (int, float)) and isinstance(ema, (int, float)):
+            ema_mark = green("▲") if price and price > ema else red("▼")
+            mom_telemetry = f"BH:${bh:,.1f} {ema_mark}EMA:${ema:,.1f}"
+        else:
+            mom_telemetry = dim("market closed / pending")
+
+        if isinstance(rsi, (int, float)) and isinstance(adx, (int, float)):
+            rsi_color = green(f"{rsi:.1f}") if rsi < 35 else (red(f"{rsi:.1f}") if rsi > 65 else f"{rsi:.1f}")
+            adx_color = green(f"{adx:.1f}") if adx < 25 else f"{adx:.1f}"
+            mr_telemetry = f"RSI:{rsi_color} ADX:{adx_color}"
+            if isinstance(bb_low, (int, float)):
+                mr_telemetry += f" Low:${bb_low:,.1f}"
+        else:
+            mr_telemetry = dim("—")
+
+        out.append(f"  {sym:<10} {price_txt}  {tag:<20} {trigger_txt:<20} {mom_telemetry:<32} {mr_telemetry}")
     out.append(rule)
 
     # ── Recent events ─────────────────────────────────────────────

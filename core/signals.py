@@ -100,8 +100,9 @@ def create_no_trade_signal(
     symbol: str,
     price: float,
     reason: str,
+    indicators: Optional[Dict[str, Any]] = None,
 ) -> TradingSignal:
-    """Helper to create a no-trade signal with explanation."""
+    """Helper to create a no-trade signal with explanation and indicators."""
     return TradingSignal(
         strategy_id=strategy_id,
         symbol=symbol,
@@ -110,4 +111,5 @@ def create_no_trade_signal(
         status=SignalStatus.NO_TRADE,
         reference_price=price,
         no_trade_reason=reason,
+        indicators=indicators or {},
     )

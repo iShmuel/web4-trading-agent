@@ -138,6 +138,7 @@ class MeanReversionStrategy:
             return create_no_trade_signal(
                 self.STRATEGY_ID, symbol, price,
                 f"Strong trend detected: ADX {adx:.1f} > {self.adx_threshold} threshold",
+                indicators=indicators,
             )
 
         # Filter: bands too narrow (low volatility, not worth trading)
@@ -145,6 +146,7 @@ class MeanReversionStrategy:
             return create_no_trade_signal(
                 self.STRATEGY_ID, symbol, price,
                 f"Bands too narrow: width {bb_width:.4f} < {self.min_bb_width}",
+                indicators=indicators,
             )
 
         # Long entry: oversold condition

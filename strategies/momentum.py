@@ -201,6 +201,7 @@ class MomentumStrategy:
         return create_no_trade_signal(
             self.STRATEGY_ID, symbol, price,
             f"No breakout: price {dist_to_breakout:+.2f}% from breakout high, in {trend_str}",
+            indicators=indicators,
         )
 
     @property
