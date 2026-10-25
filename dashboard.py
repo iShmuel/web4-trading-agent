@@ -37,7 +37,7 @@ LOG_FILE = DATA_DIR / "live_trader.log"
 LOCK_FILE = DATA_DIR / "live_trader.lock"
 
 STALE_AFTER_SECONDS = 180
-WIDTH = 114
+WIDTH = 120
 
 USE_COLOR = sys.stdout.isatty() and os.environ.get("NO_COLOR") is None
 
@@ -214,8 +214,11 @@ def render() -> str:
     out.append(rule)
 
     # ── Watchlist ─────────────────────────────────────────────────
-    out.append(bold(" WATCHLIST (Real-time Market Telemetry & Signal Proximity)"))
-    header = f"  {'SYMBOL':<10} │ {'PRICE':>10} │ {'STATUS':<11} │ {'TRIGGER GAP':<13} │ {'MOMENTUM (24h / EMA50)':<25} │ {'MEAN REV (RSI / ADX)':<25}"
+    out.append(bold(" LIVE WATCHLIST — WHAT NEEDS TO HAPPEN TO ENTER A TRADE"))
+    header = (
+        f"  {'SYMBOL':<10} │ {'PRICE':>10} │ {'BOT STATUS':<11} │ {'NEXT TRIGGER':<15} │ "
+        f"{'MOMENTUM SETUP (Breakout & Trend)':<34} │ {'MEAN REVERSION SETUP':<24}"
+    )
     out.append(dim(header))
     out.append(dim("  " + "─" * (WIDTH - 4)))
 
@@ -232,9 +235,9 @@ def render() -> str:
         if action == "REJECTED" and reason.lower().startswith("no entry signal"):
             action = "WAITING"
         tag = {
-            "ENTER_LONG": green("● BUY"), "ENTER_SHORT": red("● SHORT"), "EXIT": red("● EXIT"),
+            "ENTER_LONG": green("● BUY NOW"), "ENTER_SHORT": red("● SHORT NOW"), "EXIT": red("● EXIT NOW"),
             "PARTIAL_EXIT": green("● TAKE 50%"), "HOLD": bold("● HOLDING"), "CONFLICT": yellow("⚡ CONFLICT"),
-            "REJECTED": yellow("⚠ BLOCKED"), "NO_DATA": dim("○ NO DATA"), "WAITING": dim("○ WAITING"),
+            "REJECTED": yellow("⚠ BLOCKED"), "NO_DATA": dim("○ MARKET OFF"), "WAITING": dim("○ SCANNING"),
         }.get(action, dim(action))
 
         # Format trigger gap and technical indicators
@@ -244,30 +247,40 @@ def render() -> str:
         adx = ind.get("adx")
         bb_low = ind.get("bb_lower")
 
+        # 1. Clear explanation of Next Trigger
         if isinstance(price, (int, float)) and price > 0 and isinstance(bh, (int, float)) and bh > 0:
             gap = ((bh - price) / price) * 100
-            gap_txt = green(f"{gap:>+5.2f}%") if gap <= 0.5 else (yellow(f"{gap:>+5.2f}%") if gap <= 1.5 else f"{gap:>+5.2f}%")
-            trigger_txt = f"Mom {gap_txt}"
+            if gap <= 0.5:
+                next_trigger = green(f"Breakout +{gap:.2f}%")
+            elif gap <= 1.2:
+                next_trigger = yellow(f"Breakout +{gap:.2f}%")
+            else:
+                next_trigger = f"Breakout +{gap:.2f}%"
+        elif "NO DATA" in tag or price_txt == "         —":
+            next_trigger = dim("Opens Mon 15:30")
         else:
-            trigger_txt = dim("—")
+            next_trigger = dim("Awaiting data")
 
+        # 2. Clear Momentum Telemetry
         if isinstance(bh, (int, float)) and isinstance(ema, (int, float)):
-            ema_mark = green("▲") if price and price > ema else red("▼")
-            mom_telemetry = f"BH:${bh:,.1f} {ema_mark}EMA:${ema:,.1f}"
+            trend_label = green("Uptrend ▲") if price and price > ema else red("Downtrend ▼")
+            mom_setup = f"Needs >${bh:,.1f} ({trend_label})"
         else:
-            mom_telemetry = dim("market closed / pending")
+            mom_setup = dim("US Market closed for weekend")
 
+        # 3. Clear Mean Reversion Telemetry
         if isinstance(rsi, (int, float)) and isinstance(adx, (int, float)):
-            rsi_color = green(f"{rsi:.1f}") if rsi < 35 else (red(f"{rsi:.1f}") if rsi > 65 else f"{rsi:.1f}")
-            adx_color = green(f"{adx:.1f}") if adx < 25 else f"{adx:.1f}"
-            mr_telemetry = f"RSI:{rsi_color} ADX:{adx_color}"
-            if isinstance(bb_low, (int, float)):
-                mr_telemetry += f" Low:${bb_low:,.1f}"
+            adx_state = green("Calm") if adx < 25 else "Trend"
+            rsi_state = green("Oversold") if rsi < 30 else ("Neutral" if rsi < 65 else red("Overbought"))
+            mr_setup = f"RSI:{rsi:.0f}({rsi_state}) ADX:{adx:.0f}({adx_state})"
         else:
-            mr_telemetry = dim("—")
+            mr_setup = dim("—")
 
         pipe = dim("│")
-        out.append(f"  {sym:<10} {pipe} {price_txt} {pipe} {tag:<20} {pipe} {trigger_txt:<20} {pipe} {mom_telemetry:<33} {pipe} {mr_telemetry}")
+        out.append(
+            f"  {sym:<10} {pipe} {price_txt} {pipe} {tag:<19} {pipe} {next_trigger:<23} {pipe} "
+            f"{mom_setup:<42} {pipe} {mr_setup}"
+        )
     out.append(rule)
 
     # ── Recent events ─────────────────────────────────────────────
