@@ -224,6 +224,7 @@ class MeanReversionStrategy:
         return create_no_trade_signal(
             self.STRATEGY_ID, symbol, price,
             f"No mean reversion setup: RSI {rsi:.1f}, z-score {z_score:.2f}, ADX {adx:.1f}",
+            indicators=indicators,
         )
 
     @property
