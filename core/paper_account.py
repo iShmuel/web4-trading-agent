@@ -220,6 +220,20 @@ class PaperAccount:
                 pos["highest_price"] = current_price
         self._save()
 
+    def set_position_fields(self, symbol: str, **fields: Any) -> None:
+        """Attach strategy bookkeeping (e.g. tp_target, tp_hit) to an open position and persist it.
+        Accounting fields (units, prices, cash, fees) cannot be changed through this method.
+        """
+        protected = {"symbol", "units", "entry_price", "fees_paid", "dollar_risk", "side", "entry_time"}
+        bad = protected.intersection(fields)
+        if bad:
+            raise ValueError(f"Cannot modify accounting fields via set_position_fields: {sorted(bad)}")
+        pos = self.get_position(symbol)
+        if not pos:
+            return
+        pos.update(fields)
+        self._save()
+
     def close_position(
         self,
         symbol: str,

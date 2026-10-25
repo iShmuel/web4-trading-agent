@@ -250,6 +250,24 @@ class MomentumStrategy:
                 indicators=indicators,
             )
 
+        # Partial take-profit: scale out once price reaches the ATR target set at entry
+        tp_ratio = position.get("tp_ratio", self.take_profit_ratio)
+        if not tp_hit and tp_target > 0 and tp_ratio > 0:
+            reached = price >= tp_target if side == "LONG" else price <= tp_target
+            if reached:
+                return TradingSignal(
+                    strategy_id=self.STRATEGY_ID,
+                    symbol=symbol,
+                    timestamp=now,
+                    direction=SignalDirection.LONG if side == "LONG" else SignalDirection.SHORT,
+                    status=SignalStatus.PARTIAL_EXIT,
+                    reference_price=price,
+                    atr=atr,
+                    take_profit_ratio=tp_ratio,
+                    exit_reason=f"Momentum Partial Take-Profit ({tp_ratio*100:.0f}% at {tp_target:.2f})",
+                    indicators=indicators,
+                )
+
         # Hold
         return TradingSignal(
             strategy_id=self.STRATEGY_ID,

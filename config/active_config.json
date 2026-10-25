@@ -15,7 +15,8 @@
   "breakout_lookback": 24,
   "ema_trend_filter": 50,
   "atr_period": 14,
-  "atr_multiplier": 3.0,
+  "atr_multiplier": 2.5,
+  "use_asset_profiles": false,
   "asset_profiles": {
     "crypto_micro_swing": {
       "symbols": [

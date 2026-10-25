@@ -115,7 +115,7 @@ def run_portfolio_tick(
 
     for symbol in watchlist:
         try:
-            timeframe = config.get("timeframe", "1h")
+            timeframe = coordinator.symbol_config(symbol).get("timeframe", config.get("timeframe", "1h"))
             df = fetch_ohlcv(symbol=symbol, timeframe=timeframe, days=30, force_refresh=True)
             valid, reason = check_data_quality(df, max_stale_minutes=120)
             if not valid:
@@ -250,6 +250,10 @@ def _run(args):
     log(f"Execution Mode:     PAPER TRADING ONLY (Zero Real Capital Risk)")
     log(f"Strategies:         Momentum / Trend Following + Mean Reversion")
     log(f"Watchlist:          {', '.join(watchlist)}")
+    for sym in watchlist:
+        sc = coordinator.symbol_config(sym)
+        log(f"   {sym:<9} profile={sc.get('profile_name')} tf={sc.get('timeframe')} breakout={sc.get('breakout_lookback')} "
+            f"ema={sc.get('ema_trend_filter')} atr_x={sc.get('atr_multiplier')} mom_tp={sc.get('take_profit_ratio', 0)*100:.0f}%@{sc.get('take_profit_atr_mult', 0)}ATR")
     log(f"Max Concurrent:     {config.get('max_concurrent_positions', 3)} positions")
     log(f"Risk per Position:  {config.get('account_risk_pct', 0.02)*100:.1f}% of portfolio")
     log(f"Auto-Optimize:      Every {args.optimize_hours} hours")

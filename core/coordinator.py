@@ -44,6 +44,31 @@ class CycleReport:
     open_positions: int = 0
 
 
+def resolve_symbol_config(config: Dict[str, Any], symbol: str) -> Dict[str, Any]:
+    """Return the effective config for one symbol.
+
+    Top-level keys are the defaults; if ``use_asset_profiles`` is enabled (default)
+    and the symbol is listed in an ``asset_profiles`` entry, that profile's keys
+    override the defaults. Risk limits are never taken from profiles.
+    """
+    base = {k: v for k, v in config.items() if k != "asset_profiles"}
+    if not config.get("use_asset_profiles", True):
+        base["profile_name"] = "default"
+        return base
+    for name, profile in (config.get("asset_profiles") or {}).items():
+        if symbol in profile.get("symbols", []):
+            merged = dict(base)
+            merged.update({k: v for k, v in profile.items() if k not in PROFILE_PROTECTED_KEYS})
+            merged["profile_name"] = name
+            return merged
+    base["profile_name"] = "default"
+    return base
+
+
+# Keys a per-asset profile may never override (risk bounds stay global).
+PROFILE_PROTECTED_KEYS = {"symbols", "account_risk_pct", "max_concurrent_positions"}
+
+
 class PortfolioCoordinator:
     """Central authority coordinating multiple trading strategies into one portfolio."""
 
@@ -57,9 +82,20 @@ class PortfolioCoordinator:
         self.risk_engine = risk_engine
         self.config = config
 
-        # Instantiate independent strategy engines
+        # Default strategy engines (top-level config)
         self.momentum_strategy = MomentumStrategy(config)
         self.mean_reversion_strategy = MeanReversionStrategy(config)
+        # Per-symbol engines built from asset profiles (lazily cached)
+        self._symbol_engines: Dict[str, Tuple[Dict[str, Any], MomentumStrategy, MeanReversionStrategy]] = {}
+
+    def symbol_config(self, symbol: str) -> Dict[str, Any]:
+        return self._engines_for(symbol)[0]
+
+    def _engines_for(self, symbol: str) -> Tuple[Dict[str, Any], MomentumStrategy, MeanReversionStrategy]:
+        if symbol not in self._symbol_engines:
+            cfg = resolve_symbol_config(self.config, symbol)
+            self._symbol_engines[symbol] = (cfg, MomentumStrategy(cfg), MeanReversionStrategy(cfg))
+        return self._symbol_engines[symbol]
 
     def reconcile_signals(
         self,
@@ -121,21 +157,22 @@ class PortfolioCoordinator:
         cur_price = float(df.iloc[-1]["close"])
         current_prices[symbol] = cur_price
         existing_pos = self.account.get_position(symbol)
+        sym_cfg, momentum_strategy, mean_reversion_strategy = self._engines_for(symbol)
 
         # 1. Evaluate exit conditions if already holding
         if existing_pos is not None:
             pos_strategy = existing_pos.get("strategy_id", "momentum")
             if pos_strategy == MeanReversionStrategy.STRATEGY_ID:
-                sig = self.mean_reversion_strategy.evaluate(symbol, df, existing_position=existing_pos)
+                sig = mean_reversion_strategy.evaluate(symbol, df, existing_position=existing_pos)
             else:
-                sig = self.momentum_strategy.evaluate(symbol, df, existing_position=existing_pos)
+                sig = momentum_strategy.evaluate(symbol, df, existing_position=existing_pos)
 
             if sig.status == SignalStatus.EXIT:
                 trade = self.account.close_position(
                     symbol=symbol,
                     exit_price=cur_price * (0.9996 if sig.direction == SignalDirection.LONG else 1.0004),
                     exit_reason=sig.exit_reason or "Strategy Exit Signal",
-                    fee_pct=self.config.get("fee_pct", 0.0006),
+                    fee_pct=sym_cfg.get("fee_pct", 0.0006),
                 )
                 return CoordinatorDecision(
                     symbol=symbol,
@@ -150,14 +187,15 @@ class PortfolioCoordinator:
                 ratio = sig.take_profit_ratio if sig.take_profit_ratio > 0 else 0.5
                 scale_units = existing_pos["units"] * ratio
                 exec_price = cur_price * (0.9996 if sig.direction == SignalDirection.LONG else 1.0004)
+                # Mark first so a restart can never scale out the same position twice.
+                self.account.set_position_fields(symbol, tp_hit=True)
                 trade = self.account.partial_close_position(
                     symbol=symbol,
                     exit_price=exec_price,
                     exit_units=scale_units,
                     exit_reason=sig.exit_reason or "Partial Scale-Out Take-Profit",
-                    fee_pct=self.config.get("fee_pct", 0.0006),
+                    fee_pct=sym_cfg.get("fee_pct", 0.0006),
                 )
-                existing_pos["tp_hit"] = True
                 return CoordinatorDecision(
                     symbol=symbol,
                     action="PARTIAL_EXIT",
@@ -170,7 +208,7 @@ class PortfolioCoordinator:
             else:
                 # Ratchet trailing stop if applicable
                 atr = sig.atr if sig.atr > 0 else (cur_price * 0.02)
-                atr_mult = self.config.get("atr_multiplier", 2.5)
+                atr_mult = sym_cfg.get("atr_multiplier", 2.5)
                 new_stop = self.risk_engine.update_trailing_stop(
                     current_price=cur_price,
                     current_atr=atr,
@@ -191,8 +229,8 @@ class PortfolioCoordinator:
                 )
 
         # 2. No open position: generate signals from both strategies
-        mom_sig = self.momentum_strategy.evaluate(symbol, df, existing_position=None)
-        mr_sig = self.mean_reversion_strategy.evaluate(symbol, df, existing_position=None)
+        mom_sig = momentum_strategy.evaluate(symbol, df, existing_position=None)
+        mr_sig = mean_reversion_strategy.evaluate(symbol, df, existing_position=None)
 
         chosen_sig, reason = self.reconcile_signals(symbol, mom_sig, mr_sig)
 
@@ -215,7 +253,7 @@ class PortfolioCoordinator:
             entry_price=chosen_sig.reference_price,
             suggested_stop=chosen_sig.suggested_stop,
             atr=chosen_sig.atr,
-            atr_multiplier=self.config.get("atr_multiplier", 2.5),
+            atr_multiplier=sym_cfg.get("atr_multiplier", 2.5),
             equity=total_equity,
             cash=self.account.cash,
             active_positions=self.account.positions,
@@ -249,6 +287,15 @@ class PortfolioCoordinator:
             side=chosen_sig.direction.value,
             strategy_id=chosen_sig.strategy_id,
         )
+
+        # Persist the momentum take-profit level so the exit logic can scale out later.
+        if chosen_sig.suggested_take_profit > 0 and chosen_sig.take_profit_ratio > 0:
+            self.account.set_position_fields(
+                symbol,
+                tp_target=chosen_sig.suggested_take_profit,
+                tp_ratio=chosen_sig.take_profit_ratio,
+                tp_hit=False,
+            )
 
         action_name = "ENTER_LONG" if chosen_sig.direction == SignalDirection.LONG else "ENTER_SHORT"
         return CoordinatorDecision(
