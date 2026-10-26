@@ -39,7 +39,7 @@ class RiskEngine:
         default_risk_pct: float = 0.02,
         max_total_exposure_pct: float = 0.80,
         max_single_asset_exposure_pct: float = 0.35,
-        max_strategy_allocation_pct: float = 0.60,
+        max_strategy_allocation_pct: float = 0.75,
         max_open_positions: int = 3,
         daily_loss_limit_pct: float = 0.05,
         max_drawdown_limit_pct: float = 0.15,

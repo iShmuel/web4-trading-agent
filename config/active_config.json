@@ -12,6 +12,7 @@
   "symbol": "BTC/USDT",
   "timeframe": "1h",
   "max_concurrent_positions": 3,
+  "max_strategy_allocation_pct": 0.75,
   "account_risk_pct": 0.02,
   "fee_pct": 0.0006,
   "slippage_pct": 0.0004,
