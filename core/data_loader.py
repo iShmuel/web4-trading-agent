@@ -133,8 +133,10 @@ def fetch_stock_ohlcv(
     end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=days)
 
+    # yfinance 'end' date is exclusive (treats 'YYYY-MM-DD' as 00:00:00), so add 1 day to include today's live bars
+    fetch_end = end_date + timedelta(days=1)
     ticker = yf.Ticker(symbol)
-    raw_df = ticker.history(start=start_date.strftime("%Y-%m-%d"), end=end_date.strftime("%Y-%m-%d"), interval=interval)
+    raw_df = ticker.history(start=start_date.strftime("%Y-%m-%d"), end=fetch_end.strftime("%Y-%m-%d"), interval=interval)
 
     if raw_df.empty:
         raise RuntimeError(f"Failed to fetch stock data for {symbol} from Yahoo Finance.")
