@@ -8,7 +8,9 @@
     "NVDA",
     "SPY",
     "QQQ",
-    "NEAR/USDT"
+    "NEAR/USDT",
+    "LINK/USDT",
+    "AMD"
   ],
   "symbol": "BTC/USDT",
   "timeframe": "1h",
@@ -21,7 +23,9 @@
     "AVAX/USDT": 0.03,
     "SOL/USDT": 0.03,
     "NEAR/USDT": 0.03,
+    "LINK/USDT": 0.025,
     "ETH/USDT": 0.025,
+    "AMD": 0.025,
     "BNB/USDT": 0.015,
     "BTC/USDT": 0.01,
     "NVDA": 0.02,
@@ -32,7 +36,9 @@
     "AVAX/USDT": 0.42,
     "SOL/USDT": 0.42,
     "NEAR/USDT": 0.42,
+    "LINK/USDT": 0.35,
     "ETH/USDT": 0.38,
+    "AMD": 0.35,
     "BNB/USDT": 0.25,
     "BTC/USDT": 0.20,
     "NVDA": 0.35,
@@ -78,6 +84,8 @@
       "symbols": [
         "NVDA",
         "SPY",
+        "QQQ",
+        "AMD",
         "AAPL",
         "TSLA"
       ],
