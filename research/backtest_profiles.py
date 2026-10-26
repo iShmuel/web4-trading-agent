@@ -87,6 +87,11 @@ def run_scenario(name: str, cfg: dict, data: Dict[tuple, pd.DataFrame], watchlis
     risk = RiskEngine(
         default_risk_pct=cfg.get("account_risk_pct", 0.02),
         max_open_positions=cfg.get("max_concurrent_positions", 3),
+        max_strategy_allocation_pct=cfg.get("max_strategy_allocation_pct", 0.75),
+        max_crypto_positions=cfg.get("max_crypto_positions", 2),
+        dynamic_scaling=cfg.get("dynamic_scaling", True),
+        symbol_risk_weights=cfg.get("symbol_risk_weights"),
+        symbol_exposure_caps=cfg.get("symbol_exposure_caps"),
     )
     coord = PortfolioCoordinator(account, risk, cfg)
 

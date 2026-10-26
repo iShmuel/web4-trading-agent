@@ -7,7 +7,8 @@
     "BNB/USDT",
     "NVDA",
     "SPY",
-    "QQQ"
+    "QQQ",
+    "NEAR/USDT"
   ],
   "symbol": "BTC/USDT",
   "timeframe": "1h",
@@ -16,6 +17,28 @@
   "dynamic_scaling": true,
   "max_strategy_allocation_pct": 0.75,
   "account_risk_pct": 0.02,
+  "symbol_risk_weights": {
+    "AVAX/USDT": 0.03,
+    "SOL/USDT": 0.03,
+    "NEAR/USDT": 0.03,
+    "ETH/USDT": 0.025,
+    "BNB/USDT": 0.015,
+    "BTC/USDT": 0.01,
+    "NVDA": 0.02,
+    "SPY": 0.02,
+    "QQQ": 0.02
+  },
+  "symbol_exposure_caps": {
+    "AVAX/USDT": 0.42,
+    "SOL/USDT": 0.42,
+    "NEAR/USDT": 0.42,
+    "ETH/USDT": 0.38,
+    "BNB/USDT": 0.25,
+    "BTC/USDT": 0.20,
+    "NVDA": 0.35,
+    "SPY": 0.35,
+    "QQQ": 0.35
+  },
   "fee_pct": 0.0006,
   "slippage_pct": 0.0004,
   "breakout_lookback": 24,

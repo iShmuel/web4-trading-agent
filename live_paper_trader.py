@@ -245,6 +245,8 @@ def _run(args):
         max_strategy_allocation_pct=config.get("max_strategy_allocation_pct", 0.75),
         max_crypto_positions=config.get("max_crypto_positions", 2),
         dynamic_scaling=config.get("dynamic_scaling", True),
+        symbol_risk_weights=config.get("symbol_risk_weights"),
+        symbol_exposure_caps=config.get("symbol_exposure_caps"),
     )
     coordinator = PortfolioCoordinator(account, risk_engine, config)
 

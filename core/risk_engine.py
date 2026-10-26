@@ -47,6 +47,8 @@ class RiskEngine:
         dynamic_scaling: bool = True,
         daily_loss_limit_pct: float = 0.05,
         max_drawdown_limit_pct: float = 0.15,
+        symbol_risk_weights: Optional[Dict[str, float]] = None,
+        symbol_exposure_caps: Optional[Dict[str, float]] = None,
     ):
         self.risk_pct = self.enforce_risk_bounds(default_risk_pct)
         self.max_total_exposure_pct = max_total_exposure_pct
@@ -57,6 +59,11 @@ class RiskEngine:
         self.dynamic_scaling = dynamic_scaling
         self.daily_loss_limit_pct = daily_loss_limit_pct
         self.max_drawdown_limit_pct = max_drawdown_limit_pct
+        # Per-symbol dynamic capital weighting (strictly bounded between 1% and 5%)
+        self.symbol_risk_weights: Dict[str, float] = {
+            k: self.enforce_risk_bounds(v) for k, v in (symbol_risk_weights or {}).items()
+        }
+        self.symbol_exposure_caps: Dict[str, float] = dict(symbol_exposure_caps or {})
 
         # Kill switch state
         self._is_halted: bool = False
@@ -223,22 +230,26 @@ class RiskEngine:
                     reason=f"Correlation Guard: Max crypto positions ({self.max_crypto_positions}) reached (slot reserved for equities/uncorrelated)",
                 )
 
-        # 4. Volatility sizing calculation
+        # 4. Volatility sizing calculation (with per-symbol dynamic risk weighting within 1%-5%)
+        effective_risk_pct = self.symbol_risk_weights.get(
+            symbol, requested_risk_pct if requested_risk_pct is not None else self.risk_pct
+        )
         is_short = (side.upper() == "SHORT")
         units, initial_stop, dollar_risk = self.calculate_position(
             equity=equity,
             entry_price=entry_price,
             atr=atr,
             atr_multiplier=atr_multiplier,
-            risk_pct=requested_risk_pct,
+            risk_pct=effective_risk_pct,
             is_short=is_short,
         )
 
         order_cost = units * entry_price
         total_order_cost = order_cost * (1.0 + fee_pct)
 
-        # 5. Single asset exposure cap
-        max_asset_cost = equity * self.max_single_asset_exposure_pct
+        # 5. Single asset exposure cap (with per-symbol exposure cap if configured)
+        effective_single_cap = self.symbol_exposure_caps.get(symbol, self.max_single_asset_exposure_pct)
+        max_asset_cost = equity * effective_single_cap
         if total_order_cost > max_asset_cost:
             # Scale down units to fit single-asset cap
             scaled_units = max_asset_cost / (entry_price * (1.0 + fee_pct))

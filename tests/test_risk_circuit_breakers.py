@@ -134,3 +134,50 @@ def test_dynamic_scaling_scales_down_to_remaining_strategy_cap():
     assert verdict.approved is True
     # Scaled down to fit within remaining $1,500
     assert verdict.suggested_units * 100.0 <= 1500.0
+
+
+def test_symbol_risk_weights_and_bounds():
+    engine = RiskEngine(
+        default_risk_pct=0.02,
+        symbol_risk_weights={
+            "AVAX/USDT": 0.03,
+            "BTC/USDT": 0.01,
+            "OVER_MAX": 0.10,   # must be clamped to 0.05 (5%)
+            "UNDER_MIN": 0.002, # must be clamped to 0.01 (1%)
+        },
+        symbol_exposure_caps={
+            "AVAX/USDT": 0.42,
+            "BTC/USDT": 0.20,
+        },
+    )
+    assert engine.symbol_risk_weights["OVER_MAX"] == 0.05
+    assert engine.symbol_risk_weights["UNDER_MIN"] == 0.01
+
+    v_avax = engine.validate_proposed_entry(
+        symbol="AVAX/USDT",
+        side="LONG",
+        strategy_id="momentum",
+        entry_price=10.0,
+        suggested_stop=9.0,
+        atr=0.4,
+        atr_multiplier=2.5,
+        equity=10000.0,
+        cash=10000.0,
+        active_positions={},
+    )
+    v_btc = engine.validate_proposed_entry(
+        symbol="BTC/USDT",
+        side="LONG",
+        strategy_id="momentum",
+        entry_price=80000.0,
+        suggested_stop=72000.0,
+        atr=3200.0,
+        atr_multiplier=2.5,
+        equity=10000.0,
+        cash=10000.0,
+        active_positions={},
+    )
+    assert v_avax.approved is True
+    assert v_btc.approved is True
+    # AVAX (3% risk, 42% cap) gets higher risk budget than BTC (1% risk, 20% cap)
+    assert v_avax.dollar_risk > v_btc.dollar_risk
