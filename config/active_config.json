@@ -48,9 +48,9 @@
   "fee_pct": 0.0006,
   "slippage_pct": 0.0004,
   "breakout_lookback": 20,
-  "ema_trend_filter": 36,
+  "ema_trend_filter": 32,
   "atr_period": 14,
-  "atr_multiplier": 2.5,
+  "atr_multiplier": 2.25,
   "use_asset_profiles": false,
   "asset_profiles": {
     "crypto_micro_swing": {
