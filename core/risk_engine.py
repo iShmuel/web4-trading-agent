@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone, date
 from typing import Tuple, Dict, Any, Optional, List
 
+from core.data_loader import is_crypto_symbol
+
 # Hard bounds: The AI self-improvement loop CANNOT breach these limits.
 MIN_ALLOWED_RISK_PCT = 0.01  # 1%
 MAX_ALLOWED_RISK_PCT = 0.05  # 5%
@@ -41,6 +43,8 @@ class RiskEngine:
         max_single_asset_exposure_pct: float = 0.35,
         max_strategy_allocation_pct: float = 0.75,
         max_open_positions: int = 3,
+        max_crypto_positions: int = 2,
+        dynamic_scaling: bool = True,
         daily_loss_limit_pct: float = 0.05,
         max_drawdown_limit_pct: float = 0.15,
     ):
@@ -49,6 +53,8 @@ class RiskEngine:
         self.max_single_asset_exposure_pct = max_single_asset_exposure_pct
         self.max_strategy_allocation_pct = max_strategy_allocation_pct
         self.max_open_positions = max_open_positions
+        self.max_crypto_positions = max_crypto_positions
+        self.dynamic_scaling = dynamic_scaling
         self.daily_loss_limit_pct = daily_loss_limit_pct
         self.max_drawdown_limit_pct = max_drawdown_limit_pct
 
@@ -208,6 +214,15 @@ class RiskEngine:
                 reason=f"Max positions limit reached: {len(active_positions)}/{self.max_open_positions}",
             )
 
+        # Cross-Asset Correlation Guard: Limit simultaneous crypto positions to max_crypto_positions
+        if is_crypto_symbol(symbol):
+            current_crypto_pos = sum(1 for sym in active_positions if is_crypto_symbol(sym))
+            if current_crypto_pos >= self.max_crypto_positions:
+                return RiskVerdict(
+                    approved=False,
+                    reason=f"Correlation Guard: Max crypto positions ({self.max_crypto_positions}) reached (slot reserved for equities/uncorrelated)",
+                )
+
         # 4. Volatility sizing calculation
         is_short = (side.upper() == "SHORT")
         units, initial_stop, dollar_risk = self.calculate_position(
@@ -247,24 +262,48 @@ class RiskEngine:
             total_order_cost = order_cost * (1.0 + fee_pct)
             dollar_risk = units * abs(entry_price - initial_stop)
 
-        # 7. Per-strategy allocation cap
+        # 7. Per-strategy allocation cap (with dynamic scaling if enabled)
         strategy_committed = sum(
             p["units"] * p["entry_price"]
             for p in active_positions.values()
             if p.get("strategy_id") == strategy_id
         )
-        if (strategy_committed + order_cost) > (equity * self.max_strategy_allocation_pct):
-            return RiskVerdict(
-                approved=False,
-                reason=f"Strategy '{strategy_id}' allocation limit reached ({self.max_strategy_allocation_pct*100:.1f}%)",
-            )
+        max_strat_dollars = equity * self.max_strategy_allocation_pct
+        if (strategy_committed + order_cost) > max_strat_dollars:
+            if not self.dynamic_scaling:
+                return RiskVerdict(
+                    approved=False,
+                    reason=f"Strategy '{strategy_id}' allocation limit reached ({self.max_strategy_allocation_pct*100:.1f}%)",
+                )
+            remaining_strat_cap = max(0.0, max_strat_dollars - strategy_committed)
+            if remaining_strat_cap < (equity * 0.05):
+                return RiskVerdict(
+                    approved=False,
+                    reason=f"Strategy '{strategy_id}' allocation limit reached ({self.max_strategy_allocation_pct*100:.1f}%)",
+                )
+            scaled_units = remaining_strat_cap / (entry_price * (1.0 + fee_pct))
+            units = min(units, scaled_units)
+            order_cost = units * entry_price
+            total_order_cost = order_cost * (1.0 + fee_pct)
+            dollar_risk = units * abs(entry_price - initial_stop)
 
-        # 8. Available cash check
+        # 8. Available cash check (with dynamic scaling if enabled)
         if total_order_cost > cash:
-            return RiskVerdict(
-                approved=False,
-                reason=f"Insufficient cash: order requires ${total_order_cost:,.2f}, available ${cash:,.2f}",
-            )
+            if not self.dynamic_scaling:
+                return RiskVerdict(
+                    approved=False,
+                    reason=f"Insufficient cash: order requires ${total_order_cost:,.2f}, available ${cash:,.2f}",
+                )
+            if cash < (equity * 0.05):
+                return RiskVerdict(
+                    approved=False,
+                    reason=f"Insufficient cash: order requires ${total_order_cost:,.2f}, available ${cash:,.2f}",
+                )
+            scaled_units = cash / (entry_price * (1.0 + fee_pct))
+            units = min(units, scaled_units)
+            order_cost = units * entry_price
+            total_order_cost = order_cost * (1.0 + fee_pct)
+            dollar_risk = units * abs(entry_price - initial_stop)
 
         if units <= 0:
             return RiskVerdict(

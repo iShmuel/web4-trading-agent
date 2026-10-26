@@ -243,6 +243,8 @@ def _run(args):
         default_risk_pct=config.get("account_risk_pct", 0.02),
         max_open_positions=config.get("max_concurrent_positions", 3),
         max_strategy_allocation_pct=config.get("max_strategy_allocation_pct", 0.75),
+        max_crypto_positions=config.get("max_crypto_positions", 2),
+        dynamic_scaling=config.get("dynamic_scaling", True),
     )
     coordinator = PortfolioCoordinator(account, risk_engine, config)
 
