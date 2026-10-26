@@ -248,7 +248,14 @@ def render() -> str:
         bb_low = ind.get("bb_lower")
 
         # 1. Clear explanation of Next Trigger
-        if isinstance(price, (int, float)) and price > 0 and isinstance(bh, (int, float)) and bh > 0:
+        if action == "HOLD":
+            stop = a.get("stop_loss", 0.0)
+            if price and stop and price > 0:
+                dist = abs((price - stop) / price) * 100
+                next_trigger = bold(f"Stop: ${stop:,.2f} ({dist:.1f}%)")
+            else:
+                next_trigger = bold("Position Active")
+        elif isinstance(price, (int, float)) and price > 0 and isinstance(bh, (int, float)) and bh > 0:
             gap = ((bh - price) / price) * 100
             if gap <= 0.5:
                 next_trigger = green(f"Breakout +{gap:.2f}%")
@@ -262,11 +269,15 @@ def render() -> str:
             next_trigger = dim("Awaiting data")
 
         # 2. Clear Momentum Telemetry
-        if isinstance(bh, (int, float)) and isinstance(ema, (int, float)):
+        if action == "HOLD":
+            mom_setup = green("● Holding active position")
+        elif isinstance(bh, (int, float)) and isinstance(ema, (int, float)):
             trend_label = green("Uptrend ▲") if price and price > ema else red("Downtrend ▼")
             mom_setup = f"Needs >${bh:,.1f} ({trend_label})"
+        elif "NO DATA" in tag or price_txt == "         —":
+            mom_setup = dim("US Market opens 15:30")
         else:
-            mom_setup = dim("US Market closed for weekend")
+            mom_setup = dim("Scanning...")
 
         # 3. Clear Mean Reversion Telemetry
         if isinstance(rsi, (int, float)) and isinstance(adx, (int, float)):
