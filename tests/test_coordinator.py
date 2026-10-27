@@ -109,3 +109,100 @@ def test_coordinator_cross_strategy_position_safety(tmp_path, monkeypatch):
 
     assert verdict.approved is False
     assert "conflict" in verdict.reason.lower()
+
+
+def test_coordinator_macro_bear_gate(tmp_path, monkeypatch):
+    monkeypatch.setattr("core.paper_account.PORTFOLIO_FILE", tmp_path / "test_port.json")
+    account = PaperAccount(10000.0)
+    risk = RiskEngine()
+    coordinator = PortfolioCoordinator(account, risk, {"enable_regime_filter": True})
+
+    now = datetime.now(timezone.utc)
+    # Price is $50,000, but Macro 200 EMA is $60,000 (Bear Regime)
+    mom_sig = TradingSignal(
+        strategy_id="momentum",
+        symbol="BTC/USDT",
+        timestamp=now,
+        direction=SignalDirection.LONG,
+        status=SignalStatus.ENTRY,
+        reference_price=50000.0,
+        indicators={"macro_ema": 60000.0, "adx": 30.0},
+    )
+    mr_sig = TradingSignal(
+        strategy_id="mean_reversion",
+        symbol="BTC/USDT",
+        timestamp=now,
+        direction=SignalDirection.LONG,
+        status=SignalStatus.NO_TRADE,
+        reference_price=50000.0,
+    )
+
+    chosen, reason = coordinator.reconcile_signals("BTC/USDT", mom_sig, mr_sig)
+    assert chosen is None
+    assert "Blocked by Macro Bear Gate" in reason
+
+
+def test_coordinator_chop_gate(tmp_path, monkeypatch):
+    monkeypatch.setattr("core.paper_account.PORTFOLIO_FILE", tmp_path / "test_port.json")
+    account = PaperAccount(10000.0)
+    risk = RiskEngine()
+    coordinator = PortfolioCoordinator(account, risk, {"enable_regime_filter": True, "adx_chop_threshold": 20.0})
+
+    now = datetime.now(timezone.utc)
+    # ADX is 15.0 (Choppy sideways range)
+    mom_sig = TradingSignal(
+        strategy_id="momentum",
+        symbol="SOL/USDT",
+        timestamp=now,
+        direction=SignalDirection.LONG,
+        status=SignalStatus.ENTRY,
+        reference_price=150.0,
+        indicators={"macro_ema": 140.0, "adx": 15.0},
+    )
+    mr_sig = TradingSignal(
+        strategy_id="mean_reversion",
+        symbol="SOL/USDT",
+        timestamp=now,
+        direction=SignalDirection.LONG,
+        status=SignalStatus.ENTRY,
+        reference_price=150.0,
+        indicators={"adx": 15.0},
+    )
+
+    chosen, reason = coordinator.reconcile_signals("SOL/USDT", mom_sig, mr_sig)
+    # Breakout is blocked, Mean Reversion is approved!
+    assert chosen is not None
+    assert chosen.strategy_id == "mean_reversion"
+
+
+def test_coordinator_strong_trend_gate(tmp_path, monkeypatch):
+    monkeypatch.setattr("core.paper_account.PORTFOLIO_FILE", tmp_path / "test_port.json")
+    account = PaperAccount(10000.0)
+    risk = RiskEngine()
+    coordinator = PortfolioCoordinator(account, risk, {"enable_regime_filter": True, "adx_trend_threshold": 25.0})
+
+    now = datetime.now(timezone.utc)
+    # ADX is 35.0 (Strong trend expansion)
+    mom_sig = TradingSignal(
+        strategy_id="momentum",
+        symbol="NEAR/USDT",
+        timestamp=now,
+        direction=SignalDirection.LONG,
+        status=SignalStatus.ENTRY,
+        reference_price=5.0,
+        indicators={"macro_ema": 4.0, "adx": 35.0},
+    )
+    mr_sig = TradingSignal(
+        strategy_id="mean_reversion",
+        symbol="NEAR/USDT",
+        timestamp=now,
+        direction=SignalDirection.LONG,
+        status=SignalStatus.ENTRY,
+        reference_price=5.0,
+        indicators={"adx": 35.0},
+    )
+
+    chosen, reason = coordinator.reconcile_signals("NEAR/USDT", mom_sig, mr_sig)
+    # Counter-trend MR suppressed, Momentum selected!
+    assert chosen is not None
+    assert chosen.strategy_id == "momentum"

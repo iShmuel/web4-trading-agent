@@ -103,6 +103,7 @@ def compute_indicators(
     breakout_lookback: int = 24,
     ema_trend_filter: int = 200,
     atr_period: int = 14,
+    macro_ema_period: int = 200,
 ) -> pd.DataFrame:
     """Compute momentum/breakout strategy indicators and add them as columns."""
     df = df.copy()
@@ -113,8 +114,14 @@ def compute_indicators(
     # Donchian Breakdown Low: lowest low of previous N bars (excluding current candle)
     df["breakdown_low"] = df["low"].shift(1).rolling(window=breakout_lookback).min()
 
-    # Macro Trend Filter: EMA
+    # Intermediate Trend Filter: EMA
     df["ema_filter"] = calculate_ema(df["close"], period=ema_trend_filter)
+
+    # Macro 200-Period Trend Filter: EMA
+    df["macro_ema"] = calculate_ema(df["close"], period=macro_ema_period)
+
+    # Trend Strength: ADX
+    df["adx"] = calculate_adx(df, period=14)
 
     # Volatility: ATR
     df["atr"] = calculate_atr(df, period=atr_period)

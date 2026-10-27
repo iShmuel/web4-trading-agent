@@ -51,6 +51,10 @@
   "ema_trend_filter": 32,
   "atr_period": 14,
   "atr_multiplier": 2.25,
+  "enable_regime_filter": true,
+  "macro_ema_period": 200,
+  "adx_chop_threshold": 20.0,
+  "adx_trend_threshold": 25.0,
   "use_asset_profiles": false,
   "asset_profiles": {
     "crypto_micro_swing": {

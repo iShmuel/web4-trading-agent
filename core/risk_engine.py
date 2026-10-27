@@ -103,21 +103,32 @@ class RiskEngine:
             return MAX_ALLOWED_RISK_PCT
         return risk_pct
 
-    def check_circuit_breakers(self, current_equity: float) -> Tuple[bool, str]:
+    def check_circuit_breakers(
+        self,
+        current_equity: float,
+        current_time: Optional[datetime] = None,
+    ) -> Tuple[bool, str]:
         """Check daily loss and max drawdown limits against current equity.
 
         Returns:
             (is_healthy, reason)
         """
-        if self._is_halted:
-            return False, f"Trading halted: {self._halt_reason}"
-
-        today = datetime.now(timezone.utc).date()
+        if current_time is not None:
+            today = current_time.date()
+        else:
+            today = datetime.now(timezone.utc).date()
 
         # Initialize or update daily baseline
         if self.daily_start_date != today or self.daily_start_equity <= 0:
             self.daily_start_date = today
             self.daily_start_equity = current_equity
+            # If halted strictly due to DAILY loss on a previous day, lift the halt on the new day
+            if self._is_halted and "Daily loss" in self._halt_reason:
+                self._is_halted = False
+                self._halt_reason = ""
+
+        if self._is_halted:
+            return False, f"Trading halted: {self._halt_reason}"
 
         # Track high-water mark for drawdown
         if current_equity > self.peak_equity:
@@ -193,10 +204,11 @@ class RiskEngine:
         active_positions: Dict[str, Any],
         fee_pct: float = 0.0006,
         requested_risk_pct: Optional[float] = None,
+        current_time: Optional[datetime] = None,
     ) -> RiskVerdict:
         """Validate an entry proposal against all portfolio-level limits."""
         # 1. Circuit breaker / kill switch check
-        healthy, breaker_reason = self.check_circuit_breakers(equity)
+        healthy, breaker_reason = self.check_circuit_breakers(equity, current_time=current_time)
         if not healthy:
             return RiskVerdict(approved=False, reason=breaker_reason)
 

@@ -132,6 +132,8 @@ def run_portfolio_tick(
     for d in cycle_report.decisions:
         sym = d.symbol
         price = d.price
+        regime = getattr(d, "indicators", {}).get("regime", "")
+        regime_badge = f"[{regime}] " if regime else ""
         if d.action in ("ENTER_LONG", "ENTER_SHORT"):
             side_str = "BUY (LONG)" if d.action == "ENTER_LONG" else "SELL SHORT"
             log(f"\n🚀 [PAPER ALERT] {side_str} ORDER EXECUTED ON {sym} via {d.strategy_id}!")
@@ -143,11 +145,11 @@ def run_portfolio_tick(
             log(f"\n🚨 [PAPER ALERT] EXIT EXECUTED ON {sym} via {d.strategy_id}!")
             log(f"   Closed {d.units:.5f} units @ ${price:,.2f} | Reason: {d.reason}")
         elif d.action == "HOLD":
-            log(f"   HOLDING {sym:<8} Price: ${price:>9.2f} | Stop: ${d.stop_loss:>9.2f} ({d.strategy_id})")
+            log(f"   HOLDING {sym:<8} Price: ${price:>9.2f} | Stop: ${d.stop_loss:>9.2f} ({d.strategy_id}) {regime_badge}")
         elif d.action == "CONFLICT":
             log(f"   ⚡ CONFLICT RESOLVED: {sym:<8} Price: ${price:>9.2f} | {d.reason}")
         else:
-            log(f"   SCANNING {sym:<8} Price: ${price:>9.2f} | {d.reason}")
+            log(f"   SCANNING {sym:<8} Price: ${price:>9.2f} | {regime_badge}{d.reason}")
 
     log(f"   Portfolio Equity: ${cycle_report.portfolio_equity:,.2f} | Cash: ${cycle_report.available_cash:,.2f} | Open: {cycle_report.open_positions}")
     write_live_status(account, cycle_report, current_prices, watchlist)

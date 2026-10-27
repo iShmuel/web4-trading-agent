@@ -216,8 +216,8 @@ def render() -> str:
     # ── Watchlist ─────────────────────────────────────────────────
     out.append(bold(" LIVE WATCHLIST — WHAT NEEDS TO HAPPEN TO ENTER A TRADE"))
     header = (
-        f"  {'SYMBOL':<10} │ {'PRICE':>10} │ {'BOT STATUS':<11} │ {'NEXT TRIGGER':<15} │ "
-        f"{'MOMENTUM SETUP (Breakout & Trend)':<34} │ {'MEAN REVERSION SETUP':<24}"
+        f"  {'SYMBOL':<10} │ {'PRICE':>10} │ {'BOT STATUS':<11} │ {'MARKET REGIME':<15} │ {'NEXT TRIGGER':<15} │ "
+        f"{'MOMENTUM SETUP (Breakout & Trend)':<32} │ {'MEAN REVERSION':<20}"
     )
     out.append(dim(header))
     out.append(dim("  " + "─" * (WIDTH - 4)))
@@ -231,6 +231,17 @@ def render() -> str:
         action = a.get("action", "?")
         reason = str(a.get("reason", ""))
         ind = a.get("indicators", {}) or {}
+
+        # Regime indicator
+        regime = ind.get("regime", "TRANSITION")
+        if regime == "TREND_EXPANSION":
+            regime_txt = green("🟢 TREND EXP")
+        elif regime == "RANGE_CHOP":
+            regime_txt = yellow("🟡 RANGE CHOP")
+        elif regime == "MACRO_BEAR":
+            regime_txt = red("🔴 MACRO BEAR")
+        else:
+            regime_txt = dim("⚪ TRANSITION")
 
         if action == "REJECTED" and reason.lower().startswith("no entry signal"):
             action = "WAITING"
@@ -289,8 +300,8 @@ def render() -> str:
 
         pipe = dim("│")
         out.append(
-            f"  {sym:<10} {pipe} {price_txt} {pipe} {tag:<19} {pipe} {next_trigger:<23} {pipe} "
-            f"{mom_setup:<42} {pipe} {mr_setup}"
+            f"  {sym:<10} {pipe} {price_txt} {pipe} {tag:<19} {pipe} {regime_txt:<23} {pipe} {next_trigger:<23} {pipe} "
+            f"{mom_setup:<40} {pipe} {mr_setup}"
         )
     out.append(rule)
 

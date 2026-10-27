@@ -49,6 +49,7 @@ class MomentumStrategy:
         self.slippage_pct = config.get("slippage_pct", 0.0004)
         self.min_atr_filter = config.get("min_atr_ratio", 0.0)  # minimum ATR/price ratio
         self.max_stale_minutes = config.get("max_stale_minutes", 120)
+        self.macro_ema_period = config.get("macro_ema_period", 200)
 
     def evaluate(
         self,
@@ -94,12 +95,15 @@ class MomentumStrategy:
             breakout_lookback=self.breakout_lookback,
             ema_trend_filter=self.ema_trend_filter,
             atr_period=self.atr_period,
+            macro_ema_period=self.macro_ema_period,
         )
 
         latest = data.iloc[-1]
         price = float(latest["close"])
         atr = float(latest["atr"])
         ema = float(latest["ema_filter"])
+        macro_ema = float(latest["macro_ema"]) if "macro_ema" in latest and not pd.isna(latest["macro_ema"]) else ema
+        adx = float(latest["adx"]) if "adx" in latest and not pd.isna(latest["adx"]) else 25.0
         breakout_high = float(latest["breakout_high"])
         breakdown_low = float(latest.get("breakdown_low", 0.0))
 
@@ -121,6 +125,8 @@ class MomentumStrategy:
             "price": price,
             "atr": atr,
             "ema_filter": ema,
+            "macro_ema": macro_ema,
+            "adx": adx,
             "breakout_high": breakout_high,
             "breakdown_low": breakdown_low,
             "atr_ratio": atr_ratio,

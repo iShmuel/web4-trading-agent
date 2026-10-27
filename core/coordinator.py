@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional, Tuple
 import pandas as pd
 
-from core.signals import TradingSignal, SignalDirection, SignalStatus
+from core.signals import TradingSignal, SignalDirection, SignalStatus, create_no_trade_signal
 from core.risk_engine import RiskEngine, RiskVerdict
 from core.paper_account import PaperAccount
 from strategies.momentum import MomentumStrategy
@@ -105,18 +105,58 @@ class PortfolioCoordinator:
         momentum_sig: TradingSignal,
         mr_sig: TradingSignal,
     ) -> Tuple[Optional[TradingSignal], str]:
-        """Reconcile signals from both strategies for a single asset.
+        """Reconcile signals from both strategies with Automated Regime Awareness.
 
         Rules:
-        1. If one strategy wants ENTRY and the other is NO_TRADE/HOLD, take the entry.
-        2. If both want ENTRY in OPPOSITE directions (LONG vs SHORT):
-           Thesis clash! Reject both signals to avoid trading against internal conflict.
-        3. If both want ENTRY in the SAME direction:
-           Pick the strategy with the higher signal_strength.
-        4. If neither wants ENTRY, return the most informative signal.
+        1. Macro Bear Gate: If price < macro_ema (200 EMA), block Long breakout entries
+           (protects capital from bear-market cascade liquidation).
+        2. Range Chop Gate: If ADX < adx_chop_threshold (default 20.0), suppress breakout
+           entries and prioritize Mean Reversion.
+        3. Strong Trend Gate: If ADX >= adx_trend_threshold (default 25.0), suppress
+           counter-trend Mean Reversion.
+        4. Standard Conflict / Tiebreak resolution.
         """
         mom_entry = (momentum_sig.status == SignalStatus.ENTRY)
         mr_entry = (mr_sig.status == SignalStatus.ENTRY)
+
+        enable_regime_filter = self.config.get("enable_regime_filter", True)
+        adx_chop_threshold = self.config.get("adx_chop_threshold", 20.0)
+        adx_trend_threshold = self.config.get("adx_trend_threshold", 25.0)
+
+        if enable_regime_filter:
+            mom_ind = momentum_sig.indicators or {}
+            mr_ind = mr_sig.indicators or {}
+            cur_price = momentum_sig.reference_price or mr_sig.reference_price
+            macro_ema = mom_ind.get("macro_ema") or mr_ind.get("macro_ema")
+            adx = mr_ind.get("adx") if "adx" in mr_ind else mom_ind.get("adx")
+
+            # Rule 1: Macro Bear Gate (Block long breakouts when below 200 EMA)
+            if macro_ema is not None and cur_price < macro_ema and momentum_sig.direction == SignalDirection.LONG:
+                if mom_entry:
+                    mom_entry = False
+                    momentum_sig = create_no_trade_signal(
+                        "momentum", symbol, cur_price,
+                        f"Blocked by Macro Bear Gate (${cur_price:.2f} < EMA200 ${macro_ema:.2f})",
+                        indicators=momentum_sig.indicators,
+                    )
+
+            # Rule 2: Range Chop Gate (Suppress breakouts when ADX < chop threshold)
+            if adx is not None and adx < adx_chop_threshold and mom_entry:
+                mom_entry = False
+                momentum_sig = create_no_trade_signal(
+                    "momentum", symbol, cur_price,
+                    f"Blocked by Chop Gate (ADX {adx:.1f} < {adx_chop_threshold:.1f})",
+                    indicators=momentum_sig.indicators,
+                )
+
+            # Rule 3: Strong Trend Gate (Suppress counter-trend MR when ADX >= trend threshold)
+            if adx is not None and adx >= adx_trend_threshold and mr_entry:
+                mr_entry = False
+                mr_sig = create_no_trade_signal(
+                    "mean_reversion", symbol, cur_price,
+                    f"Suppressed counter-trend MR in strong trend (ADX {adx:.1f} >= {adx_trend_threshold:.1f})",
+                    indicators=mr_sig.indicators,
+                )
 
         # Case 1: Both propose entries
         if mom_entry and mr_entry:
@@ -139,6 +179,10 @@ class PortfolioCoordinator:
             return mr_sig, "Mean Reversion entry proposed"
 
         # Case 4: Neither proposes entry
+        if momentum_sig.no_trade_reason:
+            return None, momentum_sig.no_trade_reason
+        if mr_sig.no_trade_reason:
+            return None, mr_sig.no_trade_reason
         return None, "No entry signal proposed"
 
     def process_symbol(
@@ -243,6 +287,19 @@ class PortfolioCoordinator:
                 if k not in merged_ind:
                     merged_ind[k] = v
 
+        # Determine current market regime
+        macro_ema_val = merged_ind.get("macro_ema")
+        adx_val = merged_ind.get("adx", 25.0)
+        if macro_ema_val is not None and cur_price < macro_ema_val:
+            regime = "MACRO_BEAR"
+        elif adx_val >= self.config.get("adx_trend_threshold", 25.0):
+            regime = "TREND_EXPANSION"
+        elif adx_val < self.config.get("adx_chop_threshold", 20.0):
+            regime = "RANGE_CHOP"
+        else:
+            regime = "TRANSITION"
+        merged_ind["regime"] = regime
+
         chosen_sig, reason = self.reconcile_signals(symbol, mom_sig, mr_sig)
 
         if chosen_sig is None:
@@ -258,6 +315,7 @@ class PortfolioCoordinator:
 
         # 3. Validate chosen proposal through RiskEngine
         total_equity = self.account.get_total_equity(current_prices)
+        last_ts = df.index[-1] if hasattr(df.index[-1], 'tzinfo') else None
         risk_verdict = self.risk_engine.validate_proposed_entry(
             symbol=symbol,
             side=chosen_sig.direction.value,
@@ -265,12 +323,13 @@ class PortfolioCoordinator:
             entry_price=chosen_sig.reference_price,
             suggested_stop=chosen_sig.suggested_stop,
             atr=chosen_sig.atr,
-            atr_multiplier=sym_cfg.get("atr_multiplier", 2.5),
+            atr_multiplier=sym_cfg.get("atr_multiplier", self.config.get("atr_multiplier", 2.25)),
             equity=total_equity,
             cash=self.account.cash,
             active_positions=self.account.positions,
             fee_pct=chosen_sig.estimated_fee_pct,
             requested_risk_pct=self.config.get("account_risk_pct", 0.02),
+            current_time=last_ts,
         )
 
         if not risk_verdict.approved:
