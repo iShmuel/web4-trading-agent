@@ -159,6 +159,53 @@ class RiskEngine:
 
         return True, "Circuit breakers healthy"
 
+    def compute_volatility_adjusted_risk(
+        self,
+        base_risk_pct: float,
+        current_atr: float,
+        entry_price: float,
+        atr_ratio_baseline: float = 0.025,
+    ) -> float:
+        """Dynamically scale risk percentage based on asset volatility regime.
+        
+        If current volatility expands significantly above baseline, scale down risk
+        to protect equity. Strictly clamped within [0.01, 0.05].
+        """
+        if entry_price <= 0 or current_atr <= 0:
+            return self.enforce_risk_bounds(base_risk_pct)
+
+        current_atr_ratio = current_atr / entry_price
+        if current_atr_ratio > atr_ratio_baseline:
+            vol_scalar = (atr_ratio_baseline / current_atr_ratio) ** 0.5
+            adjusted_risk = base_risk_pct * vol_scalar
+        else:
+            adjusted_risk = base_risk_pct
+
+        return self.enforce_risk_bounds(adjusted_risk)
+
+    def compute_kelly_risk(
+        self,
+        base_risk_pct: float,
+        win_rate: float,
+        win_loss_ratio: float,
+    ) -> float:
+        """Calculate Half-Kelly optimal growth sizing.
+        
+        Kelly f* = (W * (R + 1) - 1) / R
+        Half-Kelly = 0.5 * f*
+        Strictly clamped within [0.01, 0.05].
+        """
+        if win_loss_ratio <= 0 or win_rate <= 0:
+            return self.enforce_risk_bounds(base_risk_pct)
+
+        f_star = (win_rate * (win_loss_ratio + 1.0) - 1.0) / win_loss_ratio
+        if f_star <= 0:
+            return 0.01  # Minimum safe bound
+
+        half_kelly = 0.5 * f_star
+        blended_risk = 0.5 * base_risk_pct + 0.5 * half_kelly
+        return self.enforce_risk_bounds(blended_risk)
+
     def calculate_position(
         self,
         equity: float,
@@ -242,9 +289,15 @@ class RiskEngine:
                     reason=f"Correlation Guard: Max crypto positions ({self.max_crypto_positions}) reached (slot reserved for equities/uncorrelated)",
                 )
 
-        # 4. Volatility sizing calculation (with per-symbol dynamic risk weighting within 1%-5%)
-        effective_risk_pct = self.symbol_risk_weights.get(
+        # 4. Volatility sizing calculation (with per-symbol dynamic risk weighting & volatility targeting)
+        base_risk = self.symbol_risk_weights.get(
             symbol, requested_risk_pct if requested_risk_pct is not None else self.risk_pct
+        )
+        effective_risk_pct = self.compute_volatility_adjusted_risk(
+            base_risk_pct=base_risk,
+            current_atr=atr,
+            entry_price=entry_price,
+            atr_ratio_baseline=0.025,
         )
         is_short = (side.upper() == "SHORT")
         units, initial_stop, dollar_risk = self.calculate_position(

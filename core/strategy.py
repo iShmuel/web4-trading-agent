@@ -166,3 +166,56 @@ def compute_mean_reversion_indicators(
     df["adx"] = calculate_adx(df, period=adx_period)
 
     return df
+
+
+def calculate_multi_timeframe_confluence(
+    df: pd.DataFrame,
+    breakout_high_col: str = "breakout_high",
+    fast_ema_col: str = "ema_filter",
+    macro_ema_col: str = "macro_ema",
+) -> Tuple[bool, float, str]:
+    """Evaluate multi-timeframe alignment across macro, intermediate, and micro channels.
+
+    Returns:
+        (has_confluence, confidence_score, description)
+    """
+    if df is None or len(df) < 50:
+        return False, 0.5, "Insufficient data for confluence"
+
+    latest = df.iloc[-1]
+    price = float(latest["close"])
+    macro_ema = float(latest.get(macro_ema_col, price))
+    fast_ema = float(latest.get(fast_ema_col, price))
+    breakout_high = float(latest.get(breakout_high_col, price))
+
+    macro_bull = price > macro_ema
+    inter_bull = price > fast_ema
+    breakout_active = price > breakout_high
+
+    if macro_bull and inter_bull and breakout_active:
+        return True, 0.95, "Triple Confluence: Macro(4h)+Inter(1h)+Breakout Aligned"
+    elif inter_bull and breakout_active:
+        return True, 0.75, "Dual Confluence: 1h Trend + Breakout Aligned"
+    elif macro_bull and inter_bull:
+        return False, 0.60, "Trend Bullish, Waiting for Breakout"
+    else:
+        return False, 0.30, "No Confluence / Counter-Trend"
+
+
+def calculate_relative_strength(
+    asset_series: pd.Series,
+    benchmark_series: pd.Series,
+    lookback: int = 24,
+) -> float:
+    """Calculate rolling relative performance of asset versus benchmark (e.g. BTC/SPY).
+
+    Returns:
+        Relative return spread (positive = outperforming / Alpha leader).
+    """
+    if len(asset_series) < lookback or len(benchmark_series) < lookback:
+        return 0.0
+
+    asset_ret = (asset_series.iloc[-1] - asset_series.iloc[-lookback]) / asset_series.iloc[-lookback]
+    bench_ret = (benchmark_series.iloc[-1] - benchmark_series.iloc[-lookback]) / benchmark_series.iloc[-lookback]
+
+    return float(asset_ret - bench_ret)

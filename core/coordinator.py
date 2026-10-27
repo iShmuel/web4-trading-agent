@@ -13,6 +13,8 @@ import pandas as pd
 from core.signals import TradingSignal, SignalDirection, SignalStatus, create_no_trade_signal
 from core.risk_engine import RiskEngine, RiskVerdict
 from core.paper_account import PaperAccount
+from core.data_loader import fetch_funding_rate, is_crypto_symbol
+from core.strategy import calculate_multi_timeframe_confluence, calculate_relative_strength
 from strategies.momentum import MomentumStrategy
 from strategies.mean_reversion import MeanReversionStrategy
 
@@ -158,6 +160,16 @@ class PortfolioCoordinator:
                     indicators=mr_sig.indicators,
                 )
 
+            # Rule 4: Funding Rate Overheat Filter (Crypto Derivatives Radar)
+            funding_regime = mom_ind.get("funding_regime") or mr_ind.get("funding_regime")
+            if funding_regime == "OVERHEATED_LONGS" and mom_entry and momentum_sig.direction == SignalDirection.LONG:
+                mom_entry = False
+                momentum_sig = create_no_trade_signal(
+                    "momentum", symbol, cur_price,
+                    f"Blocked by Overheated Funding Rate ({mom_ind.get('funding_rate_pct', 0.0):+.3f}% per 8h)",
+                    indicators=momentum_sig.indicators,
+                )
+
         # Case 1: Both propose entries
         if mom_entry and mr_entry:
             if momentum_sig.direction != mr_sig.direction:
@@ -287,6 +299,23 @@ class PortfolioCoordinator:
                 if k not in merged_ind:
                     merged_ind[k] = v
 
+        # Multi-timeframe confluence evaluation
+        has_confluence, conf_score, conf_desc = calculate_multi_timeframe_confluence(df)
+        merged_ind["confluence"] = conf_desc
+        merged_ind["confluence_score"] = conf_score
+
+        # Derivatives Funding Rate Radar (Crypto only)
+        if is_crypto_symbol(symbol):
+            fr = fetch_funding_rate(symbol)
+            if fr is not None:
+                merged_ind["funding_rate_pct"] = fr * 100
+                if fr > 0.0005:
+                    merged_ind["funding_regime"] = "OVERHEATED_LONGS"
+                elif fr < -0.0002:
+                    merged_ind["funding_regime"] = "SHORT_SQUEEZE_PRONE"
+                else:
+                    merged_ind["funding_regime"] = "NEUTRAL"
+
         # Determine current market regime
         macro_ema_val = merged_ind.get("macro_ema")
         adx_val = merged_ind.get("adx", 25.0)
@@ -316,6 +345,11 @@ class PortfolioCoordinator:
         # 3. Validate chosen proposal through RiskEngine
         total_equity = self.account.get_total_equity(current_prices)
         last_ts = df.index[-1] if hasattr(df.index[-1], 'tzinfo') else None
+        
+        # Confluence stop tightening: Triple-timeframe alignment permits tighter stop loss
+        base_atr_mult = sym_cfg.get("atr_multiplier", self.config.get("atr_multiplier", 2.25))
+        effective_atr_mult = base_atr_mult * (0.85 if (has_confluence and conf_score >= 0.90) else 1.0)
+
         risk_verdict = self.risk_engine.validate_proposed_entry(
             symbol=symbol,
             side=chosen_sig.direction.value,
@@ -323,7 +357,7 @@ class PortfolioCoordinator:
             entry_price=chosen_sig.reference_price,
             suggested_stop=chosen_sig.suggested_stop,
             atr=chosen_sig.atr,
-            atr_multiplier=sym_cfg.get("atr_multiplier", self.config.get("atr_multiplier", 2.25)),
+            atr_multiplier=effective_atr_mult,
             equity=total_equity,
             cash=self.account.cash,
             active_positions=self.account.positions,
@@ -397,8 +431,23 @@ class PortfolioCoordinator:
         executed = 0
         signals_count = 0
 
-        for symbol, df in market_data.items():
+        # Relative Strength Prioritization: Evaluate alpha leaders first
+        btc_df = market_data.get("BTC/USDT")
+        spy_df = market_data.get("SPY")
+
+        def symbol_priority(sym: str) -> float:
+            df = market_data[sym]
+            bench = btc_df if is_crypto_symbol(sym) else spy_df
+            if bench is not None and len(df) >= 24 and len(bench) >= 24:
+                return calculate_relative_strength(df["close"], bench["close"], lookback=24)
+            return 0.0
+
+        sorted_symbols = sorted(market_data.keys(), key=symbol_priority, reverse=True)
+
+        for symbol in sorted_symbols:
+            df = market_data[symbol]
             decision = self.process_symbol(symbol, df, current_prices)
+            decision.indicators["rs_score"] = symbol_priority(symbol)
             decisions.append(decision)
 
             if decision.action == "CONFLICT":

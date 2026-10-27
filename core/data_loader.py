@@ -72,6 +72,29 @@ def check_data_quality(
     return True, "Data quality passed"
 
 
+def fetch_funding_rate(
+    symbol: str = "BTC/USDT",
+    exchange_name: str = "binance",
+) -> Optional[float]:
+    """Fetch 8h perpetual funding rate for crypto trading pairs via CCXT.
+
+    Returns float (e.g., 0.0001 = +0.01% per 8h) or None if unavailable/stock.
+    """
+    if not is_crypto_symbol(symbol):
+        return None
+    try:
+        exchange_class = getattr(ccxt, exchange_name)
+        exchange = exchange_class({"enableRateLimit": True, "timeout": 8000})
+        query_sym = symbol if ":" in symbol else f"{symbol}:USDT"
+        funding = exchange.fetch_funding_rate(query_sym)
+        if funding and "fundingRate" in funding and funding["fundingRate"] is not None:
+            return float(funding["fundingRate"])
+    except Exception:
+        # Graceful fallback: return None if offline or rate-limited
+        return None
+    return None
+
+
 def fetch_crypto_ohlcv(
     symbol: str = "BTC/USDT",
     timeframe: str = "1h",
