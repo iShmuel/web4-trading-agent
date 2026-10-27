@@ -3,43 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web4 Autonomous Trading Desk — Tier-1 Institutional Presentation</title>
+  <title>Web4 Autonomous Trading Desk — Institutional Executive Keynote</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #070b14;
-      --card-bg: rgba(17, 24, 39, 0.75);
-      --card-border: rgba(56, 189, 248, 0.18);
+      --bg: #060913;
+      --card-bg: rgba(15, 23, 42, 0.72);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: rgba(56, 189, 248, 0.4);
       --accent: #38bdf8;
-      --accent-glow: rgba(56, 189, 248, 0.35);
+      --accent-glow: rgba(56, 189, 248, 0.4);
       --green: #10b981;
-      --green-glow: rgba(16, 185, 129, 0.3);
+      --green-glow: rgba(16, 185, 129, 0.35);
       --red: #f43f5e;
-      --red-glow: rgba(244, 63, 94, 0.3);
+      --red-glow: rgba(244, 63, 94, 0.35);
       --gold: #f59e0b;
-      --gold-glow: rgba(245, 158, 11, 0.3);
+      --gold-glow: rgba(245, 158, 11, 0.35);
       --purple: #a855f7;
-      --purple-glow: rgba(168, 85, 247, 0.3);
+      --purple-glow: rgba(168, 85, 247, 0.35);
       --text: #f8fafc;
       --text-muted: #94a3b8;
-      --border: #1e293b;
+      --text-dim: #64748b;
+      --border: rgba(255, 255, 255, 0.08);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background: radial-gradient(circle at 50% 8%, #142242 0%, var(--bg) 75%);
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.15) 0%, transparent 55%),
+        radial-gradient(circle at 85% 90%, rgba(168, 85, 247, 0.08) 0%, transparent 45%),
+        radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 36px 36px;
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       overflow: hidden;
       height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      letter-spacing: -0.01em;
     }
 
-    /* Top Progress Bar */
+    /* Top Ambient Progress Line */
     .progress-bar-container {
       width: 100%;
-      height: 4px;
-      background: rgba(255, 255, 255, 0.05);
+      height: 3px;
+      background: rgba(255, 255, 255, 0.04);
       position: absolute;
       top: 0;
       left: 0;
@@ -48,300 +59,344 @@
     .progress-bar {
       height: 100%;
       width: 0%;
-      background: linear-gradient(90deg, var(--accent), var(--green));
-      transition: width 0.3s ease;
-      box-shadow: 0 0 12px var(--accent);
+      background: linear-gradient(90deg, #38bdf8 0%, #10b981 100%);
+      transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 16px var(--accent);
     }
 
-    /* Header */
+    /* Header Bar */
     header {
-      padding: 0.85rem 2.5rem;
+      padding: 0.9rem 3rem;
       border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(7, 11, 20, 0.92);
-      backdrop-filter: blur(16px);
+      background: rgba(6, 9, 19, 0.88);
+      backdrop-filter: blur(20px);
       z-index: 20;
     }
-    .logo {
-      font-size: 1.15rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-    }
-    .logo-badge {
-      background: linear-gradient(135deg, #0284c7, #38bdf8);
-      color: #fff;
-      font-size: 0.72rem;
-      padding: 0.22rem 0.6rem;
-      border-radius: 9999px;
-      font-weight: 700;
-      text-transform: uppercase;
-      box-shadow: 0 0 14px var(--accent-glow);
-    }
-    .slide-indicator {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      font-weight: 600;
+    .brand {
       display: flex;
       align-items: center;
       gap: 0.85rem;
     }
-    select.slide-select {
-      background: #1e293b;
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 0.38rem 0.75rem;
-      border-radius: 0.45rem;
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .brand-pill {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: var(--accent);
+      font-size: 0.7rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .slide-indicator {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
       font-size: 0.88rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    select.slide-select {
+      background: rgba(15, 23, 42, 0.9);
+      color: #e2e8f0;
+      border: 1px solid var(--border);
+      padding: 0.42rem 0.85rem;
+      border-radius: 0.5rem;
+      font-size: 0.88rem;
+      font-family: inherit;
       cursor: pointer;
       outline: none;
-      transition: border-color 0.2s;
+      transition: all 0.2s;
     }
-    select.slide-select:focus { border-color: var(--accent); }
+    select.slide-select:hover, select.slide-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
 
-    /* Slider Container */
-    .slider-container {
+    /* Presentation Canvas Stage */
+    .stage-container {
       flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 0.75rem 1.8rem;
+      padding: 0.85rem 2.5rem;
       max-width: 96vw;
       width: 96vw;
       margin: 0 auto;
-      height: calc(100vh - 125px);
+      height: calc(100vh - 128px);
     }
 
     .slide {
       display: none;
       width: 100%;
-      min-height: calc(100vh - 140px);
-      max-height: calc(100vh - 140px);
-      background: var(--card-bg);
+      min-height: calc(100vh - 145px);
+      max-height: calc(100vh - 145px);
+      background: linear-gradient(160deg, rgba(15, 23, 42, 0.8) 0%, rgba(10, 15, 28, 0.9) 100%);
       border: 1px solid var(--card-border);
-      border-radius: 1.5rem;
-      padding: 2.2rem 3.5rem;
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85), 0 0 40px rgba(56, 189, 248, 0.06);
-      backdrop-filter: blur(20px);
-      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 1.6rem;
+      padding: 2.4rem 3.8rem;
+      box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+        0 25px 65px -15px rgba(0, 0, 0, 0.9),
+        0 0 40px rgba(56, 189, 248, 0.05);
+      backdrop-filter: blur(24px);
+      animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
       overflow-y: auto;
     }
     .slide.active { display: block; }
     @keyframes slideIn {
-      from { opacity: 0; transform: translateY(10px) scale(0.995); }
+      from { opacity: 0; transform: translateY(12px) scale(0.992); }
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
-    /* Headings */
+    /* Pro Typographic Hierarchy */
     h1 {
-      font-size: 3.2rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      background: linear-gradient(135deg, #ffffff 40%, var(--accent) 100%);
+      font-size: 3.4rem;
+      font-weight: 900;
+      letter-spacing: -0.035em;
+      line-height: 1.1;
+      background: linear-gradient(180deg, #FFFFFF 20%, #94a3b8 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.6rem;
     }
     h2 {
-      font-size: 2rem;
-      font-weight: 700;
+      font-size: 2.1rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
       color: #fff;
       display: flex;
       align-items: center;
-      gap: 0.65rem;
+      gap: 0.75rem;
       margin-bottom: 0.35rem;
     }
     p.subtitle {
-      font-size: 1.12rem;
+      font-size: 1.15rem;
       color: var(--text-muted);
-      margin-bottom: 1.35rem;
+      margin-bottom: 1.5rem;
       line-height: 1.5;
+      font-weight: 400;
     }
 
     /* Grids */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.35rem;
-      margin: 1.1rem 0;
+      gap: 1.4rem;
+      margin: 1.2rem 0;
     }
     .grid-3 {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 1.35rem;
-      margin: 1.1rem 0;
+      gap: 1.4rem;
+      margin: 1.2rem 0;
     }
     .grid-4 {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 1.25rem;
-      margin: 1.1rem 0;
+      gap: 1.3rem;
+      margin: 1.2rem 0;
     }
 
-    /* Presentation-Friendly Cards */
-    .card {
-      background: linear-gradient(145deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.85) 100%);
+    /* Specular Pro Bento Cards */
+    .bento-card {
+      background: linear-gradient(160deg, rgba(26, 36, 56, 0.6) 0%, rgba(13, 19, 33, 0.85) 100%);
       border: 1px solid var(--border);
-      border-radius: 1rem;
-      padding: 1.4rem 1.6rem;
-      transition: all 0.25s ease;
+      border-radius: 1.15rem;
+      padding: 1.5rem 1.7rem;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06), 0 10px 25px rgba(0, 0, 0, 0.35);
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     }
-    .card:hover {
+    .bento-card:hover {
       border-color: var(--accent);
-      transform: translateY(-3px);
-      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.15);
+      transform: translateY(-4px);
+      box-shadow: 
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+        0 18px 40px rgba(0, 0, 0, 0.6),
+        0 0 25px rgba(56, 189, 248, 0.15);
     }
-    .card h3 {
-      font-size: 1.18rem;
+    .bento-card h3 {
+      font-size: 1.22rem;
+      font-weight: 700;
       color: #fff;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.55rem;
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      letter-spacing: -0.015em;
     }
-    .card p {
+    .bento-card p {
       font-size: 0.98rem;
       color: var(--text-muted);
-      line-height: 1.55;
+      line-height: 1.6;
     }
 
-    /* Card Top Tags */
+    /* Pill Badges with Micro-Labels */
     .card-tag {
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      padding: 0.25rem 0.65rem;
+      padding: 0.26rem 0.7rem;
       border-radius: 9999px;
-      font-size: 0.76rem;
+      font-size: 0.74rem;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 0.75rem;
+      letter-spacing: 0.07em;
+      margin-bottom: 0.85rem;
       align-self: flex-start;
+      font-family: 'JetBrains Mono', monospace;
     }
-    .card-tag-red { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.35); }
-    .card-tag-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
-    .card-tag-blue { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
-    .card-tag-gold { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
-    .card-tag-purple { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); }
+    .tag-red { background: rgba(244, 63, 94, 0.14); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.35); }
+    .tag-green { background: rgba(16, 185, 129, 0.14); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .tag-blue { background: rgba(56, 189, 248, 0.14); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
+    .tag-gold { background: rgba(245, 158, 11, 0.14); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .tag-purple { background: rgba(168, 85, 247, 0.14); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.35); }
 
-    /* Feature Lists inside cards */
+    /* Bullet Feature Elements */
     .feature-list {
       display: flex;
       flex-direction: column;
-      gap: 0.65rem;
-      margin-top: 0.65rem;
+      gap: 0.75rem;
+      margin-top: 0.8rem;
     }
     .feature-item {
       display: flex;
       align-items: flex-start;
-      gap: 0.65rem;
-      font-size: 0.96rem;
+      gap: 0.75rem;
+      font-size: 0.98rem;
       color: #cbd5e1;
-      line-height: 1.45;
+      line-height: 1.5;
     }
-    .feature-bullet {
+    .feature-dot {
       width: 7px;
       height: 7px;
       border-radius: 50%;
       background: var(--accent);
-      margin-top: 0.5rem;
+      margin-top: 0.55rem;
       flex-shrink: 0;
-      box-shadow: 0 0 8px var(--accent);
+      box-shadow: 0 0 10px var(--accent);
     }
-    .bullet-green { background: var(--green); box-shadow: 0 0 8px var(--green); }
-    .bullet-red { background: var(--red); box-shadow: 0 0 8px var(--red); }
-    .bullet-gold { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
-    .feature-lead {
+    .dot-green { background: var(--green); box-shadow: 0 0 10px var(--green); }
+    .dot-red { background: var(--red); box-shadow: 0 0 10px var(--red); }
+    .dot-gold { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+    .feature-item strong {
       color: #fff;
       font-weight: 700;
     }
 
-    /* Plain English Callout */
-    .plain-english {
-      background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(16, 185, 129, 0.06));
-      border: 1px solid rgba(56, 189, 248, 0.35);
-      border-radius: 0.95rem;
-      padding: 1.15rem 1.6rem;
-      margin-top: 1.35rem;
+    /* Executive Callout Card */
+    .executive-callout {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.09) 0%, rgba(16, 185, 129, 0.06) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 1.1rem;
+      padding: 1.25rem 1.8rem;
+      margin-top: 1.5rem;
       display: flex;
       align-items: flex-start;
-      gap: 1rem;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+      gap: 1.1rem;
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 10px 25px rgba(0, 0, 0, 0.25);
     }
-    .plain-english-icon { font-size: 1.5rem; flex-shrink: 0; }
-    .plain-english-text {
+    .callout-icon {
+      font-size: 1.6rem;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .callout-text {
       font-size: 1.05rem;
       color: #e2e8f0;
-      line-height: 1.55;
+      line-height: 1.6;
     }
-    .plain-english-text strong {
-      color: var(--accent);
-    }
-
-    /* Metric Display */
-    .metric-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1.5rem;
-      margin: 1.4rem 0;
-    }
-    .metric-card {
-      background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.92) 100%);
-      border: 1px solid var(--border);
-      border-radius: 1.1rem;
-      padding: 1.6rem 1.4rem;
-      text-align: center;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-      transition: transform 0.2s;
-    }
-    .metric-card:hover { transform: translateY(-3px); }
-    .metric-value {
-      font-size: 2.8rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      margin-bottom: 0.35rem;
-    }
-    .metric-label {
-      font-size: 0.86rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-muted);
+    .callout-text strong {
+      color: #38bdf8;
       font-weight: 700;
     }
 
-    /* Visual Bars */
-    .visual-bar-container {
-      margin: 1.2rem 0;
-      background: linear-gradient(145deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+    /* Headline KPI Hero Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      margin: 1.8rem 0;
+    }
+    .kpi-card {
+      background: linear-gradient(160deg, rgba(26, 36, 56, 0.7) 0%, rgba(13, 19, 33, 0.9) 100%);
       border: 1px solid var(--border);
-      border-radius: 1rem;
-      padding: 1.25rem 1.7rem;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      border-radius: 1.25rem;
+      padding: 1.8rem 1.5rem;
+      text-align: center;
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 12px 30px rgba(0, 0, 0, 0.45);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s;
+    }
+    .kpi-card:hover { transform: translateY(-3px); }
+    .kpi-value {
+      font-size: 3.1rem;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+      margin-bottom: 0.35rem;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .kpi-label {
+      font-size: 0.86rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Comparison Bar Visuals */
+    .bar-stage {
+      margin: 1.3rem 0;
+      background: linear-gradient(160deg, rgba(26, 36, 56, 0.6) 0%, rgba(13, 19, 33, 0.85) 100%);
+      border: 1px solid var(--border);
+      border-radius: 1.15rem;
+      padding: 1.4rem 1.8rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
     }
     .bar-row {
       display: flex;
       align-items: center;
-      gap: 1.25rem;
-      margin: 0.8rem 0;
-      font-size: 1rem;
+      gap: 1.4rem;
+      margin: 0.85rem 0;
+      font-size: 1.02rem;
     }
-    .bar-label { width: 230px; font-weight: 600; font-size: 1.02rem; flex-shrink: 0; }
+    .bar-label { width: 230px; font-weight: 700; font-size: 1.02rem; flex-shrink: 0; }
     .bar-track {
       flex: 1;
-      height: 32px;
-      background: #1e293b;
-      border-radius: 8px;
+      height: 34px;
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
       overflow: hidden;
       display: flex;
       position: relative;
@@ -349,24 +404,24 @@
     .bar-fill-green {
       background: linear-gradient(90deg, #059669, #10b981);
       height: 100%;
-      border-radius: 8px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
-      padding-left: 0.85rem;
-      font-weight: 700;
-      font-size: 0.9rem;
+      padding-left: 0.95rem;
+      font-weight: 800;
+      font-size: 0.92rem;
       color: #fff;
-      box-shadow: 0 0 14px var(--green-glow);
+      box-shadow: 0 0 16px var(--green-glow);
     }
     .bar-fill-red {
       background: linear-gradient(90deg, #be123c, #f43f5e);
       height: 100%;
-      border-radius: 8px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
-      padding-left: 0.85rem;
-      font-weight: 700;
-      font-size: 0.9rem;
+      padding-left: 0.95rem;
+      font-weight: 800;
+      font-size: 0.92rem;
       color: #fff;
     }
 
@@ -375,24 +430,26 @@
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      margin: 1.2rem 0;
+      margin: 1.25rem 0;
       font-size: 0.98rem;
       border: 1px solid var(--border);
-      border-radius: 0.9rem;
+      border-radius: 1rem;
       overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
     }
     th, td {
-      padding: 0.85rem 1.15rem;
+      padding: 0.9rem 1.25rem;
       text-align: left;
       border-bottom: 1px solid var(--border);
     }
     th {
-      background: rgba(15, 23, 42, 0.98);
+      background: rgba(13, 19, 33, 0.98);
       color: var(--accent);
-      font-weight: 700;
-      font-size: 0.86rem;
+      font-weight: 800;
+      font-size: 0.84rem;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.07em;
+      font-family: 'JetBrains Mono', monospace;
     }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: rgba(56, 189, 248, 0.04); }
@@ -402,175 +459,195 @@
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      padding: 0.28rem 0.65rem;
+      padding: 0.3rem 0.7rem;
       border-radius: 9999px;
       font-size: 0.78rem;
-      font-weight: 700;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.03em;
     }
-    .badge-green { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
-    .badge-red { background: rgba(244, 63, 94, 0.15); color: var(--red); border: 1px solid rgba(244, 63, 94, 0.3); }
-    .badge-blue { background: rgba(56, 189, 248, 0.15); color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.3); }
-    .badge-gold { background: rgba(245, 158, 11, 0.15); color: var(--gold); border: 1px solid rgba(245, 158, 11, 0.3); }
-    .badge-purple { background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.3); }
-    .highlight { color: var(--green); font-weight: 700; }
-    .warning { color: var(--red); font-weight: 700; }
+    .badge-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .badge-red { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.35); }
+    .badge-blue { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
+    .badge-gold { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .highlight { color: var(--green); font-weight: 800; }
+    .warning { color: var(--red); font-weight: 800; }
 
     /* Ticker Pills */
     .ticker-pill {
       display: inline-block;
-      padding: 0.2rem 0.55rem;
-      border-radius: 0.4rem;
-      font-family: monospace;
+      padding: 0.22rem 0.6rem;
+      border-radius: 0.45rem;
+      font-family: 'JetBrains Mono', monospace;
       font-weight: 700;
       font-size: 0.85rem;
-      margin: 0.1rem 0.2rem;
+      margin: 0.12rem 0.22rem;
     }
-    .ticker-crypto { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .ticker-stock { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .ticker-crypto { background: rgba(245, 158, 11, 0.14); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .ticker-stock { background: rgba(56, 189, 248, 0.14); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
 
-    /* Flow Steps */
-    .flow-steps {
+    /* Step Pipeline */
+    .step-pipeline {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.85rem;
+      gap: 0.9rem;
       margin: 1.4rem 0;
     }
-    .step-box {
+    .step-node {
       flex: 1;
-      background: linear-gradient(145deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
+      background: linear-gradient(160deg, rgba(26, 36, 56, 0.7) 0%, rgba(13, 19, 33, 0.9) 100%);
       border: 1px solid var(--border);
-      border-radius: 1rem;
-      padding: 1.35rem 1rem;
+      border-radius: 1.15rem;
+      padding: 1.4rem 1.1rem;
       text-align: center;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
     }
-    .step-num {
-      width: 28px;
-      height: 28px;
+    .step-circle {
+      width: 32px;
+      height: 32px;
       background: var(--accent);
-      color: #0b0f19;
+      color: #060913;
       border-radius: 50%;
-      font-weight: 800;
-      font-size: 0.82rem;
+      font-weight: 900;
+      font-size: 0.88rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 0.6rem auto;
-      box-shadow: 0 0 10px var(--accent-glow);
+      margin: 0 auto 0.65rem auto;
+      box-shadow: 0 0 12px var(--accent-glow);
     }
-    .step-box h4 { font-size: 1rem; color: #fff; margin-bottom: 0.35rem; }
-    .step-box p { font-size: 0.86rem; color: var(--text-muted); line-height: 1.4; }
-    .step-arrow { color: var(--accent); font-weight: 800; font-size: 1.3rem; }
+    .step-node h4 { font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem; }
+    .step-node p { font-size: 0.88rem; color: var(--text-muted); line-height: 1.45; }
+    .step-sep { color: var(--accent); font-weight: 900; font-size: 1.35rem; }
 
     /* Interactive Agent Explorer */
-    .agent-nav {
+    .agent-nav-strip {
       display: flex;
-      gap: 0.65rem;
-      margin-bottom: 1.25rem;
+      gap: 0.7rem;
+      margin-bottom: 1.3rem;
       flex-wrap: wrap;
     }
-    .agent-btn {
-      background: #1e293b;
+    .agent-tab {
+      background: rgba(15, 23, 42, 0.8);
       border: 1px solid var(--border);
       color: var(--text-muted);
-      padding: 0.55rem 1.05rem;
-      border-radius: 0.5rem;
-      font-size: 0.9rem;
+      padding: 0.55rem 1.15rem;
+      border-radius: 0.55rem;
+      font-size: 0.92rem;
+      font-weight: 700;
       cursor: pointer;
-      font-weight: 600;
+      font-family: inherit;
       transition: all 0.2s;
     }
-    .agent-btn.active, .agent-btn:hover {
+    .agent-tab.active, .agent-tab:hover {
       background: var(--accent);
-      color: #0b0f19;
+      color: #060913;
       border-color: var(--accent);
-      box-shadow: 0 0 14px var(--accent-glow);
+      box-shadow: 0 0 16px var(--accent-glow);
     }
-    .agent-detail-panel {
-      background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
+    .agent-display-box {
+      background: linear-gradient(160deg, rgba(26, 36, 56, 0.85) 0%, rgba(10, 15, 28, 0.95) 100%);
       border: 1px solid var(--accent);
-      border-radius: 1.1rem;
-      padding: 1.6rem 2.2rem;
-      min-height: 250px;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+      border-radius: 1.25rem;
+      padding: 1.8rem 2.4rem;
+      min-height: 260px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
     }
 
-    /* Interactive Recovery Slider */
-    .slider-box {
-      background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
+    /* Interactive Loss Slider Box */
+    .loss-sim-box {
+      background: linear-gradient(160deg, rgba(26, 36, 56, 0.75) 0%, rgba(13, 19, 33, 0.92) 100%);
       border: 1px solid var(--border);
-      border-radius: 1rem;
-      padding: 1.4rem 1.8rem;
-      margin-top: 1.25rem;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      border-radius: 1.15rem;
+      padding: 1.5rem 2rem;
+      margin-top: 1.3rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
     }
-    .loss-range {
+    .luxury-slider {
       width: 100%;
       height: 10px;
       border-radius: 5px;
       outline: none;
       background: linear-gradient(90deg, #10b981 0%, #f59e0b 20%, #f43f5e 60%);
       cursor: pointer;
-      margin: 1.1rem 0;
+      margin: 1.2rem 0;
     }
 
-    /* Charts & SVG Containers */
-    .chart-container {
-      background: linear-gradient(145deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
+    /* Chart Containers */
+    .vector-chart-panel {
+      background: linear-gradient(160deg, rgba(26, 36, 56, 0.7) 0%, rgba(10, 15, 28, 0.92) 100%);
       border: 1px solid var(--border);
-      border-radius: 1rem;
-      padding: 1.4rem 1.8rem;
-      margin: 1.2rem 0;
+      border-radius: 1.15rem;
+      padding: 1.5rem 2rem;
+      margin: 1.25rem 0;
       display: flex;
       justify-content: center;
       align-items: center;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
     }
 
-    /* Footer */
+    /* Footer Controls */
     footer {
-      padding: 0.85rem 2.5rem;
+      padding: 0.9rem 3rem;
       border-top: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(7, 11, 20, 0.92);
-      backdrop-filter: blur(16px);
+      background: rgba(6, 9, 19, 0.88);
+      backdrop-filter: blur(20px);
     }
-    .nav-buttons {
+    .footer-btns {
       display: flex;
-      gap: 0.75rem;
+      gap: 0.85rem;
     }
-    button.nav-btn {
-      background: #1e293b;
+    button.key-btn {
+      background: rgba(15, 23, 42, 0.8);
       color: #fff;
       border: 1px solid var(--border);
-      padding: 0.55rem 1.4rem;
-      border-radius: 0.5rem;
+      padding: 0.6rem 1.5rem;
+      border-radius: 0.55rem;
       cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
+      font-weight: 700;
+      font-size: 0.92rem;
+      font-family: inherit;
       transition: all 0.2s;
     }
-    button.nav-btn:hover:not(:disabled) {
+    button.key-btn:hover:not(:disabled) {
       background: var(--accent);
-      color: #0b0f19;
+      color: #060913;
       border-color: var(--accent);
-      box-shadow: 0 0 15px var(--accent-glow);
+      box-shadow: 0 0 16px var(--accent-glow);
     }
-    button.nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .kbd-hint {
-      font-size: 0.82rem;
+    button.key-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .footer-kbd {
+      font-size: 0.85rem;
       color: var(--text-muted);
     }
     kbd {
-      background: #1e293b;
+      background: rgba(30, 41, 59, 0.8);
       border: 1px solid var(--border);
-      padding: 0.15rem 0.45rem;
-      border-radius: 0.3rem;
-      font-family: monospace;
-      color: var(--text);
+      padding: 0.18rem 0.5rem;
+      border-radius: 0.35rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: #e2e8f0;
+      font-size: 0.8rem;
+    }
+
+    /* Pulsing Live Dot */
+    .pulse-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green);
+      animation: pulse-glow 1.8s infinite;
+    }
+    @keyframes pulse-glow {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1.15); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
   </style>
 </head>
@@ -582,9 +659,12 @@
   </div>
 
   <header>
-    <div class="logo">
-      <span>⚡</span> Web4 Quantitative Trading Desk
-      <span class="logo-badge">Institutional V2.5</span>
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <div class="brand-title">
+        Web4 Autonomous Trading Desk
+        <span class="brand-pill">Institutional V2.5</span>
+      </div>
     </div>
     <div class="slide-indicator">
       <span id="slideIndicator">Slide 1 / 16</span>
@@ -594,41 +674,41 @@
     </div>
   </header>
 
-  <main class="slider-container">
+  <main class="stage-container">
 
     <!-- Slide 1: Cover -->
     <div class="slide active">
-      <div style="text-align: center; padding: 1.5rem 0;">
-        <span class="badge badge-blue" style="margin-bottom: 1.25rem; font-size: 0.95rem; padding: 0.4rem 1rem;">
+      <div style="text-align: center; padding: 1rem 0;">
+        <span class="badge badge-blue" style="margin-bottom: 1.3rem; font-size: 0.88rem; padding: 0.4rem 1.1rem;">
           🏛️ TIER-1 INSTITUTIONAL QUANTITATIVE SYSTEM
         </span>
-        <h1 style="font-size: 3.4rem; margin-bottom: 0.8rem;">Web4 Autonomous Trading Agent</h1>
+        <h1>Web4 Autonomous Trading Agent</h1>
         <p class="subtitle" style="max-width: 1050px; margin: 0 auto 2.2rem auto; font-size: 1.25rem;">
           An institutional-grade, self-governing algorithmic trading desk operating across Crypto & US Equities with deterministic mathematical immunity.
         </p>
         
-        <div class="metric-row" style="max-width: 1400px; margin: 0 auto;">
-          <div class="metric-card" style="border-top: 4px solid var(--green);">
-            <div class="metric-value" style="color: var(--green);">+52.45%</div>
-            <div class="metric-label">90-Day Net Return</div>
+        <div class="kpi-grid" style="max-width: 1400px; margin: 0 auto;">
+          <div class="kpi-card" style="border-top: 4px solid var(--green);">
+            <div class="kpi-value" style="color: var(--green);">+52.45%</div>
+            <div class="kpi-label">90-Day Net Return</div>
           </div>
-          <div class="metric-card" style="border-top: 4px solid var(--accent);">
-            <div class="metric-value" style="color: var(--accent);">2.41</div>
-            <div class="metric-label">Profit Factor</div>
+          <div class="kpi-card" style="border-top: 4px solid var(--accent);">
+            <div class="kpi-value" style="color: var(--accent);">2.41</div>
+            <div class="kpi-label">Profit Factor</div>
           </div>
-          <div class="metric-card" style="border-top: 4px solid var(--gold);">
-            <div class="metric-value" style="color: var(--gold);">7.94%</div>
-            <div class="metric-label">Max Drawdown</div>
+          <div class="kpi-card" style="border-top: 4px solid var(--gold);">
+            <div class="kpi-value" style="color: var(--gold);">7.94%</div>
+            <div class="kpi-label">Max Drawdown</div>
           </div>
-          <div class="metric-card" style="border-top: 4px solid var(--purple);">
-            <div class="metric-value" style="color: var(--purple);">95.8%</div>
-            <div class="metric-label">Bear Capital Preserved</div>
+          <div class="kpi-card" style="border-top: 4px solid var(--purple);">
+            <div class="kpi-value" style="color: var(--purple);">95.8%</div>
+            <div class="kpi-label">Bear Capital Preserved</div>
           </div>
         </div>
 
-        <div class="plain-english" style="max-width: 1400px; margin: 2rem auto 0 auto; text-align: left;">
-          <div class="plain-english-icon">💡</div>
-          <div class="plain-english-text" style="font-size: 1.1rem;">
+        <div class="executive-callout" style="max-width: 1400px; margin: 2rem auto 0 auto; text-align: left;">
+          <div class="callout-icon">💡</div>
+          <div class="callout-text">
             <strong>In Plain English:</strong> This is an autonomous hedge fund in a box. It trades 24/7 across crypto and US tech stocks, captures trend breakouts, shorts overbought bear rallies, preserves 100% of capital during crashes, and cuts exchange fees by 80% using smart limit orders.
           </div>
         </div>
@@ -641,47 +721,47 @@
       <p class="subtitle">Most automated systems are fragile toys that collapse under real-world conditions.</p>
       
       <div class="grid-4">
-        <div class="card" style="border-top: 4px solid var(--red);">
-          <div class="card-tag card-tag-red">❌ REVENGE TRADING</div>
+        <div class="bento-card" style="border-top: 4px solid var(--red);">
+          <div class="card-tag tag-red">❌ REVENGE TRADING</div>
           <h3>Emotional Drag</h3>
           <p>Manual traders double down on losing streaks, causing sudden margin calls and total account liquidation.</p>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span>No hard-coded stop discipline</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span>Revenge trades blow up accounts</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span>No hard-coded stop discipline</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span>Revenge trades blow up accounts</span></div>
           </div>
         </div>
-        <div class="card" style="border-top: 4px solid var(--gold);">
-          <div class="card-tag card-tag-gold">⚠️ SINGLE REGIME</div>
+        <div class="bento-card" style="border-top: 4px solid var(--gold);">
+          <div class="card-tag tag-gold">⚠️ SINGLE REGIME</div>
           <h3>Fragile Logic</h3>
           <p>Momentum bots get shredded in sideways chop; mean-reversion bots get obliterated in trending crashes.</p>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-gold"></span><span>Breaks when market conditions shift</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-gold"></span><span>Zero regime-aware adaptation</span></div>
+            <div class="feature-item"><span class="feature-dot dot-gold"></span><span>Breaks when market conditions shift</span></div>
+            <div class="feature-item"><span class="feature-dot dot-gold"></span><span>Zero regime-aware adaptation</span></div>
           </div>
         </div>
-        <div class="card" style="border-top: 4px solid var(--purple);">
-          <div class="card-tag card-tag-purple">💸 FRICTION BLEED</div>
+        <div class="bento-card" style="border-top: 4px solid var(--purple);">
+          <div class="card-tag tag-purple">💸 FRICTION BLEED</div>
           <h3>Hidden Costs</h3>
           <p>Aggressive taker market orders and spread slippage silently consume 15%–25% of trading capital every year.</p>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-gold"></span><span>0.20% round-trip taker friction</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-gold"></span><span>Eats all strategy profits</span></div>
+            <div class="feature-item"><span class="feature-dot dot-gold"></span><span>0.20% round-trip taker friction</span></div>
+            <div class="feature-item"><span class="feature-dot dot-gold"></span><span>Eats all strategy profits</span></div>
           </div>
         </div>
-        <div class="card" style="border-top: 4px solid var(--red);">
-          <div class="card-tag card-tag-red">📉 MACRO WINTER</div>
+        <div class="bento-card" style="border-top: 4px solid var(--red);">
+          <div class="card-tag tag-red">📉 MACRO WINTER</div>
           <h3>Crypto Crashes</h3>
           <p>Passive holding or blind dip-buying drops 60%–80% when macro bear cycles strike the crypto market.</p>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span>Crypto dropped -70% in 2025</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span>Zero hedging or cash protection</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span>Crypto dropped -70% in 2025</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span>Zero hedging or cash protection</span></div>
           </div>
         </div>
       </div>
 
-      <div class="plain-english">
-        <div class="plain-english-icon">🛡️</div>
-        <div class="plain-english-text">
+      <div class="executive-callout">
+        <div class="callout-icon">🛡️</div>
+        <div class="callout-text">
           <strong>Our Solution:</strong> Replace human emotion and rigid single scripts with an <strong>autonomous multi-agent swarm</strong> equipped with deterministic circuit breakers, cross-asset hedging, and smart maker order routing.
         </div>
       </div>
@@ -693,47 +773,47 @@
       <p class="subtitle">Why our bot represents the next technological paradigm beyond Web3.</p>
       
       <div class="grid-4">
-        <div class="card">
-          <div class="card-tag card-tag-blue">1990s</div>
+        <div class="bento-card">
+          <div class="card-tag tag-blue">1990s</div>
           <h3>Web1: Read-Only</h3>
           <p>Static HTML, informational web pages, passive human readers.</p>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet"></span><span>Static information retrieval</span></div>
-            <div class="feature-item"><span class="feature-bullet"></span><span>Passive human consumers</span></div>
+            <div class="feature-item"><span class="feature-dot"></span><span>Static information retrieval</span></div>
+            <div class="feature-item"><span class="feature-dot"></span><span>Passive human consumers</span></div>
           </div>
         </div>
-        <div class="card">
-          <div class="card-tag card-tag-gold">2000s</div>
+        <div class="bento-card">
+          <div class="card-tag tag-gold">2000s</div>
           <h3>Web2: Read + Write</h3>
           <p>Centralized cloud servers, social networks, dynamic user apps.</p>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-gold"></span><span>Cloud platforms & APIs</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-gold"></span><span>Centralized corporate custody</span></div>
+            <div class="feature-item"><span class="feature-dot dot-gold"></span><span>Cloud platforms & APIs</span></div>
+            <div class="feature-item"><span class="feature-dot dot-gold"></span><span>Centralized corporate custody</span></div>
           </div>
         </div>
-        <div class="card">
-          <div class="card-tag card-tag-purple">2010s</div>
+        <div class="bento-card">
+          <div class="card-tag tag-purple">2010s</div>
           <h3>Web3: Ownership</h3>
           <p>Smart contracts, decentralized ledgers, digital asset ownership.</p>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet"></span><span>Smart contracts & DeFi</span></div>
-            <div class="feature-item"><span class="feature-bullet"></span><span>Executes static rules blindly</span></div>
+            <div class="feature-item"><span class="feature-dot"></span><span>Smart contracts & DeFi</span></div>
+            <div class="feature-item"><span class="feature-dot"></span><span>Executes static rules blindly</span></div>
           </div>
         </div>
-        <div class="card" style="border: 2px solid var(--accent); background: linear-gradient(145deg, rgba(56, 189, 248, 0.12) 0%, rgba(15, 23, 42, 0.95) 100%);">
-          <div class="card-tag card-tag-green">2026+ ACTIVE</div>
+        <div class="bento-card" style="border: 2px solid var(--accent); background: linear-gradient(160deg, rgba(56, 189, 248, 0.16) 0%, rgba(13, 19, 33, 0.95) 100%);">
+          <div class="card-tag tag-green">2026+ ACTIVE</div>
           <h3 style="color: var(--accent);">Web4: Sovereign Agency</h3>
           <p>Self-governing AI organisms acting as independent economic entities with mathematical risk immunity.</p>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span class="feature-lead">Autonomous Perception:</span> Multi-sensor</div>
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span class="feature-lead">Mathematical Immunity:</span> Circuit breakers</div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span><strong>Autonomous Perception:</strong> Multi-sensor</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span><strong>Mathematical Immunity:</strong> Circuit breakers</span></div>
           </div>
         </div>
       </div>
 
-      <div class="plain-english">
-        <div class="plain-english-icon">💡</div>
-        <div class="plain-english-text">
+      <div class="executive-callout">
+        <div class="callout-icon">💡</div>
+        <div class="callout-text">
           <strong>The Fundamental Shift:</strong> In Web3, smart contracts execute static rules blindly. In <strong>Web4</strong>, intelligent agents perceive changing market dynamics, synthesize multi-sensor telemetry, arbitrate strategy conflict, and adapt without human intervention.
         </div>
       </div>
@@ -745,34 +825,34 @@
       <p class="subtitle">How the agent perceives, governs itself, and continuously learns.</p>
       
       <div class="grid-3">
-        <div class="card" style="border-top: 4px solid var(--accent);">
-          <div class="card-tag card-tag-blue">LEVEL 1</div>
+        <div class="bento-card" style="border-top: 4px solid var(--accent);">
+          <div class="card-tag tag-blue">LEVEL 1</div>
           <h3>Perception & Reasoning</h3>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet"></span><span><strong style="color: #fff;">Multi-Venue Ingestion:</strong> Binance CCXT + Yahoo Finance feeds</span></div>
-            <div class="feature-item"><span class="feature-bullet"></span><span><strong style="color: #fff;">Order Flow Radar:</strong> Liquidation absorption wick detection (2.0x volume)</span></div>
-            <div class="feature-item"><span class="feature-bullet"></span><span><strong style="color: #fff;">Derivatives Radar:</strong> Perpetual 8-hour funding rate radar</span></div>
-            <div class="feature-item"><span class="feature-bullet"></span><span><strong style="color: #fff;">Conflict Arbiter:</strong> Reconciles signals; eliminates ambiguity</span></div>
+            <div class="feature-item"><span class="feature-dot"></span><span><strong>Multi-Venue Ingestion:</strong> Binance CCXT + Yahoo Finance feeds</span></div>
+            <div class="feature-item"><span class="feature-dot"></span><span><strong>Order Flow Radar:</strong> Liquidation absorption wick detection (2.0x volume)</span></div>
+            <div class="feature-item"><span class="feature-dot"></span><span><strong>Derivatives Radar:</strong> Perpetual 8-hour funding rate radar</span></div>
+            <div class="feature-item"><span class="feature-dot"></span><span><strong>Conflict Arbiter:</strong> Reconciles signals; eliminates ambiguity</span></div>
           </div>
         </div>
-        <div class="card" style="border-top: 4px solid var(--red);">
-          <div class="card-tag card-tag-red">LEVEL 2</div>
+        <div class="bento-card" style="border-top: 4px solid var(--red);">
+          <div class="card-tag tag-red">LEVEL 2</div>
           <h3>Governance & Immunity</h3>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span><strong style="color: #fff;">Van Tharp R-Risk:</strong> Position risk hard-clamped to [1%, 5%]</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span><strong style="color: #fff;">Macro Bear Gate:</strong> Halts long entries when Price &lt; 200 EMA</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span><strong style="color: #fff;">5% Daily Circuit Breaker:</strong> Halts trading on daily loss</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span><strong style="color: #fff;">15% Max DD Kill Switch:</strong> Liquidates to 100% cash defense</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span><strong>Van Tharp R-Risk:</strong> Position risk hard-clamped to [1%, 5%]</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span><strong>Macro Bear Gate:</strong> Halts long entries when Price &lt; 200 EMA</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span><strong>5% Daily Circuit Breaker:</strong> Halts trading on daily loss</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span><strong>15% Max DD Kill Switch:</strong> Liquidates to 100% cash defense</span></div>
           </div>
         </div>
-        <div class="card" style="border-top: 4px solid var(--green);">
-          <div class="card-tag card-tag-green">LEVEL 3</div>
+        <div class="bento-card" style="border-top: 4px solid var(--green);">
+          <div class="card-tag tag-green">LEVEL 3</div>
           <h3>Optimization & Learning</h3>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span><strong style="color: #fff;">Half-Kelly Compounding:</strong> Dynamic capital reinvestment</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span><strong style="color: #fff;">HRP Sector Clustering:</strong> Prevents multi-position crypto cascades</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span><strong style="color: #fff;">Statistical Arbitrage:</strong> Zero-beta cointegrated pairs alpha</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span><strong style="color: #fff;">Walk-Forward Arena:</strong> Rigorous out-of-sample edge testing</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span><strong>Half-Kelly Compounding:</strong> Dynamic capital reinvestment</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span><strong>HRP Sector Clustering:</strong> Prevents multi-position crypto cascades</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span><strong>Statistical Arbitrage:</strong> Zero-beta cointegrated pairs alpha</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span><strong>Walk-Forward Arena:</strong> Rigorous out-of-sample edge testing</span></div>
           </div>
         </div>
       </div>
@@ -783,18 +863,18 @@
       <h2>The 8-Agent Quantitative Trading Desk</h2>
       <p class="subtitle">Click an internal agent below to inspect its algorithmic logic, inputs, and safety rules.</p>
       
-      <div class="agent-nav" id="agentNav">
-        <button class="agent-btn active" onclick="showAgentDetail(0)">1. Data Scout</button>
-        <button class="agent-btn" onclick="showAgentDetail(1)">2. Momentum Hunter</button>
-        <button class="agent-btn" onclick="showAgentDetail(2)">3. Mean Reversion</button>
-        <button class="agent-btn" onclick="showAgentDetail(3)">4. Pairs Stat-Arb</button>
-        <button class="agent-btn" onclick="showAgentDetail(4)">5. Coordinator Arbiter</button>
-        <button class="agent-btn" onclick="showAgentDetail(5)">6. Risk Governor</button>
-        <button class="agent-btn" onclick="showAgentDetail(6)">7. Execution & Ledger</button>
-        <button class="agent-btn" onclick="showAgentDetail(7)">8. Self-Optimizer</button>
+      <div class="agent-nav-strip" id="agentNav">
+        <button class="agent-tab active" onclick="showAgentDetail(0)">1. Data Scout</button>
+        <button class="agent-tab" onclick="showAgentDetail(1)">2. Momentum Hunter</button>
+        <button class="agent-tab" onclick="showAgentDetail(2)">3. Mean Reversion</button>
+        <button class="agent-tab" onclick="showAgentDetail(3)">4. Pairs Stat-Arb</button>
+        <button class="agent-tab" onclick="showAgentDetail(4)">5. Coordinator Arbiter</button>
+        <button class="agent-tab" onclick="showAgentDetail(5)">6. Risk Governor</button>
+        <button class="agent-tab" onclick="showAgentDetail(6)">7. Execution & Ledger</button>
+        <button class="agent-tab" onclick="showAgentDetail(7)">8. Self-Optimizer</button>
       </div>
 
-      <div class="agent-detail-panel" id="agentDetailContent">
+      <div class="agent-display-box" id="agentDetailContent">
         <!-- Injected via JavaScript -->
       </div>
     </div>
@@ -856,9 +936,9 @@
         </tbody>
       </table>
 
-      <div class="plain-english">
-        <div class="plain-english-icon">💡</div>
-        <div class="plain-english-text">
+      <div class="executive-callout">
+        <div class="callout-icon">💡</div>
+        <div class="callout-text">
           <strong>The Hedge Fund Advantage:</strong> Most crypto bots trade only Bitcoin and altcoins. When crypto crashes, they die. Our bot trades both Crypto AND US Tech Equities—allowing it to make money in American stocks while crypto is sleeping.
         </div>
       </div>
@@ -870,41 +950,41 @@
       <p class="subtitle">How our multi-strategy matrix generates profit regardless of macroeconomic conditions.</p>
       
       <div class="grid-3">
-        <div class="card" style="border-top: 4px solid var(--green);">
-          <div class="card-tag card-tag-green">🟢 BULL MARKET</div>
+        <div class="bento-card" style="border-top: 4px solid var(--green);">
+          <div class="card-tag tag-green">🟢 BULL MARKET</div>
           <h3>Trend Acceleration</h3>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span><strong style="color: #fff;">Strategy:</strong> Donchian Breakout + 32/200 EMA</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span><strong style="color: #fff;">Trailing Stops:</strong> Ratchets 2.25x ATR to ride runners</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span><strong style="color: #fff;">Target Assets:</strong> Layer-1s (<span class="ticker-pill ticker-crypto">SOL</span> <span class="ticker-pill ticker-crypto">NEAR</span>)</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span><strong style="color: #fff;">Outcome:</strong> +40% to +50% quarterly expansion</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span><strong>Strategy:</strong> Donchian Breakout + 32/200 EMA</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span><strong>Trailing Stops:</strong> Ratchets 2.25x ATR to ride runners</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span><strong>Target Assets:</strong> Layer-1s (<span class="ticker-pill ticker-crypto">SOL</span> <span class="ticker-pill ticker-crypto">NEAR</span>)</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span><strong>Outcome:</strong> +40% to +50% quarterly expansion</span></div>
           </div>
         </div>
-        <div class="card" style="border-top: 4px solid var(--gold);">
-          <div class="card-tag card-tag-gold">🟡 SIDEWAYS CHOP</div>
+        <div class="bento-card" style="border-top: 4px solid var(--gold);">
+          <div class="card-tag tag-gold">🟡 SIDEWAYS CHOP</div>
           <h3>Mean Reversion & Stat-Arb</h3>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-gold"></span><span><strong style="color: #fff;">Chop Throttle:</strong> Risk halved to 1.0% (ADX &lt; 20)</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-gold"></span><span><strong style="color: #fff;">Mean Reversion:</strong> Fades Bollinger band boundaries</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-gold"></span><span><strong style="color: #fff;">Stat-Arb:</strong> Extracts zero-beta spread alpha</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-gold"></span><span><strong style="color: #fff;">Outcome:</strong> Eliminates whipsaws; steady spread yield</span></div>
+            <div class="feature-item"><span class="feature-dot dot-gold"></span><span><strong>Chop Throttle:</strong> Risk halved to 1.0% (ADX &lt; 20)</span></div>
+            <div class="feature-item"><span class="feature-dot dot-gold"></span><span><strong>Mean Reversion:</strong> Fades Bollinger band boundaries</span></div>
+            <div class="feature-item"><span class="feature-dot dot-gold"></span><span><strong>Stat-Arb:</strong> Extracts zero-beta spread alpha</span></div>
+            <div class="feature-item"><span class="feature-dot dot-gold"></span><span><strong>Outcome:</strong> Eliminates whipsaws; steady spread yield</span></div>
           </div>
         </div>
-        <div class="card" style="border-top: 4px solid var(--red);">
-          <div class="card-tag card-tag-red">🔴 BEAR / FLASH CRASH</div>
+        <div class="bento-card" style="border-top: 4px solid var(--red);">
+          <div class="card-tag tag-red">🔴 BEAR / FLASH CRASH</div>
           <h3>Cash Defense & Shorts</h3>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span><strong style="color: #fff;">Macro Bear Gate:</strong> Halts crypto longs (&lt; 200 EMA)</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span><strong style="color: #fff;">Equities Flight:</strong> Rotates into safe US stocks (<span class="ticker-pill ticker-stock">AMD</span>)</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span><strong style="color: #fff;">Strict Shorts:</strong> Fades dead-cat rallies (RSI &gt; 75)</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span><strong style="color: #fff;">Wick Harvester:</strong> Buys whale capitulation bottoms</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span><strong>Macro Bear Gate:</strong> Halts crypto longs (&lt; 200 EMA)</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span><strong>Equities Flight:</strong> Rotates into safe US stocks (<span class="ticker-pill ticker-stock">AMD</span>)</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span><strong>Strict Shorts:</strong> Fades dead-cat rallies (RSI &gt; 75)</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span><strong>Wick Harvester:</strong> Buys whale capitulation bottoms</span></div>
           </div>
         </div>
       </div>
 
-      <div class="plain-english">
-        <div class="plain-english-icon">🎯</div>
-        <div class="plain-english-text">
+      <div class="executive-callout">
+        <div class="callout-icon">🎯</div>
+        <div class="callout-text">
           <strong>The Takeaway:</strong> There is no "bad market" for this system. In bull runs, it rides the trend. In chop, it trades spreads. In crashes, it keeps 65%+ in cash, shorts bear bounces, and buys whale liquidation bottoms.
         </div>
       </div>
@@ -915,55 +995,54 @@
       <h2>Order Flow & Liquidation Mechanics Visualized</h2>
       <p class="subtitle">How the agent detects institutional absorption of retail liquidation cascades.</p>
       
-      <div class="chart-container" style="flex-direction: column;">
+      <div class="vector-chart-panel" style="flex-direction: column;">
         <svg viewBox="0 0 800 240" style="width: 100%; max-height: 220px;">
           <!-- Support line -->
           <line x1="50" y1="120" x2="750" y2="120" stroke="#f43f5e" stroke-dasharray="6,6" stroke-width="2"/>
-          <text x="60" y="112" fill="#f43f5e" font-size="12" font-weight="700">Retail Support Level (Stop-Loss Clustering)</text>
+          <text x="60" y="112" fill="#f43f5e" font-size="12" font-weight="800" font-family="'JetBrains Mono', monospace">Retail Support Level (Stop-Loss Clustering)</text>
 
           <!-- Normal Candle 1 -->
-          <rect x="180" y="70" width="24" height="40" fill="#38bdf8"/>
+          <rect x="180" y="70" width="24" height="40" fill="#38bdf8" rx="2"/>
           <line x1="192" y1="55" x2="192" y2="70" stroke="#38bdf8" stroke-width="2"/>
           <line x1="192" y1="110" x2="192" y2="120" stroke="#38bdf8" stroke-width="2"/>
 
           <!-- Breakdown Flush Candle -->
-          <rect x="260" y="100" width="24" height="60" fill="#f43f5e"/>
+          <rect x="260" y="100" width="24" height="60" fill="#f43f5e" rx="2"/>
           <line x1="272" y1="90" x2="272" y2="100" stroke="#f43f5e" stroke-width="2"/>
           <line x1="272" y1="160" x2="272" y2="175" stroke="#f43f5e" stroke-width="2"/>
-          <text x="210" y="195" fill="#f43f5e" font-size="11">Retail Stops Triggered</text>
+          <text x="210" y="195" fill="#f43f5e" font-size="11" font-family="'JetBrains Mono', monospace">Retail Stops Triggered</text>
 
-          <!-- Liquidation Absorption Wick Candle (THE HERO CANDLE) -->
+          <!-- Liquidation Absorption Wick Candle -->
           <line x1="392" y1="115" x2="392" y2="215" stroke="#10b981" stroke-width="3"/>
           <rect x="380" y="100" width="24" height="25" fill="#10b981" rx="2"/>
-          <!-- Absorption callout bracket -->
           <path d="M 415 115 L 425 115 L 425 165 L 435 165 L 425 165 L 425 215 L 415 215" fill="none" stroke="#10b981" stroke-width="2"/>
-          <text x="445" y="165" fill="#10b981" font-size="12" font-weight="700">&ge; 50% Shadow Wick (Whale Absorption)</text>
+          <text x="445" y="165" fill="#10b981" font-size="12" font-weight="800" font-family="'JetBrains Mono', monospace">&ge; 50% Shadow Wick (Whale Absorption)</text>
 
           <!-- Entry Arrow -->
           <polygon points="392,85 385,70 399,70" fill="#38bdf8"/>
-          <text x="360" y="62" fill="#38bdf8" font-size="12" font-weight="800">AGENT ENTRY</text>
+          <text x="355" y="62" fill="#38bdf8" font-size="12" font-weight="900" font-family="'JetBrains Mono', monospace">AGENT ENTRY</text>
 
           <!-- Explosive Rebound Candles -->
-          <rect x="490" y="65" width="24" height="45" fill="#10b981"/>
+          <rect x="490" y="65" width="24" height="45" fill="#10b981" rx="2"/>
           <line x1="502" y1="50" x2="502" y2="65" stroke="#10b981" stroke-width="2"/>
           <line x1="502" y1="110" x2="502" y2="120" stroke="#10b981" stroke-width="2"/>
 
-          <rect x="560" y="30" width="24" height="50" fill="#10b981"/>
+          <rect x="560" y="30" width="24" height="50" fill="#10b981" rx="2"/>
           <line x1="572" y1="15" x2="572" y2="30" stroke="#10b981" stroke-width="2"/>
           <line x1="572" y1="80" x2="572" y2="95" stroke="#10b981" stroke-width="2"/>
-          <text x="530" y="12" fill="#10b981" font-size="12" font-weight="700">Explosive Reversal (+80% Win Rate)</text>
+          <text x="530" y="14" fill="#10b981" font-size="12" font-weight="800" font-family="'JetBrains Mono', monospace">Explosive Reversal (+80% Edge)</text>
 
           <!-- Volume Bars at bottom -->
-          <rect x="180" y="215" width="24" height="15" fill="#334155"/>
-          <rect x="260" y="200" width="24" height="30" fill="#f43f5e"/>
-          <rect x="380" y="180" width="24" height="50" fill="#10b981" stroke="#38bdf8" stroke-width="1.5"/>
-          <text x="350" y="172" fill="#f59e0b" font-size="11" font-weight="700">&ge; 2.0x Volume Surge</text>
+          <rect x="180" y="215" width="24" height="15" fill="#334155" rx="2"/>
+          <rect x="260" y="200" width="24" height="30" fill="#f43f5e" rx="2"/>
+          <rect x="380" y="180" width="24" height="50" fill="#10b981" stroke="#38bdf8" stroke-width="1.5" rx="2"/>
+          <text x="350" y="172" fill="#f59e0b" font-size="11" font-weight="800" font-family="'JetBrains Mono', monospace">&ge; 2.0x Volume Surge</text>
         </svg>
       </div>
 
-      <div class="plain-english">
-        <div class="plain-english-icon">💡</div>
-        <div class="plain-english-text">
+      <div class="executive-callout">
+        <div class="callout-icon">💡</div>
+        <div class="callout-text">
           <strong>How It Works:</strong> Retail traders place stop-losses just below support. Market makers push price down to hit those stops, triggering millions in panic sell orders. Whales wait with massive limit buy orders to absorb all those cheap coins. Our sensor identifies the huge volume spike and long shadow wick, entering right beside the whales!
         </div>
       </div>
@@ -974,35 +1053,35 @@
       <h2>Statistical Arbitrage: Zero-Beta Pairs Engine</h2>
       <p class="subtitle">Extracting pure mathematical spread profit regardless of whether the market goes up or down.</p>
       
-      <div class="chart-container">
+      <div class="vector-chart-panel">
         <svg viewBox="0 0 800 200" style="width: 100%; max-height: 180px;">
           <!-- Upper Threshold +2.0 Z -->
           <line x1="50" y1="40" x2="750" y2="40" stroke="#f43f5e" stroke-dasharray="4,4" stroke-width="1.5"/>
-          <text x="60" y="32" fill="#f43f5e" font-size="11" font-weight="700">+2.0&sigma; Upper Bound (SHORT A, LONG B)</text>
+          <text x="60" y="32" fill="#f43f5e" font-size="11" font-weight="800" font-family="'JetBrains Mono', monospace">+2.0&sigma; Upper Bound (SHORT A, LONG B)</text>
 
           <!-- Mean Line 0.0 Z -->
           <line x1="50" y1="100" x2="750" y2="100" stroke="#38bdf8" stroke-width="1.5"/>
-          <text x="60" y="93" fill="#38bdf8" font-size="11" font-weight="700">0.0&sigma; Fair Value Mean (TAKE PROFIT / CLOSE)</text>
+          <text x="60" y="93" fill="#38bdf8" font-size="11" font-weight="800" font-family="'JetBrains Mono', monospace">0.0&sigma; Fair Value Mean (TAKE PROFIT / CLOSE)</text>
 
           <!-- Lower Threshold -2.0 Z -->
           <line x1="50" y1="160" x2="750" y2="160" stroke="#10b981" stroke-dasharray="4,4" stroke-width="1.5"/>
-          <text x="60" y="152" fill="#10b981" font-size="11" font-weight="700">-2.0&sigma; Lower Bound (LONG A, SHORT B)</text>
+          <text x="60" y="152" fill="#10b981" font-size="11" font-weight="800" font-family="'JetBrains Mono', monospace">-2.0&sigma; Lower Bound (LONG A, SHORT B)</text>
 
           <!-- Z-score Sine Curve -->
           <path d="M 50 100 Q 150 20, 250 100 T 450 100 T 650 100 T 750 100" fill="none" stroke="#f59e0b" stroke-width="3"/>
 
           <!-- Indicator Dots & Callouts -->
           <circle cx="150" cy="40" r="6" fill="#f43f5e" stroke="#fff" stroke-width="2"/>
-          <text x="135" y="20" fill="#f43f5e" font-size="11" font-weight="800">SELL SPREAD</text>
+          <text x="135" y="20" fill="#f43f5e" font-size="11" font-weight="900" font-family="'JetBrains Mono', monospace">SELL SPREAD</text>
 
           <circle cx="250" cy="100" r="6" fill="#38bdf8" stroke="#fff" stroke-width="2"/>
-          <text x="235" y="125" fill="#38bdf8" font-size="11" font-weight="800">PROFIT FILL</text>
+          <text x="235" y="125" fill="#38bdf8" font-size="11" font-weight="900" font-family="'JetBrains Mono', monospace">PROFIT FILL</text>
 
           <circle cx="350" cy="160" r="6" fill="#10b981" stroke="#fff" stroke-width="2"/>
-          <text x="335" y="185" fill="#10b981" font-size="11" font-weight="800">BUY SPREAD</text>
+          <text x="335" y="185" fill="#10b981" font-size="11" font-weight="900" font-family="'JetBrains Mono', monospace">BUY SPREAD</text>
 
           <circle cx="450" cy="100" r="6" fill="#38bdf8" stroke="#fff" stroke-width="2"/>
-          <text x="435" y="125" fill="#38bdf8" font-size="11" font-weight="800">PROFIT FILL</text>
+          <text x="435" y="125" fill="#38bdf8" font-size="11" font-weight="900" font-family="'JetBrains Mono', monospace">PROFIT FILL</text>
         </svg>
       </div>
 
@@ -1068,9 +1147,9 @@
         </tbody>
       </table>
 
-      <div class="plain-english">
-        <div class="plain-english-icon">💡</div>
-        <div class="plain-english-text">
+      <div class="executive-callout">
+        <div class="callout-icon">💡</div>
+        <div class="callout-text">
           <strong>Why Three Strategies?</strong> Momentum makes a fortune in bull markets but struggles in chop. Mean reversion thrives in chop but fails in raging trends. By combining both with Pairs Trading, the bot has a winning playbook for every market season.
         </div>
       </div>
@@ -1082,31 +1161,31 @@
       <p class="subtitle">Why our system mathematically cannot blow up your portfolio.</p>
       
       <div class="grid-4">
-        <div class="card" style="border-top: 4px solid var(--red);">
-          <div class="card-tag card-tag-red">🛡️ 5.0% DAILY HALT</div>
+        <div class="bento-card" style="border-top: 4px solid var(--red);">
+          <div class="card-tag tag-red">🛡️ 5.0% DAILY HALT</div>
           <h3>Daily Loss Breaker</h3>
           <p>Instant trading halt if daily equity drops &ge; 5.0%. Stops flash crashes and preserves 95% of capital.</p>
         </div>
-        <div class="card" style="border-top: 4px solid var(--red);">
-          <div class="card-tag card-tag-red">🛑 15.0% KILL SWITCH</div>
+        <div class="bento-card" style="border-top: 4px solid var(--red);">
+          <div class="card-tag tag-red">🛑 15.0% KILL SWITCH</div>
           <h3>Max Drawdown Breaker</h3>
           <p>Liquidates into 100% cash defense if portfolio drops &ge; 15% from all-time peak. Permanent protection.</p>
         </div>
-        <div class="card" style="border-top: 4px solid var(--green);">
-          <div class="card-tag card-tag-green">⚖️ VAN THARP R-RISK</div>
+        <div class="bento-card" style="border-top: 4px solid var(--green);">
+          <div class="card-tag tag-green">⚖️ VAN THARP R-RISK</div>
           <h3>Volatility Sizing</h3>
           <p>Position sizing derived from ATR volatility. Hard-clamped so no trade risks more than 1% to 5% equity.</p>
         </div>
-        <div class="card" style="border-top: 4px solid var(--gold);">
-          <div class="card-tag card-tag-gold">🚪 200 EMA MACRO GATE</div>
+        <div class="bento-card" style="border-top: 4px solid var(--gold);">
+          <div class="card-tag tag-gold">🚪 200 EMA MACRO GATE</div>
           <h3>Bear Defense Filter</h3>
           <p>Blocks crypto long entries when Price &lt; 200 EMA. Automatically halves risk (from 2% to 1%) in chop.</p>
         </div>
       </div>
 
-      <div class="plain-english">
-        <div class="plain-english-icon">🛡️</div>
-        <div class="plain-english-text">
+      <div class="executive-callout">
+        <div class="callout-icon">🛡️</div>
+        <div class="callout-text">
           <strong>Hardware & Code Invariants:</strong> Position risk cannot be modified by any AI agent, optimizer, or CLI flag. The bounds [1%, 5%] are hard-coded in <code>core/risk_engine.py</code> and enforced before every single order fill.
         </div>
       </div>
@@ -1117,7 +1196,7 @@
       <h2>The Mathematics of Loss: Why 15% Max DD Saves You</h2>
       <p class="subtitle">Losses are mathematically asymmetric. The deeper the hole, the harder it is to climb out.</p>
       
-      <div class="visual-bar-container">
+      <div class="bar-stage">
         <div class="bar-row">
           <div class="bar-label">-5% Loss</div>
           <div class="bar-track">
@@ -1151,12 +1230,12 @@
       </div>
 
       <!-- Interactive Loss Calculator -->
-      <div class="slider-box">
+      <div class="loss-sim-box">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h4 style="color: #fff; font-size: 1.05rem;">Interactive Recovery Simulator:</h4>
-          <span id="sliderDisplay" style="font-size: 1.15rem; font-weight: 800; color: var(--accent);">Loss: -15% &rarr; Requires +17.6% Gain</span>
+          <h4 style="color: #fff; font-size: 1.05rem; font-weight: 700;">Interactive Recovery Simulator:</h4>
+          <span id="sliderDisplay" style="font-size: 1.15rem; font-weight: 900; color: var(--accent); font-family: 'JetBrains Mono', monospace;">Loss: -15% &rarr; Requires +17.6% Gain</span>
         </div>
-        <input type="range" min="1" max="90" value="15" class="loss-range" id="lossSlider" oninput="updateLossSim(this.value)">
+        <input type="range" min="1" max="90" value="15" class="luxury-slider" id="lossSlider" oninput="updateLossSim(this.value)">
         <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.35rem;">
           Drag the slider to visualize why stopping losses at 15% guarantees capital survival.
         </p>
@@ -1168,7 +1247,7 @@
       <h2>Empirical Performance: 90-Day Active Market</h2>
       <p class="subtitle">All results include full trading friction (0.06% fees + 0.04% slippage).</p>
       
-      <div class="visual-bar-container">
+      <div class="bar-stage">
         <div class="bar-row">
           <div class="bar-label">Buy & Hold Crypto Index</div>
           <div class="bar-track">
@@ -1242,30 +1321,33 @@
       <h2>365-Day Macro Stress-Test & Visual Equity Curve</h2>
       <p class="subtitle">How the bot defended capital during the 2025–2026 -70% crypto collapse.</p>
       
-      <div class="chart-container">
+      <div class="vector-chart-panel">
         <svg viewBox="0 0 800 200" style="width: 100%; max-height: 180px;">
           <!-- Axes -->
           <line x1="60" y1="20" x2="60" y2="170" stroke="#334155" stroke-width="1.5"/>
           <line x1="60" y1="170" x2="760" y2="170" stroke="#334155" stroke-width="1.5"/>
 
           <!-- Labels -->
-          <text x="15" y="30" fill="#94a3b8" font-size="10">$15,000</text>
-          <text x="15" y="95" fill="#94a3b8" font-size="10">$10,000</text>
-          <text x="15" y="160" fill="#94a3b8" font-size="10">$4,000</text>
+          <text x="12" y="30" fill="#94a3b8" font-size="10" font-family="'JetBrains Mono', monospace">$15,000</text>
+          <text x="12" y="95" fill="#94a3b8" font-size="10" font-family="'JetBrains Mono', monospace">$10,000</text>
+          <text x="12" y="160" fill="#94a3b8" font-size="10" font-family="'JetBrains Mono', monospace">$4,000</text>
           <line x1="55" y1="95" x2="760" y2="95" stroke="#334155" stroke-dasharray="2,2"/>
+
+          <!-- Shaded area under Web4 curve -->
+          <path d="M 60 95 C 180 94, 300 97, 450 96 S 650 90, 750 88 L 750 170 L 60 170 Z" fill="rgba(16, 185, 129, 0.08)"/>
 
           <!-- Buy & Hold Curve (Crashing from $10k to $4.1k) -->
           <path d="M 60 95 C 200 90, 350 145, 550 155 S 700 160, 750 160" fill="none" stroke="#f43f5e" stroke-width="2.5" stroke-dasharray="5,5"/>
           <circle cx="750" cy="160" r="5" fill="#f43f5e"/>
-          <text x="610" y="150" fill="#f43f5e" font-size="11" font-weight="700">Buy & Hold: -58.4% ($4,160)</text>
+          <text x="610" y="150" fill="#f43f5e" font-size="11" font-weight="800" font-family="'JetBrains Mono', monospace">Buy & Hold: -58.4% ($4,160)</text>
 
           <!-- Web4 Agent Curve (Capital Preserved in Cash + AMD Alpha) -->
           <path d="M 60 95 C 180 94, 300 97, 450 96 S 650 90, 750 88" fill="none" stroke="#10b981" stroke-width="3.5"/>
           <circle cx="750" cy="88" r="5" fill="#10b981"/>
-          <text x="540" y="80" fill="#10b981" font-size="11" font-weight="800">Web4 Agent: 95.8% Intact ($9,583.63)</text>
-          <text x="60" y="185" fill="#64748b" font-size="10">Day 0 (Start)</text>
-          <text x="400" y="185" fill="#64748b" font-size="10">Day 180 (Mid Crash)</text>
-          <text x="700" y="185" fill="#64748b" font-size="10">Day 365 (Year End)</text>
+          <text x="540" y="80" fill="#10b981" font-size="11" font-weight="900" font-family="'JetBrains Mono', monospace">Web4 Agent: 95.8% Intact ($9,583.63)</text>
+          <text x="60" y="186" fill="#64748b" font-size="10" font-family="'JetBrains Mono', monospace">Day 0 (Start)</text>
+          <text x="400" y="186" fill="#64748b" font-size="10" font-family="'JetBrains Mono', monospace">Day 180 (Mid Crash)</text>
+          <text x="700" y="186" fill="#64748b" font-size="10" font-family="'JetBrains Mono', monospace">Day 365 (Year End)</text>
         </svg>
       </div>
 
@@ -1319,31 +1401,31 @@
       <p class="subtitle">Why institutional quantitative desks never use aggressive market orders.</p>
       
       <div class="grid" style="margin-bottom: 1.2rem;">
-        <div class="card" style="border-top: 4px solid var(--red);">
-          <div class="card-tag card-tag-red">❌ RETAIL TAKER</div>
+        <div class="bento-card" style="border-top: 4px solid var(--red);">
+          <div class="card-tag tag-red">❌ RETAIL TAKER</div>
           <h3 style="color: var(--red);">Taker Market Orders</h3>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span><strong style="color: #fff;">Spread Crossing:</strong> Crosses order book spread aggressively</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span><strong style="color: #fff;">Friction:</strong> 0.06% exchange fee + 0.04% slippage</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span><strong style="color: #fff;">Total Drag:</strong> <span class="warning">0.20% round-trip</span> per completed trade</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-red"></span><span><strong style="color: #fff;">Annual Bleed:</strong> Destroys 15%–20% of annual gains!</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span><strong>Spread Crossing:</strong> Crosses order book spread aggressively</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span><strong>Friction:</strong> 0.06% exchange fee + 0.04% slippage</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span><strong>Total Drag:</strong> <span class="warning">0.20% round-trip</span> per completed trade</span></div>
+            <div class="feature-item"><span class="feature-dot dot-red"></span><span><strong>Annual Bleed:</strong> Destroys 15%–20% of annual gains!</span></div>
           </div>
         </div>
-        <div class="card" style="border-top: 4px solid var(--green);">
-          <div class="card-tag card-tag-green">✅ INSTITUTIONAL MAKER</div>
+        <div class="bento-card" style="border-top: 4px solid var(--green);">
+          <div class="card-tag tag-green">✅ INSTITUTIONAL MAKER</div>
           <h3 style="color: var(--green);">Smart Maker Orders</h3>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span><strong style="color: #fff;">Post-Only Routing:</strong> Rests inside spread until filled</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span><strong style="color: #fff;">Maker Rebate/Fee:</strong> 0.02% fee + 0.00% slippage</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span><strong style="color: #fff;">Total Drag:</strong> <span class="highlight">0.04% round-trip</span> (80% fee cut)</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span><strong style="color: #fff;">Execution Alpha:</strong> Adds pure alpha on every single trade!</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span><strong>Post-Only Routing:</strong> Rests inside spread until filled</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span><strong>Maker Rebate/Fee:</strong> 0.02% fee + 0.00% slippage</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span><strong>Total Drag:</strong> <span class="highlight">0.04% round-trip</span> (80% fee cut)</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span><strong>Execution Alpha:</strong> Adds pure alpha on every single trade!</span></div>
           </div>
         </div>
       </div>
 
-      <div class="plain-english">
-        <div class="plain-english-icon">🏆</div>
-        <div class="plain-english-text">
+      <div class="executive-callout">
+        <div class="callout-icon">🏆</div>
+        <div class="callout-text">
           <strong>The Empirical Bottom Line:</strong> Simply switching our bot to Smart Maker limit orders added an extra <strong>+$450.02 (+4.50% of the entire portfolio)</strong> directly into net profit without changing any trading rules!
         </div>
       </div>
@@ -1355,49 +1437,52 @@
       <p class="subtitle">The structured institutional framework for graduating from simulation to real capital.</p>
       
       <!-- Live Status Banner -->
-      <div style="background: rgba(16, 185, 129, 0.12); border: 2px solid var(--green); border-radius: 1rem; padding: 1.35rem 1.85rem; margin-bottom: 1.4rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 0 25px rgba(16, 185, 129, 0.15);">
+      <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(15, 23, 42, 0.95) 100%); border: 2px solid var(--green); border-radius: 1.15rem; padding: 1.4rem 2rem; margin-bottom: 1.4rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 0 28px rgba(16, 185, 129, 0.18);">
         <div>
-          <span class="badge badge-green" style="font-size: 0.85rem; padding: 0.35rem 0.8rem;">LIVE DAEMON ACTIVE (Task 2493)</span>
-          <div style="font-size: 1.35rem; font-weight: 800; color: #fff; margin-top: 0.4rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span class="pulse-dot"></span>
+            <span class="badge badge-green" style="font-size: 0.85rem; padding: 0.35rem 0.85rem;">LIVE DAEMON ACTIVE (Task 2493)</span>
+          </div>
+          <div style="font-size: 1.4rem; font-weight: 800; color: #fff; margin-top: 0.5rem; letter-spacing: -0.02em;">
             Equity: $9,818.61 | Cash: $6,384.50 (65.0% Safe Cash Defense)
           </div>
-          <div style="font-size: 0.95rem; color: #94a3b8; margin-top: 0.35rem;">
-            Open Position: <code style="color: #38bdf8; font-weight: 700;">SPY Long</code> (Entry: $769.72 | Trailing Stop Ratchet: $766.08 | Total Dollar Risk: $25.29 / 0.26%)
+          <div style="font-size: 0.96rem; color: #94a3b8; margin-top: 0.35rem;">
+            Open Position: <code style="color: #38bdf8; font-weight: 800; font-family: 'JetBrains Mono', monospace;">SPY Long</code> (Entry: $769.72 | Trailing Stop Ratchet: $766.08 | Total Dollar Risk: $25.29 / 0.26%)
           </div>
         </div>
         <div>
-          <span class="badge badge-blue" style="font-size: 0.95rem; padding: 0.5rem 1rem;">51/51 PYTEST PASSED 🛡️</span>
+          <span class="badge badge-blue" style="font-size: 0.95rem; padding: 0.55rem 1.15rem;">51/51 PYTEST GREEN 🛡️</span>
         </div>
       </div>
 
       <div class="grid-3">
-        <div class="card" style="border: 2px solid var(--accent); background: linear-gradient(145deg, rgba(56, 189, 248, 0.12) 0%, rgba(15, 23, 42, 0.95) 100%);">
-          <div class="card-tag card-tag-blue">STAGE 1: CURRENT STAGE</div>
+        <div class="bento-card" style="border: 2px solid var(--accent); background: linear-gradient(160deg, rgba(56, 189, 248, 0.15) 0%, rgba(13, 19, 33, 0.95) 100%);">
+          <div class="card-tag tag-blue">STAGE 1: CURRENT STAGE</div>
           <h3 style="color: #fff;">Live Paper Incubation</h3>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet"></span><span>30–60 days autonomous forward test</span></div>
-            <div class="feature-item"><span class="feature-bullet"></span><span>Zero real-money risk (PaperAccount)</span></div>
-            <div class="feature-item"><span class="feature-bullet"></span><span>Continuous 60s background daemon</span></div>
-            <div class="feature-item"><span class="feature-bullet"></span><span>Verify live fill execution and zero drift</span></div>
+            <div class="feature-item"><span class="feature-dot"></span><span>30–60 days autonomous forward test</span></div>
+            <div class="feature-item"><span class="feature-dot"></span><span>Zero real-money risk (PaperAccount)</span></div>
+            <div class="feature-item"><span class="feature-dot"></span><span>Continuous 60s background daemon</span></div>
+            <div class="feature-item"><span class="feature-dot"></span><span>Verify live fill execution and zero drift</span></div>
           </div>
         </div>
-        <div class="card" style="border-top: 4px solid var(--gold);">
-          <div class="card-tag card-tag-gold">STAGE 2: FUTURE SANDBOX</div>
+        <div class="bento-card" style="border-top: 4px solid var(--gold);">
+          <div class="card-tag tag-gold">STAGE 2: FUTURE SANDBOX</div>
           <h3 style="color: #fff;">Micro-Capital Test</h3>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-gold"></span><span>Small separate account ($500 - $1,000)</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-gold"></span><span>Human engineer connects broker API</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-gold"></span><span>Withdrawals permanently disabled</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-gold"></span><span>Microscopic risk ($5-$10 per trade)</span></div>
+            <div class="feature-item"><span class="feature-dot dot-gold"></span><span>Small separate account ($500 - $1,000)</span></div>
+            <div class="feature-item"><span class="feature-dot dot-gold"></span><span>Human engineer connects broker API</span></div>
+            <div class="feature-item"><span class="feature-dot dot-gold"></span><span>Withdrawals permanently disabled</span></div>
+            <div class="feature-item"><span class="feature-dot dot-gold"></span><span>Microscopic risk ($5-$10 per trade)</span></div>
           </div>
         </div>
-        <div class="card" style="border-top: 4px solid var(--green);">
-          <div class="card-tag card-tag-green">STAGE 3: FULL PRODUCTION</div>
+        <div class="bento-card" style="border-top: 4px solid var(--green);">
+          <div class="card-tag tag-green">STAGE 3: FULL PRODUCTION</div>
           <h3 style="color: #fff;">Full Sized Capital</h3>
           <div class="feature-list">
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span>Gradual scaling after 3 profitable months</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span>Dynamic Half-Kelly growth compounding</span></div>
-            <div class="feature-item"><span class="feature-bullet bullet-green"></span><span>Permanent 5% daily & 15% DD breakers</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span>Gradual scaling after 3 profitable months</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span>Dynamic Half-Kelly growth compounding</span></div>
+            <div class="feature-item"><span class="feature-dot dot-green"></span><span>Permanent 5% daily & 15% DD breakers</span></div>
           </div>
         </div>
       </div>
@@ -1406,10 +1491,10 @@
   </main>
 
   <footer>
-    <div class="kbd-hint">Navigate with <kbd>←</kbd> <kbd>→</kbd> or click Next | Press <kbd>F</kbd> for Fullscreen</div>
-    <div class="nav-buttons">
-      <button class="nav-btn" id="prevBtn" onclick="prevSlide()">← Previous</button>
-      <button class="nav-btn" id="nextBtn" onclick="nextSlide()">Next →</button>
+    <div class="footer-kbd">Navigate with <kbd>←</kbd> <kbd>→</kbd> or click Next | Press <kbd>F</kbd> for Fullscreen</div>
+    <div class="footer-btns">
+      <button class="key-btn" id="prevBtn" onclick="prevSlide()">← Previous</button>
+      <button class="key-btn" id="nextBtn" onclick="nextSlide()">Next →</button>
     </div>
   </footer>
 
@@ -1577,31 +1662,31 @@
     ];
 
     function showAgentDetail(idx) {
-      document.querySelectorAll('.agent-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
+      document.querySelectorAll('.agent-tab').forEach((btn, i) => btn.classList.toggle('active', i === idx));
       const a = agentsData[idx];
       const panel = document.getElementById('agentDetailContent');
       panel.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.9rem;">
-          <h3 style="color: var(--accent); font-size: 1.25rem;">${a.name}</h3>
-          <span class="badge badge-blue" style="font-size: 0.82rem; padding: 0.35rem 0.8rem;">${a.role}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3 style="color: var(--accent); font-size: 1.3rem; font-weight: 800;">${a.name}</h3>
+          <span class="badge badge-blue" style="font-size: 0.82rem; padding: 0.35rem 0.85rem;">${a.role}</span>
         </div>
-        <div style="margin-bottom: 0.8rem;">
-          <strong style="color: #fff; font-size: 0.9rem;">Algorithmic Logic:</strong>
-          <code style="display: block; background: #0b0f19; padding: 0.65rem 0.9rem; border-radius: 0.5rem; color: #38bdf8; font-size: 0.88rem; margin-top: 0.35rem; border: 1px solid var(--border);">${a.formula}</code>
+        <div style="margin-bottom: 0.9rem;">
+          <strong style="color: #fff; font-size: 0.92rem;">Algorithmic Logic:</strong>
+          <code style="display: block; background: #060913; padding: 0.75rem 1rem; border-radius: 0.55rem; color: #38bdf8; font-size: 0.9rem; margin-top: 0.35rem; border: 1px solid var(--border); font-family: 'JetBrains Mono', monospace;">${a.formula}</code>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.8rem 0;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin: 0.9rem 0;">
           <div>
-            <strong style="color: #fff; font-size: 0.9rem;">Inputs:</strong>
-            <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">${a.inputs}</p>
+            <strong style="color: #fff; font-size: 0.92rem;">Inputs:</strong>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem;">${a.inputs}</p>
           </div>
           <div>
-            <strong style="color: #fff; font-size: 0.9rem;">Outputs:</strong>
-            <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">${a.outputs}</p>
+            <strong style="color: #fff; font-size: 0.92rem;">Outputs:</strong>
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem;">${a.outputs}</p>
           </div>
         </div>
-        <div style="margin-top: 0.8rem; background: rgba(244, 63, 94, 0.08); border-left: 3px solid var(--red); padding: 0.6rem 0.9rem; border-radius: 0.35rem;">
-          <strong style="color: #fff; font-size: 0.88rem;">Invariant Safety Rule:</strong>
-          <span style="font-size: 0.88rem; color: #fecdd3; display: block; margin-top: 0.15rem;">${a.safety}</span>
+        <div style="margin-top: 0.9rem; background: rgba(244, 63, 94, 0.08); border-left: 4px solid var(--red); padding: 0.7rem 1rem; border-radius: 0.4rem;">
+          <strong style="color: #fff; font-size: 0.9rem;">Invariant Safety Rule:</strong>
+          <span style="font-size: 0.9rem; color: #fecdd3; display: block; margin-top: 0.2rem;">${a.safety}</span>
         </div>
       `;
     }
