@@ -105,23 +105,25 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1.25rem 2.2rem;
-      max-width: 1280px;
+      padding: 0.75rem 1.5rem;
+      max-width: 96vw;
+      width: 96vw;
       margin: 0 auto;
-      width: 100%;
+      height: calc(100vh - 120px);
     }
 
     .slide {
       display: none;
       width: 100%;
+      min-height: calc(100vh - 135px);
+      max-height: calc(100vh - 135px);
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 1.25rem;
-      padding: 2rem 2.6rem;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), 0 0 35px rgba(56, 189, 248, 0.05);
-      backdrop-filter: blur(18px);
+      border-radius: 1.5rem;
+      padding: 2.2rem 3.5rem;
+      box-shadow: 0 30px 75px rgba(0, 0, 0, 0.85), 0 0 45px rgba(56, 189, 248, 0.08);
+      backdrop-filter: blur(20px);
       animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      max-height: calc(100vh - 145px);
       overflow-y: auto;
     }
     .slide.active { display: block; }
@@ -131,95 +133,95 @@
     }
 
     h1 {
-      font-size: 2.5rem;
+      font-size: 2.85rem;
       font-weight: 800;
       letter-spacing: -0.03em;
       background: linear-gradient(135deg, #ffffff 40%, var(--accent) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.5rem;
     }
     h2 {
-      font-size: 1.65rem;
+      font-size: 1.95rem;
       font-weight: 700;
       color: #fff;
       display: flex;
       align-items: center;
-      gap: 0.6rem;
-      margin-bottom: 0.4rem;
+      gap: 0.65rem;
+      margin-bottom: 0.45rem;
     }
     p.subtitle {
-      font-size: 1rem;
+      font-size: 1.1rem;
       color: var(--text-muted);
-      margin-bottom: 1.3rem;
-      line-height: 1.45;
+      margin-bottom: 1.4rem;
+      line-height: 1.5;
     }
 
     /* Grids */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.1rem;
-      margin: 0.9rem 0;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.35rem;
+      margin: 1.1rem 0;
     }
     .grid-3 {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 1.1rem;
-      margin: 0.9rem 0;
+      gap: 1.35rem;
+      margin: 1.1rem 0;
     }
     .grid-4 {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-      margin: 0.9rem 0;
+      gap: 1.25rem;
+      margin: 1.1rem 0;
     }
 
     /* Cards */
     .card {
-      background: rgba(15, 23, 42, 0.75);
+      background: rgba(15, 23, 42, 0.8);
       border: 1px solid var(--border);
-      border-radius: 0.85rem;
-      padding: 1.15rem;
+      border-radius: 1rem;
+      padding: 1.35rem 1.5rem;
       transition: all 0.2s ease;
       position: relative;
     }
     .card:hover {
       border-color: var(--accent);
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
     .card h3 {
-      font-size: 1rem;
+      font-size: 1.15rem;
       color: #fff;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.5rem;
       display: flex;
       align-items: center;
-      gap: 0.45rem;
+      gap: 0.5rem;
     }
     .card p, .card li {
-      font-size: 0.88rem;
+      font-size: 0.98rem;
       color: var(--text-muted);
-      line-height: 1.45;
+      line-height: 1.55;
     }
     .card ul { list-style-position: inside; }
 
     /* Plain English Callout */
     .plain-english {
-      background: linear-gradient(135deg, rgba(56, 189, 248, 0.09), rgba(16, 185, 129, 0.05));
-      border: 1px solid rgba(56, 189, 248, 0.3);
-      border-radius: 0.75rem;
-      padding: 0.9rem 1.15rem;
-      margin-top: 1rem;
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(16, 185, 129, 0.06));
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 0.9rem;
+      padding: 1.15rem 1.55rem;
+      margin-top: 1.3rem;
       display: flex;
       align-items: flex-start;
-      gap: 0.75rem;
+      gap: 0.9rem;
     }
-    .plain-english-icon { font-size: 1.25rem; flex-shrink: 0; }
+    .plain-english-icon { font-size: 1.45rem; flex-shrink: 0; }
     .plain-english-text {
-      font-size: 0.9rem;
+      font-size: 1.02rem;
       color: #e2e8f0;
-      line-height: 1.45;
+      line-height: 1.55;
     }
     .plain-english-text strong {
       color: var(--accent);
@@ -229,51 +231,51 @@
     .metric-row {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 1rem;
-      margin: 1.1rem 0;
+      gap: 1.4rem;
+      margin: 1.35rem 0;
     }
     .metric-card {
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(15, 23, 42, 0.88);
       border: 1px solid var(--border);
-      border-radius: 0.85rem;
-      padding: 1.15rem;
+      border-radius: 1rem;
+      padding: 1.5rem 1.35rem;
       text-align: center;
     }
     .metric-value {
-      font-size: 2.1rem;
+      font-size: 2.6rem;
       font-weight: 800;
       letter-spacing: -0.03em;
-      margin-bottom: 0.2rem;
+      margin-bottom: 0.3rem;
     }
     .metric-label {
-      font-size: 0.78rem;
+      font-size: 0.85rem;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
       color: var(--text-muted);
-      font-weight: 600;
+      font-weight: 700;
     }
 
     /* Visual Bars */
     .visual-bar-container {
-      margin: 0.9rem 0;
-      background: rgba(15, 23, 42, 0.65);
+      margin: 1.15rem 0;
+      background: rgba(15, 23, 42, 0.7);
       border: 1px solid var(--border);
-      border-radius: 0.75rem;
-      padding: 0.9rem 1.2rem;
+      border-radius: 0.9rem;
+      padding: 1.2rem 1.6rem;
     }
     .bar-row {
       display: flex;
       align-items: center;
-      gap: 1rem;
-      margin: 0.55rem 0;
-      font-size: 0.88rem;
+      gap: 1.2rem;
+      margin: 0.75rem 0;
+      font-size: 0.98rem;
     }
-    .bar-label { width: 190px; font-weight: 600; flex-shrink: 0; }
+    .bar-label { width: 220px; font-weight: 600; font-size: 1rem; flex-shrink: 0; }
     .bar-track {
       flex: 1;
-      height: 24px;
+      height: 30px;
       background: #1e293b;
-      border-radius: 6px;
+      border-radius: 8px;
       overflow: hidden;
       display: flex;
       position: relative;
@@ -281,24 +283,24 @@
     .bar-fill-green {
       background: linear-gradient(90deg, #059669, #10b981);
       height: 100%;
-      border-radius: 6px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
-      padding-left: 0.6rem;
+      padding-left: 0.8rem;
       font-weight: 700;
-      font-size: 0.8rem;
+      font-size: 0.88rem;
       color: #fff;
       box-shadow: 0 0 12px var(--green-glow);
     }
     .bar-fill-red {
       background: linear-gradient(90deg, #be123c, #f43f5e);
       height: 100%;
-      border-radius: 6px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
-      padding-left: 0.6rem;
+      padding-left: 0.8rem;
       font-weight: 700;
-      font-size: 0.8rem;
+      font-size: 0.88rem;
       color: #fff;
     }
 
@@ -306,11 +308,11 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 0.85rem 0;
-      font-size: 0.88rem;
+      margin: 1.15rem 0;
+      font-size: 0.96rem;
     }
     th, td {
-      padding: 0.65rem 0.85rem;
+      padding: 0.8rem 1.1rem;
       text-align: left;
       border-bottom: 1px solid var(--border);
     }
@@ -318,7 +320,7 @@
       background: rgba(15, 23, 42, 0.95);
       color: var(--accent);
       font-weight: 700;
-      font-size: 0.8rem;
+      font-size: 0.86rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -328,10 +330,10 @@
     .badge {
       display: inline-flex;
       align-items: center;
-      gap: 0.3rem;
-      padding: 0.22rem 0.55rem;
+      gap: 0.35rem;
+      padding: 0.28rem 0.65rem;
       border-radius: 9999px;
-      font-size: 0.74rem;
+      font-size: 0.78rem;
       font-weight: 700;
     }
     .badge-green { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
@@ -347,48 +349,48 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 0.5rem;
-      margin: 1rem 0;
+      gap: 0.75rem;
+      margin: 1.35rem 0;
     }
     .step-box {
       flex: 1;
       background: rgba(15, 23, 42, 0.8);
       border: 1px solid var(--border);
-      border-radius: 0.75rem;
-      padding: 0.9rem 0.7rem;
+      border-radius: 0.9rem;
+      padding: 1.25rem 0.9rem;
       text-align: center;
     }
     .step-num {
-      width: 22px;
-      height: 22px;
+      width: 26px;
+      height: 26px;
       background: var(--accent);
       color: #0b0f19;
       border-radius: 50%;
       font-weight: 800;
-      font-size: 0.72rem;
+      font-size: 0.8rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 0.4rem auto;
+      margin: 0 auto 0.5rem auto;
     }
-    .step-box h4 { font-size: 0.82rem; color: #fff; margin-bottom: 0.2rem; }
-    .step-box p { font-size: 0.74rem; color: var(--text-muted); line-height: 1.3; }
-    .step-arrow { color: var(--accent); font-weight: 800; font-size: 1.1rem; }
+    .step-box h4 { font-size: 0.95rem; color: #fff; margin-bottom: 0.3rem; }
+    .step-box p { font-size: 0.82rem; color: var(--text-muted); line-height: 1.4; }
+    .step-arrow { color: var(--accent); font-weight: 800; font-size: 1.25rem; }
 
     /* Interactive Agent Explorer */
     .agent-nav {
       display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
+      gap: 0.6rem;
+      margin-bottom: 1.2rem;
       flex-wrap: wrap;
     }
     .agent-btn {
       background: #1e293b;
       border: 1px solid var(--border);
       color: var(--text-muted);
-      padding: 0.35rem 0.75rem;
-      border-radius: 0.4rem;
-      font-size: 0.8rem;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.88rem;
       cursor: pointer;
       font-weight: 600;
       transition: all 0.2s;
@@ -397,41 +399,41 @@
       background: var(--accent);
       color: #0b0f19;
       border-color: var(--accent);
-      box-shadow: 0 0 10px var(--accent-glow);
+      box-shadow: 0 0 12px var(--accent-glow);
     }
     .agent-detail-panel {
-      background: rgba(15, 23, 42, 0.9);
+      background: rgba(15, 23, 42, 0.92);
       border: 1px solid var(--accent);
-      border-radius: 0.85rem;
-      padding: 1.25rem 1.5rem;
-      min-height: 220px;
+      border-radius: 1rem;
+      padding: 1.6rem 2rem;
+      min-height: 250px;
     }
 
     /* Interactive Recovery Slider */
     .slider-box {
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(15, 23, 42, 0.88);
       border: 1px solid var(--border);
-      border-radius: 0.85rem;
-      padding: 1.25rem;
-      margin-top: 1rem;
+      border-radius: 1rem;
+      padding: 1.4rem 1.6rem;
+      margin-top: 1.2rem;
     }
     .loss-range {
       width: 100%;
-      height: 8px;
-      border-radius: 4px;
+      height: 10px;
+      border-radius: 5px;
       outline: none;
       background: linear-gradient(90deg, #10b981 0%, #f59e0b 20%, #f43f5e 60%);
       cursor: pointer;
-      margin: 1rem 0;
+      margin: 1.1rem 0;
     }
 
     /* Charts & SVG Containers */
     .chart-container {
-      background: rgba(15, 23, 42, 0.8);
+      background: rgba(15, 23, 42, 0.85);
       border: 1px solid var(--border);
-      border-radius: 0.85rem;
-      padding: 1rem 1.25rem;
-      margin: 0.9rem 0;
+      border-radius: 1rem;
+      padding: 1.3rem 1.6rem;
+      margin: 1.15rem 0;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -507,37 +509,37 @@
 
     <!-- Slide 1: Cover -->
     <div class="slide active">
-      <div style="text-align: center; padding: 1rem 0;">
-        <span class="badge badge-blue" style="margin-bottom: 1rem; font-size: 0.85rem; padding: 0.3rem 0.8rem;">
+      <div style="text-align: center; padding: 1.5rem 0;">
+        <span class="badge badge-blue" style="margin-bottom: 1.25rem; font-size: 0.95rem; padding: 0.4rem 1rem;">
           🏛️ TIER-1 INSTITUTIONAL ARCHITECTURE
         </span>
-        <h1>Web4 Autonomous Trading Agent</h1>
-        <p class="subtitle" style="max-width: 760px; margin: 0 auto 1.6rem auto;">
+        <h1 style="font-size: 3.4rem; margin-bottom: 0.8rem;">Web4 Autonomous Trading Agent</h1>
+        <p class="subtitle" style="max-width: 1050px; margin: 0 auto 2.2rem auto; font-size: 1.25rem;">
           An institutional-grade, self-governing algorithmic trading desk operating across Crypto & US Equities with deterministic mathematical immunity.
         </p>
         
-        <div class="metric-row" style="max-width: 950px; margin: 0 auto;">
-          <div class="metric-card" style="border-top: 3px solid var(--green);">
+        <div class="metric-row" style="max-width: 1400px; margin: 0 auto;">
+          <div class="metric-card" style="border-top: 4px solid var(--green);">
             <div class="metric-value" style="color: var(--green);">+52.45%</div>
             <div class="metric-label">90-Day Net Return</div>
           </div>
-          <div class="metric-card" style="border-top: 3px solid var(--accent);">
+          <div class="metric-card" style="border-top: 4px solid var(--accent);">
             <div class="metric-value" style="color: var(--accent);">2.41</div>
             <div class="metric-label">Profit Factor</div>
           </div>
-          <div class="metric-card" style="border-top: 3px solid var(--gold);">
+          <div class="metric-card" style="border-top: 4px solid var(--gold);">
             <div class="metric-value" style="color: var(--gold);">7.94%</div>
             <div class="metric-label">Max Drawdown</div>
           </div>
-          <div class="metric-card" style="border-top: 3px solid var(--purple);">
+          <div class="metric-card" style="border-top: 4px solid var(--purple);">
             <div class="metric-value" style="color: var(--purple);">95.8%</div>
             <div class="metric-label">Bear Capital Preserved</div>
           </div>
         </div>
 
-        <div class="plain-english" style="max-width: 950px; margin: 1.5rem auto 0 auto; text-align: left;">
+        <div class="plain-english" style="max-width: 1400px; margin: 2rem auto 0 auto; text-align: left;">
           <div class="plain-english-icon">💡</div>
-          <div class="plain-english-text">
+          <div class="plain-english-text" style="font-size: 1.1rem;">
             <strong>In Plain English:</strong> This is an autonomous hedge fund in a box. It trades 24/7 across crypto and US tech stocks, captures trend breakouts, shorts overbought bear rallies, preserves 100% of capital during crashes, and cuts exchange fees by 80% using smart limit orders.
           </div>
         </div>
@@ -1201,18 +1203,18 @@
       <p class="subtitle">The structured institutional framework for graduating from simulation to real capital.</p>
       
       <!-- Live Status Banner -->
-      <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--green); border-radius: 0.75rem; padding: 1rem 1.4rem; margin-bottom: 1.2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div style="background: rgba(16, 185, 129, 0.12); border: 2px solid var(--green); border-radius: 1rem; padding: 1.35rem 1.85rem; margin-bottom: 1.4rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 0 25px rgba(16, 185, 129, 0.15);">
         <div>
-          <span class="badge badge-green">LIVE DAEMON ACTIVE (Task 2493)</span>
-          <div style="font-size: 1.15rem; font-weight: 800; color: #fff; margin-top: 0.25rem;">
-            Equity: $9,818.61 | Cash: $6,384.50 (65% Safe Cash Defense)
+          <span class="badge badge-green" style="font-size: 0.85rem; padding: 0.35rem 0.8rem;">LIVE DAEMON ACTIVE (Task 2493)</span>
+          <div style="font-size: 1.35rem; font-weight: 800; color: #fff; margin-top: 0.4rem;">
+            Equity: $9,818.61 | Cash: $6,384.50 (65.0% Safe Cash Defense)
           </div>
-          <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
-            Open: <code>SPY Long</code> (Entry: $769.72 | Trailing Stop Ratchet: $766.08 | Total Dollar Risk: $25.29)
+          <div style="font-size: 0.95rem; color: #94a3b8; margin-top: 0.35rem;">
+            Open Position: <code style="color: #38bdf8; font-weight: 700;">SPY Long</code> (Entry: $769.72 | Trailing Stop Ratchet: $766.08 | Total Dollar Risk: $25.29 / 0.26%)
           </div>
         </div>
         <div>
-          <span class="badge badge-blue">51/51 PYTEST PASSED</span>
+          <span class="badge badge-blue" style="font-size: 0.95rem; padding: 0.5rem 1rem;">51/51 PYTEST PASSED 🛡️</span>
         </div>
       </div>
 
