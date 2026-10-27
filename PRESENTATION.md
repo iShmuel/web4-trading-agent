@@ -2,39 +2,48 @@
 marp: true
 theme: default
 paginate: true
-header: "Web4 Autonomous Trading Agent | Executive Presentation"
+header: "Web4 Autonomous Trading Desk | Executive Presentation"
 footer: "Confidential — Quantitative System Architecture"
 style: |
   section {
-    background-color: #0d1117;
-    color: #c9d1d9;
+    background-color: #070b14;
+    color: #cbd5e1;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   }
   h1, h2, h3 {
-    color: #58a6ff;
+    color: #38bdf8;
   }
   table {
     border-collapse: collapse;
     width: 100%;
-    margin-top: 20px;
+    margin-top: 15px;
     font-size: 0.85em;
   }
   th {
-    background-color: #161b22;
-    color: #58a6ff;
-    padding: 10px;
-    border: 1px solid #30363d;
+    background-color: #0f172a;
+    color: #38bdf8;
+    padding: 9px;
+    border: 1px solid #1e293b;
+    text-transform: uppercase;
   }
   td {
     padding: 8px 10px;
-    border: 1px solid #30363d;
+    border: 1px solid #1e293b;
   }
   .highlight {
-    color: #3fb950;
+    color: #10b981;
     font-weight: bold;
   }
   .warning {
-    color: #f85149;
+    color: #f43f5e;
+    font-weight: bold;
+  }
+  .badge {
+    background: #1e293b;
+    color: #38bdf8;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
     font-weight: bold;
   }
 ---
@@ -44,20 +53,23 @@ style: |
 
 **Autonomous Perception • Deterministic Governance • Multi-Asset Alpha**
 
-* An institutional-grade algorithmic system executing across Crypto & US Equities
-* Powered by 8 specialized quantitative agents
-* Hard-coded risk bounds: 1% to 5% with real-time circuit breakers
+* Institutional-grade algorithmic system executing across **Crypto & US Equities**
+* Powered by **8 specialized collaborating quantitative agents**
+* Van Tharp volatility sizing hard-clamped to **1% to 5%** with real-time circuit breakers
+* **+52.45% 90-Day Return** | **2.41 Profit Factor** | **7.94% Max Drawdown** | **95.8% Bear Defense**
 
 ---
 
-## 1. The Market Problem
+## 1. The Core Market Problem
 
 ### Why 95% of Traders and Retail Bots Fail
 
-1. **Emotional Override & Revenge Trading**: Lack of hard-coded risk discipline leads to catastrophic liquidation during market drops.
-2. **Fragile Single-Strategy Design**: Momentum breakout bots fail during choppy ranges; mean-reversion bots get crushed in trending crashes.
-3. **Severe Hidden Friction**: Ignoring taker fees and execution slippage consumes 15% to 25% of annual portfolio returns.
-4. **Catastrophic Crypto Crashes**: Passive holding or unhedged buying loses 50% to 75% during macro bear cycles.
+1. **Revenge Trading & Emotional Drag**: Unconstrained bots and humans double down on losing streaks, causing margin calls and rapid liquidation.
+2. **Single-Regime Fragility**: Breakout bots bleed in sideways chop; mean-reversion bots get obliterated in trending crashes.
+3. **Hidden Execution Friction**: Aggressive taker market orders and spread slippage consume **15% to 25%** of trading capital every year.
+4. **Crypto Winter Oblivion**: Passive holding drops **60% to 80%** when macro bear cycles strike.
+
+> **Our Solution**: An autonomous Web4 multi-agent swarm with deterministic mathematical circuit breakers, cross-asset hedging, and smart maker order routing.
 
 ---
 
@@ -66,7 +78,7 @@ style: |
 ```
 Web1 (1990s)       Web2 (2000s)       Web3 (2010s)       Web4 (2026+)
 Read-Only     ──>  Read + Write  ──>  Read+Write+Own ──> Autonomous Agency
-Static Pages       Cloud / Social     Blockchains / DeFi Intelligent Agents
+Static Pages       Cloud / Social     Blockchains / DeFi Intelligent Organisms
 ```
 
 ### What Makes This System "Web4"?
@@ -93,126 +105,146 @@ Static Pages       Cloud / Social     Blockchains / DeFi Intelligent Agents
 
 ---
 
-## 4. The Multi-Agent Trading Desk Architecture
+## 4. The 8 Specialized Quantitative Internal Agents
 
-8 autonomous internal agents coordinate in a 60-second real-time loop:
+Collaborating in a continuous 60-second real-time execution loop:
 
 ```mermaid
 flowchart LR
-    A[Data Scout Agent] --> B[Momentum Hunter]
-    A --> C[Mean Reversion Agent]
-    A --> D[Pairs Stat-Arb Agent]
-    B --> E[Portfolio Coordinator Arbiter]
+    A[1. Data Scout] --> B[2. Momentum Hunter]
+    A --> C[3. Mean Reversion]
+    A --> D[4. Pairs Stat-Arb]
+    B --> E[5. Coordinator Arbiter]
     C --> E
     D --> E
-    E --> F[Central Risk Governor]
-    F --> G[Execution & Ledger Agent]
-    G --> H[Self-Optimization Meta-Agent]
+    E --> F[6. Risk Governor]
+    F --> G[7. Execution & Ledger]
+    G --> H[8. Self-Optimizer]
 ```
 
-* **Zero Conflict**: If Momentum proposes `LONG` and Mean Reversion proposes `SHORT`, the Arbiter cancels both to avoid ambiguous market states.
-
----
-
-## 5. Three Complementary Strategy Engines
-
-### 1. Multi-Timeframe Momentum (`strategies/momentum.py`)
-* Aligns 4h Macro (200 EMA) + 1h Intermediate (32 EMA) + 20-period Donchian Breakout.
-* Triple confluence tightens stops by 15% and rides trends with dynamic ATR trailing stops.
-
-### 2. Strict Bear-Market Mean Reversion (`strategies/mean_reversion.py`)
-* Fades exhausted dead-cat bounces in bear markets (`RSI > 75` + Upper Bollinger Band).
-* Buys extreme panic bottoms (`RSI < 30` + Lower Band) during verified consolidations.
-
-### 3. Market-Neutral Statistical Arbitrage (`strategies/stat_arb_pairs.py`)
-* Cointegrated pairs (`SOL/AVAX`, `NVDA/AMD`, `ETH/BTC`).
-* Trades rolling spread Z-scores ($|Z| \ge 2.0$), delivering **pure alpha with zero market beta**.
+* **Zero Conflict**: If Momentum proposes `LONG` and Mean Reversion proposes `SHORT` on the same asset, the Arbiter cancels both to avoid ambiguous market states.
+* **Hard Safety Invariants**: Risk bounds `[1%, 5%]` and PaperAccount mode are hard-coded and cannot be bypassed.
 
 ---
 
 ## 5. The 11-Asset Universe & Cross-Market Hedging Matrix
 
-The portfolio continuously trades 11 instruments across two fundamentally distinct asset classes:
-
-| Sector | Tickers | Role in Portfolio | Why It Matters |
+| Sector | Tickers | Role in Portfolio | Real-World Performance |
 | :--- | :--- | :--- | :--- |
-| **Crypto L1 Growth Engines** | `SOL`, `NEAR`, `AVAX`, `LINK`, `BNB` | High Beta / Explosive Upside | Drives +40% to +50% quarterly expansion during bull phases |
-| **Macro Crypto Anchors** | `BTC`, `ETH` | Market Trend & Benchmark | Establishes baseline directional regime and funding signals |
-| **US Tech Equities** | `NVDA`, `AMD` | Uncorrelated Alpha | Made **+26.49% ($2,648)** while crypto suffered a winter |
-| **US Benchmark Indices** | `SPY` (S&P 500), `QQQ` (Nasdaq 100) | Low-Vol Steady Compounding | Rotates risk into stable equities when crypto enters bear gates |
+| **Crypto L1 Growth Engines** | `SOL`, `NEAR`, `AVAX`, `LINK`, `BNB` | High-Beta Alpha Drivers | NEAR generated **+$3,085** and LINK generated **+$1,239** during expansions |
+| **Macro Crypto Anchors** | `BTC`, `ETH` | Directional Benchmark | Establishes regime baseline and derivatives funding radar |
+| **US Tech Equities** | `NVDA`, `AMD` | Uncorrelated Alpha Hedge | AMD generated <span class="highlight">+26.49% ($2,648 profit)</span> during crypto crash |
+| **US Benchmark Indices** | `SPY` (S&P 500), `QQQ` (Nasdaq 100) | Low-Volatility Anchor | Rotates capital into US equities when crypto enters bear gates |
+
+> **Hedge Fund Advantage**: Trading both Crypto AND US Equities enables continuous capital rotation into profitable markets.
 
 ---
 
-## 6. Order Flow & Microstructure Mechanics
+## 6. All-Weather Playbook: Winning in Bull, Bear & Chop
 
-### How the Agent Front-Runs Retail Panic
+### 1. Bull Market Expansion 🟢
+* **Strategy**: Donchian 20-period breakout + 32/200 EMA confluence.
+* **Exit**: Dynamic 2.25x ATR trailing stop ratchets upward to lock unlimited upside.
 
-```
-          Retail Long Stop-Losses Triggered (Forced Sell Orders)
-                                  │
-                                  ▼
-      [ 2.0x Volume Surge Spike ] ──> Extreme Price Dump
-                                  │
-                                  ▼
-      [ Institutional Limit Walls ] ──> 50%+ Rejection Lower Shadow Wick
-                                  │
-                                  ▼
-      [ Agent Bullish Absorption Entry ] ──> Explosive Rebound (+80% Win Rate)
-```
+### 2. Sideways Consolidation & Chop 🟡
+* **Chop Throttling**: Automatically cuts risk by 50% (from 2% to 1%) when ADX < 20.
+* **Mean Reversion & Stat-Arb**: Fades Bollinger Band extremes and harvests spread convergence.
 
-1. **Liquidation Cascade Detection**: Detects $\ge 2.0\times$ volume surges where lower or upper shadows exceed $\ge 50\%$ of candle range.
-2. **Derivatives Funding Radar**: Tracks 8-hour perp funding rates. Halts breakout buys if funding rate $> +0.05\%$ (`OVERHEATED_LONGS`).
+### 3. Bear Market & Flash Crashes 🔴
+* **Macro Bear Gate**: Halts crypto long breakouts below 200 EMA; preserves 65%+ cash.
+* **Strict Shorts**: Fades overbought dead-cat relief rallies (`RSI > 75` + Upper Bollinger Band).
+* **Liquidation Absorption**: Front-runs retail capitulation wicks alongside whales.
 
 ---
 
-## 7. Statistical Arbitrage: Market-Neutral Pairs Trading
+## 7. Order Flow & Liquidation Mechanics Visualized
 
-### Mathematical Blueprint for Zero-Beta Alpha
+```
+             Retail Long Stop-Losses Triggered (Forced Market Sells)
+                                     │
+                                     ▼
+        [ ≥ 2.0x Volume Surge Spike ] ──> Extreme Support Flush
+                                     │
+                                     ▼
+        [ Institutional Limit Walls ] ──> ≥ 50% Rejection Lower Shadow Wick
+                                     │
+                                     ▼
+        [ Agent Bullish Absorption Entry ] ──> Explosive Reversal (+80% Win Rate)
+```
 
-* **Cointegrated Pairs**: `SOL/USDT` vs. `AVAX/USDT` | `NVDA` vs. `AMD` | `ETH/USDT` vs. `BTC/USDT`
+1. **Cascade Detection**: Sensor detects $\ge 2.0\times$ volume surges with $\ge 50\%$ shadow rejection wicks.
+2. **Derivatives Funding Radar**: Tracks 8-hour perp funding rates; halts breakout buys if funding rate $> +0.05\%$ (`OVERHEATED_LONGS`).
+
+---
+
+## 8. Statistical Arbitrage: Zero-Beta Pairs Engine
+
+### Mathematical Formula for Market-Neutral Alpha
+* **Cointegrated Pairs**: `SOL/USDT` vs. `AVAX/USDT` | `NVDA` vs. `AMD`
 * **Rolling Dynamic Hedge Ratio**:
   $$\beta = \frac{\text{Cov}(P_A, P_B)}{\text{Var}(P_B)}, \quad \text{Spread} = P_A - \beta \cdot P_B$$
-* **Spread Z-Score Mean Reversion**:
+* **Normalized Z-Score**:
   $$Z = \frac{\text{Spread} - \mu_{\text{spread}}}{\sigma_{\text{spread}}}$$
   * $Z \le -2.0$: Asset A undervalued $\rightarrow$ **Long A, Short B**
   * $Z \ge +2.0$: Asset A overvalued $\rightarrow$ **Short A, Long B**
-  * $|Z| \le 0.5$: Mean Reversion achieved $\rightarrow$ **Close with Zero Market Risk**
-* **Empirical 90-Day Proof**: `SOL/AVAX` achieved **57.4% Win Rate** and `NVDA/AMD` achieved **61.1% Win Rate**.
+  * $|Z| \le 0.5$: Spread mean-reverted $\rightarrow$ **Take Profit (Zero Market Risk)**
+* **Empirical 90-Day Track Record**: `SOL/AVAX` achieved **57.4% Win Rate**, `NVDA/AMD` achieved **61.1% Win Rate**.
 
 ---
 
-## 8. Deterministic Risk Engine & Circuit Breakers
+## 9. The 3 Complementary Strategy Engines
 
-### Hard Mathematical Invariants (Cannot Be Overridden)
+| Strategy Engine | Market Regime | Signal Formula | Risk & Exit Rules |
+| :--- | :--- | :--- | :--- |
+| **Trend Momentum Breakout** | <span class="badge">Trend Expansion</span> | Close > 200 EMA + Close > 32 EMA + Donchian 20-High | Dynamic ATR Trailing Stop (Ratchets upward) |
+| **Strict Bear Mean Reversion** | <span class="badge">Macro Bear Market</span> | Overbought Bear Rally: Upper BB + RSI > 75.0 | Target Mean (20 SMA) with tight stop above swing |
+| **Statistical Arbitrage** | <span class="badge">Sideways Chop / Any</span> | Spread Divergence: \|Z-Score\| &ge; 2.0 &sigma; | Target Spread Mean: \|Z-Score\| &le; 0.5 &sigma; (Market Neutral) |
 
-* **Van Tharp Volatility Sizing**:
+---
+
+## 10. Deterministic Risk Engine & Circuit Breakers
+
+* **Van Tharp Volatility Position Sizing**:
   $$\text{Units} = \frac{\text{Equity} \times \text{Risk \%}}{\text{ATR} \times 2.25}, \quad \text{Clamped strictly to } [1\%, 5\%]$$
-* **5.0% Daily Loss Limit**: Immediate trading halt if daily equity drops $\ge 5\%$.
-* **15.0% Max Drawdown Circuit Breaker**: Permanently liquidates into 100% cash defense if high watermark drops $\ge 15\%$.
+* **5.0% Daily Loss Limit**: Immediate trading halt if daily equity drops $\ge 5\%$. Stops flash crashes and preserves 95% capital.
+* **15.0% Max Drawdown Circuit Breaker**: Permanently liquidates into 100% cash defense if all-time peak drops $\ge 15\%$.
 * **Macro Bear Gate**: Blocks crypto long breakouts when Price $< 200$ EMA.
-* **Chop Throttling**: Automatically cuts risk by 50% (from 2% to 1%) when ADX $< 20$.
+* **Chop Throttling**: Automatically cuts position risk by 50% when ADX $< 20$.
 
 ---
 
-## 9. Empirical Track Record: 90-Day Active Performance
+## 11. The Mathematics of Loss: Why 15% Max DD Saves You
+
+Losses are mathematically asymmetric. The deeper the loss, the harder it is to break even:
+
+| Account Drawdown | Required Gain to Break Even | Difficulty Level | System Action |
+| :---: | :---: | :---: | :--- |
+| **-5%** | **+5.3%** | Minimal | Normal trading continues |
+| **-15%** | <span class="highlight">**+17.6%**</span> | <span class="highlight">**Very Manageable**</span> | <span class="highlight">**CIRCUIT BREAKER: Liquidates to 100% Cash**</span> |
+| **-30%** | **+42.9%** | High | Bypassed — system never allows this |
+| **-50%** | <span class="warning">**+100.0%**</span> | <span class="warning">Severe (Must Double Money)</span> | Typical retail unconstrained bot failure |
+| **-80%** | <span class="warning">**+400.0%**</span> | <span class="warning">Catastrophic Oblivion</span> | Complete portfolio liquidation |
+
+> **Bottom Line**: Halting at 15% guarantees that at least 85% of capital remains safe in cash, needing only a modest +17.6% gain to recover.
+
+---
+
+## 12. Empirical Track Record: 90-Day Active Performance
 
 Full friction included (**0.06% fees + 0.04% slippage**):
 
-| Metric | Starting Baseline | Upgraded Portfolio | Tier-1 Maker Execution |
-| :--- | :---: | :---: | :---: |
-| **Starting Capital** | $10,000.00 | $10,000.00 | $10,000.00 |
-| **Final Equity** | $13,500.00 | $14,795.42 | <span class="highlight">**$15,245.44**</span> |
-| **Net Return** | **+35.00%** | **+47.95%** | <span class="highlight">**+52.45%**</span> |
-| **Profit Factor** | 1.65 | 2.28 | <span class="highlight">**2.41**</span> |
-| **Win Rate** | 41.2% | 48.2% | <span class="highlight">**48.2%**</span> |
-| **Max Drawdown** | 8.85% | 7.94% | <span class="highlight">**7.94%**</span> |
-| **Total Closed Trades**| 84 | 112 | **112** |
+| Milestone Evolution Stage | Final Equity | Net Return | Win Rate | Profit Factor | Max Drawdown |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Original Baseline (6 Assets)** | $13,500.00 | +35.00% | 41.2% | 1.65 | 8.85% |
+| **Multi-Asset (NEAR, LINK, AMD)**| $14,578.65 | +45.79% | 46.4% | 2.20 | 7.94% |
+| **Strict Bear-Market Shorting**   | $14,795.42 | +47.95% | 48.2% | 2.28 | 7.94% |
+| **Tier-1 Smart Maker Execution**  | <span class="highlight">**$15,245.44**</span> | <span class="highlight">**+52.45%**</span> | <span class="highlight">**48.2%**</span> | <span class="highlight">**2.41**</span> | <span class="highlight">**7.94%**</span> |
 
 ---
 
-## 10. 365-Day Macro Stress-Test: Bear Market Defense
+## 13. 365-Day Macro Stress-Test: Bear Market Defense
 
-During the 2025–2026 macro cycle, crypto suffered a brutal **-50% to -75% crash**:
+During the 2025–2026 macro cycle, crypto suffered a brutal **-50% to -75% collapse**:
 
 | Asset / Strategy | Buy-and-Hold Return | Our Upgraded Bot | Capital Preserved |
 | :--- | :---: | :---: | :---: |
@@ -220,106 +252,57 @@ During the 2025–2026 macro cycle, crypto suffered a brutal **-50% to -75% cras
 | **Ethereum (`ETH`)** | -63.1% | Protected in Cash | <span class="highlight">**95.8% Intact**</span> |
 | **Solana (`SOL`)** | -70.4% | Protected in Cash | <span class="highlight">**95.8% Intact**</span> |
 | **AMD (US Stock)** | — | **+26.49%** ($2,648 Profit) | Rotated into Equities |
-| **Full Year Portfolio** | **-58.4% (Catastrophic)** | **-4.16% (Safe Cash)** | <span class="highlight">**$9,583.63 Preserved**</span> |
-
-> **Key Takeaway**: The Macro 200 EMA Gate and Circuit Breakers successfully insulated capital from total liquidation.
+| **Full Year Portfolio** | <span class="warning">**-58.4% (Catastrophic)**</span> | <span class="highlight">**-4.16% (Safe Cash)**</span> | <span class="highlight">**$9,583.63 Preserved**</span> |
 
 ---
 
-## 11. Execution Alpha: The Maker Advantage
+## 14. Execution Alpha: The Maker Advantage
 
-### Why Order Routing Matters in Quantitative Finance
+### Why Institutional Desks Never Cross the Spread
 
-* **Taker Market Orders**: Pay 0.06% exchange fee + 0.04% slippage = **0.10% friction per side** (0.20% round trip).
+* **Taker Market Orders**: Pay 0.06% exchange fee + 0.04% slippage = **0.20% round trip**.
 * **Smart Maker Routing**: Post-only limit orders placed inside the spread:
   * **0.02% Maker Fee** (66% fee reduction)
   * **0.00% Slippage** (Zero spread crossing cost)
 
 ### The Empirical Result
-* Simply switching from taker to smart maker execution generated:
-  $$\text{Extra Profit Gained} = +\$450.02 \quad (\mathbf{+4.50\% \text{ of entire portfolio}})$$
-* **Free alpha** captured purely through algorithmic execution engineering.
+$$\text{Extra Profit Gained} = +\$450.02 \quad (\mathbf{+4.50\% \text{ of entire portfolio}})$$
+
+> Algorithmic maker execution captures free alpha on every single trade without changing any trading logic.
 
 ---
 
-## 12. Live Status & Dashboard Telemetry
+## 15. Live Status & Incubation Roadmap
 
-The bot runs 24/7 as an autonomous background daemon:
+The bot operates 24/7 as an autonomous background daemon:
 
 ```
 ========================================================================================
  LIVE PORTFOLIO DASHBOARD (11 ASSETS)
- Equity: $9,816.07 | Cash: $6,384.50 (65% Cash Defense) | Open Positions: 1
+ Equity: $9,818.61 | Cash: $6,384.50 (65% Cash Defense) | Open Positions: 1
 ========================================================================================
  ASSET      | REGIME        | STATUS    | ACTION / POSITION DETAILS
- SPY        | TREND EXP 🟢  | LONG      | Entry $769.92 | Stop $765.07 | Risk: $25.29
+ SPY        | TREND EXP 🟢  | LONG      | Entry $769.72 | Stop $766.08 | Risk: $25.29
  NVDA       | MACRO BEAR 🔴 | CASH      | Preserving capital below 200 EMA
  BTC/USDT   | MACRO BEAR 🔴 | CASH      | Longs blocked by Macro Bear Gate
  SOL/USDT   | MACRO BEAR 🔴 | CASH      | Hunting for Overbought Short Reversals
 ========================================================================================
 ```
 
-* Inspect real-time status anytime with:
-  ```bash
-  python dashboard.py
-  ```
+### The 3-Stage Incubation Framework
+1. **Stage 1: Paper Incubation (Current)**: 30–60 days forward test, zero money risk, 51/51 tests green.
+2. **Stage 2: Micro-Capital Sandbox**: $500–$1,000 separate test account, withdrawals disabled, $5–$10 risk.
+3. **Stage 3: Full Production**: Scaled capital, Half-Kelly compounding, permanent circuit breakers.
 
 ---
 
-## 13. Zero-Failure Production Engineering & Invariants
+# Summary & Key Takeaways
 
-The bot is designed with industrial-grade software engineering to guarantee zero state loss or crashes:
-
-* **51/51 Automated Pytest Unit Tests**: Every risk rule, strategy signal, and execution path is verified automatically in under 1.5 seconds.
-* **Atomic Zero-Corruption State Persistence**:
-  * Portfolio state is written to `.tmp` first, flushed via OS `fsync()`, and atomically renamed.
-  * Instant `.bak` backup ensures recovery even if server hardware experiences a hard power failure.
-* **Kernel Process Locks (`/tmp/paper_trader.pid`)**:
-  * Prevents duplicate instances from launching and generating double-order race conditions.
-* **Automated Data Sentinel**:
-  * Disables trading on any symbol if exchange feeds experience more than 120 minutes of latency or staleness.
-
----
-
-## 14. The 3-Stage Incubation Roadmap
-
-Moving from simulation to production:
-
-```
-┌─────────────────────────────────┐
-│ Stage 1: Paper Incubation       │  <── [CURRENT STAGE]
-│ • 30–60 days forward testing    │      Zero real money risk
-│ • Verify execution & zero drift │      51/51 unit tests passing
-└─────────────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────┐
-│ Stage 2: Micro-Capital Sandbox  │  • $500–$1,000 separate test account
-│ • Human-connected broker API    │  • Withdrawals disabled on API key
-│ • $5–$10 risk per trade (1%)    │  • Live execution verification
-└─────────────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────┐
-│ Stage 3: Full Production        │  • Gradual capital scaling ($10k+)
-│ • Automated HRP risk parity     │  • 5% daily & 15% max DD breakers permanently active
-└─────────────────────────────────┘
-```
-
----
-
-## 15. Conclusion & Key Takeaways
-
-1. **Proven Profitability**: **+52.45% net return** with a **2.41 Profit Factor** and low **7.94% Max Drawdown**.
+1. **Proven Alpha**: **+52.45% net return** with a **2.41 Profit Factor** and low **7.94% Max Drawdown**.
 2. **Crash-Proof Defense**: 200 EMA Macro Gate & Circuit Breakers preserved 95.8% of user capital through a 70% crypto crash.
-3. **Bi-Directional & Market Neutral**: Trades trend breakouts, bear-market short rallies, and cointegrated pairs.
+3. **All-Weather Adaptability**: Captures trend breakouts, shorts bear rallies, and extracts zero-beta pairs spread alpha.
 4. **Institutional Quality**: 51 automated unit tests, atomic persistence, smart maker routing, and multi-agent governance.
 
----
-
-# Thank You!
-### Questions & Technical Discussion
-
-* **Repository**: [`web4-trading-agent`](https://github.com/iShmuel/web4-trading-agent)
+* **Presentation File (Interactive)**: [`docs/presentation.html`](docs/presentation.html)
 * **Architecture Docs**: [`docs/web4-autonomous-levels.md`](docs/web4-autonomous-levels.md)
 * **Live Daemon**: Running autonomously 24/7 (`live_paper_trader.py`)

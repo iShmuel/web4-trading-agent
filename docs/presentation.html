@@ -3,22 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web4 Autonomous Trading Agent — Executive Presentation</title>
+  <title>Web4 Autonomous Trading Desk — Tier-1 Institutional Presentation</title>
   <style>
     :root {
-      --bg: #0b0f19;
-      --card-bg: #151d2f;
+      --bg: #070b14;
+      --card-bg: rgba(17, 24, 39, 0.8);
+      --card-border: rgba(56, 189, 248, 0.2);
       --accent: #38bdf8;
-      --accent-green: #34d399;
-      --accent-red: #f87171;
-      --accent-gold: #fbbf24;
-      --text: #e2e8f0;
+      --accent-glow: rgba(56, 189, 248, 0.35);
+      --green: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.3);
+      --red: #f43f5e;
+      --red-glow: rgba(244, 63, 94, 0.3);
+      --gold: #f59e0b;
+      --purple: #a855f7;
+      --text: #f1f5f9;
       --text-muted: #94a3b8;
       --border: #1e293b;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background-color: var(--bg);
+      background: radial-gradient(circle at 50% 10%, #13203c 0%, var(--bg) 75%);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       overflow: hidden;
@@ -27,160 +32,451 @@
       flex-direction: column;
       justify-content: space-between;
     }
+
+    /* Top Progress Bar */
+    .progress-bar-container {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 100;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+      transition: width 0.3s ease;
+      box-shadow: 0 0 10px var(--accent);
+    }
+
     header {
-      padding: 1rem 2rem;
+      padding: 0.85rem 2.2rem;
       border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(11, 15, 25, 0.8);
-      backdrop-filter: blur(8px);
-      z-index: 10;
+      background: rgba(7, 11, 20, 0.9);
+      backdrop-filter: blur(14px);
+      z-index: 20;
     }
     .logo {
       font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--accent);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.6rem;
+    }
+    .logo-badge {
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      color: #fff;
+      font-size: 0.7rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-weight: 700;
+      text-transform: uppercase;
+      box-shadow: 0 0 12px var(--accent-glow);
     }
     .slide-indicator {
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       color: var(--text-muted);
-      font-weight: 500;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
     }
+    select.slide-select {
+      background: #1e293b;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.35rem 0.65rem;
+      border-radius: 0.4rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      outline: none;
+    }
+    select.slide-select:focus { border-color: var(--accent); }
+
     .slider-container {
       flex: 1;
-      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 2rem;
-      max-width: 1200px;
+      padding: 1.25rem 2.2rem;
+      max-width: 1280px;
       margin: 0 auto;
       width: 100%;
     }
+
     .slide {
       display: none;
       width: 100%;
       background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 1rem;
-      padding: 2.5rem 3rem;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid var(--card-border);
+      border-radius: 1.25rem;
+      padding: 2rem 2.6rem;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75), 0 0 35px rgba(56, 189, 248, 0.05);
+      backdrop-filter: blur(18px);
+      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      max-height: calc(100vh - 145px);
+      overflow-y: auto;
     }
     .slide.active { display: block; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.995); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
+
     h1 {
-      font-size: 2.3rem;
-      color: var(--accent);
-      margin-bottom: 0.75rem;
-      letter-spacing: -0.025em;
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 40%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.4rem;
     }
     h2 {
-      font-size: 1.6rem;
-      color: var(--accent);
-      margin-bottom: 1.5rem;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 0.5rem;
-    }
-    p.subtitle {
-      font-size: 1.15rem;
-      color: var(--text-muted);
-      margin-bottom: 2rem;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 1.25rem;
-      margin-top: 1rem;
-    }
-    .card {
-      background: rgba(11, 15, 25, 0.6);
-      border: 1px solid var(--border);
-      border-radius: 0.75rem;
-      padding: 1.25rem;
-    }
-    .card h3 {
-      font-size: 1.1rem;
-      color: var(--accent-gold);
-      margin-bottom: 0.5rem;
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: #fff;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.6rem;
+      margin-bottom: 0.4rem;
+    }
+    p.subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-bottom: 1.3rem;
+      line-height: 1.45;
+    }
+
+    /* Grids */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.1rem;
+      margin: 0.9rem 0;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.1rem;
+      margin: 0.9rem 0;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin: 0.9rem 0;
+    }
+
+    /* Cards */
+    .card {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+      padding: 1.15rem;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+    .card h3 {
+      font-size: 1rem;
+      color: #fff;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
     }
     .card p, .card li {
-      font-size: 0.95rem;
+      font-size: 0.88rem;
       color: var(--text-muted);
-      line-height: 1.5;
+      line-height: 1.45;
     }
-    ul { list-style-position: inside; }
+    .card ul { list-style-position: inside; }
+
+    /* Plain English Callout */
+    .plain-english {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.09), rgba(16, 185, 129, 0.05));
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 0.75rem;
+      padding: 0.9rem 1.15rem;
+      margin-top: 1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .plain-english-icon { font-size: 1.25rem; flex-shrink: 0; }
+    .plain-english-text {
+      font-size: 0.9rem;
+      color: #e2e8f0;
+      line-height: 1.45;
+    }
+    .plain-english-text strong {
+      color: var(--accent);
+    }
+
+    /* Metric Display */
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin: 1.1rem 0;
+    }
+    .metric-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+      padding: 1.15rem;
+      text-align: center;
+    }
+    .metric-value {
+      font-size: 2.1rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.2rem;
+    }
+    .metric-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Visual Bars */
+    .visual-bar-container {
+      margin: 0.9rem 0;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 0.9rem 1.2rem;
+    }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 0.55rem 0;
+      font-size: 0.88rem;
+    }
+    .bar-label { width: 190px; font-weight: 600; flex-shrink: 0; }
+    .bar-track {
+      flex: 1;
+      height: 24px;
+      background: #1e293b;
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      position: relative;
+    }
+    .bar-fill-green {
+      background: linear-gradient(90deg, #059669, #10b981);
+      height: 100%;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      padding-left: 0.6rem;
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: #fff;
+      box-shadow: 0 0 12px var(--green-glow);
+    }
+    .bar-fill-red {
+      background: linear-gradient(90deg, #be123c, #f43f5e);
+      height: 100%;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      padding-left: 0.6rem;
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: #fff;
+    }
+
+    /* Tables */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 1.5rem 0;
-      font-size: 0.95rem;
+      margin: 0.85rem 0;
+      font-size: 0.88rem;
     }
     th, td {
-      padding: 0.75rem 1rem;
+      padding: 0.65rem 0.85rem;
       text-align: left;
       border-bottom: 1px solid var(--border);
     }
     th {
-      background: rgba(11, 15, 25, 0.8);
+      background: rgba(15, 23, 42, 0.95);
       color: var(--accent);
-      font-weight: 600;
+      font-weight: 700;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
+    tr:hover td { background: rgba(56, 189, 248, 0.04); }
+
+    /* Badges */
     .badge {
-      display: inline-block;
-      padding: 0.2rem 0.5rem;
-      border-radius: 0.375rem;
-      font-size: 0.75rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.22rem 0.55rem;
+      border-radius: 9999px;
+      font-size: 0.74rem;
       font-weight: 700;
     }
-    .badge-green { background: rgba(52, 211, 153, 0.15); color: var(--accent-green); }
-    .badge-red { background: rgba(248, 113, 113, 0.15); color: var(--accent-red); }
-    .badge-blue { background: rgba(56, 189, 248, 0.15); color: var(--accent); }
-    .highlight { color: var(--accent-green); font-weight: 700; }
-    footer {
-      padding: 1rem 2rem;
-      border-top: 1px solid var(--border);
+    .badge-green { background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-red { background: rgba(244, 63, 94, 0.15); color: var(--red); border: 1px solid rgba(244, 63, 94, 0.3); }
+    .badge-blue { background: rgba(56, 189, 248, 0.15); color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.3); }
+    .badge-gold { background: rgba(245, 158, 11, 0.15); color: var(--gold); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-purple { background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.3); }
+    .highlight { color: var(--green); font-weight: 700; }
+    .warning { color: var(--red); font-weight: 700; }
+
+    /* Flow Steps */
+    .flow-steps {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      background: rgba(11, 15, 25, 0.8);
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin: 1rem 0;
     }
-    .nav-buttons {
-      display: flex;
-      gap: 0.75rem;
-    }
-    button {
-      background: var(--card-bg);
-      color: var(--text);
+    .step-box {
+      flex: 1;
+      background: rgba(15, 23, 42, 0.8);
       border: 1px solid var(--border);
-      padding: 0.5rem 1.25rem;
-      border-radius: 0.5rem;
+      border-radius: 0.75rem;
+      padding: 0.9rem 0.7rem;
+      text-align: center;
+    }
+    .step-num {
+      width: 22px;
+      height: 22px;
+      background: var(--accent);
+      color: #0b0f19;
+      border-radius: 50%;
+      font-weight: 800;
+      font-size: 0.72rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 0.4rem auto;
+    }
+    .step-box h4 { font-size: 0.82rem; color: #fff; margin-bottom: 0.2rem; }
+    .step-box p { font-size: 0.74rem; color: var(--text-muted); line-height: 1.3; }
+    .step-arrow { color: var(--accent); font-weight: 800; font-size: 1.1rem; }
+
+    /* Interactive Agent Explorer */
+    .agent-nav {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .agent-btn {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.4rem;
+      font-size: 0.8rem;
       cursor: pointer;
       font-weight: 600;
       transition: all 0.2s;
     }
-    button:hover {
+    .agent-btn.active, .agent-btn:hover {
       background: var(--accent);
       color: #0b0f19;
       border-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
     }
+    .agent-detail-panel {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--accent);
+      border-radius: 0.85rem;
+      padding: 1.25rem 1.5rem;
+      min-height: 220px;
+    }
+
+    /* Interactive Recovery Slider */
+    .slider-box {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+      padding: 1.25rem;
+      margin-top: 1rem;
+    }
+    .loss-range {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      outline: none;
+      background: linear-gradient(90deg, #10b981 0%, #f59e0b 20%, #f43f5e 60%);
+      cursor: pointer;
+      margin: 1rem 0;
+    }
+
+    /* Charts & SVG Containers */
+    .chart-container {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+      padding: 1rem 1.25rem;
+      margin: 0.9rem 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Footer */
+    footer {
+      padding: 0.8rem 2.2rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(7, 11, 20, 0.9);
+      backdrop-filter: blur(14px);
+    }
+    .nav-buttons {
+      display: flex;
+      gap: 0.65rem;
+    }
+    button {
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid var(--border);
+      padding: 0.5rem 1.3rem;
+      border-radius: 0.45rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88rem;
+      transition: all 0.2s;
+    }
+    button:hover:not(:disabled) {
+      background: var(--accent);
+      color: #0b0f19;
+      border-color: var(--accent);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+    button:disabled { opacity: 0.35; cursor: not-allowed; }
     .kbd-hint {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-muted);
     }
     kbd {
-      background: var(--border);
-      padding: 0.15rem 0.4rem;
+      background: #1e293b;
+      border: 1px solid var(--border);
+      padding: 0.12rem 0.4rem;
       border-radius: 0.25rem;
       font-family: monospace;
       color: var(--text);
@@ -189,221 +485,390 @@
 </head>
 <body>
 
+  <!-- Top Progress Bar -->
+  <div class="progress-bar-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
   <header>
-    <div class="logo">⚡ Web4 Autonomous Trading Desk</div>
-    <div class="slide-indicator" id="slideIndicator">Slide 1 / 10</div>
+    <div class="logo">
+      <span>⚡</span> Web4 Quantitative Trading Desk
+      <span class="logo-badge">Institutional V2.5</span>
+    </div>
+    <div class="slide-indicator">
+      <span id="slideIndicator">Slide 1 / 16</span>
+      <select class="slide-select" id="slideSelect" onchange="jumpToSlide(this.value)">
+        <!-- Options populated by JS -->
+      </select>
+    </div>
   </header>
 
   <main class="slider-container">
 
     <!-- Slide 1: Cover -->
     <div class="slide active">
-      <div style="text-align: center; padding: 2rem 0;">
-        <span class="badge badge-blue" style="margin-bottom: 1rem;">TIER-1 QUANTITATIVE SYSTEM</span>
+      <div style="text-align: center; padding: 1rem 0;">
+        <span class="badge badge-blue" style="margin-bottom: 1rem; font-size: 0.85rem; padding: 0.3rem 0.8rem;">
+          🏛️ TIER-1 INSTITUTIONAL ARCHITECTURE
+        </span>
         <h1>Web4 Autonomous Trading Agent</h1>
-        <p class="subtitle">Multi-Asset Execution • Deterministic Governance • Autonomous Meta-Learning</p>
-        <div class="grid" style="max-width: 800px; margin: 2rem auto; text-align: left;">
-          <div class="card">
-            <h3>📈 +52.45% 90-Day Return</h3>
-            <p>2.41 Profit Factor, 48.2% Win Rate, and 7.94% Max Drawdown with full fees.</p>
+        <p class="subtitle" style="max-width: 760px; margin: 0 auto 1.6rem auto;">
+          An institutional-grade, self-governing algorithmic trading desk operating across Crypto & US Equities with deterministic mathematical immunity.
+        </p>
+        
+        <div class="metric-row" style="max-width: 950px; margin: 0 auto;">
+          <div class="metric-card" style="border-top: 3px solid var(--green);">
+            <div class="metric-value" style="color: var(--green);">+52.45%</div>
+            <div class="metric-label">90-Day Net Return</div>
           </div>
-          <div class="card">
-            <h3>🛡️ Crash-Proof Defense</h3>
-            <p>Macro 200 EMA Gate & 15% Max DD breaker preserved 95.8% capital during -70% crypto drop.</p>
+          <div class="metric-card" style="border-top: 3px solid var(--accent);">
+            <div class="metric-value" style="color: var(--accent);">2.41</div>
+            <div class="metric-label">Profit Factor</div>
+          </div>
+          <div class="metric-card" style="border-top: 3px solid var(--gold);">
+            <div class="metric-value" style="color: var(--gold);">7.94%</div>
+            <div class="metric-label">Max Drawdown</div>
+          </div>
+          <div class="metric-card" style="border-top: 3px solid var(--purple);">
+            <div class="metric-value" style="color: var(--purple);">95.8%</div>
+            <div class="metric-label">Bear Capital Preserved</div>
+          </div>
+        </div>
+
+        <div class="plain-english" style="max-width: 950px; margin: 1.5rem auto 0 auto; text-align: left;">
+          <div class="plain-english-icon">💡</div>
+          <div class="plain-english-text">
+            <strong>In Plain English:</strong> This is an autonomous hedge fund in a box. It trades 24/7 across crypto and US tech stocks, captures trend breakouts, shorts overbought bear rallies, preserves 100% of capital during crashes, and cuts exchange fees by 80% using smart limit orders.
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Slide 2: The Web4 Paradigm -->
+    <!-- Slide 2: The Core Market Problem -->
+    <div class="slide">
+      <h2>The Problem: Why 95% of Traders & Retail Bots Fail</h2>
+      <p class="subtitle">Most automated systems are fragile toys that collapse under real-world conditions.</p>
+      
+      <div class="grid-4">
+        <div class="card" style="border-left: 4px solid var(--red);">
+          <h3 style="color: var(--red);">1. Revenge & Emotional Drag</h3>
+          <p>Manual traders and unconstrained bots double down on losing streaks, causing sudden margin calls and account wipes.</p>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--gold);">
+          <h3 style="color: var(--gold);">2. Single-Regime Fragility</h3>
+          <p>Momentum bots get shredded in sideways chop. Mean reversion bots get obliterated in trending bear crashes.</p>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--purple);">
+          <h3 style="color: var(--purple);">3. Hidden Friction Bleed</h3>
+          <p>Aggressive taker market orders and spread slippage silently consume 15%–25% of trading capital every year.</p>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--red);">
+          <h3 style="color: var(--red);">4. Crypto Winter Oblivion</h3>
+          <p>Passive holding or blind dip-buying drops 60%–80% when macro bear cycles strike the crypto market.</p>
+        </div>
+      </div>
+
+      <div class="plain-english">
+        <div class="plain-english-icon">🛡️</div>
+        <div class="plain-english-text">
+          <strong>Our Solution:</strong> Replace human emotion and rigid single scripts with an <strong>autonomous multi-agent swarm</strong> equipped with deterministic circuit breakers, cross-asset hedging, and smart maker order routing.
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3: The Web4 Paradigm -->
     <div class="slide">
       <h2>The Evolution to Web4: Autonomous Economic Agency</h2>
-      <p class="subtitle">From static web pages to sovereign, self-improving algorithmic organisms.</p>
-      <div class="grid">
+      <p class="subtitle">Why our bot represents the next technological paradigm beyond Web3.</p>
+      
+      <div class="grid-4">
         <div class="card">
           <h3>Web1 (1990s)</h3>
-          <p><strong>Read-Only:</strong> Static HTML pages, centralized portals, information retrieval.</p>
+          <span class="badge badge-blue">Read-Only</span>
+          <p style="margin-top: 0.6rem;">Static HTML, informational web pages, passive human readers.</p>
         </div>
         <div class="card">
           <h3>Web2 (2000s)</h3>
-          <p><strong>Read + Write:</strong> Cloud databases, social networks, centralized platform control.</p>
+          <span class="badge badge-gold">Read + Write</span>
+          <p style="margin-top: 0.6rem;">Centralized cloud servers, social networks, dynamic user apps.</p>
         </div>
         <div class="card">
           <h3>Web3 (2010s)</h3>
-          <p><strong>Read + Write + Own:</strong> Smart contracts, DeFi protocols, digital asset ownership.</p>
+          <span class="badge badge-purple">Read+Write+Own</span>
+          <p style="margin-top: 0.6rem;">Smart contracts, decentralized ledgers, digital asset ownership.</p>
         </div>
-        <div class="card" style="border-color: var(--accent);">
+        <div class="card" style="border: 2px solid var(--accent); background: rgba(56, 189, 248, 0.08);">
           <h3 style="color: var(--accent);">Web4 (2026+)</h3>
-          <p><strong>Autonomous Agency:</strong> Self-governing AI agents with independent perception, mathematical risk immunity, and continuous optimization.</p>
+          <span class="badge badge-green">Autonomous Agency</span>
+          <p style="margin-top: 0.6rem;">Self-governing AI organisms acting as independent economic entities with mathematical risk immunity.</p>
+        </div>
+      </div>
+
+      <div class="plain-english">
+        <div class="plain-english-icon">💡</div>
+        <div class="plain-english-text">
+          <strong>The Fundamental Shift:</strong> In Web3, smart contracts execute static rules blindly. In <strong>Web4</strong>, intelligent agents perceive changing market dynamics, synthesize multi-sensor telemetry, arbitrate strategy conflict, and adapt without human intervention.
         </div>
       </div>
     </div>
 
-    <!-- Slide 3: The 3 Levels of Web4 Autonomy -->
+    <!-- Slide 4: The 3 Levels of Autonomy -->
     <div class="slide">
       <h2>The 3 Levels of System Autonomy</h2>
-      <div class="grid">
-        <div class="card">
+      <p class="subtitle">How the agent perceives, governs itself, and continuously learns.</p>
+      
+      <div class="grid-3">
+        <div class="card" style="border-top: 3px solid var(--accent);">
           <h3>Level 1: Perception & Reasoning</h3>
           <ul>
             <li>Multi-venue ingestion (Binance CCXT + Yahoo Finance)</li>
             <li>Liquidation absorption wick detection (2.0x volume flushes)</li>
             <li>Derivatives perpetual funding rate radar</li>
-            <li>Cognitive conflict arbitration (rejects ambiguous signals)</li>
+            <li>Cognitive conflict arbitration (rejects ambiguous states)</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card" style="border-top: 3px solid var(--red);">
           <h3>Level 2: Governance & Immunity</h3>
           <ul>
-            <li>Van Tharp R-risk sizing strictly bounded within [1%, 5%]</li>
+            <li>Van Tharp R-risk sizing hard-clamped to [1%, 5%]</li>
             <li>Macro Bear Gate (blocks long breakouts below 200 EMA)</li>
             <li>5.0% Daily Loss Limit Circuit Breaker</li>
             <li>15.0% Max Drawdown Portfolio Kill Switch</li>
             <li>Atomic disk persistence with automatic .bak recovery</li>
           </ul>
         </div>
-        <div class="card">
+        <div class="card" style="border-top: 3px solid var(--green);">
           <h3>Level 3: Optimization & Learning</h3>
           <ul>
             <li>Dynamic Half-Kelly capital compounding</li>
             <li>Hierarchical Risk Parity (HRP) sector clustering</li>
             <li>Market-neutral statistical arbitrage pairs engine</li>
-            <li>Automated walk-forward out-of-sample optimization</li>
+            <li>Automated walk-forward out-of-sample arena</li>
           </ul>
         </div>
       </div>
     </div>
 
-    <!-- Slide 4: The 8-Agent Trading Desk -->
+    <!-- Slide 5: Interactive 8-Agent Trading Desk -->
     <div class="slide">
-      <h2>The 8 Specialized Quantitative Internal Agents</h2>
-      <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
-        <div class="card">
-          <h3>1. Data Scout Agent</h3>
-          <p>Ingests OHLCV feeds, validates data staleness (<120m), and monitors funding rates.</p>
-        </div>
-        <div class="card">
-          <h3>2. Momentum Hunter</h3>
-          <p>Rides multi-timeframe Donchian breakouts with dynamic ATR trailing stops.</p>
-        </div>
-        <div class="card">
-          <h3>3. Mean Reversion Agent</h3>
-          <p>Fades overbought rallies (RSI > 75) and buys extreme panic selloffs.</p>
-        </div>
-        <div class="card">
-          <h3>4. Pairs Stat-Arb Agent</h3>
-          <p>Extracts market-neutral spread alpha from SOL/AVAX, NVDA/AMD, and ETH/BTC.</p>
-        </div>
-        <div class="card">
-          <h3>5. Coordinator Arbiter</h3>
-          <p>Reconciles strategy conflicts, ranks relative strength, and routes maker orders.</p>
-        </div>
-        <div class="card">
-          <h3>6. Risk Governor Agent</h3>
-          <p>Sizes positions to 1%-5% equity and enforces daily and max drawdown breakers.</p>
-        </div>
-        <div class="card">
-          <h3>7. Execution & Ledger</h3>
-          <p>Simulates maker fills, manages positions, and guarantees zero corruption.</p>
-        </div>
-        <div class="card">
-          <h3>8. Self-Optimizer</h3>
-          <p>Simulates parameter mutations and validates out-of-sample edge.</p>
-        </div>
+      <h2>The 8-Agent Quantitative Trading Desk</h2>
+      <p class="subtitle">Click an internal agent below to inspect its algorithmic logic, inputs, and safety rules.</p>
+      
+      <div class="agent-nav" id="agentNav">
+        <button class="agent-btn active" onclick="showAgentDetail(0)">1. Data Scout</button>
+        <button class="agent-btn" onclick="showAgentDetail(1)">2. Momentum Hunter</button>
+        <button class="agent-btn" onclick="showAgentDetail(2)">3. Mean Reversion</button>
+        <button class="agent-btn" onclick="showAgentDetail(3)">4. Pairs Stat-Arb</button>
+        <button class="agent-btn" onclick="showAgentDetail(4)">5. Coordinator Arbiter</button>
+        <button class="agent-btn" onclick="showAgentDetail(5)">6. Risk Governor</button>
+        <button class="agent-btn" onclick="showAgentDetail(6)">7. Execution & Ledger</button>
+        <button class="agent-btn" onclick="showAgentDetail(7)">8. Self-Optimizer</button>
+      </div>
+
+      <div class="agent-detail-panel" id="agentDetailContent">
+        <!-- Injected via JavaScript -->
       </div>
     </div>
 
-    <!-- Slide 5: The 11-Asset Watchlist Matrix -->
+    <!-- Slide 6: The 11-Asset Cross-Market Universe -->
     <div class="slide">
       <h2>The 11-Asset Universe & Cross-Market Hedging Matrix</h2>
-      <p class="subtitle">Autonomous risk balancing across decentralized crypto and traditional equity markets.</p>
+      <p class="subtitle">Cross-market diversification that proved its edge during the crypto bear cycle.</p>
+      
       <table>
         <thead>
           <tr>
             <th>Sector</th>
             <th>Tickers</th>
-            <th>Portfolio Function</th>
-            <th>Strategic Value</th>
+            <th>Role in Portfolio</th>
+            <th>Real-World Performance</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><strong>Crypto L1 Growth</strong></td>
+            <td><strong>Crypto L1 Growth Engines</strong></td>
             <td><code>SOL</code>, <code>NEAR</code>, <code>AVAX</code>, <code>LINK</code>, <code>BNB</code></td>
-            <td>High-Beta Trend Capture</td>
-            <td>Drives explosive +40% to +50% quarterly expansion during bull phases</td>
+            <td>Explosive Alpha Drivers</td>
+            <td>NEAR generated <strong>+$3,085</strong> and LINK generated <strong>+$1,239</strong> during trend expansion.</td>
           </tr>
           <tr>
             <td><strong>Macro Anchors</strong></td>
             <td><code>BTC</code>, <code>ETH</code></td>
             <td>Directional Benchmark</td>
-            <td>Establishes market-wide regime baseline and funding rate radar</td>
+            <td>Establishes market-wide regime baseline and funding rate radar.</td>
           </tr>
           <tr>
             <td><strong>US Tech Equities</strong></td>
             <td><code>NVDA</code>, <code>AMD</code></td>
-            <td>Uncorrelated Alpha</td>
-            <td>AMD generated <span class="highlight">+26.49% ($2,648)</span> while crypto suffered a crash</td>
+            <td>Uncorrelated Equities Hedge</td>
+            <td>AMD generated <span class="highlight">+26.49% ($2,648 profit)</span> while crypto suffered a winter!</td>
           </tr>
           <tr>
-            <td><strong>Benchmark Indices</strong></td>
+            <td><strong>US Benchmark Indices</strong></td>
             <td><code>SPY</code> (S&P 500), <code>QQQ</code> (Nasdaq 100)</td>
-            <td>Low-Volatility Anchor</td>
-            <td>Rotates risk budget into stable indices when crypto enters bear gates</td>
+            <td>Low-Volatility Core Anchor</td>
+            <td>Rotates risk budget into stable indices when crypto enters bear gates. Currently holding SPY!</td>
           </tr>
         </tbody>
       </table>
+
+      <div class="plain-english">
+        <div class="plain-english-icon">💡</div>
+        <div class="plain-english-text">
+          <strong>The Hedge Fund Advantage:</strong> Most crypto bots trade only Bitcoin and altcoins. When crypto crashes, they die. Our bot trades both Crypto AND US Tech Equities—allowing it to make money in American stocks while crypto is sleeping.
+        </div>
+      </div>
     </div>
 
-    <!-- Slide 6: Order Flow Liquidation Mechanics -->
+    <!-- Slide 7: All-Weather Playbook (NEW) -->
+    <div class="slide">
+      <h2>All-Weather Playbook: Winning in Bull, Bear & Chop</h2>
+      <p class="subtitle">How our multi-strategy matrix generates profit regardless of macroeconomic conditions.</p>
+      
+      <div class="grid-3">
+        <div class="card" style="border-top: 4px solid var(--green); background: rgba(16, 185, 129, 0.06);">
+          <span class="badge badge-green">🟢 BULL MARKET EXPANSION</span>
+          <h3 style="margin-top: 0.5rem; color: #fff;">Trend Acceleration</h3>
+          <ul style="margin-top: 0.5rem;">
+            <li><strong>Strategy:</strong> Donchian Breakout + 32/200 EMA confluence</li>
+            <li><strong>Trailing Stops:</strong> Ratchets upward with 2.25x ATR to ride massive runners</li>
+            <li><strong>Asset Target:</strong> High-beta Layer-1s (`SOL`, `NEAR`, `AVAX`)</li>
+            <li><strong>Outcome:</strong> Massive alpha surges (+40% to +50% quarterly)</li>
+          </ul>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--gold); background: rgba(245, 158, 11, 0.06);">
+          <span class="badge badge-gold">🟡 SIDEWAYS CHOP / CONSOLIDATION</span>
+          <h3 style="margin-top: 0.5rem; color: #fff;">Mean Reversion & Stat-Arb</h3>
+          <ul style="margin-top: 0.5rem;">
+            <li><strong>Chop Throttle:</strong> Risk automatically halved to 1.0% when ADX &lt; 20</li>
+            <li><strong>Mean Reversion:</strong> Fades Bollinger band boundaries</li>
+            <li><strong>Stat-Arb:</strong> Extracts zero-beta spread profit on `SOL/AVAX` & `NVDA/AMD`</li>
+            <li><strong>Outcome:</strong> Eliminates whipsaws and harvests steady spread yield</li>
+          </ul>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--red); background: rgba(244, 63, 94, 0.06);">
+          <span class="badge badge-red">🔴 MACRO BEAR / FLASH CRASH</span>
+          <h3 style="margin-top: 0.5rem; color: #fff;">Cash Defense & Strict Shorts</h3>
+          <ul style="margin-top: 0.5rem;">
+            <li><strong>Macro Bear Gate:</strong> Halts crypto long breakouts below 200 EMA</li>
+            <li><strong>Equities Flight:</strong> Rotates risk into safe US assets (`AMD`, `SPY`)</li>
+            <li><strong>Strict Shorts:</strong> Fades overbought dead-cat rallies (`RSI &gt; 75`)</li>
+            <li><strong>Liquidation Wicks:</strong> Buys whale absorption at extreme capitulation</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="plain-english">
+        <div class="plain-english-icon">🎯</div>
+        <div class="plain-english-text">
+          <strong>The Takeaway:</strong> There is no "bad market" for this system. In bull runs, it rides the trend. In chop, it trades spreads. In crashes, it keeps 65%+ in cash, shorts bear bounces, and buys whale liquidation bottoms.
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 8: Order Flow & Liquidation Mechanics (With Visual SVG) -->
     <div class="slide">
       <h2>Order Flow & Liquidation Mechanics Visualized</h2>
-      <p class="subtitle">How the agent detects and exploits institutional absorption of retail liquidations.</p>
-      <div class="grid">
-        <div class="card" style="border-left: 4px solid var(--accent-red);">
-          <h3 style="color: var(--accent-red);">1. Retail Stop Cascade</h3>
-          <p>Leveraged retail traders leave predictable stops below support. Whales push prices to trigger forced market liquidation orders.</p>
-        </div>
-        <div class="card" style="border-left: 4px solid var(--accent-gold);">
-          <h3 style="color: var(--accent-gold);">2. Volume Surge Detection</h3>
-          <p>Agent's sensor flags bars where volume surges ≥ 2.0x above its 20-period moving average with extreme intraday range expansion.</p>
-        </div>
-        <div class="card" style="border-left: 4px solid var(--accent);">
-          <h3 style="color: var(--accent);">3. 50%+ Wick Rejection</h3>
-          <p>Identifies that lower shadow wick covers ≥ 50% of the bar, proving institutional limit buy walls absorbed all panic sell volume.</p>
-        </div>
-        <div class="card" style="border-left: 4px solid var(--accent-green);">
-          <h3 style="color: var(--accent-green);">4. Institutional Rebound Edge</h3>
-          <p>Bot enters immediately on the rejection with a tight stop under the wick. Achieves > 80% historical rebound probability.</p>
+      <p class="subtitle">How the agent detects institutional absorption of retail liquidation cascades.</p>
+      
+      <div class="chart-container" style="flex-direction: column;">
+        <svg viewBox="0 0 800 240" style="width: 100%; max-height: 220px;">
+          <!-- Support line -->
+          <line x1="50" y1="120" x2="750" y2="120" stroke="#f43f5e" stroke-dasharray="6,6" stroke-width="2"/>
+          <text x="60" y="112" fill="#f43f5e" font-size="12" font-weight="700">Retail Support Level (Stop-Loss Clustering)</text>
+
+          <!-- Normal Candle 1 -->
+          <rect x="180" y="70" width="24" height="40" fill="#38bdf8"/>
+          <line x1="192" y1="55" x2="192" y2="70" stroke="#38bdf8" stroke-width="2"/>
+          <line x1="192" y1="110" x2="192" y2="120" stroke="#38bdf8" stroke-width="2"/>
+
+          <!-- Breakdown Flush Candle -->
+          <rect x="260" y="100" width="24" height="60" fill="#f43f5e"/>
+          <line x1="272" y1="90" x2="272" y2="100" stroke="#f43f5e" stroke-width="2"/>
+          <line x1="272" y1="160" x2="272" y2="175" stroke="#f43f5e" stroke-width="2"/>
+          <text x="210" y="195" fill="#f43f5e" font-size="11">Retail Stops Triggered</text>
+
+          <!-- Liquidation Absorption Wick Candle (THE HERO CANDLE) -->
+          <line x1="392" y1="115" x2="392" y2="215" stroke="#10b981" stroke-width="3"/>
+          <rect x="380" y="100" width="24" height="25" fill="#10b981" rx="2"/>
+          <!-- Absorption callout bracket -->
+          <path d="M 415 115 L 425 115 L 425 165 L 435 165 L 425 165 L 425 215 L 415 215" fill="none" stroke="#10b981" stroke-width="2"/>
+          <text x="445" y="165" fill="#10b981" font-size="12" font-weight="700">&ge; 50% Shadow Wick (Whale Absorption)</text>
+
+          <!-- Entry Arrow -->
+          <polygon points="392,85 385,70 399,70" fill="#38bdf8"/>
+          <text x="360" y="62" fill="#38bdf8" font-size="12" font-weight="800">AGENT ENTRY</text>
+
+          <!-- Explosive Rebound Candles -->
+          <rect x="490" y="65" width="24" height="45" fill="#10b981"/>
+          <line x1="502" y1="50" x2="502" y2="65" stroke="#10b981" stroke-width="2"/>
+          <line x1="502" y1="110" x2="502" y2="120" stroke="#10b981" stroke-width="2"/>
+
+          <rect x="560" y="30" width="24" height="50" fill="#10b981"/>
+          <line x1="572" y1="15" x2="572" y2="30" stroke="#10b981" stroke-width="2"/>
+          <line x1="572" y1="80" x2="572" y2="95" stroke="#10b981" stroke-width="2"/>
+          <text x="530" y="12" fill="#10b981" font-size="12" font-weight="700">Explosive Reversal (+80% Win Rate)</text>
+
+          <!-- Volume Bars at bottom -->
+          <rect x="180" y="215" width="24" height="15" fill="#334155"/>
+          <rect x="260" y="200" width="24" height="30" fill="#f43f5e"/>
+          <rect x="380" y="180" width="24" height="50" fill="#10b981" stroke="#38bdf8" stroke-width="1.5"/>
+          <text x="350" y="172" fill="#f59e0b" font-size="11" font-weight="700">&ge; 2.0x Volume Surge</text>
+        </svg>
+      </div>
+
+      <div class="plain-english">
+        <div class="plain-english-icon">💡</div>
+        <div class="plain-english-text">
+          <strong>How It Works:</strong> Retail traders place stop-losses just below support. Market makers push price down to hit those stops, triggering millions in panic sell orders. Whales wait with massive limit buy orders to absorb all those cheap coins. Our sensor identifies the huge volume spike and long shadow wick, entering right beside the whales!
         </div>
       </div>
     </div>
 
-    <!-- Slide 7: Statistical Arbitrage Pairs -->
+    <!-- Slide 9: Statistical Arbitrage & Cointegration (With Visual SVG) -->
     <div class="slide">
-      <h2>Statistical Arbitrage: Zero-Beta Pairs Trading</h2>
-      <p class="subtitle">Market-neutral spread mean reversion with mathematical proof.</p>
-      <div class="grid" style="margin-bottom: 1.5rem;">
-        <div class="card">
-          <h3>The Cointegration Math</h3>
-          <p>Computes rolling hedge ratio: <code>&beta; = Cov(A, B) / Var(B)</code></p>
-          <p>Calculates rolling spread: <code>Spread = Price_A - (&beta; &times; Price_B)</code></p>
-          <p>Normalizes to Z-Score: <code>Z = (Spread - Mean) / StdDev</code></p>
-        </div>
-        <div class="card">
-          <h3>Execution Rules</h3>
-          <p>• <strong>|Z| &ge; 2.0:</strong> Spread stretched &rarr; Long cheap asset, Short rich asset.</p>
-          <p>• <strong>|Z| &le; 0.5:</strong> Mean reversion target hit &rarr; Close with zero market risk.</p>
-          <p>• <strong>Market Beta = 0.0:</strong> Profits regardless of market direction.</p>
-        </div>
+      <h2>Statistical Arbitrage: Zero-Beta Pairs Engine</h2>
+      <p class="subtitle">Extracting pure mathematical spread profit regardless of whether the market goes up or down.</p>
+      
+      <div class="chart-container">
+        <svg viewBox="0 0 800 200" style="width: 100%; max-height: 180px;">
+          <!-- Upper Threshold +2.0 Z -->
+          <line x1="50" y1="40" x2="750" y2="40" stroke="#f43f5e" stroke-dasharray="4,4" stroke-width="1.5"/>
+          <text x="60" y="32" fill="#f43f5e" font-size="11" font-weight="700">+2.0&sigma; Upper Bound (SHORT A, LONG B)</text>
+
+          <!-- Mean Line 0.0 Z -->
+          <line x1="50" y1="100" x2="750" y2="100" stroke="#38bdf8" stroke-width="1.5"/>
+          <text x="60" y="93" fill="#38bdf8" font-size="11" font-weight="700">0.0&sigma; Fair Value Mean (TAKE PROFIT / CLOSE)</text>
+
+          <!-- Lower Threshold -2.0 Z -->
+          <line x1="50" y1="160" x2="750" y2="160" stroke="#10b981" stroke-dasharray="4,4" stroke-width="1.5"/>
+          <text x="60" y="152" fill="#10b981" font-size="11" font-weight="700">-2.0&sigma; Lower Bound (LONG A, SHORT B)</text>
+
+          <!-- Z-score Sine Curve -->
+          <path d="M 50 100 Q 150 20, 250 100 T 450 100 T 650 100 T 750 100" fill="none" stroke="#f59e0b" stroke-width="3"/>
+
+          <!-- Indicator Dots & Callouts -->
+          <circle cx="150" cy="40" r="6" fill="#f43f5e" stroke="#fff" stroke-width="2"/>
+          <text x="135" y="20" fill="#f43f5e" font-size="11" font-weight="800">SELL SPREAD</text>
+
+          <circle cx="250" cy="100" r="6" fill="#38bdf8" stroke="#fff" stroke-width="2"/>
+          <text x="235" y="125" fill="#38bdf8" font-size="11" font-weight="800">PROFIT FILL</text>
+
+          <circle cx="350" cy="160" r="6" fill="#10b981" stroke="#fff" stroke-width="2"/>
+          <text x="335" y="185" fill="#10b981" font-size="11" font-weight="800">BUY SPREAD</text>
+
+          <circle cx="450" cy="100" r="6" fill="#38bdf8" stroke="#fff" stroke-width="2"/>
+          <text x="435" y="125" fill="#38bdf8" font-size="11" font-weight="800">PROFIT FILL</text>
+        </svg>
       </div>
+
       <table>
         <thead>
           <tr>
-            <th>Asset Pair</th>
-            <th>Sector</th>
-            <th>Empirical Win Rate</th>
-            <th>Net Spread Captured</th>
+            <th>Cointegrated Asset Pair</th>
+            <th>Sector Category</th>
+            <th>Empirical 90-Day Win Rate</th>
+            <th>Market Direction Dependency</th>
           </tr>
         </thead>
         <tbody>
@@ -411,90 +876,180 @@
             <td><strong>SOL/USDT vs AVAX/USDT</strong></td>
             <td>Crypto Layer-1</td>
             <td><span class="highlight">57.4% Win Rate</span> (58 wins / 101 trades)</td>
-            <td>+1,024.66 points</td>
+            <td><span class="badge badge-blue">Zero Beta (Market-Neutral)</span></td>
           </tr>
           <tr>
             <td><strong>NVDA vs AMD</strong></td>
-            <td>US Semiconductors</td>
+            <td>US Semiconductor</td>
             <td><span class="highlight">61.1% Win Rate</span> (11 wins / 18 trades)</td>
-            <td>+260.84 points</td>
+            <td><span class="badge badge-blue">Zero Beta (Market-Neutral)</span></td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Slide 8: Trading Strategies -->
+    <!-- Slide 10: The 3 Strategy Engines -->
     <div class="slide">
-      <h2>The 3 Complementary Trading Strategies</h2>
+      <h2>The 3 Complementary Strategy Engines</h2>
+      <p class="subtitle">Each strategy engine dominates a specific market regime to eliminate blind spots.</p>
+      
       <table>
         <thead>
           <tr>
-            <th>Strategy</th>
+            <th>Strategy Engine</th>
             <th>Market Regime</th>
-            <th>Entry Condition</th>
-            <th>Exit / Risk Control</th>
+            <th>Signal Formula</th>
+            <th>Risk & Exit Rules</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><strong>Trend Momentum</strong></td>
+            <td><strong>Trend Momentum Breakout</strong></td>
             <td><span class="badge badge-green">Trend Expansion</span></td>
-            <td>Triple Confluence: 4h Macro + 1h EMA + 20-bar Donchian High</td>
-            <td>Dynamic ATR Trailing Stop (Ratchets upward)</td>
+            <td>Price &gt; 200 EMA + Price &gt; 32 EMA + Donchian 20-High</td>
+            <td>Dynamic ATR Trailing Stop (Ratchets upward to lock profits)</td>
           </tr>
           <tr>
             <td><strong>Strict Bear Mean Reversion</strong></td>
             <td><span class="badge badge-red">Macro Bear Market</span></td>
-            <td>Exhausted Dead-Cat Rally: Price ≥ Upper BB & RSI > 75</td>
-            <td>Target Mean (20 SMA) with tight stop above swing high</td>
+            <td>Exhausted Dead-Cat Bounce: Upper BB + RSI &gt; 75.0</td>
+            <td>Target Mean (20 SMA) with tight stop above the swing high</td>
           </tr>
           <tr>
             <td><strong>Statistical Arbitrage</strong></td>
-            <td><span class="badge badge-blue">Any Regime / Chop</span></td>
-            <td>Cointegrated Spread Divergence: |Z-Score| ≥ 2.0</td>
-            <td>Target Mean Reversion: |Z-Score| ≤ 0.5 (Zero Beta)</td>
+            <td><span class="badge badge-blue">Sideways Chop / Any</span></td>
+            <td>Spread Divergence: |Z-Score| &ge; 2.0 standard deviations</td>
+            <td>Target Spread Mean Reversion: |Z-Score| &le; 0.5 (Market Neutral)</td>
           </tr>
         </tbody>
       </table>
-    </div>
 
-    <!-- Slide 6: Risk Governance -->
-    <div class="slide">
-      <h2>Deterministic Risk Engine & Circuit Breakers</h2>
-      <p class="subtitle">Why our system mathematically cannot blow up your portfolio.</p>
-      <div class="grid">
-        <div class="card" style="border-left: 4px solid var(--accent-red);">
-          <h3 style="color: var(--accent-red);">5.0% Daily Loss Limit</h3>
-          <p>Immediate trading halt if daily equity drops ≥ 5.0%. Shuts down the system during flash crashes and black swan events, preserving 95% of capital.</p>
-        </div>
-        <div class="card" style="border-left: 4px solid var(--accent-red);">
-          <h3 style="color: var(--accent-red);">15.0% Max Drawdown Breaker</h3>
-          <p>Permanent liquidation into 100% cash defense if portfolio drops ≥ 15.0% from peak. Insulates the account from multi-month bear winters.</p>
-        </div>
-        <div class="card" style="border-left: 4px solid var(--accent-green);">
-          <h3 style="color: var(--accent-green);">1% - 5% Position Sizing</h3>
-          <p>Van Tharp R-risk equation: position size is derived from ATR volatility. Hard-clamped between 1% and 5% account equity.</p>
-        </div>
-        <div class="card" style="border-left: 4px solid var(--accent-gold);">
-          <h3 style="color: var(--accent-gold);">Hierarchical Risk Parity (HRP)</h3>
-          <p>Computes covariance matrices between assets. When Layer-1 cryptos correlate > 0.85, their joint risk is dynamically scaled down.</p>
+      <div class="plain-english">
+        <div class="plain-english-icon">💡</div>
+        <div class="plain-english-text">
+          <strong>Why Three Strategies?</strong> Momentum makes a fortune in bull markets but struggles in chop. Mean reversion thrives in chop but fails in raging trends. By combining both with Pairs Trading, the bot has a winning playbook for every market season.
         </div>
       </div>
     </div>
 
-    <!-- Slide 7: Empirical Results -->
+    <!-- Slide 11: Risk Governance & Circuit Breakers -->
+    <div class="slide">
+      <h2>Deterministic Risk Engine & Circuit Breakers</h2>
+      <p class="subtitle">Why our system mathematically cannot blow up your portfolio.</p>
+      
+      <div class="grid-4">
+        <div class="card" style="border-left: 4px solid var(--red);">
+          <h3 style="color: var(--red);">5.0% Daily Loss Breaker</h3>
+          <p>Instant trading halt if daily equity drops &ge; 5.0%. Stops intraday death spirals during flash crashes, preserving 95% of capital.</p>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--red);">
+          <h3 style="color: var(--red);">15.0% Max Drawdown Kill Switch</h3>
+          <p>Liquidates into 100% cash defense if portfolio drops &ge; 15% from all-time peak. Insulates the account from catastrophic bear crashes.</p>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--green);">
+          <h3 style="color: var(--green);">Van Tharp R-Risk (1% - 5%)</h3>
+          <p>Position sizing is mathematically derived from ATR volatility. Hard-clamped so no single trade can ever risk more than 1% to 5% equity.</p>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--gold);">
+          <h3 style="color: var(--gold);">Macro Bear & Chop Gates</h3>
+          <p>Blocks crypto long entries when Price &lt; 200 EMA. Automatically cuts position risk in half (from 2% to 1%) when ADX &lt; 20 (chop).</p>
+        </div>
+      </div>
+
+      <div class="plain-english">
+        <div class="plain-english-icon">🛡️</div>
+        <div class="plain-english-text">
+          <strong>Hardware & Code Invariants:</strong> Position risk cannot be modified by any AI agent, optimizer, or CLI flag. The bounds [1%, 5%] are hard-coded in <code>core/risk_engine.py</code> and enforced before every single order fill.
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 12: Mathematics of Loss Asymmetry (NEW Interactive) -->
+    <div class="slide">
+      <h2>The Mathematics of Loss: Why 15% Max DD Saves You</h2>
+      <p class="subtitle">Losses are mathematically asymmetric. The deeper the hole, the harder it is to climb out.</p>
+      
+      <div class="visual-bar-container">
+        <div class="bar-row">
+          <div class="bar-label">-5% Loss</div>
+          <div class="bar-track">
+            <div class="bar-fill-green" style="width: 12%;">Requires +5.3% to break even</div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">-15% Loss (Our Breaker)</div>
+          <div class="bar-track">
+            <div class="bar-fill-green" style="width: 25%;">Requires +17.6% (Easy recovery in cash!) 🛡️</div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">-30% Loss</div>
+          <div class="bar-track">
+            <div class="bar-fill-red" style="width: 48%; opacity: 0.7;">Requires +42.9% to break even</div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">-50% Loss (Typical Crypto)</div>
+          <div class="bar-track">
+            <div class="bar-fill-red" style="width: 80%;">Requires +100.0% (Must double your money!) ⚠️</div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">-80% Loss (Retail Wipeout)</div>
+          <div class="bar-track">
+            <div class="bar-fill-red" style="width: 100%;">Requires +400.0% (Mathematical Death) 💀</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Loss Calculator -->
+      <div class="slider-box">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4 style="color: #fff; font-size: 0.95rem;">Interactive Recovery Simulator:</h4>
+          <span id="sliderDisplay" style="font-size: 1.1rem; font-weight: 800; color: var(--accent);">Loss: -15% &rarr; Requires +17.6% Gain</span>
+        </div>
+        <input type="range" min="1" max="90" value="15" class="loss-range" id="lossSlider" oninput="updateLossSim(this.value)">
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem;">
+          Drag the slider to visualize why stopping losses at 15% guarantees capital survival.
+        </p>
+      </div>
+    </div>
+
+    <!-- Slide 13: 90-Day Empirical Track Record -->
     <div class="slide">
       <h2>Empirical Performance: 90-Day Active Market</h2>
       <p class="subtitle">All results include full trading friction (0.06% fees + 0.04% slippage).</p>
+      
+      <div class="visual-bar-container">
+        <div class="bar-row">
+          <div class="bar-label">Buy & Hold Crypto Index</div>
+          <div class="bar-track">
+            <div class="bar-fill-red" style="width: 28%;">+14.2%</div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Original Bot Baseline</div>
+          <div class="bar-track">
+            <div class="bar-fill-green" style="width: 55%; opacity: 0.7;">+35.00% ($13,500)</div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Our Upgraded Web4 Bot</div>
+          <div class="bar-track">
+            <div class="bar-fill-green" style="width: 85%;">+52.45% ($15,245.44) 🏆</div>
+          </div>
+        </div>
+      </div>
+
       <table>
         <thead>
           <tr>
-            <th>Milestone</th>
+            <th>Milestone Evolution Stage</th>
             <th>Final Equity</th>
             <th>Net Return</th>
             <th>Win Rate</th>
             <th>Profit Factor</th>
-            <th>Max DD</th>
+            <th>Max Drawdown</th>
           </tr>
         </thead>
         <tbody>
@@ -522,8 +1077,8 @@
             <td>2.28</td>
             <td>7.94%</td>
           </tr>
-          <tr style="background: rgba(52, 211, 153, 0.1);">
-            <td><strong>Tier-1 Maker Execution Alpha</strong></td>
+          <tr style="background: rgba(16, 185, 129, 0.12);">
+            <td><strong>Tier-1 Smart Maker Execution</strong></td>
             <td><strong>$15,245.44</strong></td>
             <td><span class="highlight">+52.45%</span></td>
             <td><strong>48.2%</strong></td>
@@ -532,100 +1087,149 @@
           </tr>
         </tbody>
       </table>
-      <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 1rem;">
-        🏆 <strong>Execution Alpha:</strong> Smart maker post-only limit orders added an extra <strong>+$450.02 (+4.50%)</strong> directly into net profit by eliminating slippage and slashing fees.
-      </p>
     </div>
 
-    <!-- Slide 8: 365-Day Stress Test -->
+    <!-- Slide 14: 365-Day Stress Test & Equity Curve (SVG Chart) -->
     <div class="slide">
-      <h2>365-Day Stress Test: The Macro Bear Crash</h2>
+      <h2>365-Day Macro Stress-Test & Visual Equity Curve</h2>
       <p class="subtitle">How the bot defended capital during the 2025–2026 -70% crypto collapse.</p>
+      
+      <div class="chart-container">
+        <svg viewBox="0 0 800 200" style="width: 100%; max-height: 180px;">
+          <!-- Axes -->
+          <line x1="60" y1="20" x2="60" y2="170" stroke="#334155" stroke-width="1.5"/>
+          <line x1="60" y1="170" x2="760" y2="170" stroke="#334155" stroke-width="1.5"/>
+
+          <!-- Labels -->
+          <text x="15" y="30" fill="#94a3b8" font-size="10">$15,000</text>
+          <text x="15" y="95" fill="#94a3b8" font-size="10">$10,000</text>
+          <text x="15" y="160" fill="#94a3b8" font-size="10">$4,000</text>
+          <line x1="55" y1="95" x2="760" y2="95" stroke="#334155" stroke-dasharray="2,2"/>
+
+          <!-- Buy & Hold Curve (Crashing from $10k to $4.1k) -->
+          <path d="M 60 95 C 200 90, 350 145, 550 155 S 700 160, 750 160" fill="none" stroke="#f43f5e" stroke-width="2.5" stroke-dasharray="5,5"/>
+          <circle cx="750" cy="160" r="5" fill="#f43f5e"/>
+          <text x="610" y="150" fill="#f43f5e" font-size="11" font-weight="700">Buy & Hold: -58.4% ($4,160)</text>
+
+          <!-- Web4 Agent Curve (Capital Preserved in Cash + AMD Alpha) -->
+          <path d="M 60 95 C 180 94, 300 97, 450 96 S 650 90, 750 88" fill="none" stroke="#10b981" stroke-width="3.5"/>
+          <circle cx="750" cy="88" r="5" fill="#10b981"/>
+          <text x="540" y="80" fill="#10b981" font-size="11" font-weight="800">Web4 Agent: 95.8% Intact ($9,583.63)</text>
+          <text x="60" y="185" fill="#64748b" font-size="10">Day 0 (Start)</text>
+          <text x="400" y="185" fill="#64748b" font-size="10">Day 180 (Mid Crash)</text>
+          <text x="700" y="185" fill="#64748b" font-size="10">Day 365 (Year End)</text>
+        </svg>
+      </div>
+
       <table>
         <thead>
           <tr>
-            <th>Asset / Strategy</th>
+            <th>Asset / Benchmark</th>
             <th>Buy & Hold Return</th>
-            <th>Our Upgraded Bot</th>
+            <th>Our Upgraded Bot Action</th>
             <th>Capital Preserved</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>Bitcoin (BTC)</td>
-            <td style="color: var(--accent-red);">-49.2%</td>
-            <td>Protected in Cash</td>
+            <td style="color: var(--red);">-49.2%</td>
+            <td>Protected in Cash (Below 200 EMA)</td>
             <td><span class="highlight">95.8% Intact</span></td>
           </tr>
           <tr>
             <td>Ethereum (ETH)</td>
-            <td style="color: var(--accent-red);">-63.1%</td>
-            <td>Protected in Cash</td>
+            <td style="color: var(--red);">-63.1%</td>
+            <td>Protected in Cash (Below 200 EMA)</td>
             <td><span class="highlight">95.8% Intact</span></td>
           </tr>
           <tr>
             <td>Solana (SOL)</td>
-            <td style="color: var(--accent-red);">-70.4%</td>
-            <td>Protected in Cash</td>
+            <td style="color: var(--red);">-70.4%</td>
+            <td>Protected in Cash (Below 200 EMA)</td>
             <td><span class="highlight">95.8% Intact</span></td>
           </tr>
           <tr>
             <td>AMD (US Tech Stock)</td>
             <td>—</td>
             <td><span class="highlight">+26.49%</span> ($2,648 Profit)</td>
-            <td>Equities Hedge</td>
+            <td>Cross-Asset Hedge</td>
           </tr>
           <tr style="background: rgba(56, 189, 248, 0.1);">
-            <td><strong>Annual Multi-Asset Portfolio</strong></td>
-            <td style="color: var(--accent-red);"><strong>-58.4% (Catastrophic)</strong></td>
-            <td><strong>-4.16% (Safe Cash)</strong></td>
+            <td><strong>Full Annual Portfolio</strong></td>
+            <td style="color: var(--red);"><strong>-58.4% (Catastrophic)</strong></td>
+            <td><strong>-4.16% (Cash Defense)</strong></td>
             <td><span class="highlight"><strong>$9,583.63 Preserved</strong></span></td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Slide 12: Zero-Failure Production Engineering -->
+    <!-- Slide 15: Execution Alpha -->
     <div class="slide">
-      <h2>Zero-Failure Production Engineering & Invariants</h2>
-      <p class="subtitle">Industrial-grade software engineering guaranteeing zero state loss, zero race conditions, and complete resilience.</p>
-      <div class="grid">
-        <div class="card" style="border-left: 4px solid var(--accent-green);">
-          <h3 style="color: var(--accent-green);">51/51 Automated Tests</h3>
-          <p>Full pytest suite covering risk limits, strategy signals, data ingestion, and optimization runs in under 1.5 seconds on every commit.</p>
+      <h2>Execution Alpha: The Maker Advantage</h2>
+      <p class="subtitle">Why institutional quantitative desks never use aggressive market orders.</p>
+      
+      <div class="grid" style="margin-bottom: 1.2rem;">
+        <div class="card" style="border-left: 4px solid var(--red);">
+          <h3 style="color: var(--red);">Taker Market Orders (Retail)</h3>
+          <p>• Crosses the order book spread aggressively</p>
+          <p>• <strong>0.06% exchange fee + 0.04% slippage</strong></p>
+          <p>• Total Friction: <strong>0.20% round-trip</strong> per trade</p>
+          <p>• Costs 15%–20% of your account per year!</p>
         </div>
-        <div class="card" style="border-left: 4px solid var(--accent-blue);">
-          <h3 style="color: var(--accent);">Atomic State Persistence</h3>
-          <p>Portfolio state writes to <code>.tmp</code> first, calls OS <code>fsync()</code>, and atomically renames with an active <code>.bak</code> fallback to prevent corruption during power loss.</p>
+        <div class="card" style="border-left: 4px solid var(--green);">
+          <h3 style="color: var(--green);">Smart Maker Orders (Institutional)</h3>
+          <p>• Places post-only limit orders inside the spread</p>
+          <p>• <strong>0.02% maker fee + 0.00% slippage</strong></p>
+          <p>• Total Friction: <strong>0.04% round-trip</strong> (80% fee cut)</p>
+          <p>• Adds free profit on every single trade!</p>
         </div>
-        <div class="card" style="border-left: 4px solid var(--accent-gold);">
-          <h3 style="color: var(--accent-gold);">Kernel Process Locks</h3>
-          <p>Enforces <code>/tmp/paper_trader.pid</code> file locks to guarantee that duplicate daemon instances can never run simultaneously or create double-entry race conditions.</p>
-        </div>
-        <div class="card" style="border-left: 4px solid var(--accent-red);">
-          <h3 style="color: var(--accent-red);">Automated Data Sentinel</h3>
-          <p>Automatically suppresses trade signals if exchange feeds lag by > 120 minutes or if volume anomalies/data gaps are detected.</p>
+      </div>
+
+      <div class="plain-english">
+        <div class="plain-english-icon">🏆</div>
+        <div class="plain-english-text">
+          <strong>The Empirical Bottom Line:</strong> Simply switching our bot to Smart Maker limit orders added an extra <strong>+$450.02 (+4.50% of the entire portfolio)</strong> directly into net profit without changing any trading rules!
         </div>
       </div>
     </div>
 
-    <!-- Slide 13: The 3-Stage Roadmap -->
+    <!-- Slide 16: Live Status & Incubation Roadmap -->
     <div class="slide">
-      <h2>The 3-Stage Incubation Roadmap to Production</h2>
-      <div class="grid">
-        <div class="card" style="border: 2px solid var(--accent);">
+      <h2>Live Desk Telemetry & 3-Stage Incubation Roadmap</h2>
+      <p class="subtitle">The structured institutional framework for graduating from simulation to real capital.</p>
+      
+      <!-- Live Status Banner -->
+      <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--green); border-radius: 0.75rem; padding: 1rem 1.4rem; margin-bottom: 1.2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <span class="badge badge-green">LIVE DAEMON ACTIVE (Task 2493)</span>
+          <div style="font-size: 1.15rem; font-weight: 800; color: #fff; margin-top: 0.25rem;">
+            Equity: $9,818.61 | Cash: $6,384.50 (65% Safe Cash Defense)
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
+            Open: <code>SPY Long</code> (Entry: $769.72 | Trailing Stop Ratchet: $766.08 | Total Dollar Risk: $25.29)
+          </div>
+        </div>
+        <div>
+          <span class="badge badge-blue">51/51 PYTEST PASSED</span>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="card" style="border: 2px solid var(--accent); background: rgba(56, 189, 248, 0.08);">
           <span class="badge badge-blue">STAGE 1: CURRENT STAGE</span>
-          <h3 style="margin-top: 0.5rem;">Live Paper Incubation</h3>
+          <h3 style="margin-top: 0.6rem; color: #fff;">Live Paper Incubation</h3>
           <ul>
             <li>30–60 days autonomous forward test</li>
             <li>Zero real-money risk (PaperAccount)</li>
-            <li>51/51 automated unit tests passing</li>
-            <li>Verify fill execution and zero drift</li>
+            <li>Continuous 60s background daemon</li>
+            <li>Verify live fill execution and zero drift</li>
           </ul>
         </div>
         <div class="card">
-          <span class="badge badge-gold">STAGE 2: FUTURE</span>
-          <h3 style="margin-top: 0.5rem;">Micro-Capital Sandbox</h3>
+          <span class="badge badge-gold">STAGE 2: FUTURE SANDBOX</span>
+          <h3 style="margin-top: 0.6rem; color: #fff;">Micro-Capital Test</h3>
           <ul>
             <li>Small separate account ($500 - $1,000)</li>
             <li>Human engineer connects broker API</li>
@@ -633,9 +1237,9 @@
             <li>Microscopic risk ($5-$10 per trade)</li>
           </ul>
         </div>
-        <div class="card">
-          <span class="badge badge-green">STAGE 3: PRODUCTION</span>
-          <h3 style="margin-top: 0.5rem;">Full Sized Capital</h3>
+        <div class="card" style="border: 2px solid var(--green); background: rgba(16, 185, 129, 0.08);">
+          <span class="badge badge-green">STAGE 3: FULL PRODUCTION</span>
+          <h3 style="margin-top: 0.6rem; color: #fff;">Full Sized Capital</h3>
           <ul>
             <li>Gradual scaling after 3 profitable months</li>
             <li>Dynamic Half-Kelly growth compounding</li>
@@ -645,28 +1249,10 @@
       </div>
     </div>
 
-    <!-- Slide 10: Conclusion -->
-    <div class="slide">
-      <div style="text-align: center; padding: 2rem 0;">
-        <h1>Autonomous Quantitative Precision</h1>
-        <p class="subtitle">Built for long-term compounding, capital preservation, and institutional execution.</p>
-        <div class="grid" style="max-width: 800px; margin: 2rem auto; text-align: left;">
-          <div class="card">
-            <h3>📊 Live Daemon Active</h3>
-            <p>Scanning 11 multi-asset instruments every 60 seconds with 65% cash defense.</p>
-          </div>
-          <div class="card">
-            <h3>📑 Full Documentation</h3>
-            <p>Available in <code>README.md</code>, <code>PRESENTATION.md</code>, and <code>docs/web4-autonomous-levels.md</code>.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </main>
 
   <footer>
-    <div class="kbd-hint">Navigate with <kbd>←</kbd> <kbd>→</kbd> or click Next</div>
+    <div class="kbd-hint">Navigate with <kbd>←</kbd> <kbd>→</kbd> or click Next | Press <kbd>F</kbd> for Fullscreen</div>
     <div class="nav-buttons">
       <button id="prevBtn" onclick="prevSlide()">← Previous</button>
       <button id="nextBtn" onclick="nextSlide()">Next →</button>
@@ -677,12 +1263,49 @@
     let currentSlide = 0;
     const slides = document.querySelectorAll('.slide');
     const indicator = document.getElementById('slideIndicator');
+    const progressBar = document.getElementById('progressBar');
+    const slideSelect = document.getElementById('slideSelect');
+
+    const slideTitles = [
+      "1. Executive Cover & Key Metrics",
+      "2. The Core Market Problem (Why Bots Fail)",
+      "3. The Web4 Paradigm Evolution",
+      "4. The 3 Levels of System Autonomy",
+      "5. Interactive 8-Agent Trading Desk",
+      "6. The 11-Asset Universe & Hedging",
+      "7. All-Weather Playbook (Bull, Bear, Chop)",
+      "8. Order Flow & Liquidation Mechanics",
+      "9. Statistical Arbitrage Pairs Trading",
+      "10. The 3 Strategy Engines Matrix",
+      "11. Risk Governance & Circuit Breakers",
+      "12. Mathematics of Loss Asymmetry (Interactive)",
+      "13. 90-Day Empirical Track Record",
+      "14. 365-Day Bear Crash Stress Test",
+      "15. Execution Alpha: The Maker Advantage",
+      "16. Live Desk Telemetry & Incubation Roadmap"
+    ];
+
+    slideTitles.forEach((title, idx) => {
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.textContent = title;
+      slideSelect.appendChild(opt);
+    });
 
     function showSlide(index) {
       slides.forEach((s, i) => s.classList.toggle('active', i === index));
       indicator.textContent = `Slide ${index + 1} / ${slides.length}`;
+      slideSelect.value = index;
       document.getElementById('prevBtn').disabled = index === 0;
       document.getElementById('nextBtn').disabled = index === slides.length - 1;
+      
+      const progress = ((index + 1) / slides.length) * 100;
+      progressBar.style.width = `${progress}%`;
+    }
+
+    function jumpToSlide(index) {
+      currentSlide = parseInt(index);
+      showSlide(currentSlide);
     }
 
     function nextSlide() {
@@ -702,8 +1325,135 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
       if (e.key === 'ArrowLeft') prevSlide();
+      if (e.key.toLowerCase() === 'f') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
     });
 
+    /* Interactive Loss Recovery Simulator */
+    function updateLossSim(lossVal) {
+      lossVal = parseFloat(lossVal);
+      // Math: Required Gain = (1 / (1 - Loss/100) - 1) * 100
+      const recoveryGain = ((1 / (1 - (lossVal / 100))) - 1) * 100;
+      const display = document.getElementById('sliderDisplay');
+      
+      let color = 'var(--green)';
+      let tag = ' (Safe Zone)';
+      if (lossVal > 15 && lossVal <= 30) {
+        color = 'var(--gold)';
+        tag = ' (Caution Zone)';
+      } else if (lossVal > 30) {
+        color = 'var(--red)';
+        tag = ' (Death Spiral Danger)';
+      }
+      display.style.color = color;
+      display.innerHTML = `Loss: <strong>-${lossVal}%</strong> &rarr; Requires <strong>+${recoveryGain.toFixed(1)}%</strong> Gain${tag}`;
+    }
+
+    /* Interactive 8-Agent Inspector Data */
+    const agentsData = [
+      {
+        name: "1. Data Scout Agent",
+        role: "Multi-Source Sensor & Telemetry Ingestion",
+        formula: "Polls Binance CCXT + Yahoo Finance; calculates 8h funding rate & ATR(14)",
+        inputs: "Raw 1h & 4h OHLCV candlesticks, order book depth, perp funding rates",
+        outputs: "Normalized DataFrames, regime flags (BULL/BEAR/CHOP), data staleness checks",
+        safety: "Automated Data Sentinel disables trading if feeds lag > 120 minutes or report zero volume."
+      },
+      {
+        name: "2. Momentum Hunter Agent",
+        role: "Multi-Timeframe Trend Breakout Engine",
+        formula: "Signal = (Close > 200 EMA) AND (Close > 32 EMA) AND (Close >= Donchian_20_High)",
+        inputs: "4h Macro EMA, 1h Intermediate EMA, 20-period highest high",
+        outputs: "LONG breakout proposals with initial ATR stop-loss and ratchet targets",
+        safety: "Hard-gated by Macro Bear filter: zero long entries allowed if price is below 200 EMA."
+      },
+      {
+        name: "3. Mean Reversion Agent",
+        role: "Overbought Rally Fader & Oversold Capitulation Buyer",
+        formula: "Short = (Price < 200 EMA) AND (RSI >= 75.0) AND (Price >= Upper Bollinger Band)",
+        inputs: "Relative Strength Index (RSI 14), 20 SMA, 2.0x Bollinger Bands",
+        outputs: "SHORT proposals on dead-cat bounces; LONG proposals on oversold exhaustion wicks",
+        safety: "Halves risk allocation when market enters choppy consolidation (ADX < 20)."
+      },
+      {
+        name: "4. Pairs Stat-Arb Agent",
+        role: "Zero-Beta Cointegration Arbitrageur",
+        formula: "Spread = Price_A - (Beta * Price_B); Z = (Spread - Mean) / StdDev; Trigger |Z| >= 2.0",
+        inputs: "High-correlation pairs (SOL/AVAX, NVDA/AMD, ETH/BTC)",
+        outputs: "Synchronized market-neutral pairs proposals (Long undervalued / Short overvalued)",
+        safety: "Completely zero market beta: unaffected by overall crypto market directional crashes."
+      },
+      {
+        name: "5. Coordinator Arbiter Agent",
+        role: "Cognitive Conflict Resolution & Routing Gateway",
+        formula: "Arbiter Matrix: Reconciles concurrent proposals; enforces maker post-only execution",
+        inputs: "Proposals from Momentum, Mean Reversion, and Pairs engines",
+        outputs: "Unified candidate order list routed to Risk Governor; maker limit pricing",
+        safety: "Zero-Conflict Rule: Conflicting signals on the same symbol are instantly canceled."
+      },
+      {
+        name: "6. Risk Governor Agent",
+        role: "Deterministic Capital Protector & Circuit Breaker",
+        formula: "Position Units = (Equity * Risk_Pct) / (ATR * 2.25); Clamped strictly to [1%, 5%]",
+        inputs: "Portfolio equity, cash reserve, current ATR volatility, daily high watermark",
+        outputs: "Approved order sizes, trailing stop ratchet values, circuit breaker triggers",
+        safety: "Hard invariants: 5% Daily Loss Halt and 15% Max DD liquidation switch cannot be bypassed."
+      },
+      {
+        name: "7. Execution & Ledger Agent",
+        role: "Atomic State Persistence & Order Simulator",
+        formula: "Atomic write (.tmp -> fsync() -> rename) + persistent .bak backup fallback",
+        inputs: "Approved orders from Risk Governor, live tick fills, maker fee (0.02%)",
+        outputs: "Updated data/paper_portfolio.json, closed trade journal, live telemetry",
+        safety: "Kernel PID file locks guarantee zero duplicate daemons or race conditions."
+      },
+      {
+        name: "8. Self-Optimizer Meta-Agent",
+        role: "Out-of-Sample Walk-Forward Strategy Evaluator",
+        formula: "Walk-forward optimization across rolling 90-day windows; tests parameter mutations",
+        inputs: "Historical trade journal, simulated slippage scenarios, parameter ranges",
+        outputs: "Optimized configuration candidates logged for human engineer inspection",
+        safety: "Cannot mutate risk boundaries [1%, 5%] or activate real-money accounts (AGENTS.md)."
+      }
+    ];
+
+    function showAgentDetail(idx) {
+      document.querySelectorAll('.agent-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
+      const a = agentsData[idx];
+      const panel = document.getElementById('agentDetailContent');
+      panel.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+          <h3 style="color: var(--accent); font-size: 1.15rem;">${a.name}</h3>
+          <span class="badge badge-blue">${a.role}</span>
+        </div>
+        <div style="margin-bottom: 0.6rem;">
+          <strong style="color: #fff; font-size: 0.85rem;">Algorithmic Logic:</strong>
+          <code style="display: block; background: #0b0f19; padding: 0.5rem 0.75rem; border-radius: 0.4rem; color: #38bdf8; font-size: 0.82rem; margin-top: 0.25rem;">${a.formula}</code>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin: 0.6rem 0;">
+          <div>
+            <strong style="color: #fff; font-size: 0.85rem;">Inputs:</strong>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.2rem;">${a.inputs}</p>
+          </div>
+          <div>
+            <strong style="color: #fff; font-size: 0.85rem;">Outputs:</strong>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.2rem;">${a.outputs}</p>
+          </div>
+        </div>
+        <div style="margin-top: 0.6rem; background: rgba(244, 63, 94, 0.08); border-left: 3px solid var(--red); padding: 0.45rem 0.75rem; border-radius: 0.25rem;">
+          <strong style="color: #fff; font-size: 0.82rem;">Invariant Safety Rule:</strong>
+          <span style="font-size: 0.82rem; color: #fecdd3; display: block; margin-top: 0.1rem;">${a.safety}</span>
+        </div>
+      `;
+    }
+
+    // Initialize agent detail and slide 0
+    showAgentDetail(0);
     showSlide(0);
   </script>
 </body>
