@@ -6,6 +6,8 @@ An autonomous, self-improving quantitative trading system inspired by the Web4 /
 
 ## Architecture Overview
 
+Detailed architectural and mathematical documentation is available in [The 3 Levels of Web4 Autonomy](docs/web4-autonomous-levels.md).
+
 ```mermaid
 flowchart TD
     Data["Market Data Ingestion (core/data_loader.py)"] --> Strategies
@@ -13,10 +15,12 @@ flowchart TD
     subgraph Strategies["Independent Strategy Engines"]
         Mom["MomentumStrategy (strategies/momentum.py)"]
         MR["MeanReversionStrategy (strategies/mean_reversion.py)"]
+        Pairs["StatArbPairsStrategy (strategies/stat_arb_pairs.py)"]
     end
     
     Mom -->|TradingSignal| Coord["PortfolioCoordinator (core/coordinator.py)"]
     MR -->|TradingSignal| Coord
+    Pairs -->|PairTradeSignal| Coord
     
     Coord -->|Entry Proposal| Risk["Central RiskEngine (core/risk_engine.py)"]
     Risk -->|Approved / Scaled / Blocked| Coord
@@ -24,6 +28,11 @@ flowchart TD
     Coord -->|Execution| Paper["PaperAccount (core/paper_account.py)"]
     Paper --> Storage[("paper_portfolio.json + .bak")]
 ```
+
+### The 3 Levels of Web4 Autonomy
+1. **Level 1: Autonomous Perception & Reasoning**: Ingests multi-venue market telemetry, identifies order flow liquidation absorption wicks, monitors derivatives perp funding rates, and reconciles strategy signals with multi-timeframe confluence.
+2. **Level 2: Deterministic Governance & Self-Immunity**: Hard-clamps risk strictly between 1% and 5% using Van Tharp R-risk equations, moves to cash defense via Macro Bear and Chop Gates, triggers real-time circuit breakers (5% daily loss, 15% max drawdown), and guarantees atomic zero-corruption state persistence.
+3. **Level 3: Self-Optimization & Meta-Learning**: Adapts sizing via Half-Kelly compounding, groups correlated assets using Hierarchical Risk Parity (HRP), extracts market-neutral alpha via cointegrated statistical arbitrage pairs, and runs automated walk-forward optimization.
 
 ### Core Components
 1. **Market Ingestion (`core/data_loader.py`)**: Free OHLCV price feeds from Binance (crypto via CCXT) and Yahoo Finance (stocks/ETFs via yfinance) with local CSV caching, timestamp validation, gap detection, and staleness checks.
