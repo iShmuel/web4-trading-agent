@@ -359,6 +359,15 @@ class PortfolioCoordinator:
         base_atr_mult = sym_cfg.get("atr_multiplier", self.config.get("atr_multiplier", 2.25))
         effective_atr_mult = base_atr_mult * (0.85 if (has_confluence and conf_score >= 0.90) else 1.0)
 
+        # Chop-Zone Risk Throttling: Cut risk in half (e.g. 1.0% vs 2.0%) during low-ADX range chop
+        base_risk_pct = sym_cfg.get("account_risk_pct", self.config.get("account_risk_pct", 0.02))
+        adx_val = merged_ind.get("adx")
+        chop_thresh = self.config.get("adx_chop_threshold", 20.0)
+        if self.config.get("throttle_chop_risk", False) and adx_val is not None and adx_val < chop_thresh:
+            effective_risk_pct = max(0.01, base_risk_pct * 0.50)
+        else:
+            effective_risk_pct = base_risk_pct
+
         risk_verdict = self.risk_engine.validate_proposed_entry(
             symbol=symbol,
             side=chosen_sig.direction.value,
@@ -371,7 +380,7 @@ class PortfolioCoordinator:
             cash=self.account.cash,
             active_positions=self.account.positions,
             fee_pct=chosen_sig.estimated_fee_pct,
-            requested_risk_pct=self.config.get("account_risk_pct", 0.02),
+            requested_risk_pct=effective_risk_pct,
             current_time=last_ts,
         )
 

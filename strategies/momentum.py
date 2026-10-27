@@ -45,6 +45,7 @@ class MomentumStrategy:
         self.take_profit_atr_mult = config.get("take_profit_atr_mult", 0.0)
         self.take_profit_ratio = config.get("take_profit_ratio", 0.0)
         self.allow_short = config.get("allow_short", False)
+        self.short_requires_macro_bear = config.get("short_requires_macro_bear", True)
         self.fee_pct = config.get("fee_pct", 0.0006)
         self.slippage_pct = config.get("slippage_pct", 0.0004)
         self.min_atr_filter = config.get("min_atr_ratio", 0.0)  # minimum ATR/price ratio
@@ -178,7 +179,8 @@ class MomentumStrategy:
             )
 
         # Short entry
-        if self.allow_short and in_downtrend and breakdown_low > 0 and price < breakdown_low:
+        macro_bear_ok = (not self.short_requires_macro_bear) or (price < macro_ema)
+        if self.allow_short and in_downtrend and macro_bear_ok and breakdown_low > 0 and price < breakdown_low:
             stop = price + (atr * self.atr_multiplier)
             tp = price - (atr * self.take_profit_atr_mult) if self.take_profit_atr_mult > 0 else 0.0
 
