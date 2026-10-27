@@ -47,6 +47,8 @@
   },
   "fee_pct": 0.0006,
   "slippage_pct": 0.0004,
+  "execution_mode": "maker",
+  "maker_fee_pct": 0.0002,
   "breakout_lookback": 20,
   "ema_trend_filter": 32,
   "atr_period": 14,

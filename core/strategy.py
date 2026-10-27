@@ -126,6 +126,9 @@ def compute_indicators(
     # Volatility: ATR
     df["atr"] = calculate_atr(df, period=atr_period)
 
+    # Institutional Order Flow: Liquidation Absorption
+    df["absorption"] = detect_liquidation_absorption(df)
+
     # Trend Conditions
     df["in_uptrend"] = df["close"] > df["ema_filter"]
     df["in_downtrend"] = df["close"] < df["ema_filter"]
@@ -164,6 +167,7 @@ def compute_mean_reversion_indicators(
     df["rsi"] = calculate_rsi(df["close"], period=rsi_period)
     df["atr"] = calculate_atr(df, period=atr_period)
     df["adx"] = calculate_adx(df, period=adx_period)
+    df["absorption"] = detect_liquidation_absorption(df)
 
     return df
 
@@ -219,3 +223,75 @@ def calculate_relative_strength(
     bench_ret = (benchmark_series.iloc[-1] - benchmark_series.iloc[-lookback]) / benchmark_series.iloc[-lookback]
 
     return float(asset_ret - bench_ret)
+
+
+def detect_liquidation_absorption(
+    df: pd.DataFrame,
+    volume_mult: float = 2.0,
+    wick_ratio: float = 0.50,
+) -> pd.Series:
+    """Institutional Order Flow: Detect forced liquidation cascades and wick absorption.
+
+    When extreme volume (liquidations) gets absorbed leaving a long rejection wick (>= 50% of range),
+    it flags institutional reversal zones with high reversal probability.
+
+    Returns:
+        pd.Series with values 'BULLISH_ABSORPTION', 'BEARISH_ABSORPTION', or None.
+    """
+    if "volume" not in df or len(df) < 20:
+        return pd.Series(index=df.index, dtype=object)
+
+    high = df["high"]
+    low = df["low"]
+    open_p = df["open"]
+    close = df["close"]
+    vol = df["volume"]
+
+    candle_range = (high - low).replace(0, np.nan)
+    body_bottom = np.minimum(open_p, close)
+    body_top = np.maximum(open_p, close)
+    lower_wick = body_bottom - low
+    upper_wick = high - body_top
+
+    vol_ma = vol.rolling(window=20).mean()
+    vol_surge = vol > (vol_ma * volume_mult)
+
+    bull_absorb = vol_surge & ((lower_wick / candle_range) >= wick_ratio) & (close > (low + candle_range * 0.40))
+    bear_absorb = vol_surge & ((upper_wick / candle_range) >= wick_ratio) & (close < (high - candle_range * 0.40))
+
+    result = pd.Series(index=df.index, dtype=object)
+    result[bull_absorb] = "BULLISH_ABSORPTION"
+    result[bear_absorb] = "BEARISH_ABSORPTION"
+    return result
+
+
+def calculate_statistical_regime(
+    df: pd.DataFrame,
+    window: int = 24,
+) -> Tuple[str, float]:
+    """Calculate statistical regime and efficiency score using Kaufman ER and volatility ratio.
+
+    Returns:
+        (regime_name, efficiency_score)
+        where regime_name is 'TREND_EXPANSION', 'STATIONARY_CHOP', or 'VOLATILITY_CRISIS'.
+    """
+    if len(df) < window + 2:
+        return "STATIONARY_CHOP", 0.5
+
+    closes = df["close"]
+    net_change = abs(float(closes.iloc[-1]) - float(closes.iloc[-window]))
+    path = float(closes.diff().abs().iloc[-window:].sum())
+    er = (net_change / path) if path > 0 else 0.0
+
+    # Volatility expansion ratio (fast ATR vs baseline ATR)
+    recent_atr = float(calculate_atr(df, period=14).iloc[-1])
+    baseline_atr = float(calculate_atr(df, period=50).iloc[-1]) if len(df) >= 50 else recent_atr
+    vol_ratio = (recent_atr / baseline_atr) if baseline_atr > 0 else 1.0
+
+    if vol_ratio >= 2.2:
+        return "VOLATILITY_CRISIS", round(er, 3)
+    elif er >= 0.45:
+        return "TREND_EXPANSION", round(er, 3)
+    else:
+        return "STATIONARY_CHOP", round(er, 3)
+

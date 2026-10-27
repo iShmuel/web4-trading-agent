@@ -397,8 +397,16 @@ class PortfolioCoordinator:
             )
 
         # 4. Execute approved paper entry
-        slippage_factor = 1.0 + (chosen_sig.estimated_slippage_pct if chosen_sig.direction == SignalDirection.LONG else -chosen_sig.estimated_slippage_pct)
-        exec_price = cur_price * slippage_factor
+        # 4. Smart Order Routing (Execution Alpha: Maker vs Taker)
+        exec_mode = sym_cfg.get("execution_mode", self.config.get("execution_mode", "maker"))
+        if exec_mode == "maker":
+            # Maker post-only limit execution: zero slippage, reduced maker fee (0.02% vs 0.06%)
+            applied_fee_pct = sym_cfg.get("maker_fee_pct", self.config.get("maker_fee_pct", 0.0002))
+            exec_price = cur_price
+        else:
+            applied_fee_pct = chosen_sig.estimated_fee_pct
+            slippage_factor = 1.0 + (chosen_sig.estimated_slippage_pct if chosen_sig.direction == SignalDirection.LONG else -chosen_sig.estimated_slippage_pct)
+            exec_price = cur_price * slippage_factor
 
         new_pos = self.account.open_position(
             symbol=symbol,
@@ -407,7 +415,7 @@ class PortfolioCoordinator:
             stop_loss=risk_verdict.suggested_stop,
             dollar_risk=risk_verdict.dollar_risk,
             max_concurrent_positions=self.risk_engine.max_open_positions,
-            fee_pct=chosen_sig.estimated_fee_pct,
+            fee_pct=applied_fee_pct,
             side=chosen_sig.direction.value,
             strategy_id=chosen_sig.strategy_id,
         )

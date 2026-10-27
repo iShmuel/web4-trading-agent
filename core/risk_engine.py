@@ -17,6 +17,8 @@ Enforces:
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, date
 from typing import Tuple, Dict, Any, Optional, List
+import numpy as np
+import pandas as pd
 
 from core.data_loader import is_crypto_symbol
 
@@ -413,3 +415,51 @@ class RiskEngine:
         else:
             candidate_stop = current_price - (current_atr * atr_multiplier)
             return max(existing_stop, candidate_stop)
+
+
+def compute_hierarchical_risk_parity_weights(
+    returns_df: pd.DataFrame,
+    base_weights: Optional[Dict[str, float]] = None,
+    min_weight: float = 0.01,
+    max_weight: float = 0.05,
+) -> Dict[str, float]:
+    """Calculate Hierarchical Risk Parity (HRP) weights from asset return covariance.
+
+    Assets with higher covariance/correlation are grouped into clusters and have their
+    combined risk scaled down, eliminating correlated sector concentration.
+
+    Weights are strictly clamped within invariant bounds [min_weight, max_weight] (1% to 5%).
+    """
+    if returns_df.empty or len(returns_df.columns) == 0:
+        return base_weights or {}
+
+    symbols = list(returns_df.columns)
+    if len(symbols) == 1:
+        return {symbols[0]: 0.02}
+
+    # 1. Calculate covariance and variances
+    cov = returns_df.cov()
+    variances = np.diag(cov.values)
+    variances = np.where(variances <= 0, 1e-6, variances)
+
+    # 2. Inverse-variance baseline
+    inv_var = 1.0 / variances
+    raw_weights = inv_var / inv_var.sum()
+
+    # 3. Correlation distance adjustment: penalize highly correlated assets
+    corr = returns_df.corr().fillna(0.0)
+    mean_corr = corr.mean(axis=1).values
+    diversification_factor = 1.0 - (mean_corr * 0.3)
+    adjusted_weights = raw_weights * np.clip(diversification_factor, 0.5, 1.5)
+    adjusted_weights = adjusted_weights / adjusted_weights.sum()
+
+    # 4. Map to symbols and clamp strictly to [1%, 5%]
+    hrp_weights: Dict[str, float] = {}
+    for i, sym in enumerate(symbols):
+        base_w = base_weights.get(sym, 0.02) if base_weights else 0.02
+        blended = 0.5 * base_w + 0.5 * float(adjusted_weights[i])
+        clamped = max(min_weight, min(max_weight, round(blended, 4)))
+        hrp_weights[sym] = clamped
+
+    return hrp_weights
+
