@@ -7,6 +7,7 @@ and coordinates paper execution and portfolio accounting.
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+import time
 from typing import Dict, Any, List, Optional, Tuple
 import pandas as pd
 
@@ -91,6 +92,8 @@ class PortfolioCoordinator:
         self.mean_reversion_strategy = MeanReversionStrategy(config)
         # Per-symbol engines built from asset profiles (lazily cached)
         self._symbol_engines: Dict[str, Tuple[Dict[str, Any], MomentumStrategy, MeanReversionStrategy]] = {}
+        # Derivatives funding rate cache: symbol -> (timestamp, funding_rate)
+        self._funding_cache: Dict[str, Tuple[float, Optional[float]]] = {}
 
     def symbol_config(self, symbol: str) -> Dict[str, Any]:
         return self._engines_for(symbol)[0]
@@ -304,9 +307,15 @@ class PortfolioCoordinator:
         merged_ind["confluence"] = conf_desc
         merged_ind["confluence_score"] = conf_score
 
-        # Derivatives Funding Rate Radar (Crypto only)
-        if is_crypto_symbol(symbol):
-            fr = fetch_funding_rate(symbol)
+        # Derivatives Funding Rate Radar (Crypto only, cached with 1h TTL to avoid network spam)
+        if is_crypto_symbol(symbol) and self.config.get("enable_funding_radar", True):
+            now_epoch = time.time()
+            if symbol not in self._funding_cache or (now_epoch - self._funding_cache[symbol][0]) > 3600:
+                fr = fetch_funding_rate(symbol)
+                self._funding_cache[symbol] = (now_epoch, fr)
+            else:
+                fr = self._funding_cache[symbol][1]
+
             if fr is not None:
                 merged_ind["funding_rate_pct"] = fr * 100
                 if fr > 0.0005:
