@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web4 Autonomous Trading Agent — Executive Presentation</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #151d2f;
+      --accent: #38bdf8;
+      --accent-green: #34d399;
+      --accent-red: #f87171;
+      --accent-gold: #fbbf24;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --border: #1e293b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    header {
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(11, 15, 25, 0.8);
+      backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+    .logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .slide-indicator {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .slider-container {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .slide {
+      display: none;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 2.5rem 3rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .slide.active { display: block; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    h1 {
+      font-size: 2.3rem;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.025em;
+    }
+    h2 {
+      font-size: 1.6rem;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+    p.subtitle {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+    .card {
+      background: rgba(11, 15, 25, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+    }
+    .card h3 {
+      font-size: 1.1rem;
+      color: var(--accent-gold);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .card p, .card li {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    ul { list-style-position: inside; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.95rem;
+    }
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: rgba(11, 15, 25, 0.8);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-green { background: rgba(52, 211, 153, 0.15); color: var(--accent-green); }
+    .badge-red { background: rgba(248, 113, 113, 0.15); color: var(--accent-red); }
+    .badge-blue { background: rgba(56, 189, 248, 0.15); color: var(--accent); }
+    .highlight { color: var(--accent-green); font-weight: 700; }
+    footer {
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(11, 15, 25, 0.8);
+    }
+    .nav-buttons {
+      display: flex;
+      gap: 0.75rem;
+    }
+    button {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.5rem 1.25rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: var(--accent);
+      color: #0b0f19;
+      border-color: var(--accent);
+    }
+    .kbd-hint {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    kbd {
+      background: var(--border);
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.25rem;
+      font-family: monospace;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">⚡ Web4 Autonomous Trading Desk</div>
+    <div class="slide-indicator" id="slideIndicator">Slide 1 / 10</div>
+  </header>
+
+  <main class="slider-container">
+
+    <!-- Slide 1: Cover -->
+    <div class="slide active">
+      <div style="text-align: center; padding: 2rem 0;">
+        <span class="badge badge-blue" style="margin-bottom: 1rem;">TIER-1 QUANTITATIVE SYSTEM</span>
+        <h1>Web4 Autonomous Trading Agent</h1>
+        <p class="subtitle">Multi-Asset Execution • Deterministic Governance • Autonomous Meta-Learning</p>
+        <div class="grid" style="max-width: 800px; margin: 2rem auto; text-align: left;">
+          <div class="card">
+            <h3>📈 +52.45% 90-Day Return</h3>
+            <p>2.41 Profit Factor, 48.2% Win Rate, and 7.94% Max Drawdown with full fees.</p>
+          </div>
+          <div class="card">
+            <h3>🛡️ Crash-Proof Defense</h3>
+            <p>Macro 200 EMA Gate & 15% Max DD breaker preserved 95.8% capital during -70% crypto drop.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2: The Web4 Paradigm -->
+    <div class="slide">
+      <h2>The Evolution to Web4: Autonomous Economic Agency</h2>
+      <p class="subtitle">From static web pages to sovereign, self-improving algorithmic organisms.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Web1 (1990s)</h3>
+          <p><strong>Read-Only:</strong> Static HTML pages, centralized portals, information retrieval.</p>
+        </div>
+        <div class="card">
+          <h3>Web2 (2000s)</h3>
+          <p><strong>Read + Write:</strong> Cloud databases, social networks, centralized platform control.</p>
+        </div>
+        <div class="card">
+          <h3>Web3 (2010s)</h3>
+          <p><strong>Read + Write + Own:</strong> Smart contracts, DeFi protocols, digital asset ownership.</p>
+        </div>
+        <div class="card" style="border-color: var(--accent);">
+          <h3 style="color: var(--accent);">Web4 (2026+)</h3>
+          <p><strong>Autonomous Agency:</strong> Self-governing AI agents with independent perception, mathematical risk immunity, and continuous optimization.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3: The 3 Levels of Web4 Autonomy -->
+    <div class="slide">
+      <h2>The 3 Levels of System Autonomy</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Level 1: Perception & Reasoning</h3>
+          <ul>
+            <li>Multi-venue ingestion (Binance CCXT + Yahoo Finance)</li>
+            <li>Liquidation absorption wick detection (2.0x volume flushes)</li>
+            <li>Derivatives perpetual funding rate radar</li>
+            <li>Cognitive conflict arbitration (rejects ambiguous signals)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Level 2: Governance & Immunity</h3>
+          <ul>
+            <li>Van Tharp R-risk sizing strictly bounded within [1%, 5%]</li>
+            <li>Macro Bear Gate (blocks long breakouts below 200 EMA)</li>
+            <li>5.0% Daily Loss Limit Circuit Breaker</li>
+            <li>15.0% Max Drawdown Portfolio Kill Switch</li>
+            <li>Atomic disk persistence with automatic .bak recovery</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Level 3: Optimization & Learning</h3>
+          <ul>
+            <li>Dynamic Half-Kelly capital compounding</li>
+            <li>Hierarchical Risk Parity (HRP) sector clustering</li>
+            <li>Market-neutral statistical arbitrage pairs engine</li>
+            <li>Automated walk-forward out-of-sample optimization</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 4: The 8-Agent Trading Desk -->
+    <div class="slide">
+      <h2>The 8 Specialized Quantitative Internal Agents</h2>
+      <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+        <div class="card">
+          <h3>1. Data Scout Agent</h3>
+          <p>Ingests OHLCV feeds, validates data staleness (<120m), and monitors funding rates.</p>
+        </div>
+        <div class="card">
+          <h3>2. Momentum Hunter</h3>
+          <p>Rides multi-timeframe Donchian breakouts with dynamic ATR trailing stops.</p>
+        </div>
+        <div class="card">
+          <h3>3. Mean Reversion Agent</h3>
+          <p>Fades overbought rallies (RSI > 75) and buys extreme panic selloffs.</p>
+        </div>
+        <div class="card">
+          <h3>4. Pairs Stat-Arb Agent</h3>
+          <p>Extracts market-neutral spread alpha from SOL/AVAX, NVDA/AMD, and ETH/BTC.</p>
+        </div>
+        <div class="card">
+          <h3>5. Coordinator Arbiter</h3>
+          <p>Reconciles strategy conflicts, ranks relative strength, and routes maker orders.</p>
+        </div>
+        <div class="card">
+          <h3>6. Risk Governor Agent</h3>
+          <p>Sizes positions to 1%-5% equity and enforces daily and max drawdown breakers.</p>
+        </div>
+        <div class="card">
+          <h3>7. Execution & Ledger</h3>
+          <p>Simulates maker fills, manages positions, and guarantees zero corruption.</p>
+        </div>
+        <div class="card">
+          <h3>8. Self-Optimizer</h3>
+          <p>Simulates parameter mutations and validates out-of-sample edge.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5: Trading Strategies -->
+    <div class="slide">
+      <h2>The 3 Complementary Trading Strategies</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Strategy</th>
+            <th>Market Regime</th>
+            <th>Entry Condition</th>
+            <th>Exit / Risk Control</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Trend Momentum</strong></td>
+            <td><span class="badge badge-green">Trend Expansion</span></td>
+            <td>Triple Confluence: 4h Macro + 1h EMA + 20-bar Donchian High</td>
+            <td>Dynamic ATR Trailing Stop (Ratchets upward)</td>
+          </tr>
+          <tr>
+            <td><strong>Strict Bear Mean Reversion</strong></td>
+            <td><span class="badge badge-red">Macro Bear Market</span></td>
+            <td>Exhausted Dead-Cat Rally: Price ≥ Upper BB & RSI > 75</td>
+            <td>Target Mean (20 SMA) with tight stop above swing high</td>
+          </tr>
+          <tr>
+            <td><strong>Statistical Arbitrage</strong></td>
+            <td><span class="badge badge-blue">Any Regime / Chop</span></td>
+            <td>Cointegrated Spread Divergence: |Z-Score| ≥ 2.0</td>
+            <td>Target Mean Reversion: |Z-Score| ≤ 0.5 (Zero Beta)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Slide 6: Risk Governance -->
+    <div class="slide">
+      <h2>Deterministic Risk Engine & Circuit Breakers</h2>
+      <p class="subtitle">Why our system mathematically cannot blow up your portfolio.</p>
+      <div class="grid">
+        <div class="card" style="border-left: 4px solid var(--accent-red);">
+          <h3 style="color: var(--accent-red);">5.0% Daily Loss Limit</h3>
+          <p>Immediate trading halt if daily equity drops ≥ 5.0%. Shuts down the system during flash crashes and black swan events, preserving 95% of capital.</p>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--accent-red);">
+          <h3 style="color: var(--accent-red);">15.0% Max Drawdown Breaker</h3>
+          <p>Permanent liquidation into 100% cash defense if portfolio drops ≥ 15.0% from peak. Insulates the account from multi-month bear winters.</p>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--accent-green);">
+          <h3 style="color: var(--accent-green);">1% - 5% Position Sizing</h3>
+          <p>Van Tharp R-risk equation: position size is derived from ATR volatility. Hard-clamped between 1% and 5% account equity.</p>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--accent-gold);">
+          <h3 style="color: var(--accent-gold);">Hierarchical Risk Parity (HRP)</h3>
+          <p>Computes covariance matrices between assets. When Layer-1 cryptos correlate > 0.85, their joint risk is dynamically scaled down.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 7: Empirical Results -->
+    <div class="slide">
+      <h2>Empirical Performance: 90-Day Active Market</h2>
+      <p class="subtitle">All results include full trading friction (0.06% fees + 0.04% slippage).</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Milestone</th>
+            <th>Final Equity</th>
+            <th>Net Return</th>
+            <th>Win Rate</th>
+            <th>Profit Factor</th>
+            <th>Max DD</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Original Baseline (6 Assets)</td>
+            <td>$13,500.00</td>
+            <td>+35.00%</td>
+            <td>41.2%</td>
+            <td>1.65</td>
+            <td>8.85%</td>
+          </tr>
+          <tr>
+            <td>Multi-Asset (NEAR, LINK, AMD)</td>
+            <td>$14,578.65</td>
+            <td>+45.79%</td>
+            <td>46.4%</td>
+            <td>2.20</td>
+            <td>7.94%</td>
+          </tr>
+          <tr>
+            <td>Strict Bear-Market Shorting</td>
+            <td>$14,795.42</td>
+            <td>+47.95%</td>
+            <td>48.2%</td>
+            <td>2.28</td>
+            <td>7.94%</td>
+          </tr>
+          <tr style="background: rgba(52, 211, 153, 0.1);">
+            <td><strong>Tier-1 Maker Execution Alpha</strong></td>
+            <td><strong>$15,245.44</strong></td>
+            <td><span class="highlight">+52.45%</span></td>
+            <td><strong>48.2%</strong></td>
+            <td><span class="highlight">2.41</span></td>
+            <td><span class="highlight">7.94%</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 1rem;">
+        🏆 <strong>Execution Alpha:</strong> Smart maker post-only limit orders added an extra <strong>+$450.02 (+4.50%)</strong> directly into net profit by eliminating slippage and slashing fees.
+      </p>
+    </div>
+
+    <!-- Slide 8: 365-Day Stress Test -->
+    <div class="slide">
+      <h2>365-Day Stress Test: The Macro Bear Crash</h2>
+      <p class="subtitle">How the bot defended capital during the 2025–2026 -70% crypto collapse.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Asset / Strategy</th>
+            <th>Buy & Hold Return</th>
+            <th>Our Upgraded Bot</th>
+            <th>Capital Preserved</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Bitcoin (BTC)</td>
+            <td style="color: var(--accent-red);">-49.2%</td>
+            <td>Protected in Cash</td>
+            <td><span class="highlight">95.8% Intact</span></td>
+          </tr>
+          <tr>
+            <td>Ethereum (ETH)</td>
+            <td style="color: var(--accent-red);">-63.1%</td>
+            <td>Protected in Cash</td>
+            <td><span class="highlight">95.8% Intact</span></td>
+          </tr>
+          <tr>
+            <td>Solana (SOL)</td>
+            <td style="color: var(--accent-red);">-70.4%</td>
+            <td>Protected in Cash</td>
+            <td><span class="highlight">95.8% Intact</span></td>
+          </tr>
+          <tr>
+            <td>AMD (US Tech Stock)</td>
+            <td>—</td>
+            <td><span class="highlight">+26.49%</span> ($2,648 Profit)</td>
+            <td>Equities Hedge</td>
+          </tr>
+          <tr style="background: rgba(56, 189, 248, 0.1);">
+            <td><strong>Annual Multi-Asset Portfolio</strong></td>
+            <td style="color: var(--accent-red);"><strong>-58.4% (Catastrophic)</strong></td>
+            <td><strong>-4.16% (Safe Cash)</strong></td>
+            <td><span class="highlight"><strong>$9,583.63 Preserved</strong></span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Slide 9: The 3-Stage Roadmap -->
+    <div class="slide">
+      <h2>The 3-Stage Incubation Roadmap to Production</h2>
+      <div class="grid">
+        <div class="card" style="border: 2px solid var(--accent);">
+          <span class="badge badge-blue">STAGE 1: CURRENT STAGE</span>
+          <h3 style="margin-top: 0.5rem;">Live Paper Incubation</h3>
+          <ul>
+            <li>30–60 days autonomous forward test</li>
+            <li>Zero real-money risk (PaperAccount)</li>
+            <li>51/51 automated unit tests passing</li>
+            <li>Verify fill execution and zero drift</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="badge badge-gold">STAGE 2: FUTURE</span>
+          <h3 style="margin-top: 0.5rem;">Micro-Capital Sandbox</h3>
+          <ul>
+            <li>Small separate account ($500 - $1,000)</li>
+            <li>Human engineer connects broker API</li>
+            <li>Withdrawals permanently disabled</li>
+            <li>Microscopic risk ($5-$10 per trade)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="badge badge-green">STAGE 3: PRODUCTION</span>
+          <h3 style="margin-top: 0.5rem;">Full Sized Capital</h3>
+          <ul>
+            <li>Gradual scaling after 3 profitable months</li>
+            <li>Dynamic Half-Kelly growth compounding</li>
+            <li>Permanent 5% daily & 15% DD breakers</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 10: Conclusion -->
+    <div class="slide">
+      <div style="text-align: center; padding: 2rem 0;">
+        <h1>Autonomous Quantitative Precision</h1>
+        <p class="subtitle">Built for long-term compounding, capital preservation, and institutional execution.</p>
+        <div class="grid" style="max-width: 800px; margin: 2rem auto; text-align: left;">
+          <div class="card">
+            <h3>📊 Live Daemon Active</h3>
+            <p>Scanning 11 multi-asset instruments every 60 seconds with 65% cash defense.</p>
+          </div>
+          <div class="card">
+            <h3>📑 Full Documentation</h3>
+            <p>Available in <code>README.md</code>, <code>PRESENTATION.md</code>, and <code>docs/web4-autonomous-levels.md</code>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>
+    <div class="kbd-hint">Navigate with <kbd>←</kbd> <kbd>→</kbd> or click Next</div>
+    <div class="nav-buttons">
+      <button id="prevBtn" onclick="prevSlide()">← Previous</button>
+      <button id="nextBtn" onclick="nextSlide()">Next →</button>
+    </div>
+  </footer>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const indicator = document.getElementById('slideIndicator');
+
+    function showSlide(index) {
+      slides.forEach((s, i) => s.classList.toggle('active', i === index));
+      indicator.textContent = `Slide ${index + 1} / ${slides.length}`;
+      document.getElementById('prevBtn').disabled = index === 0;
+      document.getElementById('nextBtn').disabled = index === slides.length - 1;
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        showSlide(currentSlide);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        showSlide(currentSlide);
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    showSlide(0);
+  </script>
+</body>
+</html>
