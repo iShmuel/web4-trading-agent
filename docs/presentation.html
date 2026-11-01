@@ -486,41 +486,6 @@
     .ticker-crypto { background: rgba(245, 158, 11, 0.14); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
     .ticker-stock { background: rgba(56, 189, 248, 0.14); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
 
-    /* Step Pipeline */
-    .step-pipeline {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.9rem;
-      margin: 1.4rem 0;
-    }
-    .step-node {
-      flex: 1;
-      background: linear-gradient(160deg, rgba(26, 36, 56, 0.7) 0%, rgba(13, 19, 33, 0.9) 100%);
-      border: 1px solid var(--border);
-      border-radius: 1.15rem;
-      padding: 1.4rem 1.1rem;
-      text-align: center;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
-    }
-    .step-circle {
-      width: 32px;
-      height: 32px;
-      background: var(--accent);
-      color: #060913;
-      border-radius: 50%;
-      font-weight: 900;
-      font-size: 0.88rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 0.65rem auto;
-      box-shadow: 0 0 12px var(--accent-glow);
-    }
-    .step-node h4 { font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 0.35rem; }
-    .step-node p { font-size: 0.88rem; color: var(--text-muted); line-height: 1.45; }
-    .step-sep { color: var(--accent); font-weight: 900; font-size: 1.35rem; }
-
     /* Interactive Agent Explorer */
     .agent-nav-strip {
       display: flex;
@@ -1027,7 +992,7 @@
               <span class="ticker-pill ticker-stock">QQQ</span>
             </td>
             <td>Low-Volatility Core Anchor</td>
-            <td>Rotates risk budget into stable indices when crypto enters bear gates. Currently holding SPY!</td>
+            <td>Rotates risk budget into stable indices when crypto enters bear gates; captures low-beta equity trends.</td>
           </tr>
         </tbody>
       </table>
@@ -1205,50 +1170,6 @@
           </tr>
         </tbody>
       </table>
-    </div>
-
-    <!-- Slide 10: The 3 Strategy Engines -->
-    <div class="slide">
-      <h2>The 3 Complementary Strategy Engines</h2>
-      <p class="subtitle">Each strategy engine dominates a specific market regime to eliminate blind spots.</p>
-      
-      <table>
-        <thead>
-          <tr>
-            <th>Strategy Engine</th>
-            <th>Market Regime</th>
-            <th>Signal Formula</th>
-            <th>Risk & Exit Rules</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Trend Momentum Breakout</strong></td>
-            <td><span class="badge badge-green">Trend Expansion</span></td>
-            <td>Price &gt; 200 EMA + Price &gt; 32 EMA + Donchian 20-High</td>
-            <td>Dynamic ATR Trailing Stop (Ratchets upward to lock profits)</td>
-          </tr>
-          <tr>
-            <td><strong>Strict Bear Mean Reversion</strong></td>
-            <td><span class="badge badge-red">Macro Bear Market</span></td>
-            <td>Exhausted Dead-Cat Bounce: Upper BB + RSI &gt; 75.0</td>
-            <td>Target Mean (20 SMA) with tight stop above the swing high</td>
-          </tr>
-          <tr>
-            <td><strong>Statistical Arbitrage</strong></td>
-            <td><span class="badge badge-blue">Sideways Chop / Any</span></td>
-            <td>Spread Divergence: |Z-Score| &ge; 2.0 standard deviations</td>
-            <td>Target Spread Mean Reversion: |Z-Score| &le; 0.5 (Market Neutral)</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="executive-callout">
-        <div class="callout-icon">💡</div>
-        <div class="callout-text">
-          <strong>Why Three Strategies?</strong> Momentum makes a fortune in bull markets but struggles in chop. Mean reversion thrives in chop but fails in raging trends. By combining both with Pairs Trading, the bot has a winning playbook for every market season.
-        </div>
-      </div>
     </div>
 
     <!-- Slide 11: Risk Governance & Circuit Breakers -->
@@ -1440,7 +1361,7 @@
           <!-- Web4 Agent Curve (Capital Preserved in Cash + AMD Alpha) -->
           <path d="M 60 95 C 180 94, 300 97, 450 96 S 650 90, 750 88" fill="none" stroke="#10b981" stroke-width="3.5"/>
           <circle cx="750" cy="88" r="5" fill="#10b981"/>
-          <text x="540" y="80" fill="#10b981" font-size="11" font-weight="900" font-family="'JetBrains Mono', monospace">Web4 Agent: 95.8% Intact ($9,583.63)</text>
+          <text x="530" y="80" fill="#10b981" font-size="11" font-weight="900" font-family="'JetBrains Mono', monospace">Web4 Agent: 96.6% Intact ($9,661.03)</text>
           <text x="60" y="186" fill="#64748b" font-size="10" font-family="'JetBrains Mono', monospace">Day 0 (Start)</text>
           <text x="400" y="186" fill="#64748b" font-size="10" font-family="'JetBrains Mono', monospace">Day 180 (Mid Crash)</text>
           <text x="700" y="186" fill="#64748b" font-size="10" font-family="'JetBrains Mono', monospace">Day 365 (Year End)</text>
@@ -1461,19 +1382,19 @@
             <td>Bitcoin (BTC)</td>
             <td style="color: var(--red);">-49.2%</td>
             <td>Protected in Cash (Below 200 EMA)</td>
-            <td><span class="highlight">95.8% Intact</span></td>
+            <td><span class="highlight">96.6% Intact</span></td>
           </tr>
           <tr>
             <td>Ethereum (ETH)</td>
             <td style="color: var(--red);">-63.1%</td>
             <td>Protected in Cash (Below 200 EMA)</td>
-            <td><span class="highlight">95.8% Intact</span></td>
+            <td><span class="highlight">96.6% Intact</span></td>
           </tr>
           <tr>
             <td>Solana (SOL)</td>
             <td style="color: var(--red);">-70.4%</td>
             <td>Protected in Cash (Below 200 EMA)</td>
-            <td><span class="highlight">95.8% Intact</span></td>
+            <td><span class="highlight">96.6% Intact</span></td>
           </tr>
           <tr>
             <td>AMD (US Tech Stock)</td>
@@ -1484,8 +1405,8 @@
           <tr style="background: rgba(56, 189, 248, 0.1);">
             <td><strong>Full Annual Portfolio</strong></td>
             <td style="color: var(--red);"><strong>-58.4% (Catastrophic)</strong></td>
-            <td><strong>-4.16% (Cash Defense)</strong></td>
-            <td><span class="highlight"><strong>$9,583.63 Preserved</strong></span></td>
+            <td><strong>-3.39% (Cash Defense)</strong></td>
+            <td><span class="highlight"><strong>$9,661.03 Preserved</strong></span></td>
           </tr>
         </tbody>
       </table>
@@ -1612,13 +1533,12 @@
       "8. All-Weather Playbook (Bull, Bear, Chop)",
       "9. Order Flow & Liquidation Mechanics",
       "10. Statistical Arbitrage Pairs Trading",
-      "11. The 3 Strategy Engines Matrix",
-      "12. Risk Governance & Circuit Breakers",
-      "13. Mathematics of Loss Asymmetry (Interactive)",
-      "14. 90-Day Empirical Track Record (+56.62%)",
-      "15. 365-Day Bear Crash Stress Test",
-      "16. Execution Alpha: The Maker Advantage",
-      "17. Live Desk Telemetry & Incubation Roadmap"
+      "11. Risk Governance & Circuit Breakers",
+      "12. Mathematics of Loss Asymmetry (Interactive)",
+      "13. 90-Day Empirical Track Record (+56.62%)",
+      "14. 365-Day Bear Crash Stress Test",
+      "15. Execution Alpha: The Maker Advantage",
+      "16. Live Desk Telemetry & Incubation Roadmap"
     ];
 
     slideTitles.forEach((title, idx) => {

@@ -200,17 +200,7 @@ flowchart LR
 
 ---
 
-## 9. The 3 Complementary Strategy Engines
-
-| Strategy Engine | Market Regime | Signal Formula | Risk & Exit Rules |
-| :--- | :--- | :--- | :--- |
-| **Trend Momentum Breakout** | <span class="badge">Trend Expansion</span> | Close > 200 EMA + Close > 32 EMA + Donchian 20-High | Dynamic ATR Trailing Stop (Ratchets upward) |
-| **Strict Bear Mean Reversion** | <span class="badge">Macro Bear Market</span> | Overbought Bear Rally: Upper BB + RSI > 75.0 | Target Mean (20 SMA) with tight stop above swing |
-| **Statistical Arbitrage** | <span class="badge">Sideways Chop / Any</span> | Spread Divergence: \|Z-Score\| &ge; 2.0 &sigma; | Target Spread Mean: \|Z-Score\| &le; 0.5 &sigma; (Market Neutral) |
-
----
-
-## 10. Deterministic Risk Engine & Circuit Breakers
+## 9. Deterministic Risk Engine & Circuit Breakers
 
 * **Van Tharp Volatility Position Sizing**:
   $$\text{Units} = \frac{\text{Equity} \times \text{Risk \%}}{\text{ATR} \times 2.25}, \quad \text{Clamped strictly to } [1\%, 5\%]$$
@@ -221,7 +211,7 @@ flowchart LR
 
 ---
 
-## 11. The Mathematics of Loss: Why 15% Max DD Saves You
+## 10. The Mathematics of Loss: Why 15% Max DD Saves You
 
 Losses are mathematically asymmetric. The deeper the loss, the harder it is to break even:
 
@@ -237,7 +227,7 @@ Losses are mathematically asymmetric. The deeper the loss, the harder it is to b
 
 ---
 
-## 12. Empirical Track Record: 90-Day Active Performance
+## 11. Empirical Track Record: 90-Day Active Performance
 
 Full friction included (**0.06% fees + 0.04% slippage**):
 
@@ -250,21 +240,21 @@ Full friction included (**0.06% fees + 0.04% slippage**):
 
 ---
 
-## 13. 365-Day Macro Stress-Test: Bear Market Defense
+## 12. 365-Day Macro Stress-Test: Bear Market Defense
 
 During the 2025–2026 macro cycle, crypto suffered a brutal **-50% to -75% collapse**:
 
 | Asset / Strategy | Buy-and-Hold Return | Our Upgraded Bot | Capital Preserved |
 | :--- | :---: | :---: | :---: |
-| **Bitcoin (`BTC`)** | -49.2% | Protected in Cash | <span class="highlight">**95.8% Intact**</span> |
-| **Ethereum (`ETH`)** | -63.1% | Protected in Cash | <span class="highlight">**95.8% Intact**</span> |
-| **Solana (`SOL`)** | -70.4% | Protected in Cash | <span class="highlight">**95.8% Intact**</span> |
+| **Bitcoin (`BTC`)** | -49.2% | Protected in Cash | <span class="highlight">**96.6% Intact**</span> |
+| **Ethereum (`ETH`)** | -63.1% | Protected in Cash | <span class="highlight">**96.6% Intact**</span> |
+| **Solana (`SOL`)** | -70.4% | Protected in Cash | <span class="highlight">**96.6% Intact**</span> |
 | **AMD (US Stock)** | — | **+26.49%** ($2,648 Profit) | Rotated into Equities |
-| **Full Year Portfolio** | <span class="warning">**-58.4% (Catastrophic)**</span> | <span class="highlight">**-4.16% (Safe Cash)**</span> | <span class="highlight">**$9,583.63 Preserved**</span> |
+| **Full Year Portfolio** | <span class="warning">**-58.4% (Catastrophic)**</span> | <span class="highlight">**-3.39% (Safe Cash)**</span> | <span class="highlight">**$9,661.03 Preserved**</span> |
 
 ---
 
-## 14. Execution Alpha: The Maker Advantage
+## 13. Execution Alpha: The Maker Advantage
 
 ### Why Institutional Desks Never Cross the Spread
 
@@ -280,22 +270,10 @@ $$\text{Extra Profit Gained} = +\$450.02 \quad (\mathbf{+4.50\% \text{ of entire
 
 ---
 
-## 15. Live Status & Incubation Roadmap
+## 14. Live Status & Incubation Roadmap
 
-The bot operates 24/7 as an autonomous background daemon:
-
-```
-========================================================================================
- LIVE PORTFOLIO DASHBOARD (11 ASSETS)
- Equity: $9,818.61 | Cash: $6,384.50 (65% Cash Defense) | Open Positions: 1
-========================================================================================
- ASSET      | REGIME        | STATUS    | ACTION / POSITION DETAILS
- SPY        | TREND EXP 🟢  | LONG      | Entry $769.72 | Stop $766.08 | Risk: $25.29
- NVDA       | MACRO BEAR 🔴 | CASH      | Preserving capital below 200 EMA
- BTC/USDT   | MACRO BEAR 🔴 | CASH      | Longs blocked by Macro Bear Gate
- SOL/USDT   | MACRO BEAR 🔴 | CASH      | Hunting for Overbought Short Reversals
-========================================================================================
-```
+* **Live Daemon Status**: Running 24/7 (`live_paper_trader.py --loop --interval 60`), **Equity: $9,258.85 (100% Safe Cash Defense)**, **53/53 Pytest Green**.
+* **Recent Live Proof**: `AVAX/USDT` 2-leg Mean Reversion win (**+$15.95**) & `LINK/USDT` Auto Break-Even Stop Lock save (**+$72.04 saved**).
 
 ### The 3-Stage Incubation Framework
 1. **Stage 1: Paper Incubation (Current)**: 30–60 days forward test, zero money risk, 53/53 tests green.
