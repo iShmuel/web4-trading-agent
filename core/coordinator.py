@@ -94,6 +94,8 @@ class PortfolioCoordinator:
         self._symbol_engines: Dict[str, Tuple[Dict[str, Any], MomentumStrategy, MeanReversionStrategy]] = {}
         # Derivatives funding rate cache: symbol -> (timestamp, funding_rate)
         self._funding_cache: Dict[str, Tuple[float, Optional[float]]] = {}
+        # Timestamp of most recent crypto stop-loss exit for contagion cooldown protection
+        self._last_crypto_stop_time: Optional[pd.Timestamp] = None
 
     def symbol_config(self, symbol: str) -> Dict[str, Any]:
         return self._engines_for(symbol)[0]
@@ -235,6 +237,9 @@ class PortfolioCoordinator:
                     exit_reason=sig.exit_reason or "Strategy Exit Signal",
                     fee_pct=sym_cfg.get("fee_pct", 0.0006),
                 )
+                if is_crypto_symbol(symbol) and trade.get("pnl", 0.0) < 0 and "Stop" in trade.get("exit_reason", ""):
+                    bar_ts = df.index[-1]
+                    self._last_crypto_stop_time = bar_ts if isinstance(bar_ts, pd.Timestamp) else pd.Timestamp.now(tz="UTC")
                 return CoordinatorDecision(
                     symbol=symbol,
                     action="EXIT",
@@ -257,6 +262,14 @@ class PortfolioCoordinator:
                     exit_reason=sig.exit_reason or "Partial Scale-Out Take-Profit",
                     fee_pct=sym_cfg.get("fee_pct", 0.0006),
                 )
+                # Fix #1: Automatically lock stop-loss to Break-Even (+fee buffer) upon 50% scale-out
+                if self.config.get("enable_breakeven_lock", True):
+                    ep = existing_pos["entry_price"]
+                    is_short = (existing_pos.get("side", "LONG") == "SHORT")
+                    be_stop = ep * (0.9985 if is_short else 1.0015)
+                    cur_stop = existing_pos["trailing_stop"]
+                    locked_stop = min(cur_stop, be_stop) if is_short else max(cur_stop, be_stop)
+                    self.account.update_trailing_stop(symbol, locked_stop, cur_price)
                 return CoordinatorDecision(
                     symbol=symbol,
                     action="PARTIAL_EXIT",
@@ -270,13 +283,27 @@ class PortfolioCoordinator:
                 # Ratchet trailing stop if applicable
                 atr = sig.atr if sig.atr > 0 else (cur_price * 0.02)
                 atr_mult = sym_cfg.get("atr_multiplier", 2.5)
+                is_short = (existing_pos.get("side", "LONG") == "SHORT")
                 new_stop = self.risk_engine.update_trailing_stop(
                     current_price=cur_price,
                     current_atr=atr,
                     atr_multiplier=atr_mult,
                     existing_stop=existing_pos["trailing_stop"],
-                    is_short=(existing_pos.get("side", "LONG") == "SHORT"),
+                    is_short=is_short,
                 )
+                # Fix #1: Break-Even Stop Lock once 50% TP hit OR unrealized profit >= breakeven_atr_mult * ATR
+                if self.config.get("enable_breakeven_lock", True):
+                    ep = existing_pos["entry_price"]
+                    be_atr_mult = sym_cfg.get("breakeven_atr_mult", self.config.get("breakeven_atr_mult", 1.2))
+                    tp_hit = existing_pos.get("tp_hit", False)
+                    if not is_short:
+                        be_stop = ep * 1.0015
+                        if tp_hit or (cur_price - ep) >= (be_atr_mult * atr):
+                            new_stop = max(new_stop, be_stop)
+                    else:
+                        be_stop = ep * 0.9985
+                        if tp_hit or (ep - cur_price) >= (be_atr_mult * atr):
+                            new_stop = min(new_stop, be_stop)
                 self.account.update_trailing_stop(symbol, new_stop, cur_price)
                 return CoordinatorDecision(
                     symbol=symbol,
@@ -350,6 +377,32 @@ class PortfolioCoordinator:
                 reason=reason,
                 indicators=merged_ind,
             )
+
+        # Fix #3: Sector Crash Contagion Cooldown (Block same-bar / immediate contagion entries after a crypto stop-loss)
+        if is_crypto_symbol(symbol) and self.config.get("enable_crash_cooldown", True):
+            cooldown_hours = float(self.config.get("crypto_crash_cooldown_hours", 3.0))
+            bar_ts = df.index[-1] if isinstance(df.index[-1], pd.Timestamp) else pd.Timestamp.now(tz="UTC")
+            if self._last_crypto_stop_time is not None:
+                try:
+                    t_cur = bar_ts.tz_localize("UTC") if bar_ts.tzinfo is None else bar_ts
+                    t_stop = (
+                        self._last_crypto_stop_time.tz_localize("UTC")
+                        if self._last_crypto_stop_time.tzinfo is None
+                        else self._last_crypto_stop_time
+                    )
+                    elapsed_hours = (t_cur - t_stop).total_seconds() / 3600.0
+                    if 0.0 <= elapsed_hours <= cooldown_hours:
+                        return CoordinatorDecision(
+                            symbol=symbol,
+                            action="REJECTED",
+                            strategy_id=chosen_sig.strategy_id,
+                            price=cur_price,
+                            reason=f"Blocked by Crypto Crash Contagion Cooldown ({elapsed_hours*60:.0f}m <= {cooldown_hours*60:.0f}m after stop-loss)",
+                            signal=chosen_sig,
+                            indicators=merged_ind,
+                        )
+                except Exception:
+                    pass
 
         # 3. Validate chosen proposal through RiskEngine
         total_equity = self.account.get_total_equity(current_prices)

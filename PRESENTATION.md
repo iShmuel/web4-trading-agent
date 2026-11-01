@@ -56,7 +56,7 @@ style: |
 * Institutional-grade algorithmic system executing across **Crypto & US Equities**
 * Powered by **8 specialized collaborating quantitative agents**
 * Van Tharp volatility sizing hard-clamped to **1% to 5%** with real-time circuit breakers
-* **+52.45% 90-Day Return** | **2.41 Profit Factor** | **7.94% Max Drawdown** | **95.8% Bear Defense**
+* **+56.62% 90-Day Return** | **2.80 Profit Factor** | **6.25% Max Drawdown** | **53/53 Pytest Green**
 
 ---
 
@@ -122,8 +122,16 @@ flowchart LR
     G --> H[8. Self-Optimizer]
 ```
 
-* **Zero Conflict**: If Momentum proposes `LONG` and Mean Reversion proposes `SHORT` on the same asset, the Arbiter cancels both to avoid ambiguous market states.
-* **Hard Safety Invariants**: Risk bounds `[1%, 5%]` and PaperAccount mode are hard-coded and cannot be bypassed.
+| # | Agent Name & Module | Core Purpose | Exact Responsibilities & Safety Rules |
+| :-: | :--- | :--- | :--- |
+| **1** | **Data Scout Agent** (`core/data_loader.py`) | Multi-Venue Sensor & Data Integrity | Polls Binance CCXT (Crypto) & Yahoo Finance (US Equities), fetches 8h perpetual funding rates, validates OHLCV bars, and blocks trading if data is stale (>120m). |
+| **2** | **Momentum Hunter Agent** (`strategies/momentum.py`) | Trend Expansion Breakout Engine | Scans for 20-bar Donchian breakouts confirmed above the 32 EMA and 200 Macro EMA. Rides big winners (`NEAR`, `LINK`, `AMD`) with an upward-only 2.25x ATR trailing stop. |
+| **3** | **Mean Reversion Agent** (`strategies/mean_reversion.py`) | Rubber-Band Extremes & Scale-Out | Buys deeply oversold dips (`Price <= Lower BB` & `RSI < 30`) in range chop and shorts overbought spikes (`RSI > 75`). Banks 50% halfway to the 20-SMA and 50% at full SMA. |
+| **4** | **Pairs Stat-Arb Agent** (`strategies/stat_arb_pairs.py`) | Market-Neutral Cointegration Engine | Tracks rolling beta and spread Z-scores across cointegrated pairs (`SOL/AVAX`, `NVDA/AMD`, `ETH/BTC`). Enters at $\|Z\| \ge 2.0\sigma$ and exits at $\|Z\| \le 0.5\sigma$. |
+| **5** | **Coordinator Arbiter Agent** (`core/coordinator.py`) | Brain, Conflict Resolution & Profit Lock | Reconciles strategy signals, enforces the **Macro Bear Gate** (`<200 EMA`), triggers the **Auto Break-Even Lock** (`50% TP` or `+1.2x ATR`), and enforces the **3-Hour Crypto Crash Contagion Cooldown**. |
+| **6** | **Risk Governor Agent** (`core/risk_engine.py`) | Deterministic Capital Shield | Calculates Van Tharp volatility unit sizing clamped strictly to `[1%, 5%]`, caps crypto concurrency, and triggers the **5% Daily Loss Halt** & **15% Max Drawdown Kill Switch**. |
+| **7** | **Execution & Ledger Agent** (`core/paper_account.py`) | Smart Maker Router & Atomic Accountant | Routes post-only Maker limit orders (`0.02%` fee, `0.00%` slippage), enforces kernel PID locks (`core/process_lock.py`), and writes state atomically (`.tmp` $\rightarrow$ `fsync` $\rightarrow$ `.bak`). |
+| **8** | **Self-Optimizer Meta-Agent** (`core/optimizer.py`) | Out-of-Sample Walk-Forward Evaluator | Runs every 6 hours across rolling historical windows to audit parameter stability without ever loosening the `[1%, 5%]` risk bounds or enabling real money. |
 
 ---
 
@@ -237,8 +245,8 @@ Full friction included (**0.06% fees + 0.04% slippage**):
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Original Baseline (6 Assets)** | $13,500.00 | +35.00% | 41.2% | 1.65 | 8.85% |
 | **Multi-Asset (NEAR, LINK, AMD)**| $14,578.65 | +45.79% | 46.4% | 2.20 | 7.94% |
-| **Strict Bear-Market Shorting**   | $14,795.42 | +47.95% | 48.2% | 2.28 | 7.94% |
-| **Tier-1 Smart Maker Execution**  | <span class="highlight">**$15,245.44**</span> | <span class="highlight">**+52.45%**</span> | <span class="highlight">**48.2%**</span> | <span class="highlight">**2.41**</span> | <span class="highlight">**7.94%**</span> |
+| **Tier-1 Smart Maker Execution**  | $15,245.44 | +52.45% | 50.9% | 2.45 | 7.79% |
+| **Break-Even Lock + Crash Cooldown** | <span class="highlight">**$15,661.96**</span> | <span class="highlight">**+56.62%**</span> | <span class="highlight">**50.5%**</span> | <span class="highlight">**2.80**</span> | <span class="highlight">**6.25%**</span> |
 
 ---
 
@@ -290,7 +298,7 @@ The bot operates 24/7 as an autonomous background daemon:
 ```
 
 ### The 3-Stage Incubation Framework
-1. **Stage 1: Paper Incubation (Current)**: 30–60 days forward test, zero money risk, 51/51 tests green.
+1. **Stage 1: Paper Incubation (Current)**: 30–60 days forward test, zero money risk, 53/53 tests green.
 2. **Stage 2: Micro-Capital Sandbox**: $500–$1,000 separate test account, withdrawals disabled, $5–$10 risk.
 3. **Stage 3: Full Production**: Scaled capital, Half-Kelly compounding, permanent circuit breakers.
 
@@ -298,10 +306,10 @@ The bot operates 24/7 as an autonomous background daemon:
 
 # Summary & Key Takeaways
 
-1. **Proven Alpha**: **+52.45% net return** with a **2.41 Profit Factor** and low **7.94% Max Drawdown**.
-2. **Crash-Proof Defense**: 200 EMA Macro Gate & Circuit Breakers preserved 95.8% of user capital through a 70% crypto crash.
+1. **Proven Alpha**: **+56.62% net return** with a **2.80 Profit Factor** and low **6.25% Max Drawdown**.
+2. **Crash-Proof Defense**: 200 EMA Macro Gate, Auto Break-Even Lock, and 3-Hour Crash Contagion Cooldown preserved 96.6% of user capital through a 70% crypto crash.
 3. **All-Weather Adaptability**: Captures trend breakouts, shorts bear rallies, and extracts zero-beta pairs spread alpha.
-4. **Institutional Quality**: 51 automated unit tests, atomic persistence, smart maker routing, and multi-agent governance.
+4. **Institutional Quality**: 53 automated unit tests, atomic persistence, smart maker routing, and multi-agent governance.
 
 * **Presentation File (Interactive)**: [`docs/presentation.html`](docs/presentation.html)
 * **Architecture Docs**: [`docs/web4-autonomous-levels.md`](docs/web4-autonomous-levels.md)

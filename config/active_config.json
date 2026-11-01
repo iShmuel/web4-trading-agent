@@ -61,6 +61,10 @@
   "macro_ema_period": 200,
   "adx_chop_threshold": 20.0,
   "adx_trend_threshold": 25.0,
+  "enable_breakeven_lock": true,
+  "breakeven_atr_mult": 1.2,
+  "enable_crash_cooldown": true,
+  "crypto_crash_cooldown_hours": 3.0,
   "use_asset_profiles": false,
   "asset_profiles": {
     "crypto_micro_swing": {

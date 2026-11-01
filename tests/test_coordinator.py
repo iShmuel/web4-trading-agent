@@ -4,10 +4,25 @@ from datetime import datetime, timezone
 import pytest
 import pandas as pd
 
-from core.signals import TradingSignal, SignalDirection, SignalStatus
+from core.signals import TradingSignal, SignalDirection, SignalStatus, create_no_trade_signal
 from core.coordinator import PortfolioCoordinator
 from core.paper_account import PaperAccount
 from core.risk_engine import RiskEngine
+
+
+def make_trending_df(n: int = 60, start: float = 100.0, step: float = 0.5) -> pd.DataFrame:
+    idx = pd.date_range("2026-10-01", periods=n, freq="1h", tz="UTC")
+    closes = [start + i * step for i in range(n)]
+    return pd.DataFrame(
+        {
+            "open": [c - 0.1 for c in closes],
+            "high": [c + 0.2 for c in closes],
+            "low": [c - 0.2 for c in closes],
+            "close": closes,
+            "volume": [1000.0] * n,
+        },
+        index=idx,
+    )
 
 
 def test_coordinator_conflict_resolution_opposite_directions(tmp_path, monkeypatch):
@@ -206,3 +221,81 @@ def test_coordinator_strong_trend_gate(tmp_path, monkeypatch):
     # Counter-trend MR suppressed, Momentum selected!
     assert chosen is not None
     assert chosen.strategy_id == "momentum"
+
+
+def test_coordinator_breakeven_lock_on_partial_exit(tmp_path):
+    account = PaperAccount(10000.0, portfolio_file=tmp_path / "be_port.json")
+    risk = RiskEngine()
+    coordinator = PortfolioCoordinator(account, risk, {"enable_breakeven_lock": True})
+
+    # Open a Mean-Reversion position on ETH/USDT at $2,250 with stop down at $2,200
+    account.open_position(
+        symbol="ETH/USDT",
+        entry_price=2250.0,
+        units=1.0,
+        stop_loss=2200.0,
+        dollar_risk=50.0,
+        max_concurrent_positions=3,
+        side="LONG",
+        strategy_id="mean_reversion",
+    )
+
+    now = datetime.now(timezone.utc)
+    _, _, mr_engine = coordinator._engines_for("ETH/USDT")
+    mr_engine.evaluate = lambda sym, df, existing_position=None: TradingSignal(
+        strategy_id="mean_reversion",
+        symbol=sym,
+        timestamp=now,
+        direction=SignalDirection.LONG,
+        status=SignalStatus.PARTIAL_EXIT,
+        reference_price=2290.0,
+        atr=20.0,
+        take_profit_ratio=0.5,
+        exit_reason="Halfway Scale-Out Take-Profit (50% Banked)",
+    )
+
+    df = make_trending_df(n=60, start=2250.0, step=0.7)
+    decision = coordinator.process_symbol("ETH/USDT", df, {})
+    assert decision.action == "PARTIAL_EXIT"
+    rem_pos = account.get_position("ETH/USDT")
+    assert rem_pos is not None
+    assert rem_pos["units"] == 0.5
+    # Stop must be locked above entry price ($2,250 * 1.0015 = $2,253.375) instead of staying at $2,200!
+    assert rem_pos["trailing_stop"] >= 2250.0 * 1.0015
+
+
+def test_coordinator_crypto_crash_contagion_cooldown(tmp_path):
+    account = PaperAccount(10000.0, portfolio_file=tmp_path / "cd_port.json")
+    risk = RiskEngine()
+    coordinator = PortfolioCoordinator(
+        account,
+        risk,
+        {"enable_crash_cooldown": True, "crypto_crash_cooldown_hours": 3.0, "enable_funding_radar": False},
+    )
+
+    # Simulate a recent crypto stop-loss 30 minutes ago
+    df = make_trending_df(n=60, start=100.0, step=0.5)
+    last_bar_ts = df.index[-1]
+    coordinator._last_crypto_stop_time = last_bar_ts - pd.Timedelta(minutes=30)
+
+    now = datetime.now(timezone.utc)
+    _, mom_engine, mr_engine = coordinator._engines_for("SOL/USDT")
+    mom_engine.evaluate = lambda sym, d, existing_position=None: create_no_trade_signal("momentum", sym, 100.0, "no")
+    mr_engine.evaluate = lambda sym, d, existing_position=None: TradingSignal(
+        strategy_id="mean_reversion",
+        symbol=sym,
+        timestamp=now,
+        direction=SignalDirection.LONG,
+        status=SignalStatus.ENTRY,
+        reference_price=100.0,
+        atr=2.0,
+        suggested_stop=96.0,
+        suggested_take_profit=105.0,
+        indicators={"adx": 15.0},
+    )
+
+    decision = coordinator.process_symbol("SOL/USDT", df, {})
+    assert decision.action == "REJECTED"
+    assert "Contagion Cooldown" in decision.reason
+    assert account.get_position("SOL/USDT") is None
+

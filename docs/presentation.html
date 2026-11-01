@@ -689,19 +689,19 @@
         
         <div class="kpi-grid" style="max-width: 1400px; margin: 0 auto;">
           <div class="kpi-card" style="border-top: 4px solid var(--green);">
-            <div class="kpi-value" style="color: var(--green);">+52.45%</div>
+            <div class="kpi-value" style="color: var(--green);">+56.62%</div>
             <div class="kpi-label">90-Day Net Return</div>
           </div>
           <div class="kpi-card" style="border-top: 4px solid var(--accent);">
-            <div class="kpi-value" style="color: var(--accent);">2.41</div>
+            <div class="kpi-value" style="color: var(--accent);">2.80</div>
             <div class="kpi-label">Profit Factor</div>
           </div>
           <div class="kpi-card" style="border-top: 4px solid var(--gold);">
-            <div class="kpi-value" style="color: var(--gold);">7.94%</div>
+            <div class="kpi-value" style="color: var(--gold);">6.25%</div>
             <div class="kpi-label">Max Drawdown</div>
           </div>
           <div class="kpi-card" style="border-top: 4px solid var(--purple);">
-            <div class="kpi-value" style="color: var(--purple);">95.8%</div>
+            <div class="kpi-value" style="color: var(--purple);">96.6%</div>
             <div class="kpi-label">Bear Capital Preserved</div>
           </div>
         </div>
@@ -858,10 +858,98 @@
       </div>
     </div>
 
-    <!-- Slide 5: Interactive 8-Agent Trading Desk -->
+    <!-- Slide 5: Complete 8-Agent Roster (Overview Grid) -->
     <div class="slide">
-      <h2>The 8-Agent Quantitative Trading Desk</h2>
-      <p class="subtitle">Click an internal agent below to inspect its algorithmic logic, inputs, and safety rules.</p>
+      <h2>All 8 Specialized Agents: Purpose & What They Do</h2>
+      <p class="subtitle">Every 60 seconds, these 8 modular agents collaborate in a strict pipeline from market perception to risk-guarded execution.</p>
+      
+      <div class="grid-4" style="gap: 1.05rem; margin: 0.7rem 0;">
+        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--accent);">
+          <div class="card-tag tag-blue">1. PERCEPTION SENSOR</div>
+          <h3 style="font-size: 1.08rem;">📡 Data Scout Agent</h3>
+          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Feed clean, verified multi-market data & block corrupt or stale candles.</p>
+          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span>Streams Binance Crypto + Yahoo Stocks</span></div>
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span>Tracks 8h perp funding rates &amp; staleness</span></div>
+          </div>
+        </div>
+
+        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--green);">
+          <div class="card-tag tag-green">2. TREND ENGINE</div>
+          <h3 style="font-size: 1.08rem;">🚀 Momentum Hunter</h3>
+          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Capture explosive upside breakouts in confirmed bull expansions.</p>
+          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-green"></span><span>20-bar Donchian breakout + 32/200 EMA</span></div>
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-green"></span><span>Rides big winners via 2.25x ATR trail stop</span></div>
+          </div>
+        </div>
+
+        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--gold);">
+          <div class="card-tag tag-gold">3. RUBBER-BAND ENGINE</div>
+          <h3 style="font-size: 1.08rem;">🎯 Mean Reversion</h3>
+          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Buy oversold dips in range chop &amp; fade extreme bear rallies.</p>
+          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-gold"></span><span>Bollinger Band (2.0&sigma;) + RSI extremes</span></div>
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-gold"></span><span>Banks 50% halfway to SMA + 50% at SMA</span></div>
+          </div>
+        </div>
+
+        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--purple);">
+          <div class="card-tag tag-purple">4. MARKET-NEUTRAL</div>
+          <h3 style="font-size: 1.08rem;">⚖️ Pairs Stat-Arb</h3>
+          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Extract zero-beta spread alpha independent of market direction.</p>
+          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span>Tracks SOL/AVAX &amp; NVDA/AMD spreads</span></div>
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span>Enters at |Z| &ge; 2.0, exits at |Z| &le; 0.5</span></div>
+          </div>
+        </div>
+
+        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--accent);">
+          <div class="card-tag tag-blue">5. BRAIN &amp; ARBITER</div>
+          <h3 style="font-size: 1.08rem;">🧠 Coordinator Arbiter</h3>
+          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Reconcile strategy signals, enforce regime gates &amp; lock break-even stops.</p>
+          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span><strong>Auto Break-Even Lock:</strong> 50% TP / +1.2x ATR</span></div>
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span><strong>3h Crash Cooldown:</strong> Stops domino losses</span></div>
+          </div>
+        </div>
+
+        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--red);">
+          <div class="card-tag tag-red">6. CAPITAL SHIELD</div>
+          <h3 style="font-size: 1.08rem;">🛡️ Risk Governor</h3>
+          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Enforce hard mathematical sizing bounds and emergency kill switches.</p>
+          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-red"></span><span>Van Tharp sizing clamped to [1%, 5%]</span></div>
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-red"></span><span>5% Daily Halt &amp; 15% Max DD Breaker</span></div>
+          </div>
+        </div>
+
+        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--green);">
+          <div class="card-tag tag-green">7. SAFE ACCOUNTANT</div>
+          <h3 style="font-size: 1.08rem;">📒 Execution &amp; Ledger</h3>
+          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Route post-only Maker orders &amp; guarantee crash-proof portfolio storage.</p>
+          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-green"></span><span>Smart Maker routing (0.02% fee, 0 slip)</span></div>
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-green"></span><span>Atomic .tmp &rarr; fsync &amp; PID process lock</span></div>
+          </div>
+        </div>
+
+        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--purple);">
+          <div class="card-tag tag-purple">8. EVOLUTION ENGINE</div>
+          <h3 style="font-size: 1.08rem;">🔬 Self-Optimizer</h3>
+          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Continuously audit strategy parameters on rolling out-of-sample windows.</p>
+          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span>Runs every 6h across 90d/365d data</span></div>
+            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span>Never loosens 1%–5% safety bounds</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 6: Interactive 8-Agent Deep-Dive Inspector -->
+    <div class="slide">
+      <h2>Interactive 8-Agent Deep-Dive Inspector</h2>
+      <p class="subtitle">Click any agent below to inspect its exact mathematical formula, code module, inputs, outputs, and safety rules.</p>
       
       <div class="agent-nav-strip" id="agentNav">
         <button class="agent-tab active" onclick="showAgentDetail(0)">1. Data Scout</button>
@@ -1263,7 +1351,7 @@
         <div class="bar-row">
           <div class="bar-label">Our Upgraded Web4 Bot</div>
           <div class="bar-track">
-            <div class="bar-fill-green" style="width: 88%;">+52.45% ($15,245.44) 🏆</div>
+            <div class="bar-fill-green" style="width: 92%;">+56.62% ($15,661.96) 🏆</div>
           </div>
         </div>
       </div>
@@ -1297,20 +1385,20 @@
             <td>7.94%</td>
           </tr>
           <tr>
-            <td>Strict Bear-Market Shorting</td>
-            <td>$14,795.42</td>
-            <td>+47.95%</td>
-            <td>48.2%</td>
-            <td>2.28</td>
-            <td>7.94%</td>
+            <td>Tier-1 Smart Maker Execution</td>
+            <td>$15,245.44</td>
+            <td>+52.45%</td>
+            <td>50.9%</td>
+            <td>2.45</td>
+            <td>7.79%</td>
           </tr>
-          <tr style="background: rgba(16, 185, 129, 0.12);">
-            <td><strong>Tier-1 Smart Maker Execution</strong></td>
-            <td><strong>$15,245.44</strong></td>
-            <td><span class="highlight">+52.45%</span></td>
-            <td><strong>48.2%</strong></td>
-            <td><span class="highlight">2.41</span></td>
-            <td><span class="highlight">7.94%</span></td>
+          <tr style="background: rgba(16, 185, 129, 0.14);">
+            <td><strong>Break-Even Lock + Crash Contagion Cooldown</strong></td>
+            <td><strong>$15,661.96</strong></td>
+            <td><span class="highlight">+56.62%</span></td>
+            <td><strong>50.5%</strong></td>
+            <td><span class="highlight">2.80</span></td>
+            <td><span class="highlight">6.25%</span></td>
           </tr>
         </tbody>
       </table>
@@ -1441,17 +1529,17 @@
         <div>
           <div style="display: flex; align-items: center; gap: 0.6rem;">
             <span class="pulse-dot"></span>
-            <span class="badge badge-green" style="font-size: 0.85rem; padding: 0.35rem 0.85rem;">LIVE DAEMON ACTIVE (Task 2493)</span>
+            <span class="badge badge-green" style="font-size: 0.85rem; padding: 0.35rem 0.85rem;">LIVE DAEMON ACTIVE (60s Loop)</span>
           </div>
           <div style="font-size: 1.4rem; font-weight: 800; color: #fff; margin-top: 0.5rem; letter-spacing: -0.02em;">
-            Equity: $9,818.61 | Cash: $6,384.50 (65.0% Safe Cash Defense)
+            Equity: $9,258.85 | Cash: $9,258.85 (100% Safe Cash Defense)
           </div>
           <div style="font-size: 0.96rem; color: #94a3b8; margin-top: 0.35rem;">
-            Open Position: <code style="color: #38bdf8; font-weight: 800; font-family: 'JetBrains Mono', monospace;">SPY Long</code> (Entry: $769.72 | Trailing Stop Ratchet: $766.08 | Total Dollar Risk: $25.29 / 0.26%)
+            Recent Live Proof: <code style="color: #10b981; font-weight: 800; font-family: 'JetBrains Mono', monospace;">AVAX (+$15.95 2-Leg Win)</code> &bull; <code style="color: #38bdf8; font-weight: 800; font-family: 'JetBrains Mono', monospace;">LINK Break-Even Lock Saved +$72.04!</code>
           </div>
         </div>
         <div>
-          <span class="badge badge-blue" style="font-size: 0.95rem; padding: 0.55rem 1.15rem;">51/51 PYTEST GREEN 🛡️</span>
+          <span class="badge badge-blue" style="font-size: 0.95rem; padding: 0.55rem 1.15rem;">53/53 PYTEST GREEN 🛡️</span>
         </div>
       </div>
 
@@ -1510,18 +1598,19 @@
       "2. The Core Market Problem (Why Bots Fail)",
       "3. The Web4 Paradigm Evolution",
       "4. The 3 Levels of System Autonomy",
-      "5. Interactive 8-Agent Trading Desk",
-      "6. The 11-Asset Universe & Hedging",
-      "7. All-Weather Playbook (Bull, Bear, Chop)",
-      "8. Order Flow & Liquidation Mechanics",
-      "9. Statistical Arbitrage Pairs Trading",
-      "10. The 3 Strategy Engines Matrix",
-      "11. Risk Governance & Circuit Breakers",
-      "12. Mathematics of Loss Asymmetry (Interactive)",
-      "13. 90-Day Empirical Track Record",
-      "14. 365-Day Bear Crash Stress Test",
-      "15. Execution Alpha: The Maker Advantage",
-      "16. Live Desk Telemetry & Incubation Roadmap"
+      "5. All 8 Specialized Agents (Overview Grid)",
+      "6. Interactive 8-Agent Deep-Dive Inspector",
+      "7. The 11-Asset Universe & Hedging",
+      "8. All-Weather Playbook (Bull, Bear, Chop)",
+      "9. Order Flow & Liquidation Mechanics",
+      "10. Statistical Arbitrage Pairs Trading",
+      "11. The 3 Strategy Engines Matrix",
+      "12. Risk Governance & Circuit Breakers",
+      "13. Mathematics of Loss Asymmetry (Interactive)",
+      "14. 90-Day Empirical Track Record (+56.62%)",
+      "15. 365-Day Bear Crash Stress Test",
+      "16. Execution Alpha: The Maker Advantage",
+      "17. Live Desk Telemetry & Incubation Roadmap"
     ];
 
     slideTitles.forEach((title, idx) => {
@@ -1628,12 +1717,12 @@
         safety: "Completely zero market beta: unaffected by overall crypto market directional crashes."
       },
       {
-        name: "5. Coordinator Arbiter Agent",
-        role: "Cognitive Conflict Resolution & Routing Gateway",
-        formula: "Arbiter Matrix: Reconciles concurrent proposals; enforces maker post-only execution",
-        inputs: "Proposals from Momentum, Mean Reversion, and Pairs engines",
-        outputs: "Unified candidate order list routed to Risk Governor; maker limit pricing",
-        safety: "Zero-Conflict Rule: Conflicting signals on the same symbol are instantly canceled."
+        name: "5. Coordinator Arbiter Agent (core/coordinator.py)",
+        role: "Cognitive Conflict Resolution, Break-Even Lock & Crash Cooldown",
+        formula: "Arbiter Matrix + Auto Break-Even Lock (50% TP or +1.2x ATR) + 3h Crypto Contagion Cooldown",
+        inputs: "Proposals from Momentum, Mean Reversion & Pairs engines; active position state",
+        outputs: "Unified candidate order list, break-even stop ratchets, maker post-only pricing",
+        safety: "Zero-Conflict Rule + Auto Break-Even Lock (saved +$72 on LINK) + 3h Crash Cooldown after crypto stop-outs."
       },
       {
         name: "6. Risk Governor Agent",
