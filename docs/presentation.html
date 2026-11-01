@@ -860,87 +860,95 @@
 
     <!-- Slide 5: Complete 8-Agent Roster (Overview Grid) -->
     <div class="slide">
-      <h2>All 8 Specialized Agents: Purpose & What They Do</h2>
-      <p class="subtitle">Every 60 seconds, these 8 modular agents collaborate in a strict pipeline from market perception to risk-guarded execution.</p>
+      <h2>All 8 Specialized Agents: Purpose, Why Needed &amp; What They Do</h2>
+      <p class="subtitle">Why a single monolithic script fails—and why our desk splits intelligence across 8 specialized agents with strict checks and balances.</p>
       
-      <div class="grid-4" style="gap: 1.05rem; margin: 0.7rem 0;">
-        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--accent);">
+      <div class="grid-4" style="gap: 0.95rem; margin: 0.55rem 0;">
+        <div class="bento-card" style="padding: 1.0rem 1.15rem; border-top: 3px solid var(--accent);">
           <div class="card-tag tag-blue">1. PERCEPTION SENSOR</div>
-          <h3 style="font-size: 1.08rem;">📡 Data Scout Agent</h3>
-          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Feed clean, verified multi-market data & block corrupt or stale candles.</p>
-          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span>Streams Binance Crypto + Yahoo Stocks</span></div>
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span>Tracks 8h perp funding rates &amp; staleness</span></div>
+          <h3 style="font-size: 1.04rem;">📡 Data Scout Agent</h3>
+          <p style="font-size: 0.82rem; margin-bottom: 0.35rem;"><strong>Purpose:</strong> Stream clean multi-market data &amp; block stale/corrupt feeds.</p>
+          <p style="font-size: 0.8rem; color: #38bdf8; margin-bottom: 0.4rem;"><strong>Why Needed:</strong> Without it, API lag or bad ticks trigger phantom trades on ghost prices.</p>
+          <div class="feature-list" style="gap: 0.3rem; margin-top: 0.35rem;">
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot"></span><span>Streams Binance Crypto + Yahoo Stocks</span></div>
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot"></span><span>Tracks 8h perp funding &amp; 120m staleness</span></div>
           </div>
         </div>
 
-        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--green);">
+        <div class="bento-card" style="padding: 1.0rem 1.15rem; border-top: 3px solid var(--green);">
           <div class="card-tag tag-green">2. TREND ENGINE</div>
-          <h3 style="font-size: 1.08rem;">🚀 Momentum Hunter</h3>
-          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Capture explosive upside breakouts in confirmed bull expansions.</p>
-          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-green"></span><span>20-bar Donchian breakout + 32/200 EMA</span></div>
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-green"></span><span>Rides big winners via 2.25x ATR trail stop</span></div>
+          <h3 style="font-size: 1.04rem;">🚀 Momentum Hunter</h3>
+          <p style="font-size: 0.82rem; margin-bottom: 0.35rem;"><strong>Purpose:</strong> Capture explosive upside breakouts in confirmed bull runs.</p>
+          <p style="font-size: 0.8rem; color: #10b981; margin-bottom: 0.4rem;"><strong>Why Needed:</strong> Without it, the bot misses massive multi-week bull trends (+45% rallies).</p>
+          <div class="feature-list" style="gap: 0.3rem; margin-top: 0.35rem;">
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot dot-green"></span><span>20-bar Donchian breakout + 32/200 EMA</span></div>
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot dot-green"></span><span>Rides big winners via 2.25x ATR trail stop</span></div>
           </div>
         </div>
 
-        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--gold);">
+        <div class="bento-card" style="padding: 1.0rem 1.15rem; border-top: 3px solid var(--gold);">
           <div class="card-tag tag-gold">3. RUBBER-BAND ENGINE</div>
-          <h3 style="font-size: 1.08rem;">🎯 Mean Reversion</h3>
-          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Buy oversold dips in range chop &amp; fade extreme bear rallies.</p>
-          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-gold"></span><span>Bollinger Band (2.0&sigma;) + RSI extremes</span></div>
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-gold"></span><span>Banks 50% halfway to SMA + 50% at SMA</span></div>
+          <h3 style="font-size: 1.04rem;">🎯 Mean Reversion</h3>
+          <p style="font-size: 0.82rem; margin-bottom: 0.35rem;"><strong>Purpose:</strong> Buy panic flushes in range chop &amp; short overbought bear bounces.</p>
+          <p style="font-size: 0.8rem; color: #fbbf24; margin-bottom: 0.4rem;"><strong>Why Needed:</strong> Markets chop sideways 70% of the time where trend-only bots bleed out.</p>
+          <div class="feature-list" style="gap: 0.3rem; margin-top: 0.35rem;">
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot dot-gold"></span><span>Bollinger Band (2.0&sigma;) + RSI extremes</span></div>
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot dot-gold"></span><span>Banks 50% halfway to SMA + 50% at SMA</span></div>
           </div>
         </div>
 
-        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--purple);">
+        <div class="bento-card" style="padding: 1.0rem 1.15rem; border-top: 3px solid var(--purple);">
           <div class="card-tag tag-purple">4. MARKET-NEUTRAL</div>
-          <h3 style="font-size: 1.08rem;">⚖️ Pairs Stat-Arb</h3>
-          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Extract zero-beta spread alpha independent of market direction.</p>
-          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span>Tracks SOL/AVAX &amp; NVDA/AMD spreads</span></div>
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span>Enters at |Z| &ge; 2.0, exits at |Z| &le; 0.5</span></div>
+          <h3 style="font-size: 1.04rem;">⚖️ Pairs Stat-Arb</h3>
+          <p style="font-size: 0.82rem; margin-bottom: 0.35rem;"><strong>Purpose:</strong> Extract zero-beta spread alpha independent of market direction.</p>
+          <p style="font-size: 0.8rem; color: #c084fc; margin-bottom: 0.4rem;"><strong>Why Needed:</strong> Generates uncorrelated returns even when macro markets are flat or crashing.</p>
+          <div class="feature-list" style="gap: 0.3rem; margin-top: 0.35rem;">
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot"></span><span>Tracks SOL/AVAX &amp; NVDA/AMD spreads</span></div>
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot"></span><span>Enters at |Z| &ge; 2.0, exits at |Z| &le; 0.5</span></div>
           </div>
         </div>
 
-        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--accent);">
+        <div class="bento-card" style="padding: 1.0rem 1.15rem; border-top: 3px solid var(--accent);">
           <div class="card-tag tag-blue">5. BRAIN &amp; ARBITER</div>
-          <h3 style="font-size: 1.08rem;">🧠 Coordinator Arbiter</h3>
-          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Reconcile strategy signals, enforce regime gates &amp; lock break-even stops.</p>
-          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span><strong>Auto Break-Even Lock:</strong> 50% TP / +1.2x ATR</span></div>
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span><strong>3h Crash Cooldown:</strong> Stops domino losses</span></div>
+          <h3 style="font-size: 1.04rem;">🧠 Coordinator Arbiter</h3>
+          <p style="font-size: 0.82rem; margin-bottom: 0.35rem;"><strong>Purpose:</strong> Reconcile signals, enforce regimes &amp; manage active trade exits.</p>
+          <p style="font-size: 0.8rem; color: #38bdf8; margin-bottom: 0.4rem;"><strong>Why Needed:</strong> Stops strategies from fighting each other, giving back profits, or domino-crashing.</p>
+          <div class="feature-list" style="gap: 0.3rem; margin-top: 0.35rem;">
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot"></span><span><strong>Auto Break-Even Lock:</strong> 50% TP / +1.2x ATR</span></div>
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot"></span><span><strong>3h Crash Cooldown:</strong> Stops domino losses</span></div>
           </div>
         </div>
 
-        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--red);">
+        <div class="bento-card" style="padding: 1.0rem 1.15rem; border-top: 3px solid var(--red);">
           <div class="card-tag tag-red">6. CAPITAL SHIELD</div>
-          <h3 style="font-size: 1.08rem;">🛡️ Risk Governor</h3>
-          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Enforce hard mathematical sizing bounds and emergency kill switches.</p>
-          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-red"></span><span>Van Tharp sizing clamped to [1%, 5%]</span></div>
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-red"></span><span>5% Daily Halt &amp; 15% Max DD Breaker</span></div>
+          <h3 style="font-size: 1.04rem;">🛡️ Risk Governor</h3>
+          <p style="font-size: 0.82rem; margin-bottom: 0.35rem;"><strong>Purpose:</strong> Enforce hard mathematical sizing bounds &amp; kill switches.</p>
+          <p style="font-size: 0.8rem; color: #fb7185; margin-bottom: 0.4rem;"><strong>Why Needed:</strong> Strategy engines only see upside; Risk has veto power so 1 bad trade never ruins us.</p>
+          <div class="feature-list" style="gap: 0.3rem; margin-top: 0.35rem;">
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot dot-red"></span><span>Van Tharp sizing clamped to [1%, 5%]</span></div>
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot dot-red"></span><span>5% Daily Halt &amp; 15% Max DD Breaker</span></div>
           </div>
         </div>
 
-        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--green);">
+        <div class="bento-card" style="padding: 1.0rem 1.15rem; border-top: 3px solid var(--green);">
           <div class="card-tag tag-green">7. SAFE ACCOUNTANT</div>
-          <h3 style="font-size: 1.08rem;">📒 Execution &amp; Ledger</h3>
-          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Route post-only Maker orders &amp; guarantee crash-proof portfolio storage.</p>
-          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-green"></span><span>Smart Maker routing (0.02% fee, 0 slip)</span></div>
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot dot-green"></span><span>Atomic .tmp &rarr; fsync &amp; PID process lock</span></div>
+          <h3 style="font-size: 1.04rem;">📒 Execution &amp; Ledger</h3>
+          <p style="font-size: 0.82rem; margin-bottom: 0.35rem;"><strong>Purpose:</strong> Route Maker limit orders &amp; guarantee atomic portfolio saves.</p>
+          <p style="font-size: 0.8rem; color: #10b981; margin-bottom: 0.4rem;"><strong>Why Needed:</strong> Without it, market-order fees eat 20% of profits and power loss corrupts the JSON ledger.</p>
+          <div class="feature-list" style="gap: 0.3rem; margin-top: 0.35rem;">
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot dot-green"></span><span>Smart Maker routing (0.02% fee, 0 slip)</span></div>
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot dot-green"></span><span>Atomic .tmp &rarr; fsync &amp; PID process lock</span></div>
           </div>
         </div>
 
-        <div class="bento-card" style="padding: 1.15rem 1.3rem; border-top: 3px solid var(--purple);">
+        <div class="bento-card" style="padding: 1.0rem 1.15rem; border-top: 3px solid var(--purple);">
           <div class="card-tag tag-purple">8. EVOLUTION ENGINE</div>
-          <h3 style="font-size: 1.08rem;">🔬 Self-Optimizer</h3>
-          <p style="font-size: 0.86rem;"><strong>Purpose:</strong> Continuously audit strategy parameters on rolling out-of-sample windows.</p>
-          <div class="feature-list" style="gap: 0.4rem; margin-top: 0.55rem;">
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span>Runs every 6h across 90d/365d data</span></div>
-            <div class="feature-item" style="font-size: 0.84rem;"><span class="feature-dot"></span><span>Never loosens 1%–5% safety bounds</span></div>
+          <h3 style="font-size: 1.04rem;">🔬 Self-Optimizer</h3>
+          <p style="font-size: 0.82rem; margin-bottom: 0.35rem;"><strong>Purpose:</strong> Audit and evolve strategy parameters on rolling walk-forward windows.</p>
+          <p style="font-size: 0.8rem; color: #c084fc; margin-bottom: 0.4rem;"><strong>Why Needed:</strong> Static rules decay as market volatility shifts; adapts edge without overfitting.</p>
+          <div class="feature-list" style="gap: 0.3rem; margin-top: 0.35rem;">
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot"></span><span>Runs every 6h across 90d/365d data</span></div>
+            <div class="feature-item" style="font-size: 0.8rem;"><span class="feature-dot"></span><span>Never loosens 1%–5% safety bounds</span></div>
           </div>
         </div>
       </div>
@@ -1685,32 +1693,36 @@
     /* Interactive 8-Agent Inspector Data */
     const agentsData = [
       {
-        name: "1. Data Scout Agent",
+        name: "1. Data Scout Agent (core/data_loader.py)",
         role: "Multi-Source Sensor & Telemetry Ingestion",
-        formula: "Polls Binance CCXT + Yahoo Finance; calculates 8h funding rate & ATR(14)",
+        whyNeeded: "Garbage in = garbage out. Without a dedicated sensor agent that validates timestamps, caches Parquet data, and checks 8h perp funding rates, API hiccups or stale candles would cause the bot to fire trades on ghost prices or buy into overheated leveraged bull traps.",
+        formula: "Polls Binance CCXT + Yahoo Finance; calculates 8h funding rate, EMA(20/32/200), RSI(14), ADX(14) & ATR(14)",
         inputs: "Raw 1h & 4h OHLCV candlesticks, order book depth, perp funding rates",
         outputs: "Normalized DataFrames, regime flags (BULL/BEAR/CHOP), data staleness checks",
         safety: "Automated Data Sentinel disables trading if feeds lag > 120 minutes or report zero volume."
       },
       {
-        name: "2. Momentum Hunter Agent",
+        name: "2. Momentum Hunter Agent (strategies/momentum.py)",
         role: "Multi-Timeframe Trend Breakout Engine",
+        whyNeeded: "The biggest profits in crypto and tech stocks come from sustained directional breakouts (like NEAR +$3,085 and AMD +$2,648). Without a dedicated trend-following agent that lets winners run via an ATR trailing stop, the bot would cap its upside and miss multi-week bull expansions.",
         formula: "Signal = (Close > 200 EMA) AND (Close > 32 EMA) AND (Close >= Donchian_20_High)",
         inputs: "4h Macro EMA, 1h Intermediate EMA, 20-period highest high",
         outputs: "LONG breakout proposals with initial ATR stop-loss and ratchet targets",
         safety: "Hard-gated by Macro Bear filter: zero long entries allowed if price is below 200 EMA."
       },
       {
-        name: "3. Mean Reversion Agent",
+        name: "3. Mean Reversion Agent (strategies/mean_reversion.py)",
         role: "Overbought Rally Fader & Oversold Capitulation Buyer",
-        formula: "Short = (Price < 200 EMA) AND (RSI >= 75.0) AND (Price >= Upper Bollinger Band)",
+        whyNeeded: "Markets spend ~70% of the time in sideways consolidation or corrective chop where breakout bots get whipsawed. We need Mean Reversion to buy extreme panic flushes below the lower Bollinger Band (with green bounce confirmation) and bank quick snapback profits to the 20-SMA.",
+        formula: "Long = (Price <= Lower_BB_2.0) AND (RSI < 30) AND Green_Bounce; Short = (Price < 200 EMA) AND (RSI >= 75)",
         inputs: "Relative Strength Index (RSI 14), 20 SMA, 2.0x Bollinger Bands",
-        outputs: "SHORT proposals on dead-cat bounces; LONG proposals on oversold exhaustion wicks",
+        outputs: "LONG proposals on oversold exhaustion wicks; SHORT proposals on dead-cat bounces",
         safety: "Halves risk allocation when market enters choppy consolidation (ADX < 20)."
       },
       {
-        name: "4. Pairs Stat-Arb Agent",
+        name: "4. Pairs Stat-Arb Agent (strategies/stat_arb_pairs.py)",
         role: "Zero-Beta Cointegration Arbitrageur",
+        whyNeeded: "Directional strategies still depend on whether the market moves nicely. We need a market-neutral relative-value agent that trades the spread between correlated cousins (SOL vs. AVAX, NVDA vs. AMD) so the desk extracts pure mathematical alpha even when the macro market is flat or uncertain.",
         formula: "Spread = Price_A - (Beta * Price_B); Z = (Spread - Mean) / StdDev; Trigger |Z| >= 2.0",
         inputs: "High-correlation pairs (SOL/AVAX, NVDA/AMD, ETH/BTC)",
         outputs: "Synchronized market-neutral pairs proposals (Long undervalued / Short overvalued)",
@@ -1719,33 +1731,37 @@
       {
         name: "5. Coordinator Arbiter Agent (core/coordinator.py)",
         role: "Cognitive Conflict Resolution, Break-Even Lock & Crash Cooldown",
+        whyNeeded: "If 3 strategy agents run unsupervised, Momentum might buy while Mean Reversion sells, or a profitable trade might reverse into a full stop-loss, or a market-wide crash might trigger back-to-back domino re-entries. The Coordinator is the 'Head Trader' that arbitrates signals, locks break-even stops (+1.2x ATR / 50% TP), and enforces a 3h cooldown after any crypto stop-out.",
         formula: "Arbiter Matrix + Auto Break-Even Lock (50% TP or +1.2x ATR) + 3h Crypto Contagion Cooldown",
         inputs: "Proposals from Momentum, Mean Reversion & Pairs engines; active position state",
         outputs: "Unified candidate order list, break-even stop ratchets, maker post-only pricing",
         safety: "Zero-Conflict Rule + Auto Break-Even Lock (saved +$72 on LINK) + 3h Crash Cooldown after crypto stop-outs."
       },
       {
-        name: "6. Risk Governor Agent",
+        name: "6. Risk Governor Agent (core/risk_engine.py)",
         role: "Deterministic Capital Protector & Circuit Breaker",
+        whyNeeded: "Strategy agents are inherently optimistic—they only see alpha opportunity. Just like a tier-1 hedge fund has an independent Chief Risk Officer with veto power over traders, our Risk Governor sizes every trade inversely to volatility [1%–5%] and pulls the plug if daily loss hits 5% or drawdown hits 15%.",
         formula: "Position Units = (Equity * Risk_Pct) / (ATR * 2.25); Clamped strictly to [1%, 5%]",
         inputs: "Portfolio equity, cash reserve, current ATR volatility, daily high watermark",
         outputs: "Approved order sizes, trailing stop ratchet values, circuit breaker triggers",
         safety: "Hard invariants: 5% Daily Loss Halt and 15% Max DD liquidation switch cannot be bypassed."
       },
       {
-        name: "7. Execution & Ledger Agent",
-        role: "Atomic State Persistence & Order Simulator",
-        formula: "Atomic write (.tmp -> fsync() -> rename) + persistent .bak backup fallback",
+        name: "7. Execution & Ledger Agent (core/paper_account.py)",
+        role: "Atomic State Persistence & Smart Maker Router",
+        whyNeeded: "Even a great strategy loses money if retail market-order fees (0.10%+) and slippage eat 20% of profits, or if two processes corrupt the JSON state file. This agent routes post-only Maker orders (cutting fee drag by 80%, adding +$450 profit) and uses OS-level PID locks + atomic .tmp->fsync writes so portfolio state is never lost.",
+        formula: "Atomic write (.tmp -> fsync() -> rename) + persistent .bak backup fallback + Maker 0.02% routing",
         inputs: "Approved orders from Risk Governor, live tick fills, maker fee (0.02%)",
         outputs: "Updated data/paper_portfolio.json, closed trade journal, live telemetry",
         safety: "Kernel PID file locks guarantee zero duplicate daemons or race conditions."
       },
       {
-        name: "8. Self-Optimizer Meta-Agent",
+        name: "8. Self-Optimizer Meta-Agent (core/optimizer.py)",
         role: "Out-of-Sample Walk-Forward Strategy Evaluator",
-        formula: "Walk-forward optimization across rolling 90-day windows; tests parameter mutations",
+        whyNeeded: "Market volatility regimes evolve over months—fixed parameters eventually decay. We need an offline Meta-Agent that continuously runs out-of-sample walk-forward tests (penalizing drawdowns) to keep indicator thresholds sharp, while being mathematically forbidden from touching our 1%–5% risk bounds.",
+        formula: "Fitness = (Sharpe_Ratio * Win_Rate) - (2.0 * Max_Drawdown) across rolling 90d/365d windows",
         inputs: "Historical trade journal, simulated slippage scenarios, parameter ranges",
-        outputs: "Optimized configuration candidates logged for human engineer inspection",
+        outputs: "Optimized configuration candidates logged/promoted to config/active_config.json",
         safety: "Cannot mutate risk boundaries [1%, 5%] or activate real-money accounts (AGENTS.md)."
       }
     ];
@@ -1755,27 +1771,31 @@
       const a = agentsData[idx];
       const panel = document.getElementById('agentDetailContent');
       panel.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-          <h3 style="color: var(--accent); font-size: 1.3rem; font-weight: 800;">${a.name}</h3>
-          <span class="badge badge-blue" style="font-size: 0.82rem; padding: 0.35rem 0.85rem;">${a.role}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <h3 style="color: var(--accent); font-size: 1.25rem; font-weight: 800;">${a.name}</h3>
+          <span class="badge badge-blue" style="font-size: 0.8rem; padding: 0.3rem 0.8rem;">${a.role}</span>
         </div>
-        <div style="margin-bottom: 0.9rem;">
-          <strong style="color: #fff; font-size: 0.92rem;">Algorithmic Logic:</strong>
-          <code style="display: block; background: #060913; padding: 0.75rem 1rem; border-radius: 0.55rem; color: #38bdf8; font-size: 0.9rem; margin-top: 0.35rem; border: 1px solid var(--border); font-family: 'JetBrains Mono', monospace;">${a.formula}</code>
+        <div style="margin-bottom: 0.8rem; background: rgba(56, 189, 248, 0.09); border-left: 4px solid var(--accent); padding: 0.65rem 1rem; border-radius: 0.4rem;">
+          <strong style="color: #38bdf8; font-size: 0.88rem;">💡 Why We Need This Agent (What Fails Without It):</strong>
+          <span style="font-size: 0.88rem; color: #e2e8f0; display: block; margin-top: 0.2rem; line-height: 1.45;">${a.whyNeeded}</span>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin: 0.9rem 0;">
+        <div style="margin-bottom: 0.75rem;">
+          <strong style="color: #fff; font-size: 0.88rem;">Algorithmic Logic:</strong>
+          <code style="display: block; background: #060913; padding: 0.6rem 0.9rem; border-radius: 0.5rem; color: #38bdf8; font-size: 0.86rem; margin-top: 0.3rem; border: 1px solid var(--border); font-family: 'JetBrains Mono', monospace;">${a.formula}</code>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; margin: 0.75rem 0;">
           <div>
-            <strong style="color: #fff; font-size: 0.92rem;">Inputs:</strong>
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem;">${a.inputs}</p>
+            <strong style="color: #fff; font-size: 0.88rem;">Inputs:</strong>
+            <p style="font-size: 0.86rem; color: var(--text-muted); margin-top: 0.2rem;">${a.inputs}</p>
           </div>
           <div>
-            <strong style="color: #fff; font-size: 0.92rem;">Outputs:</strong>
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem;">${a.outputs}</p>
+            <strong style="color: #fff; font-size: 0.88rem;">Outputs:</strong>
+            <p style="font-size: 0.86rem; color: var(--text-muted); margin-top: 0.2rem;">${a.outputs}</p>
           </div>
         </div>
-        <div style="margin-top: 0.9rem; background: rgba(244, 63, 94, 0.08); border-left: 4px solid var(--red); padding: 0.7rem 1rem; border-radius: 0.4rem;">
-          <strong style="color: #fff; font-size: 0.9rem;">Invariant Safety Rule:</strong>
-          <span style="font-size: 0.9rem; color: #fecdd3; display: block; margin-top: 0.2rem;">${a.safety}</span>
+        <div style="margin-top: 0.75rem; background: rgba(244, 63, 94, 0.08); border-left: 4px solid var(--red); padding: 0.6rem 1rem; border-radius: 0.4rem;">
+          <strong style="color: #fff; font-size: 0.88rem;">🛡️ Invariant Safety Rule:</strong>
+          <span style="font-size: 0.86rem; color: #fecdd3; display: block; margin-top: 0.15rem;">${a.safety}</span>
         </div>
       `;
     }
