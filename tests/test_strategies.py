@@ -137,3 +137,36 @@ def test_mean_reversion_halfway_scale_out_take_profit():
     assert sig.status == SignalStatus.PARTIAL_EXIT
     assert sig.take_profit_ratio == 0.5
     assert "Halfway Scale-Out" in sig.exit_reason
+
+
+def test_mean_reversion_bullish_liquidity_sweep_reclaim():
+    """Verify a stop-hunt sweep below the prior 20-bar low followed by a green reclaim triggers LONG."""
+    df = create_range_ohlcv(bars=80, amplitude=2.0)
+    # Create a controlled pullback so RSI is < 40 (around ~34, above the strict 30 threshold)
+    for idx in range(-6, -1):
+        df.iloc[idx, df.columns.get_loc("close")] = 98.5
+        df.iloc[idx, df.columns.get_loc("open")] = 99.0
+        df.iloc[idx, df.columns.get_loc("low")] = 98.0
+        df.iloc[idx, df.columns.get_loc("high")] = 99.2
+
+    prior_low_20 = float(df["low"].iloc[-21:-1].min())
+    # Latest candle sweeps below prior_low_20, then reclaims above prior_low_20 and closes green (> open)
+    df.iloc[-1, df.columns.get_loc("open")] = prior_low_20 - 0.1
+    df.iloc[-1, df.columns.get_loc("low")] = prior_low_20 - 1.5
+    df.iloc[-1, df.columns.get_loc("close")] = prior_low_20 + 0.3
+    df.iloc[-1, df.columns.get_loc("high")] = prior_low_20 + 0.5
+
+    strategy = MeanReversionStrategy(
+        {
+            "enable_liquidity_sweep": True,
+            "sweep_lookback": 20,
+            "sweep_rsi_max": 45.0,
+            "adx_threshold": 50,
+            "max_stale_minutes": 0,
+        }
+    )
+    sig = strategy.evaluate("SOL/USDT", df, existing_position=None)
+    assert sig.status == SignalStatus.ENTRY
+    assert sig.direction == SignalDirection.LONG
+    assert sig.indicators.get("liquidity_sweep") == "BULLISH_SWEEP_RECLAIM"
+

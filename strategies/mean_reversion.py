@@ -58,6 +58,9 @@ class MeanReversionStrategy:
         self.max_stale_minutes = config.get("max_stale_minutes", 120)
         self.scale_out_enabled = config.get("mr_scale_out_enabled", True)
         self.scale_out_ratio = config.get("mr_scale_out_ratio", 0.5)
+        self.enable_liquidity_sweep = config.get("enable_liquidity_sweep", True)
+        self.sweep_lookback = int(config.get("sweep_lookback", 20))
+        self.sweep_rsi_max = float(config.get("sweep_rsi_max", 40.0))
 
     def evaluate(
         self,
@@ -185,6 +188,44 @@ class MeanReversionStrategy:
                 estimated_slippage_pct=self.slippage_pct,
                 indicators=indicators,
             )
+
+        # Long entry #2: Bullish Liquidity Sweep-and-Reclaim (Stop-Hunt below prior N-bar low & green reclaim)
+        if self.enable_liquidity_sweep and len(data) >= self.sweep_lookback + 2 and rsi < self.sweep_rsi_max:
+            low_s = data["low"].astype(float)
+            open_p = float(latest["open"])
+            cur_low = float(latest["low"])
+            prior_low_cur = float(low_s.iloc[-(self.sweep_lookback + 1) : -1].min())
+            prior_low_prev = float(low_s.iloc[-(self.sweep_lookback + 2) : -2].min())
+            prev_low = float(low_s.iloc[-2])
+
+            sweep_cur = (cur_low < prior_low_cur) and (price > prior_low_cur) and (price > open_p)
+            sweep_prev = (prev_low < prior_low_prev) and (price > prior_low_prev) and (price > open_p)
+
+            if (sweep_cur or sweep_prev) and bb_sma > price * 1.006:
+                stop = max(0.0, min(cur_low - (0.3 * atr), price - (atr * self.atr_stop_mult)))
+                tp = bb_sma
+                reward = tp - price
+                risk = price - stop
+                cost = price * self.estimated_cost_pct
+                net_reward = reward - cost
+                if net_reward > 0 and risk > 0:
+                    indicators["liquidity_sweep"] = "BULLISH_SWEEP_RECLAIM"
+                    return TradingSignal(
+                        strategy_id=self.STRATEGY_ID,
+                        symbol=symbol,
+                        timestamp=now,
+                        direction=SignalDirection.LONG,
+                        status=SignalStatus.ENTRY,
+                        reference_price=price,
+                        atr=atr,
+                        signal_strength=0.85,
+                        suggested_stop=stop,
+                        suggested_take_profit=tp,
+                        take_profit_ratio=self.scale_out_ratio if self.scale_out_enabled else 0.0,
+                        estimated_fee_pct=self.fee_pct,
+                        estimated_slippage_pct=self.slippage_pct,
+                        indicators=indicators,
+                    )
 
         # Short entry: overbought condition
         if self.allow_short and price >= bb_upper and rsi > self.rsi_overbought:
