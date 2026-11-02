@@ -254,6 +254,7 @@ class RiskEngine:
         fee_pct: float = 0.0006,
         requested_risk_pct: Optional[float] = None,
         current_time: Optional[datetime] = None,
+        risk_multiplier: float = 1.0,
     ) -> RiskVerdict:
         """Validate an entry proposal against all portfolio-level limits."""
         # 1. Circuit breaker / kill switch check
@@ -294,7 +295,7 @@ class RiskEngine:
         # 4. Volatility sizing calculation (with per-symbol dynamic risk weighting & volatility targeting)
         base_risk = self.symbol_risk_weights.get(
             symbol, requested_risk_pct if requested_risk_pct is not None else self.risk_pct
-        )
+        ) * float(risk_multiplier)
         effective_risk_pct = self.compute_volatility_adjusted_risk(
             base_risk_pct=base_risk,
             current_atr=atr,

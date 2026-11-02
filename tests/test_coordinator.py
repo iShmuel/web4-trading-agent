@@ -299,3 +299,57 @@ def test_coordinator_crypto_crash_contagion_cooldown(tmp_path):
     assert "Contagion Cooldown" in decision.reason
     assert account.get_position("SOL/USDT") is None
 
+
+def test_coordinator_surge_volume_conviction_boost(tmp_path):
+    """Verify >= 1.5x volume surge boosts position sizing by 1.2x while respecting [1%, 5%] risk bounds."""
+    now = datetime.now(timezone.utc)
+    entry_sig = TradingSignal(
+        strategy_id="momentum",
+        symbol="SOL/USDT",
+        timestamp=now,
+        direction=SignalDirection.LONG,
+        status=SignalStatus.ENTRY,
+        reference_price=100.0,
+        atr=5.0,
+        suggested_stop=88.75,
+        suggested_take_profit=120.0,
+        indicators={"adx": 28.0, "macro_ema": 90.0},
+    )
+
+    # 1. Normal volume (1.0x SMA20)
+    acc_norm = PaperAccount(10000.0, portfolio_file=tmp_path / "norm_port.json")
+    risk_norm = RiskEngine(default_risk_pct=0.02, symbol_risk_weights={"SOL/USDT": 0.025})
+    coord_norm = PortfolioCoordinator(
+        acc_norm,
+        risk_norm,
+        {"enable_volume_boost": True, "volume_surge_mult": 1.5, "volume_boost_factor": 1.2, "enable_funding_radar": False},
+    )
+    _, mom_n, mr_n = coord_norm._engines_for("SOL/USDT")
+    mom_n.evaluate = lambda sym, d, existing_position=None: entry_sig
+    mr_n.evaluate = lambda sym, d, existing_position=None: create_no_trade_signal("mean_reversion", sym, 100.0, "no")
+
+    df_norm = make_trending_df(n=60, start=90.0, step=0.2)
+    df_norm["volume"] = 1000.0
+    dec_norm = coord_norm.process_symbol("SOL/USDT", df_norm, {})
+    assert dec_norm.action == "ENTER_LONG"
+
+    # 2. Surge volume (2.0x SMA20 on latest bar)
+    acc_surge = PaperAccount(10000.0, portfolio_file=tmp_path / "surge_port.json")
+    risk_surge = RiskEngine(default_risk_pct=0.02, symbol_risk_weights={"SOL/USDT": 0.025})
+    coord_surge = PortfolioCoordinator(
+        acc_surge,
+        risk_surge,
+        {"enable_volume_boost": True, "volume_surge_mult": 1.5, "volume_boost_factor": 1.2, "enable_funding_radar": False},
+    )
+    _, mom_s, mr_s = coord_surge._engines_for("SOL/USDT")
+    mom_s.evaluate = lambda sym, d, existing_position=None: entry_sig
+    mr_s.evaluate = lambda sym, d, existing_position=None: create_no_trade_signal("mean_reversion", sym, 100.0, "no")
+
+    df_surge = make_trending_df(n=60, start=90.0, step=0.2)
+    df_surge["volume"] = 1000.0
+    df_surge.iloc[-1, df_surge.columns.get_loc("volume")] = 2000.0
+    dec_surge = coord_surge.process_symbol("SOL/USDT", df_surge, {})
+    assert dec_surge.action == "ENTER_LONG"
+    assert abs(dec_surge.units / dec_norm.units - 1.2) < 1e-4
+
+

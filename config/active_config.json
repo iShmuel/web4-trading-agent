@@ -65,6 +65,9 @@
   "breakeven_atr_mult": 1.2,
   "enable_crash_cooldown": true,
   "crypto_crash_cooldown_hours": 3.0,
+  "enable_volume_boost": true,
+  "volume_surge_mult": 1.5,
+  "volume_boost_factor": 1.2,
   "use_asset_profiles": false,
   "asset_profiles": {
     "crypto_micro_swing": {

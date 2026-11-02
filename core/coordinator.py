@@ -15,7 +15,11 @@ from core.signals import TradingSignal, SignalDirection, SignalStatus, create_no
 from core.risk_engine import RiskEngine, RiskVerdict
 from core.paper_account import PaperAccount
 from core.data_loader import fetch_funding_rate, is_crypto_symbol
-from core.strategy import calculate_multi_timeframe_confluence, calculate_relative_strength
+from core.strategy import (
+    calculate_multi_timeframe_confluence,
+    calculate_relative_strength,
+    detect_liquidation_absorption,
+)
 from strategies.momentum import MomentumStrategy
 from strategies.mean_reversion import MeanReversionStrategy
 
@@ -334,6 +338,20 @@ class PortfolioCoordinator:
         merged_ind["confluence"] = conf_desc
         merged_ind["confluence_score"] = conf_score
 
+        # Volume Ratio & Order-Flow Liquidation Absorption
+        vol_ratio = 1.0
+        absorption_val = None
+        if "volume" in df and len(df) >= 20:
+            vol_series = df["volume"].astype(float)
+            vol_sma20 = float(vol_series.iloc[-20:].mean())
+            if vol_sma20 > 0:
+                vol_ratio = float(vol_series.iloc[-1]) / vol_sma20
+            abs_series = detect_liquidation_absorption(df.iloc[-25:])
+            if len(abs_series) > 0 and pd.notna(abs_series.iloc[-1]):
+                absorption_val = str(abs_series.iloc[-1])
+        merged_ind["vol_ratio"] = round(vol_ratio, 3)
+        merged_ind["absorption"] = absorption_val
+
         # Derivatives Funding Rate Radar (Crypto only, cached with 1h TTL to avoid network spam)
         if is_crypto_symbol(symbol) and self.config.get("enable_funding_radar", True):
             now_epoch = time.time()
@@ -421,6 +439,18 @@ class PortfolioCoordinator:
         else:
             effective_risk_pct = base_risk_pct
 
+        # Surge-Volume Conviction Boost: Scale risk by 1.2x on >=1.5x volume surge or aligned absorption wick (clamped <= 5%)
+        vol_risk_mult = 1.0
+        if self.config.get("enable_volume_boost", True):
+            surge_mult = float(self.config.get("volume_surge_mult", 1.5))
+            boost_factor = float(self.config.get("volume_boost_factor", 1.2))
+            aligned_absorption = (
+                (chosen_sig.direction == SignalDirection.LONG and absorption_val == "BULLISH_ABSORPTION")
+                or (chosen_sig.direction == SignalDirection.SHORT and absorption_val == "BEARISH_ABSORPTION")
+            )
+            if vol_ratio >= surge_mult or aligned_absorption:
+                vol_risk_mult = boost_factor
+
         risk_verdict = self.risk_engine.validate_proposed_entry(
             symbol=symbol,
             side=chosen_sig.direction.value,
@@ -435,6 +465,7 @@ class PortfolioCoordinator:
             fee_pct=chosen_sig.estimated_fee_pct,
             requested_risk_pct=effective_risk_pct,
             current_time=last_ts,
+            risk_multiplier=vol_risk_mult,
         )
 
         if not risk_verdict.approved:
