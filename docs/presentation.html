@@ -9083,22 +9083,32 @@ tr:nth-child(even) td {
 .agent-label.why { color: #10b981; }
 ;" data-marpit-pagination-total="17">
 <header>Web4 Autonomous Trading Desk | Institutional Executive Deck</header>
-<h2 id="13-real-time-live-desk--local-gpu-ai-screener">13. Real-Time Live Desk &amp; Local GPU AI Screener</h2>
-<p>The desk runs 24/7 with zero cloud dependency and zero token API costs:</p>
+<h2 id="13-real-time-live-desk--local-hardware-specifications">13. Real-Time Live Desk &amp; Local Hardware Specifications</h2>
+<p>The desk runs 24/7 on standard consumer hardware with <strong>$0 cloud dependency and $0 token costs</strong>:</p>
 <div class="grid-2">
   <div class="card">
+    <h4>⚡ Bare Minimum (Local PC / Budget VPS)</h4>
+    <p>• <b>CPU & RAM</b>: 2 Cores • 4 GB RAM (Bot uses ~300 MB).<br />
+    • <b>GPU</b>: None required (CPU fallback / rule-based filter).<br />
+    • <b>Storage</b>: 10 GB SSD • Standard broadband.<br />
+    • <b>Cost</b>: <b>$0 / month</b> local or ~$6/mo on cloud VPS.</p>
+  </div>
+  <div class="card">
+    <h4>🚀 Recommended (Your Active Local Setup)</h4>
+    <p>• <b>CPU & RAM</b>: 6–12 Threads • 16 GB RAM.<br />
+    • <b>GPU</b>: NVIDIA 6 GB VRAM (GTX 1660 Ti / RTX 3060).<br />
+    • <b>Local AI</b>: <code>phi4-mini</code> on GPU VRAM (0.70s latency).<br />
+    • <b>Storage</b>: 25 GB SSD • 24/7 stable connection.</p>
+  </div>
+</div>
+<div class="grid-2" style="margin-top: 6px;">
+  <div class="card">
     <h4>🖥️ Local GPU LLM Devil's Advocate</h4>
-    <p>• Model: <b>phi4-mini:latest</b> running on local NVIDIA GPU VRAM.<br />
-    • Latency: <b>0.70 seconds</b> warm inference.<br />
-    • Function: Fetches live Google News RSS headlines to screen for black-swan regulatory bans, exploits, or CEO resignations before trade entry.<br />
-    • Cost: <b>$0.00 / month</b> (100% private, zero API keys).</p>
+    <p>Screens live Google News RSS headlines in 0.70s before entry; vetoes trades on hacks or bans with $0 API fees.</p>
   </div>
   <div class="card">
     <h4>🛡️ Pre-Flight Execution Guards</h4>
-    <p>• <b>Spread Guard</b>: Rejects orders if bid-ask spread $&gt; 0.15\%$.<br />
-    • <b>Quote Staleness</b>: Rejects orders if candle tick age $&gt; 180\text{s}$.<br />
-    • <b>Volume Depth</b>: Caps orders to $\le 2.0\%$ of hourly volume.<br />
-    • <b>Current Live Status</b>: 21 assets actively scanned; <b>$9,093.47 capital protected in 100% Cash Defense</b>.</p>
+    <p>Spread Guard ($&lt;0.15\%$), Tick Age ($&lt;180\text{s}$), Volume Cap ($&lt;2.0\%$). Current: $9,093.47 in 100% Cash Defense.</p>
   </div>
 </div>
 <footer>Confidential • Quantitative System Architecture • Live Paper Mode</footer>

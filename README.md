@@ -125,6 +125,22 @@ Conducted across all 21 assets using realistic frictions (**0.06% fees + 0.04% s
 
 ## Quickstart & CLI Operations
 
+### 🖥️ Local Hardware Requirements
+
+The bot is engineered to be lightweight, running efficiently on standard local PCs or cloud VPS instances with zero mandatory cloud API costs:
+
+| Resource | Bare Minimum Spec (Headless / Rule-Based) | Recommended Spec (Local GPU AI Screener) |
+| :--- | :--- | :--- |
+| **CPU** | 2 Cores (2.0 GHz+) | **4 to 8 Cores** (AMD Ryzen / Intel i5/i7) *(12 threads active)* |
+| **System RAM** | 4 GB DDR4 (Process uses ~300 MB) | **16 GB DDR4/DDR5** *(15 GB active)* |
+| **GPU (AI Reasoning)** | None (CPU inference or rule-based fallback) | **NVIDIA GPU with 6 GB+ VRAM** *(GTX 1660 Ti active)* |
+| **Storage (SSD)** | 10 GB SSD (Project files use ~480 MB) | **25 GB–50 GB NVMe SSD** (includes 2.5 GB `phi4-mini` model) |
+| **Operating System** | Linux (Ubuntu/Debian), macOS, or Windows 10/11 | **Linux (Ubuntu 22.04/24.04 LTS)** or Windows 11 with WSL2 |
+| **Network** | Standard broadband (10 Mbps+) | **Stable broadband / fiber** with 24/7 continuous uptime |
+| **Monthly Operating Cost**| **$0.00 / month** local (or ~$6/mo budget VPS) | **$0.00 / month** (100% local GPU execution, zero API keys) |
+
+---
+
 ### 1. Setup Environment
 ```bash
 python3 -m venv .venv
