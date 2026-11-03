@@ -243,7 +243,8 @@ def render() -> str:
         else:
             regime_txt = dim("⚪ TRANSITION")
 
-        if action == "REJECTED" and reason.lower().startswith("no entry signal"):
+        is_blocked = ("blocked by" in reason.lower()) or ("suppressed" in reason.lower())
+        if action == "REJECTED" and not is_blocked:
             action = "WAITING"
         tag = {
             "ENTER_LONG": green("● BUY NOW"), "ENTER_SHORT": red("● SHORT NOW"), "EXIT": red("● EXIT NOW"),
