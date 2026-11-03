@@ -9,21 +9,21 @@ style: |
     background: radial-gradient(circle at 15% 15%, #0e172a 0%, #030712 100%);
     color: #e2e8f0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    padding: 32px 42px;
-    font-size: 17px;
+    padding: 30px 40px;
+    font-size: 16.5px;
     letter-spacing: -0.01em;
   }
   h1 {
     color: #38bdf8;
-    font-size: 1.85em;
+    font-size: 1.8em;
     margin-bottom: 0.12em;
     font-weight: 800;
     letter-spacing: -0.03em;
   }
   h2 {
     color: #38bdf8;
-    font-size: 1.32em;
-    margin: 0 0 0.3em 0;
+    font-size: 1.28em;
+    margin: 0 0 0.25em 0;
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -31,8 +31,8 @@ style: |
   }
   h3 {
     color: #94a3b8;
-    font-size: 0.98em;
-    margin: 0 0 0.35em 0;
+    font-size: 0.95em;
+    margin: 0 0 0.3em 0;
     font-weight: 600;
   }
   table {
@@ -40,7 +40,7 @@ style: |
     border-spacing: 0;
     width: 100%;
     margin: 8px 0;
-    font-size: 0.74em;
+    font-size: 0.73em;
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid #1e293b;
@@ -48,14 +48,14 @@ style: |
   th {
     background-color: #0f172a;
     color: #38bdf8;
-    padding: 7px 10px;
+    padding: 6px 10px;
     border-bottom: 1px solid #1e293b;
     text-transform: uppercase;
     font-weight: 700;
     letter-spacing: 0.05em;
   }
   td {
-    padding: 6px 10px;
+    padding: 5px 10px;
     border-bottom: 1px solid #151e32;
     background-color: rgba(11, 17, 32, 0.75);
     color: #cbd5e1;
@@ -81,27 +81,27 @@ style: |
   .grid-4 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin: 12px 0;
+    gap: 10px;
+    margin: 10px 0;
   }
   .grid-3 {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin: 12px 0;
+    gap: 11px;
+    margin: 11px 0;
   }
   .grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin: 12px 0;
+    gap: 12px;
+    margin: 10px 0;
   }
   .stat-card {
     background: rgba(15, 23, 42, 0.85);
     border: 1px solid #1e293b;
     border-top: 3px solid #38bdf8;
     border-radius: 8px;
-    padding: 12px 10px;
+    padding: 10px 8px;
     text-align: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
   }
@@ -109,10 +109,10 @@ style: |
   .stat-card.purple { border-top-color: #8b5cf6; }
   .stat-card.gold { border-top-color: #f59e0b; }
   .stat-number {
-    font-size: 2.0em;
+    font-size: 1.95em;
     font-weight: 800;
     line-height: 1.1;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
     color: #38bdf8;
     letter-spacing: -0.02em;
   }
@@ -120,7 +120,7 @@ style: |
   .stat-number.purple { color: #a78bfa; }
   .stat-number.gold { color: #fbbf24; }
   .stat-label {
-    font-size: 0.72em;
+    font-size: 0.70em;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: #94a3b8;
@@ -130,49 +130,49 @@ style: |
     background: rgba(15, 23, 42, 0.7);
     border: 1px solid #1e293b;
     border-radius: 8px;
-    padding: 12px 14px;
-    line-height: 1.4;
+    padding: 10px 12px;
+    line-height: 1.38;
   }
   .card h4 {
-    margin: 0 0 6px 0;
+    margin: 0 0 5px 0;
     color: #38bdf8;
-    font-size: 0.94em;
+    font-size: 0.92em;
     display: flex;
     align-items: center;
     gap: 6px;
   }
   .card p {
     margin: 0;
-    font-size: 0.81em;
+    font-size: 0.79em;
     color: #94a3b8;
   }
   .card-danger {
     background: rgba(244, 63, 94, 0.08);
     border: 1px solid rgba(244, 63, 94, 0.35);
     border-radius: 8px;
-    padding: 12px 14px;
+    padding: 11px 13px;
   }
   .card-danger h4 {
-    margin: 0 0 6px 0;
+    margin: 0 0 5px 0;
     color: #f43f5e;
-    font-size: 0.94em;
+    font-size: 0.92em;
   }
   .card-success {
     background: rgba(16, 185, 129, 0.08);
     border: 1px solid rgba(16, 185, 129, 0.35);
     border-radius: 8px;
-    padding: 12px 14px;
+    padding: 11px 13px;
   }
   .card-success h4 {
-    margin: 0 0 6px 0;
+    margin: 0 0 5px 0;
     color: #10b981;
-    font-size: 0.94em;
+    font-size: 0.92em;
   }
   .pill {
     display: inline-block;
-    padding: 3px 9px;
+    padding: 2px 8px;
     border-radius: 9999px;
-    font-size: 0.73em;
+    font-size: 0.71em;
     font-weight: 700;
     letter-spacing: 0.03em;
   }
@@ -205,8 +205,8 @@ style: |
     background: rgba(9, 14, 26, 0.9);
     border: 1px solid #1e293b;
     border-radius: 6px;
-    padding: 9px 12px;
-    margin-bottom: 7px;
+    padding: 8px 11px;
+    margin-bottom: 6px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -215,21 +215,21 @@ style: |
     background: #1e293b;
     color: #38bdf8;
     font-weight: 800;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    font-size: 0.82em;
+    font-size: 0.80em;
     margin-right: 8px;
   }
   .takeaway {
     background: rgba(15, 23, 42, 0.9);
     border-left: 3px solid #38bdf8;
-    padding: 8px 12px;
-    margin-top: 10px;
-    font-size: 0.80em;
+    padding: 7px 11px;
+    margin-top: 9px;
+    font-size: 0.78em;
     color: #94a3b8;
     border-radius: 0 6px 6px 0;
   }
@@ -237,24 +237,24 @@ style: |
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    margin: 14px 0;
+    gap: 6px;
+    margin: 12px 0;
   }
   .flow-node {
     background: rgba(15, 23, 42, 0.9);
     border: 1px solid #1e293b;
     border-radius: 8px;
-    padding: 10px 8px;
+    padding: 8px 6px;
     text-align: center;
     flex: 1;
-    min-height: 85px;
+    min-height: 80px;
     display: flex;
     flex-direction: column;
     justify-content: center;
   }
   .flow-arrow {
     color: #38bdf8;
-    font-size: 1.2em;
+    font-size: 1.15em;
     font-weight: 800;
     flex-shrink: 0;
   }
@@ -263,11 +263,52 @@ style: |
     border: 1px solid #1e293b;
     border-top: 3px solid #38bdf8;
     border-radius: 8px;
-    padding: 12px 14px;
+    padding: 10px 12px;
     height: 100%;
   }
   .phase-box.gold { border-top-color: #fbbf24; }
   .phase-box.green { border-top-color: #10b981; }
+  .phase-box.purple { border-top-color: #a78bfa; }
+  .phase-box.red { border-top-color: #f43f5e; }
+  
+  .agent-card {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 8px 11px;
+    line-height: 1.34;
+    font-size: 0.75em;
+  }
+  .agent-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    border-bottom: 1px solid rgba(30, 41, 59, 0.8);
+    padding-bottom: 4px;
+  }
+  .agent-title {
+    font-size: 1.08em;
+    font-weight: 800;
+    color: #38bdf8;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .agent-row {
+    margin-bottom: 3px;
+    color: #cbd5e1;
+  }
+  .agent-label {
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.88em;
+    letter-spacing: 0.04em;
+    margin-right: 4px;
+  }
+  .agent-label.what { color: #38bdf8; }
+  .agent-label.how { color: #a78bfa; }
+  .agent-label.why { color: #10b981; }
 ---
 
 # Web4 Autonomous Trading Desk
@@ -335,16 +376,16 @@ The system solves the #1 flaw of automated trading: **unconstrained volatility b
 <div class="grid-2">
   <div class="card-danger">
     <h4>❌ RETAIL TRADING FAILURE MODES</h4>
-    <p style="color: #fca5a5; line-height: 1.6;">
+    <p style="color: #fca5a5; line-height: 1.55; font-size: 0.8em;">
       • <b>Revenge Trading</b>: Increases position sizes into losing streaks until liquidation.<br/>
-      • <b>Massive Fee Drag</b>: Market orders & bid-ask slippage consume 15%–25% annually.<br/>
+      • <b>Massive Fee Drag</b>: Taker market orders & wide spreads consume 15%–25% annually.<br/>
       • <b>No Macro Filter</b>: Buys bull traps at the top of relief rallies in bear markets.<br/>
       • <b>Catastrophic Drawdowns</b>: Suffers -50% to -80% drawdowns in sudden market crashes.
     </p>
   </div>
   <div class="card-success">
     <h4>🟢 OUR INSTITUTIONAL QUANTITATIVE DESK</h4>
-    <p style="color: #86efac; line-height: 1.6;">
+    <p style="color: #86efac; line-height: 1.55; font-size: 0.8em;">
       • <b>Strict 1%–5% Risk Clamp</b>: Hard-coded limits prevent over-sizing on any single trade.<br/>
       • <b>Smart Maker Limit Orders</b>: Post-only execution slashes trading fees by 66%.<br/>
       • <b>200 EMA + Confluence Gate</b>: 100% Cash Defense during confirmed macro bear regimes.<br/>
@@ -353,7 +394,7 @@ The system solves the #1 flaw of automated trading: **unconstrained volatility b
   </div>
 </div>
 
-<div class="grid-3" style="margin-top: 10px;">
+<div class="grid-3" style="margin-top: 8px;">
   <div class="card">
     <h4>🚫 Over-Trading in Chop</h4>
     <p>Filtered out by Volatility Targeting & ATR noise thresholds.</p>
@@ -374,9 +415,9 @@ The system solves the #1 flaw of automated trading: **unconstrained volatility b
 
 <div class="grid-3">
   <div class="phase-box">
-    <div style="margin-bottom: 8px;"><span class="pill pill-cyan">LEVEL 1</span></div>
-    <h4 style="color: #38bdf8; margin: 0 0 8px 0;">Perception & Telemetry</h4>
-    <p style="font-size: 0.8em; color: #94a3b8; line-height: 1.5;">
+    <div style="margin-bottom: 6px;"><span class="pill pill-cyan">LEVEL 1</span></div>
+    <h4 style="color: #38bdf8; margin: 0 0 6px 0;">Perception & Telemetry</h4>
+    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
       • <b>Multi-Venue Data</b>: Binance + Yahoo Finance live feeds.<br/>
       • <b>Liquidation Wicks</b>: Real-time wick-to-body rejection detection.<br/>
       • <b>Polymarket Radar</b>: Macro geopolitics & rate cut probabilities.<br/>
@@ -385,9 +426,9 @@ The system solves the #1 flaw of automated trading: **unconstrained volatility b
   </div>
 
   <div class="phase-box green">
-    <div style="margin-bottom: 8px;"><span class="pill pill-green">LEVEL 2</span></div>
-    <h4 style="color: #10b981; margin: 0 0 8px 0;">Governance & Immunity</h4>
-    <p style="font-size: 0.8em; color: #94a3b8; line-height: 1.5;">
+    <div style="margin-bottom: 6px;"><span class="pill pill-green">LEVEL 2</span></div>
+    <h4 style="color: #10b981; margin: 0 0 6px 0;">Governance & Immunity</h4>
+    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
       • <b>Van Tharp Sizing</b>: Risk parity clamped strictly 1.0%–5.0%.<br/>
       • <b>5% Daily Loss Halt</b>: Closes active book on high adverse volatility.<br/>
       • <b>15% Max DD Kill Switch</b>: Permanent cash defense lock.<br/>
@@ -396,9 +437,9 @@ The system solves the #1 flaw of automated trading: **unconstrained volatility b
   </div>
 
   <div class="phase-box gold">
-    <div style="margin-bottom: 8px;"><span class="pill pill-amber">LEVEL 3</span></div>
-    <h4 style="color: #fbbf24; margin: 0 0 8px 0;">Meta-Learning & Alpha</h4>
-    <p style="font-size: 0.8em; color: #94a3b8; line-height: 1.5;">
+    <div style="margin-bottom: 6px;"><span class="pill pill-amber">LEVEL 3</span></div>
+    <h4 style="color: #fbbf24; margin: 0 0 6px 0;">Meta-Learning & Alpha</h4>
+    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
       • <b>Delta-Neutral Basis Yield</b>: 8%–18% APY crypto funding harvest.<br/>
       • <b>Dynamic Volatility Targeting</b>: Dampens risk when VIX spikes.<br/>
       • <b>Decision Journal</b>: Real-time alpha attribution & audit log.<br/>
@@ -413,80 +454,178 @@ The system solves the #1 flaw of automated trading: **unconstrained volatility b
 
 ---
 
-## 4. The 8 Specialized Quantitative Internal Agents
+## 4. The 8-Agent Quantitative Nervous System
 
-Operating in a continuous sub-second pipelined execution loop:
+The trading desk operates as an ensemble of **8 specialized autonomous agents** communicating through a sub-second pipelined loop every 60 seconds:
 
 <div class="flow-pipeline">
   <div class="flow-node">
-    <span class="pill pill-cyan" style="margin-bottom: 4px;">AGENT 1</span>
-    <b style="font-size: 0.85em; color: #38bdf8;">Data Scout</b>
-    <span style="font-size: 0.72em; color: #94a3b8;">Binance / Yahoo Telemetry</span>
+    <span class="pill pill-cyan" style="margin-bottom: 3px;">AGENT 1</span>
+    <b style="font-size: 0.82em; color: #38bdf8;">Data Scout</b>
+    <span style="font-size: 0.70em; color: #94a3b8;">Binance / Yahoo Telemetry</span>
   </div>
   <div class="flow-arrow">→</div>
   <div class="flow-node">
-    <span class="pill pill-purple" style="margin-bottom: 4px;">AGENTS 2-4</span>
-    <b style="font-size: 0.85em; color: #a78bfa;">Alpha Engines</b>
-    <span style="font-size: 0.72em; color: #94a3b8;">Momentum • Mean-Rev • Basis</span>
+    <span class="pill pill-purple" style="margin-bottom: 3px;">AGENTS 2-4</span>
+    <b style="font-size: 0.82em; color: #a78bfa;">Alpha Engines</b>
+    <span style="font-size: 0.70em; color: #94a3b8;">Momentum • Mean-Rev • Basis</span>
   </div>
   <div class="flow-arrow">→</div>
   <div class="flow-node">
-    <span class="pill pill-cyan" style="margin-bottom: 4px;">AGENT 5</span>
-    <b style="font-size: 0.85em; color: #38bdf8;">Coordinator</b>
-    <span style="font-size: 0.72em; color: #94a3b8;">Arbiter & Confluence Gate</span>
+    <span class="pill pill-cyan" style="margin-bottom: 3px;">AGENT 5</span>
+    <b style="font-size: 0.82em; color: #38bdf8;">Coordinator</b>
+    <span style="font-size: 0.70em; color: #94a3b8;">Arbiter & Confluence Gate</span>
   </div>
   <div class="flow-arrow">→</div>
   <div class="flow-node">
-    <span class="pill pill-red" style="margin-bottom: 4px;">AGENT 6</span>
-    <b style="font-size: 0.85em; color: #f43f5e;">Risk Governor</b>
-    <span style="font-size: 0.72em; color: #94a3b8;">1%-5% Clamp & Veto</span>
+    <span class="pill pill-red" style="margin-bottom: 3px;">AGENT 6</span>
+    <b style="font-size: 0.82em; color: #f43f5e;">Risk Governor</b>
+    <span style="font-size: 0.70em; color: #94a3b8;">1%-5% Clamp & Veto</span>
   </div>
   <div class="flow-arrow">→</div>
   <div class="flow-node">
-    <span class="pill pill-green" style="margin-bottom: 4px;">AGENTS 7-8</span>
-    <b style="font-size: 0.85em; color: #10b981;">Execution & Meta</b>
-    <span style="font-size: 0.72em; color: #94a3b8;">Maker Ledger & LLM Guard</span>
+    <span class="pill pill-green" style="margin-bottom: 3px;">AGENTS 7-8</span>
+    <b style="font-size: 0.82em; color: #10b981;">Execution & Meta</b>
+    <span style="font-size: 0.70em; color: #94a3b8;">Maker Ledger & LLM Guard</span>
   </div>
 </div>
 
-<div class="grid-2" style="margin-top: 6px;">
+<div class="grid-3" style="margin-top: 6px;">
   <div class="card">
-    <h4>🛡️ Perception & Governance</h4>
-    <p>• <b>Data Scout</b>: Blocks stale ticks ($>180\text{s}$) and wide spreads ($>0.15\%$).<br/>
-    • <b>Risk Governor</b>: Holds absolute veto authority over trade size and drawdown.</p>
+    <h4>👁️ 1. Perception Layer</h4>
+    <p>Ingests multi-exchange OHLCV, orderbook spreads, news sentiment, and macro indicators.</p>
   </div>
   <div class="card">
-    <h4>⚡ Execution & Optimization</h4>
-    <p>• <b>Coordinator Arbiter</b>: Eliminates strategy conflicts and enforces the 200 EMA.<br/>
-    • <b>Execution Ledger</b>: Routes smart post-only Maker limit orders with zero slippage.</p>
+    <h4>🧠 2. Cortex & Alpha Layer</h4>
+    <p>Generates signals across 3 distinct market regimes: Trends, Ranges, and Yield.</p>
+  </div>
+  <div class="card">
+    <h4>🛡️ 3. Execution & Defense</h4>
+    <p>Hard-clamps sizing, checks local AI headlines, and routes maker limit orders.</p>
+  </div>
+</div>
+
+<div class="takeaway">
+  💡 <b>Modular Resilience</b>: If any single agent detects danger or data degradation, the trade is rejected instantly without human intervention.
+</div>
+
+---
+
+## 5. Perception & Alpha Generation (Agents 1 to 4)
+
+<div class="grid-2">
+  <div class="agent-card">
+    <div class="agent-header">
+      <span class="agent-title">Agent 1: Data Scout Sentinel</span>
+      <span class="pill pill-cyan">PERCEPTION</span>
+    </div>
+    <div class="agent-row"><span class="agent-label what">WHAT:</span> Real-time telemetry, spread validation, and tick age watchdog.</div>
+    <div class="agent-row"><span class="agent-label how">HOW:</span> Ingests Binance & Yahoo OHLCV. Rejects ticks $>180\text{s}$ old and spreads $>0.15\%$. Flags liquidation absorption wicks ($\text{wick} \ge 40\%$ of candle).</div>
+    <div class="agent-row"><span class="agent-label why">WHY NEEDED:</span> Prevents executing on manipulated, lagged, or wide-spread exchange quotes that guarantee immediate loss.</div>
+  </div>
+
+  <div class="agent-card">
+    <div class="agent-header">
+      <span class="agent-title">Agent 2: Trend Momentum Rider</span>
+      <span class="pill pill-purple">ALPHA: TRENDS</span>
+    </div>
+    <div class="agent-row"><span class="agent-label what">WHAT:</span> High-velocity directional expansion engine riding multi-day runners.</div>
+    <div class="agent-row"><span class="agent-label how">HOW:</span> Detects 16/24-bar Donchian breakouts with fast/slow EMA alignment and multi-timeframe confluence ($\ge 0.70$). Banks 50% at $+2.5\times\text{ATR}$.</div>
+    <div class="agent-row"><span class="agent-label why">WHY NEEDED:</span> Captures the large $+20\%$ to $+40\%$ expansions that account for 80% of total long-term portfolio profits.</div>
+  </div>
+
+  <div class="agent-card">
+    <div class="agent-header">
+      <span class="agent-title">Agent 3: Mean Reversion Sniper</span>
+      <span class="pill pill-purple">ALPHA: RANGES</span>
+    </div>
+    <div class="agent-row"><span class="agent-label what">WHAT:</span> High-accuracy tactical sniper profiting from overextended chop & panic.</div>
+    <div class="agent-row"><span class="agent-label how">HOW:</span> Snipes 2.0-std Bollinger Band piercing with extreme RSI ($<30$ or $>70$) and $\ge 1.25\times$ volume exhaustion. Targets the 20 SMA center mean.</div>
+    <div class="agent-row"><span class="agent-label why">WHY NEEDED:</span> Markets chop 70% of the time. Achieves 75%–84.8% win rates while momentum waits for major breakouts.</div>
+  </div>
+
+  <div class="agent-card">
+    <div class="agent-header">
+      <span class="agent-title">Agent 4: Delta-Neutral Basis Yield</span>
+      <span class="pill pill-green">ALPHA: INCOME</span>
+    </div>
+    <div class="agent-row"><span class="agent-label what">WHAT:</span> Non-directional "Paycheck Engine" harvesting crypto perpetual funding.</div>
+    <div class="agent-row"><span class="agent-label how">HOW:</span> Pairs Long Spot with Short 1x Perp on funding $>0.01\%$/8h. Price swings have 0.0 net impact; harvests 8%–18% APY cash yield.</div>
+    <div class="agent-row"><span class="agent-label why">WHY NEEDED:</span> Provides an unconditional monthly cash baseline to pay living expenses without directional gambling.</div>
   </div>
 </div>
 
 ---
 
-## 5. The 21-Asset Multi-Sector Universe
+## 6. Arbitration, Governance & Safe Execution (Agents 5 to 8)
+
+<div class="grid-2">
+  <div class="agent-card">
+    <div class="agent-header">
+      <span class="agent-title">Agent 5: Coordinator Arbiter Cortex</span>
+      <span class="pill pill-cyan">ARBITER</span>
+    </div>
+    <div class="agent-row"><span class="agent-label what">WHAT:</span> Central multi-strategy reconciliation cortex and regime gatekeeper.</div>
+    <div class="agent-row"><span class="agent-label how">HOW:</span> Eliminates signal conflicts (e.g., Long Momentum vs Short Mean-Rev $\rightarrow$ NO TRADE). Enforces the 200 EMA Macro Gate and allocates capital.</div>
+    <div class="agent-row"><span class="agent-label why">WHY NEEDED:</span> Prevents strategy cannibalism, double-leverage, and buying into macro multi-week bear cascades.</div>
+  </div>
+
+  <div class="agent-card">
+    <div class="agent-header">
+      <span class="agent-title">Agent 6: Institutional Risk Governor</span>
+      <span class="pill pill-red">SUPREME VETO</span>
+    </div>
+    <div class="agent-row"><span class="agent-label what">WHAT:</span> Absolute mathematical risk authority with unbreakable veto power.</div>
+    <div class="agent-row"><span class="agent-label how">HOW:</span> Hard-clamps trade risk to 1%–5% account equity. Caps concurrent positions at 4. Enforces 5% daily loss halt and 15% Max DD kill switch.</div>
+    <div class="agent-row"><span class="agent-label why">WHY NEEDED:</span> Human emotions and unconstrained bots blow up from oversized revenge bets. The Governor guarantees survival.</div>
+  </div>
+
+  <div class="agent-card">
+    <div class="agent-header">
+      <span class="agent-title">Agent 7: Smart Maker Ledger</span>
+      <span class="pill pill-green">EXECUTION</span>
+    </div>
+    <div class="agent-row"><span class="agent-label what">WHAT:</span> Zero-slippage limit order router and atomic state accounting ledger.</div>
+    <div class="agent-row"><span class="agent-label how">HOW:</span> Posts passive Maker limit orders inside the spread (0.02% fee vs 0.06% taker). Writes atomic state updates with duplicate <code>.bak</code> recovery files.</div>
+    <div class="agent-row"><span class="agent-label why">WHY NEEDED:</span> Slashes annual fee drag by 66% and prevents portfolio state corruption during crashes or power losses.</div>
+  </div>
+
+  <div class="agent-card">
+    <div class="agent-header">
+      <span class="agent-title">Agent 8: Local GPU Devil's Advocate</span>
+      <span class="pill pill-purple">META-AI</span>
+    </div>
+    <div class="agent-row"><span class="agent-label what">WHAT:</span> Sub-second qualitative news screener and walk-forward parameter optimizer.</div>
+    <div class="agent-row"><span class="agent-label how">HOW:</span> Evaluates live Google News RSS headlines via local <code>phi4-mini</code> on private GPU VRAM in 0.70s for black-swan events (SEC lawsuits, hacks, CEO exits).</div>
+    <div class="agent-row"><span class="agent-label why">WHY NEEDED:</span> Technical indicators are blind to news headlines. Catches catastrophic events before the price crashes.</div>
+  </div>
+</div>
+
+---
+
+## 7. The 21-Asset Multi-Sector Universe
 
 Capital dynamically rotates across **4 completely uncorrelated market sectors**:
 
 <div class="grid-4">
   <div class="card">
     <h4>🚀 High-Beta Crypto</h4>
-    <div style="font-size: 0.78em; color: #38bdf8; font-weight: 700; margin-bottom: 4px;">SOL • SUI • TAO • DOGE • AVAX • NEAR • LINK</div>
+    <div style="font-size: 0.77em; color: #38bdf8; font-weight: 700; margin-bottom: 4px;">SOL • SUI • TAO • DOGE • AVAX • NEAR • LINK</div>
     <p>High-velocity momentum runners; clean $15\% - 30\%$ multi-day trend expansions.</p>
   </div>
   <div class="card">
     <h4>⚓ Macro Anchors</h4>
-    <div style="font-size: 0.78em; color: #10b981; font-weight: 700; margin-bottom: 4px;">BTC • ETH • BNB</div>
+    <div style="font-size: 0.77em; color: #10b981; font-weight: 700; margin-bottom: 4px;">BTC • ETH • BNB</div>
     <p>Institutional benchmarks; basis funding rate radar and macro direction indicators.</p>
   </div>
   <div class="card">
     <h4>💻 US Tech Growth</h4>
-    <div style="font-size: 0.78em; color: #a78bfa; font-weight: 700; margin-bottom: 4px;">NVDA • AMD • AAPL • PLTR • TSLA</div>
+    <div style="font-size: 0.77em; color: #a78bfa; font-weight: 700; margin-bottom: 4px;">NVDA • AMD • AAPL • PLTR • TSLA</div>
     <p>Multi-billion daily volume; continuous institutional accumulation trends.</p>
   </div>
   <div class="card">
     <h4>🛡️ Macro & Hedges</h4>
-    <div style="font-size: 0.78em; color: #fbbf24; font-weight: 700; margin-bottom: 4px;">SPY • QQQ • GLD • SLV • TLT • XLE</div>
+    <div style="font-size: 0.77em; color: #fbbf24; font-weight: 700; margin-bottom: 4px;">SPY • QQQ • GLD • SLV • TLT • XLE</div>
     <p>Gold, Silver, Treasuries & Energy; negative correlation during crises.</p>
   </div>
 </div>
@@ -497,7 +636,7 @@ Capital dynamically rotates across **4 completely uncorrelated market sectors**:
 
 ---
 
-## 6. How the Bot Makes Money in UPTRENDS 🟢
+## 8. How the Bot Makes Money in UPTRENDS 🟢
 
 The bot rides expansions using a **4-Stage Execution Ladder**:
 
@@ -524,7 +663,7 @@ The bot rides expansions using a **4-Stage Execution Ladder**:
 
 ---
 
-## 7. How the Bot Makes Money in DOWNTRENDS 🔴
+## 9. How the Bot Makes Money in DOWNTRENDS 🔴
 
 When markets crash, the bot deploys **3 institutional wealth-extraction mechanisms**:
 
@@ -532,7 +671,7 @@ When markets crash, the bot deploys **3 institutional wealth-extraction mechanis
   <div class="phase-box">
     <div style="margin-bottom: 6px;"><span class="pill pill-red">MECHANISM A</span></div>
     <h4 style="color: #f43f5e; margin: 0 0 6px 0;">Short Overbought Fades</h4>
-    <p style="font-size: 0.78em; color: #94a3b8; line-height: 1.45;">
+    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
       • Trigger: Bear regime ($< 200$ EMA).<br/>
       • Signal: Dead-cat bounce with $\text{RSI} > 75$.<br/>
       • Execution: Short upper Bollinger Band.<br/>
@@ -543,7 +682,7 @@ When markets crash, the bot deploys **3 institutional wealth-extraction mechanis
   <div class="phase-box gold">
     <div style="margin-bottom: 6px;"><span class="pill pill-amber">MECHANISM B</span></div>
     <h4 style="color: #fbbf24; margin: 0 0 6px 0;">Panic Capitulation Snipes</h4>
-    <p style="font-size: 0.78em; color: #94a3b8; line-height: 1.45;">
+    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
       • Trigger: Volume surge $\ge 1.5\times$ average.<br/>
       • Signal: Extreme oversold $\text{RSI} < 30$.<br/>
       • Execution: Buy panic wick rejection.<br/>
@@ -554,7 +693,7 @@ When markets crash, the bot deploys **3 institutional wealth-extraction mechanis
   <div class="phase-box green">
     <div style="margin-bottom: 6px;"><span class="pill pill-green">MECHANISM C</span></div>
     <h4 style="color: #10b981; margin: 0 0 6px 0;">Delta-Neutral Basis Yield</h4>
-    <p style="font-size: 0.78em; color: #94a3b8; line-height: 1.45;">
+    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
       • Trigger: Positive crypto funding rate.<br/>
       • Structure: Long Spot + Short Perp.<br/>
       • Market Risk: Exactly 0.0 Delta.<br/>
@@ -569,7 +708,7 @@ When markets crash, the bot deploys **3 institutional wealth-extraction mechanis
 
 ---
 
-## 8. Delta-Neutral Basis Yield Engine (`basis_yield.py`)
+## 10. Delta-Neutral Basis Yield Engine (`basis_yield.py`)
 
 A non-directional **"Paycheck Engine"** that harvests perpetual futures funding rates:
 
@@ -596,7 +735,7 @@ A non-directional **"Paycheck Engine"** that harvests perpetual futures funding 
 
 ---
 
-## 9. Deterministic Risk Governance & Loss Asymmetry
+## 11. Deterministic Risk Governance & Loss Asymmetry
 
 Losses are mathematically asymmetric. The deeper the hole, the harder it is to climb out:
 
@@ -615,7 +754,7 @@ Losses are mathematically asymmetric. The deeper the hole, the harder it is to c
 
 ---
 
-## 10. Empirical 180-Day Institutional Backtest Audit
+## 12. Empirical 180-Day Institutional Backtest Audit
 
 Cost-adjusted with **0.06% fees + 0.04% slippage** executed at next bar Open (`fill_mode="next_open"`):
 
@@ -637,7 +776,7 @@ Cost-adjusted with **0.06% fees + 0.04% slippage** executed at next bar Open (`f
 
 ---
 
-## 11. Real-Time Live Desk & Local GPU AI Screener
+## 13. Real-Time Live Desk & Local GPU AI Screener
 
 The desk runs 24/7 with zero cloud dependency and zero token API costs:
 
@@ -660,7 +799,7 @@ The desk runs 24/7 with zero cloud dependency and zero token API costs:
 
 ---
 
-## 12. The Capital Scaling Roadmap to $3,000 / Month
+## 14. The Capital Scaling Roadmap to $3,000 / Month
 
 To generate a consistent **$3,000/month living income**, capital scales through 3 phases:
 
@@ -668,7 +807,7 @@ To generate a consistent **$3,000/month living income**, capital scales through 
   <div class="phase-box">
     <div style="margin-bottom: 6px;"><span class="pill pill-cyan">PHASE 1</span></div>
     <h4 style="color: #38bdf8; margin: 0 0 6px 0;">Compounding Base</h4>
-    <p style="font-size: 0.78em; color: #94a3b8; line-height: 1.45;">
+    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
       • <b>Capital</b>: $10,000 → $25,000<br/>
       • <b>Annual Target</b>: +35% to +50%<br/>
       • <b>Withdrawals</b>: <b>$0 (Zero)</b><br/>
@@ -679,7 +818,7 @@ To generate a consistent **$3,000/month living income**, capital scales through 
   <div class="phase-box gold">
     <div style="margin-bottom: 6px;"><span class="pill pill-amber">PHASE 2</span></div>
     <h4 style="color: #fbbf24; margin: 0 0 6px 0;">Capital Acceleration</h4>
-    <p style="font-size: 0.78em; color: #94a3b8; line-height: 1.45;">
+    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
       • <b>Capital</b>: $25,000 → $75,000<br/>
       • <b>Annual Target</b>: +35% to +45%<br/>
       • <b>Withdrawals</b>: <b>$0 (Zero)</b><br/>
@@ -690,7 +829,7 @@ To generate a consistent **$3,000/month living income**, capital scales through 
   <div class="phase-box green">
     <div style="margin-bottom: 6px;"><span class="pill pill-green">PHASE 3</span></div>
     <h4 style="color: #10b981; margin: 0 0 6px 0;">Living Income Harvest</h4>
-    <p style="font-size: 0.78em; color: #94a3b8; line-height: 1.45;">
+    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
       • <b>Capital</b>: $75,000 → $100,000+<br/>
       • <b>Monthly Target</b>: +3% to +4% / mo<br/>
       • <b>Monthly Payout</b>: <b>$3,000 / month</b><br/>
@@ -705,7 +844,7 @@ To generate a consistent **$3,000/month living income**, capital scales through 
 
 ---
 
-## 13. System Invariants & Institutional Commitments
+## 15. System Invariants & Institutional Commitments
 
 Every autonomous agent in this codebase is bound by **5 non-negotiable invariant rules**:
 
