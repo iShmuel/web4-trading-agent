@@ -241,3 +241,50 @@ def test_preflight_blocks_liquidity_impact_over_participation():
     )
     assert verdict.passed is False
     assert "EXCEEDS_LIQUIDITY_DEPTH" in verdict.reason
+
+
+# =====================================================================
+# 4. LOCAL LLM PRE-FLIGHT DEVIL'S ADVOCATE & REFLECTION TESTS
+# =====================================================================
+
+def test_local_llm_screener_disabled():
+    from core.preflight import LocalLLMScreener
+    screener = LocalLLMScreener(enabled=False)
+    verdict = screener.screen_entry_proposal("NVDA", "BUY", 200.0, "momentum")
+    assert verdict.approved is True
+    assert "disabled" in verdict.reason.lower()
+
+
+def test_local_llm_screener_offline_fallback():
+    from core.preflight import LocalLLMScreener
+    # Points to unreachable mock port
+    screener = LocalLLMScreener(endpoint="http://127.0.0.1:9999/api/generate", timeout=0.5)
+    verdict = screener.screen_entry_proposal("BTC/USDT", "BUY", 80000.0, "momentum", headlines=["Sample"])
+    assert verdict.approved is True
+    assert "fallback" in verdict.reason.lower()
+
+
+def test_fetch_ticker_headlines_safe_fallback():
+    from core.preflight import fetch_ticker_headlines
+    headlines = fetch_ticker_headlines("NVDA", limit=2, timeout=2)
+    assert isinstance(headlines, list)
+
+
+def test_generate_llm_reflection_fallback():
+    from core.journal import generate_llm_reflection
+    # Test fallback reflection with offline endpoint
+    reflection = generate_llm_reflection(
+        symbol="ETH/USDT",
+        action="ENTER_LONG",
+        strategy_id="momentum",
+        ref_price=2200.0,
+        settle_price=2300.0,
+        forward_ret_pct=4.54,
+        alpha_pct=2.10,
+        benchmark_symbol="BTC/USDT",
+        endpoint="http://127.0.0.1:9999/api/generate",
+        timeout=0.5,
+    )
+    assert isinstance(reflection, str)
+    assert "outperformed" in reflection
+    assert "ETH/USDT" not in reflection or "2.10%" in reflection

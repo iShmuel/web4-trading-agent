@@ -14,10 +14,53 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import requests
 
 from core.data_loader import get_data_dir, is_crypto_symbol
 
 JOURNAL_FILE = get_data_dir() / "decision_journal.jsonl"
+
+
+def generate_llm_reflection(
+    symbol: str,
+    action: str,
+    strategy_id: str,
+    ref_price: float,
+    settle_price: float,
+    forward_ret_pct: float,
+    alpha_pct: float,
+    benchmark_symbol: str = "SPY",
+    endpoint: str = "http://localhost:11434/api/generate",
+    model: str = "phi4-mini:latest",
+    timeout: float = 6.0,
+) -> str:
+    """Generate concise 2-sentence institutional post-mortem reflection on settled trade."""
+    prompt = (
+        f"You are a quantitative trading analyst reviewing a settled trade for {symbol}.\n"
+        f"Action: {action} via {strategy_id}\n"
+        f"Entry Price: ${ref_price:,.2f} | 24h Exit Price: ${settle_price:,.2f}\n"
+        f"Realized 24h Return: {forward_ret_pct:+.2f}%\n"
+        f"Alpha vs Benchmark ({benchmark_symbol}): {alpha_pct:+.2f}%\n\n"
+        f"Write exactly 2 sentences of plain prose (no bullets) assessing what this outcome shows and 1 concrete takeaway."
+    )
+    try:
+        payload = {
+            "model": model,
+            "prompt": prompt,
+            "stream": False,
+            "options": {"temperature": 0.1, "num_predict": 120},
+        }
+        resp = requests.post(endpoint, json=payload, timeout=timeout)
+        if resp.status_code == 200:
+            reflection = resp.json().get("response", "").strip()
+            if reflection:
+                return reflection
+    except Exception:
+        pass
+
+    # Deterministic fallback reflection
+    direction = "outperformed" if alpha_pct > 0 else "underperformed"
+    return f"Trade settled with {forward_ret_pct:+.2f}% 24h return ({direction} benchmark {benchmark_symbol} by {alpha_pct:+.2f}% alpha). Quantitative risk boundaries held capital intact."
 
 
 @dataclass
@@ -183,12 +226,31 @@ def settle_journal(
             effective = None
 
         entry["settled"] = True
-        entry["settled_at"] = settle_bar.name.isoformat() if hasattr(settle_bar.name, "isoformat") else str(settle_bar.name)
+        entry["settled_at"] = (
+            settle_bar.name.isoformat()
+            if hasattr(settle_bar.name, "isoformat")
+            else str(settle_bar.name)
+        )
         entry["settle_price"] = settle_price
         entry["forward_return_pct"] = round(raw_ret * 100.0, 3)
         entry["benchmark_return_pct"] = round(bench_ret * 100.0, 3)
         entry["alpha_pct"] = round(alpha * 100.0, 3)
         entry["effective_call"] = effective
+
+        # Out-of-band LLM institutional post-mortem reflection
+        try:
+            entry["llm_reflection"] = generate_llm_reflection(
+                symbol=sym,
+                action=action,
+                strategy_id=entry.get("strategy_id", "strategy"),
+                ref_price=ref_price,
+                settle_price=settle_price,
+                forward_ret_pct=entry["forward_return_pct"],
+                alpha_pct=entry["alpha_pct"],
+                benchmark_symbol=bench_sym,
+            )
+        except Exception:
+            pass
 
         settled_count += 1
         updated_entries.append(entry)

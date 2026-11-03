@@ -77,6 +77,8 @@
   "max_stale_minutes": 180,
   "enable_macro_event_radar": true,
   "enable_vix_regime_filter": true,
+  "enable_local_llm_preflight": true,
+  "local_llm_model": "phi4-mini:latest",
   "use_asset_profiles": false,
   "asset_profiles": {
     "crypto_micro_swing": {

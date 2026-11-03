@@ -25,7 +25,12 @@ from strategies.mean_reversion import MeanReversionStrategy
 from core.journal import log_decision
 from core.polymarket_radar import PolymarketRadar, MacroEventRisk
 from core.fred_radar import FredMacroRadar, MacroRegimeReport
-from core.preflight import PreFlightChecker, PreFlightVerdict
+from core.preflight import (
+    PreFlightChecker,
+    PreFlightVerdict,
+    LocalLLMScreener,
+    fetch_ticker_headlines,
+)
 
 
 @dataclass
@@ -112,6 +117,10 @@ class PortfolioCoordinator:
             max_spread_pct=float(config.get("preflight_max_spread_pct", 0.0015)),
             max_staleness_seconds=int(config.get("preflight_max_staleness_seconds", 180)),
             max_volume_participation_pct=float(config.get("preflight_max_volume_participation_pct", 0.02)),
+        )
+        self.llm_screener = LocalLLMScreener(
+            model=config.get("local_llm_model", "phi4-mini:latest"),
+            enabled=config.get("enable_local_llm_preflight", False),
         )
 
     def symbol_config(self, symbol: str) -> Dict[str, Any]:
@@ -549,6 +558,33 @@ class PortfolioCoordinator:
                 risk_verdict=risk_verdict,
                 indicators=merged_ind,
             )
+
+        # Local LLM Devil's Advocate (Headline & Breaking Hazard Screener)
+        if self.config.get("enable_local_llm_preflight", False):
+            headlines = fetch_ticker_headlines(symbol, limit=3)
+            llm_verdict = self.llm_screener.screen_entry_proposal(
+                symbol=symbol,
+                side="LONG" if chosen_sig.direction == SignalDirection.LONG else "SHORT",
+                price=cur_price,
+                strategy_id=chosen_sig.strategy_id,
+                headlines=headlines,
+                indicators=merged_ind,
+            )
+            merged_ind["llm_screen_decision"] = "APPROVED" if llm_verdict.approved else "REJECTED"
+            merged_ind["llm_screen_reason"] = llm_verdict.reason
+            merged_ind["llm_latency_s"] = llm_verdict.latency_seconds
+
+            if not llm_verdict.approved:
+                return CoordinatorDecision(
+                    symbol=symbol,
+                    action="REJECTED",
+                    strategy_id=chosen_sig.strategy_id,
+                    price=cur_price,
+                    reason=f"Blocked by Local LLM Devil's Advocate: {llm_verdict.reason}",
+                    signal=chosen_sig,
+                    risk_verdict=risk_verdict,
+                    indicators=merged_ind,
+                )
 
         # 4. Execute approved paper entry
         # 4. Smart Order Routing (Execution Alpha: Maker vs Taker)
