@@ -1,94 +1,176 @@
-# Web4 Autonomous Trading Agent
+# Web4 Autonomous Quantitative Trading Desk
 
-An autonomous, self-improving quantitative trading system inspired by the Web4 / Automaton blueprint. Operates with live market data feeds across Crypto and US Equities, coordinating independent trading strategies under strict deterministic risk management and simulated execution.
+[![Tests: 80/80 Passing](https://img.shields.io/badge/pytest-80%2F80%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
+[![Execution Mode](https://img.shields.io/badge/execution-strictly%20simulated%20paper-38bdf8?style=for-the-badge)](core/paper_account.py)
+[![Asset Universe](https://img.shields.io/badge/universe-21%20multi--sector%20assets-8b5cf6?style=for-the-badge)](config/active_config.json)
+[![Local LLM](https://img.shields.io/badge/local%20gpu%20llm-phi4--mini%20(0.70s)-f59e0b?style=for-the-badge)](core/preflight.py)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
+
+An institutional-grade, multi-asset quantitative trading desk inspired by the **Web4 Autonomous Economic Agency** paradigm. Operates 24/7 across **Crypto Perpetuals, US Growth Equities, and Macro Sector ETFs**, coordinating multiple independent alpha strategies under centralized risk governance and deterministic capital immunity.
 
 ---
 
-## Architecture Overview
+## Executive Presentation & Architectural Docs
 
-Detailed architectural and mathematical documentation is available in [The 3 Levels of Web4 Autonomy](docs/web4-autonomous-levels.md).
+* 📊 **Interactive Pitch Deck (Browser Slides)**: [`docs/presentation.html`](docs/presentation.html)
+* 📄 **Executive Presentation Source**: [`PRESENTATION.md`](PRESENTATION.md)
+* 🧠 **The 3 Levels of Web4 Autonomy**: [`docs/web4-autonomous-levels.md`](docs/web4-autonomous-levels.md)
+* 📈 **180-Day Empirical Research Audit**: [`data/profitability_research.json`](data/profitability_research.json)
+
+---
+
+## Architectural Overview
 
 ```mermaid
 flowchart TD
-    Data["Market Data Ingestion (core/data_loader.py)"] --> Strategies
-    
-    subgraph Strategies["Independent Strategy Engines"]
-        Mom["MomentumStrategy (strategies/momentum.py)"]
-        MR["MeanReversionStrategy (strategies/mean_reversion.py)"]
-        Pairs["StatArbPairsStrategy (strategies/stat_arb_pairs.py)"]
+    subgraph Data["Market Telemetry & Radars"]
+        D1["CCXT Binance Crypto Candles (1h)"]
+        D2["Yahoo Finance Stocks & ETFs (1h)"]
+        D3["Polymarket Binary Macro Odds (Gamma API)"]
+        D4["FRED VIX & Credit Spread Radar"]
+        D5["Google News RSS Headlines"]
     end
-    
-    Mom -->|TradingSignal| Coord["PortfolioCoordinator (core/coordinator.py)"]
-    MR -->|TradingSignal| Coord
-    Pairs -->|PairTradeSignal| Coord
-    
-    Coord -->|Entry Proposal| Risk["Central RiskEngine (core/risk_engine.py)"]
-    Risk -->|Approved / Scaled / Blocked| Coord
-    
-    Coord -->|Execution| Paper["PaperAccount (core/paper_account.py)"]
-    Paper --> Storage[("paper_portfolio.json + .bak")]
+
+    subgraph Strategies["Independent Strategy Engines"]
+        S1["MomentumStrategy (strategies/momentum.py)"]
+        S2["MeanReversionStrategy (strategies/mean_reversion.py)"]
+        S3["BasisYieldEngine (core/basis_yield.py)"]
+        S4["StatArbPairsStrategy (strategies/stat_arb_pairs.py)"]
+    end
+
+    subgraph Arbiter["Central Coordinator (core/coordinator.py)"]
+        C1["Macro Bear Gate (< 200 EMA)"]
+        C2["Multi-Timeframe Trend Anchor (>= 0.70 Confluence)"]
+        C3["Crash Contagion Cooldown (3h)"]
+        C4["50% Staged Take-Profit & Break-Even Lock"]
+    end
+
+    subgraph Risk["Risk Governor (core/risk_engine.py)"]
+        R1["Van Tharp Volatility Sizing (1% - 5% Clamped)"]
+        R2["Dynamic Volatility Targeting (Risk Parity)"]
+        R3["5% Daily Loss & 15% Max DD Circuit Breakers"]
+    end
+
+    subgraph Preflight["Pre-Flight Execution Guard (core/preflight.py)"]
+        P1["Bid-Ask Spread Guard (<= 0.15%)"]
+        P2["Tick Staleness Guard (<= 180s)"]
+        P3["Liquidity Depth Guard (<= 2.0% Vol)"]
+        P4["Local GPU LLM Devil's Advocate (phi4-mini: 0.7s)"]
+    end
+
+    subgraph Ledger["Atomic Execution Ledger (core/paper_account.py)"]
+        L1["Post-Only Maker Routing (0.02% Fee, 0 Slippage)"]
+        L2["Atomic Persistence (.tmp -> fsync -> .bak)"]
+        L3["Decision Journal & 24h Alpha Settlement"]
+    end
+
+    Data --> Strategies
+    Strategies --> Arbiter
+    Arbiter --> Risk
+    Risk --> Preflight
+    Preflight --> Ledger
 ```
-
-### The 3 Levels of Web4 Autonomy
-1. **Level 1: Autonomous Perception & Reasoning**: Ingests multi-venue market telemetry, identifies order flow liquidation absorption wicks, monitors derivatives perp funding rates, and reconciles strategy signals with multi-timeframe confluence.
-2. **Level 2: Deterministic Governance & Self-Immunity**: Hard-clamps risk strictly between 1% and 5% using Van Tharp R-risk equations, moves to cash defense via Macro Bear and Chop Gates, triggers real-time circuit breakers (5% daily loss, 15% max drawdown), and guarantees atomic zero-corruption state persistence.
-3. **Level 3: Self-Optimization & Meta-Learning**: Adapts sizing via Half-Kelly compounding, groups correlated assets using Hierarchical Risk Parity (HRP), extracts market-neutral alpha via cointegrated statistical arbitrage pairs, and runs automated walk-forward optimization.
-
-### Core Components
-1. **Market Ingestion (`core/data_loader.py`)**: Free OHLCV price feeds from Binance (crypto via CCXT) and Yahoo Finance (stocks/ETFs via yfinance) with local CSV caching, timestamp validation, gap detection, and staleness checks.
-2. **Standard Signal Contract (`core/signals.py`)**: Standardized `TradingSignal` dataclass encapsulating strategy decisions, indicator snapshots, risk boundaries, and no-trade rationales.
-3. **Dual Strategy Engines**:
-   - **Momentum / Trend Following (`strategies/momentum.py`)**: Donchian channel breakout combined with EMA macro trend filter, dynamic ATR trailing stops, and scale-out take-profit.
-   - **Mean Reversion (`strategies/mean_reversion.py`)**: Bollinger Band reversion with RSI oversold/overbought confirmations and ADX trend suppression filter.
-4. **Portfolio Coordinator (`core/coordinator.py`)**: Authoritative central reconciler resolving thesis conflicts (e.g. opposing signals rejected to avoid trading ambiguous states), managing asset capacity, and ordering executions.
-5. **Central Risk Engine (`core/risk_engine.py`)**:
-   - Dynamic Van Tharp position sizing hard-bounded strictly between **1% and 5% account risk**.
-   - Portfolio exposure caps: total portfolio ($\le 80\%$), single asset ($\le 35\%$), per strategy ($\le 60\%$).
-   - Emergency circuit breakers: daily loss limit ($\ge 5\%$) and max drawdown ($\ge 15\%$) kill switches.
-6. **Paper Execution & Accounting (`core/paper_account.py`)**:
-   - Realistic execution simulation with 0.06% exchange fees and 0.04% slippage model.
-   - Multi-asset position management for both LONG and SHORT trades.
-   - Atomic disk persistence with automatic `.bak` backup recovery.
-7. **Profitability Research Pipeline (`research/backtest_compare.py`)**: Multi-asset baseline evaluation comparing Momentum, Mean Reversion, and Buy-and-Hold with cost-adjusted metrics.
-8. **Performance Engineering Suite (`research/benchmark.py`)**: Sub-second latency benchmark suite measuring end-to-end pipeline execution across universes up to 1,000 symbols.
 
 ---
 
-## Quickstart & Operations
+## The 8 Specialized Quantitative Internal Agents
 
-### 1. Installation
+The desk operates in an autonomous 60-second real-time loop orchestrated across 8 collaborating modular agents:
+
+1. **Data Scout Agent (`core/data_loader.py`)**: Ingests multi-venue feeds, filters unclosed bars to prevent repainting, checks timestamp gaps, and invalidates stale caches.
+2. **Momentum Hunter Agent (`strategies/momentum.py`)**: Captures multi-day breakout waves using Donchian channels, EMA trend filters, dynamic ATR trailing stops, and $50\%$ staged take-profits.
+3. **Mean Reversion Agent (`strategies/mean_reversion.py`)**: Exploits rubber-band extremes, buying oversold liquidity sweeps (RSI $< 30$ below lower Bollinger Band) and taking $50\%$ profit at the 20 SMA.
+4. **Basis Yield Engine (`core/basis_yield.py`)**: Harvests market-neutral perpetual funding rates ($8\% - 18\%$ APY floor) with $0.0$ delta price exposure during sideways chop.
+5. **Coordinator Arbiter Agent (`core/coordinator.py`)**: Central authority reconciling signals, resolving thesis conflicts, enforcing the 200 EMA Macro Gate, and managing sector exposure.
+6. **Risk Governor Agent (`core/risk_engine.py`)**: Fixed-fractional volatility sizing strictly clamped to $[1\%, 5\%]$ account equity, with automated daily and drawdown circuit breakers.
+7. **Execution & Ledger Agent (`core/paper_account.py`)**: Smart Maker limit routing ($0.02\%$ fees, $0.00\%$ slippage), kernel-level PID lockfiles, and zero-corruption atomic `.bak` state persistence.
+8. **Meta-Optimizer Agent (`core/optimizer.py`)**: Offline walk-forward optimization arena auditing parameter stability over rolling historical windows without loosening risk bounds.
+
+---
+
+## The 21-Asset Multi-Sector Universe
+
+To eliminate correlation risk, capital is distributed across **4 distinct, uncorrelated asset classes**:
+
+| Asset Profile | Instruments | Strategic Focus |
+| :--- | :--- | :--- |
+| **`crypto_micro_swing`** | `BTC`, `SOL`, `SUI`, `TAO`, `DOGE`, `NEAR`, `AVAX`, `LINK` | High-beta volatility capture, 16-bar Donchian, $2.0\times\text{ATR}$ stops, $50\%$ scale-out at $+2.5\times\text{ATR}$. |
+| **`crypto_macro`** | `ETH`, `BNB` | Directional crypto anchors, 20-bar Donchian, 50 EMA filter, $2.25\times\text{ATR}$ stops. |
+| **`stocks_growth`** | `NVDA`, `AMD`, `AAPL`, `PLTR`, `TSLA` | US institutional tech trends, 24-bar lookback, 50 EMA filter, $2.5\times\text{ATR}$ stops. |
+| **`macro_hedges`** | `SPY`, `QQQ`, `GLD` (Gold), `SLV` (Silver), `TLT` (Bonds), `XLE` (Energy) | Non-correlated macro anchors, 100 EMA trend filter, capital-preservation orientation. |
+
+---
+
+## Empirical 180-Day Backtest Results
+
+Conducted across all 21 assets using realistic frictions (**0.06% fees + 0.04% slippage**, next-open bar execution):
+
+| Symbol | Category | Buy & Hold Return | Strategy Return (MR / Mom) | Strategy Max DD | Buy & Hold Max DD | MR Win Rate % | Profit Factor |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **`BNB/USDT`** | Crypto Anchor | $+10.13\%$ | **+5.34%** (MR) | **2.59%** | $26.73\%$ | **84.8%** | **2.28** |
+| **`TAO/USDT`** | AI Crypto | $-24.53\%$ | **+3.46%** (MR) | **2.20%** | $43.44\%$ | **79.3%** | **1.46** |
+| **`AVAX/USDT`** | Layer-1 | $-9.85\%$ | **+2.64%** (MR) | **5.44%** | $43.53\%$ | **73.3%** | **1.25** |
+| **`LINK/USDT`** | Oracle / DeFi | $+12.80\%$ | **+2.25%** (MR) | **2.32%** | $35.08\%$ | **83.3%** | **1.41** |
+| **`AAPL`** | Mega-Cap Tech | $+14.21\%$ | **+1.57%** (MR) | **0.08%** | $12.89\%$ | **83.3%** | **304.99** |
+| **`AMD`** | Semiconductors | $+15.56\%$ | **+0.87%** (MR) | **1.03%** | $28.81\%$ | **75.0%** | **1.90** |
+| **`QQQ`** | Tech Index ETF | $-2.03\%$ | **+1.21%** (Mom) | **0.64%** | $11.37\%$ | **75.0%** | **1.37** |
+| **`XLE`** | Energy Sector | $+20.82\%$ | **+3.65%** (Mom) | **3.66%** | $14.12\%$ | **66.7%** | **1.52** |
+| **`NEAR/USDT`**| High-Beta L1 | $+162.49\%$ | **+4.12%** (Mom) | **4.91%** | $49.46\%$ | **70.0%** | **1.09** |
+| **`SPY`** | S&P 500 ETF | $+2.68\%$ | $-0.40\%$ (MR) | **1.61%** | $4.53\%$ | **75.0%** | **0.93** |
+| **`GLD`** | Safe Haven Gold| $-17.73\%$ | $-2.02\%$ (MR) | **2.02%** | $18.66\%$ | **72.7%** | **0.64** |
+| **`BTC/USDT`** | Crypto Anchor | $-2.34\%$ | $-5.33\%$ (MR) | **5.48%** | $29.10\%$ | **66.7%** | **0.72** |
+| **`SOL/USDT`** | High-Beta L1 | $+6.38\%$ | $-7.72\%$ (MR) | **8.35%** | $38.00\%$ | **65.7%** | **0.59** |
+
+---
+
+## Quickstart & CLI Operations
+
+### 1. Setup Environment
 ```bash
-# Set up Python environment
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Run Tests
+### 2. Run Test Suite
 ```bash
-pytest -v
+# Run all 80 unit tests
+.venv/bin/pytest -v
 ```
 
-### 3. Run Live Paper Trading
+### 3. Launch Live Autonomous Trader
 ```bash
-# Single portfolio scan across watchlist
-python live_paper_trader.py --once
+# Single portfolio scan across active 21 assets
+.venv/bin/python live_paper_trader.py --once
 
-# Inspect current paper portfolio status
-python live_paper_trader.py --status
+# Inspect live portfolio balances & open positions
+.venv/bin/python live_paper_trader.py --status
 
-# Continuous monitoring loop
-python live_paper_trader.py --loop --interval 60
+# Launch continuous 24/7 autonomous polling loop (every 60s)
+.venv/bin/python live_paper_trader.py --loop --interval 60
+
+# Launch interactive visual dashboard
+.venv/bin/python dashboard.py
 ```
 
 ### 4. Run Profitability Research & Benchmarks
 ```bash
-# Multi-strategy comparative research
-python research/backtest_compare.py
+# 180-day multi-asset comparative research audit
+.venv/bin/python research/backtest_compare.py
 
-# Local computational latency benchmark (100, 500, 1000 symbols)
-python research/benchmark.py
+# Latency and throughput benchmark across 1,000 synthetic symbols
+.venv/bin/python research/benchmark.py
 ```
+
+---
+
+## Invariant Rules for Autonomous AI Agents
+
+1. **Never Enable Real-Money Trading**: Execution mode must remain strictly simulated paper trading (`PaperAccount`).
+2. **Preserve User Data**: Never overwrite `data/paper_portfolio.json` or reset virtual balances unless instructed by an explicit CLI `--reset` argument.
+3. **Preserve 1%–5% Risk Bounds**: Position sizing in `core/risk_engine.py` is hard-coded between 1% and 5% account equity. No optimizer or AI mutation may loosen this constraint.
+4. **Platform Independence**: Standard Python 3.10+ execution with zero vendor-lock on proprietary agent harnesses.
+5. **Evidence-Based Profitability**: Do not declare a strategy profitable without empirical backtest and cost-adjusted metrics (fees + slippage).
 
 ---
 

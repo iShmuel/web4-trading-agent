@@ -47,11 +47,14 @@ Level 1 represents the sensory nervous system and cognitive decision-making cort
   * Classifies regimes into `STABLE`, `VOLATILITY_EXPANSION` (VIX 22–30), and `CRASH_DEFENSE` (VIX $\ge 30$).
 * **Derivatives Funding Rate Radar** (`fetch_funding_rate`):
   * Queries 8-hour perpetual funding rates with a 1-hour in-memory TTL cache. Halts aggressive breakout longs if funding $> +0.05\%$ (`OVERHEATED_LONGS`).
+* **Multi-Timeframe Trend Anchor** (`calculate_multi_timeframe_confluence`):
+  * Evaluates macro (4h/1D equivalent), intermediate (1h), and micro breakout levels. Enforces strict gating: breakout entries are rejected if confluence score $< 0.70$.
 
 ### 3. Cognitive Arbitration Cortex (`core/coordinator.py`)
 The `PortfolioCoordinator.reconcile_signals()` reconciles signals between the `MomentumStrategy` and `MeanReversionStrategy`:
 * **Thesis Conflict Elimination**: If Momentum proposes `LONG` while Mean Reversion proposes `SHORT`, the coordinator rejects both proposals to avoid trading through ambiguity.
 * **Consensus Weighting**: If both strategies agree, it scales confidence ($0.0$ to $1.0$) and tightens stop-loss distances by 15% on triple-confluence setups.
+* **Delta-Neutral Basis Yield Engine** (`core/basis_yield.py`): Scans perpetual funding rates across the crypto universe and harvests market-neutral baseline yield (8%–18% APY floor) with 0.0 delta exposure when directional setups are dormant.
 
 ---
 
@@ -65,6 +68,7 @@ Position sizing is strictly derived from account equity and volatility risk:
 $$\text{Position Units} = \frac{\text{Account Equity} \times \text{Risk Percentage}}{\text{ATR} \times \text{ATR Multiplier}}$$
 
 * **Hard Invariant Clamping**: Position risk is strictly bounded within $[0.01, 0.05]$ (1% to 5% account equity). No optimizer, AI mutation, or subagent can loosen these bounds.
+* **Dynamic Volatility Targeting (Risk Parity)**: Position risk dynamically scales inversely with asset ATR: when volatility explodes, risk scales down towards 1.0%; when volatility compresses, risk scales up towards 3.0%, damped further if VIX $> 25.0$.
 * **Stop-Loss Guarantee**: Dynamic ATR-based stop loss is calculated before trade submission:
   $$\text{Initial Stop} = \text{Entry Price} \pm (\text{ATR} \times 2.25)$$
 

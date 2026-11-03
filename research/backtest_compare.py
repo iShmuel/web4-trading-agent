@@ -105,11 +105,15 @@ def run_comparative_research(
             active_config = json.load(f)
 
     if symbols is None:
-        symbols = [
-            "BTC/USDT", "ETH/USDT", "SOL/USDT",
-            "NVDA", "AMD", "AAPL",
-            "SPY", "QQQ", "GLD", "TLT"
-        ]
+        symbols = active_config.get(
+            "watchlist",
+            [
+                "BTC/USDT", "ETH/USDT", "SOL/USDT", "SUI/USDT", "TAO/USDT", "DOGE/USDT",
+                "AVAX/USDT", "BNB/USDT", "NEAR/USDT", "LINK/USDT",
+                "NVDA", "AMD", "AAPL", "PLTR", "TSLA",
+                "SPY", "QQQ", "GLD", "SLV", "TLT", "XLE"
+            ]
+        )
 
     print("=" * 80)
     print("      PROFITABILITY RESEARCH: INDEPENDENT STRATEGY BASELINE EVALUATION")
