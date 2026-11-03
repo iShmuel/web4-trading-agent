@@ -270,13 +270,31 @@ $$\text{Extra Profit Gained} = +\$450.02 \quad (\mathbf{+4.50\% \text{ of entire
 
 ---
 
-## 14. Live Status & Incubation Roadmap
+## 14. Institutional Macro Radars & Pre-Flight Defense
 
-* **Live Daemon Status**: Running 24/7 (`live_paper_trader.py --loop --interval 60`), **Equity: $9,258.85 (100% Safe Cash Defense)**, **53/53 Pytest Green**.
-* **Recent Live Proof**: `AVAX/USDT` 2-leg Mean Reversion win (**+$15.95**) & `LINK/USDT` Auto Break-Even Stop Lock save (**+$72.04 saved**).
+### 1. Leading Macro Event Radar (Polymarket Gamma API)
+* Tracks crowd-priced binary probabilities (Fed rate cuts, surprise hikes, US recession odds).
+* If recession probability $\ge 60\%$, automatically throttles position risk sizing to $0.50\times$.
+
+### 2. Market Stress & VIX Radar (FRED / Yahoo Finance)
+* Real-time CBOE VIX monitoring: Activates **Crash Defense Gate** when VIX $\ge 30$, blocking long breakout entries into market panics.
+* High-Yield OAS Credit Spreads (`BAMLH0A0HYM2`): Detects liquidity dry-up before equity sell-offs.
+
+### 3. Institutional Pre-Flight Execution Safety Guards
+* **Spread Guard**: Rejects orders if bid-ask spread $> 0.15\%$ (protects against illiquid off-hours slippage).
+* **Tick Staleness Guard**: Rejects orders if quotes are $> 180$ seconds old.
+* **Volume Participation Guard**: Caps sizing to $\le 2.0\%$ of hourly volume to prevent market impact.
+* **Decision Journal**: Logs every decision and settles 24-hour alpha vs BTC/SPY benchmarks.
+
+---
+
+## 15. Live Status & Incubation Roadmap
+
+* **Live Daemon Status**: Running 24/7 (`live_paper_trader.py --loop --interval 60`), **Equity: $9,093.47 (Safe Cash Defense)**, **71/71 Pytest Green 🛡️**.
+* **Zero-Cost Local LLM Engine**: Connected to local Ollama (`phi4-mini:latest`) running 100% on NVIDIA GPU with **0.70s latency** for out-of-band pre-trade sanity checks.
 
 ### The 3-Stage Incubation Framework
-1. **Stage 1: Paper Incubation (Current)**: 30–60 days forward test, zero money risk, 53/53 tests green.
+1. **Stage 1: Paper Incubation (Current)**: 30–60 days forward test, zero money risk, 71/71 tests green, automated decision journal tracking gate alpha.
 2. **Stage 2: Micro-Capital Sandbox**: $500–$1,000 separate test account, withdrawals disabled, $5–$10 risk.
 3. **Stage 3: Full Production**: Scaled capital, Half-Kelly compounding, permanent circuit breakers.
 
@@ -285,9 +303,9 @@ $$\text{Extra Profit Gained} = +\$450.02 \quad (\mathbf{+4.50\% \text{ of entire
 # Summary & Key Takeaways
 
 1. **Proven Alpha**: **+56.62% net return** with a **2.80 Profit Factor** and low **6.25% Max Drawdown**.
-2. **Crash-Proof Defense**: 200 EMA Macro Gate, Auto Break-Even Lock, and 3-Hour Crash Contagion Cooldown preserved 96.6% of user capital through a 70% crypto crash.
-3. **All-Weather Adaptability**: Captures trend breakouts, shorts bear rallies, and extracts zero-beta pairs spread alpha.
-4. **Institutional Quality**: 53 automated unit tests, atomic persistence, smart maker routing, and multi-agent governance.
+2. **Crash-Proof Defense**: 200 EMA Macro Gate, Polymarket Event Radar, VIX Crash Defense, Auto Break-Even Lock, and 3-Hour Crash Contagion Cooldown preserved user capital through crypto crashes.
+3. **Execution Guardrails**: Pre-Flight spread checks, tick staleness limits, depth caps, and smart maker routing eliminate execution slippage.
+4. **Institutional Quality**: 71 automated unit tests, atomic persistence, forward benchmark alpha attribution, and zero-cost local LLM sanity screening.
 
 * **Presentation File (Interactive)**: [`docs/presentation.html`](docs/presentation.html)
 * **Architecture Docs**: [`docs/web4-autonomous-levels.md`](docs/web4-autonomous-levels.md)

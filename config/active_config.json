@@ -71,6 +71,12 @@
   "enable_liquidity_sweep": true,
   "sweep_lookback": 20,
   "sweep_rsi_max": 40.0,
+  "preflight_max_spread_pct": 0.0015,
+  "preflight_max_staleness_seconds": 180,
+  "preflight_max_volume_participation_pct": 0.02,
+  "max_stale_minutes": 180,
+  "enable_macro_event_radar": true,
+  "enable_vix_regime_filter": true,
   "use_asset_profiles": false,
   "asset_profiles": {
     "crypto_micro_swing": {

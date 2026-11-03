@@ -30,9 +30,13 @@ def calculate_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     return atr
 
 
-def calculate_ema(series: pd.Series, period: int = 200) -> pd.Series:
+def calculate_ema(
+    series: pd.Series, period: int = 200, min_periods: Optional[int] = None
+) -> pd.Series:
     """Calculate Exponential Moving Average (EMA)."""
-    return series.ewm(span=period, adjust=False).mean()
+    if min_periods is None:
+        min_periods = min(period, 30)
+    return series.ewm(span=period, min_periods=min_periods, adjust=False).mean()
 
 
 def calculate_bollinger_bands(
@@ -117,8 +121,10 @@ def compute_indicators(
     # Intermediate Trend Filter: EMA
     df["ema_filter"] = calculate_ema(df["close"], period=ema_trend_filter)
 
-    # Macro 200-Period Trend Filter: EMA
-    df["macro_ema"] = calculate_ema(df["close"], period=macro_ema_period)
+    # Macro Trend Filter: EMA (requires at least min(macro_ema_period, 100) bars for warmup)
+    df["macro_ema"] = calculate_ema(
+        df["close"], period=macro_ema_period, min_periods=min(macro_ema_period, 100)
+    )
 
     # Trend Strength: ADX
     df["adx"] = calculate_adx(df, period=14)

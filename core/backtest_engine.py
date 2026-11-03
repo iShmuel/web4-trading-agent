@@ -72,6 +72,7 @@ def run_backtest(
     allow_short: bool = True,
     fee_pct: float = 0.0006,
     slippage_pct: float = 0.0004,
+    fill_mode: str = "close",
 ) -> BacktestResult:
     """Run Momentum (Donchian Breakout + EMA + ATR) backtest simulation."""
     data = compute_indicators(
@@ -97,6 +98,7 @@ def run_backtest(
     trailing_stop = 0.0
     tp_target = 0.0
     tp_hit = False
+    pending_signal = None  # (side, signal_atr) for next_open fill_mode
 
     trades: List[TradeRecord] = []
     equity_curve: List[float] = [equity]
@@ -105,21 +107,24 @@ def run_backtest(
         close = row["close"]
         high = row["high"]
         low = row["low"]
+        row_open = row.get("open", close)
         atr = row["atr"]
 
         if pd.isna(atr) or pd.isna(row["ema_filter"]):
             equity_curve.append(equity)
             continue
 
-        if not in_position:
-            # Check Long signal
-            if row.get("long_signal", row.get("entry_signal", False)):
+        # Execute pending signal from previous bar under next_open fill mode
+        if not in_position and fill_mode == "next_open" and pending_signal is not None:
+            sig_side, sig_atr = pending_signal
+            pending_signal = None
+            if sig_side == "LONG":
                 pos_side = "LONG"
-                exec_entry_price = close * (1.0 + slippage_pct)
+                exec_entry_price = row_open * (1.0 + slippage_pct)
                 units, initial_stop, dollar_risk = risk_engine.calculate_position(
                     equity=equity,
                     entry_price=exec_entry_price,
-                    atr=atr,
+                    atr=sig_atr,
                     atr_multiplier=atr_multiplier,
                     risk_pct=account_risk_pct,
                     is_short=False,
@@ -137,16 +142,14 @@ def run_backtest(
                     trailing_stop = initial_stop
                     tp_hit = False
                     if take_profit_atr_mult > 0:
-                        tp_target = entry_price + (take_profit_atr_mult * atr)
-
-            # Check Short signal
-            elif allow_short and row.get("short_signal", False):
+                        tp_target = entry_price + (take_profit_atr_mult * sig_atr)
+            elif sig_side == "SHORT" and allow_short:
                 pos_side = "SHORT"
-                exec_entry_price = close * (1.0 - slippage_pct)
+                exec_entry_price = row_open * (1.0 - slippage_pct)
                 units, initial_stop, dollar_risk = risk_engine.calculate_position(
                     equity=equity,
                     entry_price=exec_entry_price,
-                    atr=atr,
+                    atr=sig_atr,
                     atr_multiplier=atr_multiplier,
                     risk_pct=account_risk_pct,
                     is_short=True,
@@ -164,7 +167,68 @@ def run_backtest(
                     trailing_stop = initial_stop
                     tp_hit = False
                     if take_profit_atr_mult > 0:
-                        tp_target = entry_price - (take_profit_atr_mult * atr)
+                        tp_target = entry_price - (take_profit_atr_mult * sig_atr)
+
+        if not in_position:
+            # Check Long signal
+            if row.get("long_signal", row.get("entry_signal", False)):
+                if fill_mode == "next_open":
+                    pending_signal = ("LONG", atr)
+                else:
+                    pos_side = "LONG"
+                    exec_entry_price = close * (1.0 + slippage_pct)
+                    units, initial_stop, dollar_risk = risk_engine.calculate_position(
+                        equity=equity,
+                        entry_price=exec_entry_price,
+                        atr=atr,
+                        atr_multiplier=atr_multiplier,
+                        risk_pct=account_risk_pct,
+                        is_short=False,
+                    )
+                    max_allowed_units = (equity * 0.95) / exec_entry_price
+                    units = min(units, max_allowed_units)
+
+                    if units > 0:
+                        entry_fee = (units * exec_entry_price) * fee_pct
+                        total_fees += entry_fee
+                        equity -= entry_fee
+                        in_position = True
+                        entry_price = exec_entry_price
+                        entry_time = idx
+                        trailing_stop = initial_stop
+                        tp_hit = False
+                        if take_profit_atr_mult > 0:
+                            tp_target = entry_price + (take_profit_atr_mult * atr)
+
+            # Check Short signal
+            elif allow_short and row.get("short_signal", False):
+                if fill_mode == "next_open":
+                    pending_signal = ("SHORT", atr)
+                else:
+                    pos_side = "SHORT"
+                    exec_entry_price = close * (1.0 - slippage_pct)
+                    units, initial_stop, dollar_risk = risk_engine.calculate_position(
+                        equity=equity,
+                        entry_price=exec_entry_price,
+                        atr=atr,
+                        atr_multiplier=atr_multiplier,
+                        risk_pct=account_risk_pct,
+                        is_short=True,
+                    )
+                    max_allowed_units = (equity * 0.95) / exec_entry_price
+                    units = min(units, max_allowed_units)
+
+                    if units > 0:
+                        entry_fee = (units * exec_entry_price) * fee_pct
+                        total_fees += entry_fee
+                        equity -= entry_fee
+                        in_position = True
+                        entry_price = exec_entry_price
+                        entry_time = idx
+                        trailing_stop = initial_stop
+                        tp_hit = False
+                        if take_profit_atr_mult > 0:
+                            tp_target = entry_price - (take_profit_atr_mult * atr)
 
         else:
             if pos_side == "LONG":
@@ -362,6 +426,7 @@ def run_mean_reversion_backtest(
     allow_short: bool = False,
     fee_pct: float = 0.0006,
     slippage_pct: float = 0.0004,
+    fill_mode: str = "close",
 ) -> BacktestResult:
     """Run Mean Reversion (Bollinger Bands + RSI + ADX filter) backtest simulation."""
     data = compute_mean_reversion_indicators(
@@ -389,6 +454,7 @@ def run_mean_reversion_backtest(
     dollar_risk = 0.0
     stop_loss = 0.0
     tp_hit = False
+    pending_signal = None  # (side, signal_atr) for next_open fill_mode
 
     trades: List[TradeRecord] = []
     equity_curve: List[float] = [equity]
@@ -397,6 +463,7 @@ def run_mean_reversion_backtest(
         close = row["close"]
         high = row["high"]
         low = row["low"]
+        row_open = row.get("open", close)
         atr = row["atr"]
         rsi = row["rsi"]
         bb_sma = row["bb_sma"]
@@ -408,56 +475,119 @@ def run_mean_reversion_backtest(
             equity_curve.append(equity)
             continue
 
+        # Execute pending signal from previous bar under next_open fill mode
+        if not in_position and fill_mode == "next_open" and pending_signal is not None:
+            sig_side, sig_atr = pending_signal
+            pending_signal = None
+            if sig_side == "LONG":
+                pos_side = "LONG"
+                exec_entry_price = row_open * (1.0 + slippage_pct)
+                units, initial_stop, dollar_risk = risk_engine.calculate_position(
+                    equity=equity,
+                    entry_price=exec_entry_price,
+                    atr=sig_atr,
+                    atr_multiplier=atr_stop_mult,
+                    risk_pct=account_risk_pct,
+                    is_short=False,
+                )
+                max_allowed_units = (equity * 0.95) / exec_entry_price
+                units = min(units, max_allowed_units)
+
+                if units > 0:
+                    entry_fee = (units * exec_entry_price) * fee_pct
+                    total_fees += entry_fee
+                    equity -= entry_fee
+                    in_position = True
+                    entry_price = exec_entry_price
+                    entry_time = idx
+                    bars_held = 0
+                    stop_loss = initial_stop
+                    tp_hit = False
+            elif sig_side == "SHORT" and allow_short:
+                pos_side = "SHORT"
+                exec_entry_price = row_open * (1.0 - slippage_pct)
+                units, initial_stop, dollar_risk = risk_engine.calculate_position(
+                    equity=equity,
+                    entry_price=exec_entry_price,
+                    atr=sig_atr,
+                    atr_multiplier=atr_stop_mult,
+                    risk_pct=account_risk_pct,
+                    is_short=True,
+                )
+                max_allowed_units = (equity * 0.95) / exec_entry_price
+                units = min(units, max_allowed_units)
+
+                if units > 0:
+                    entry_fee = (units * exec_entry_price) * fee_pct
+                    total_fees += entry_fee
+                    equity -= entry_fee
+                    in_position = True
+                    entry_price = exec_entry_price
+                    entry_time = idx
+                    bars_held = 0
+                    stop_loss = initial_stop
+                    tp_hit = False
+
         if not in_position:
             # Check range-bound regime
             if adx <= adx_threshold:
                 # Long entry: oversold bounce setup
                 if close <= bb_lower and rsi < rsi_oversold:
-                    pos_side = "LONG"
-                    exec_entry_price = close * (1.0 + slippage_pct)
-                    units, initial_stop, dollar_risk = risk_engine.calculate_position(
-                        equity=equity,
-                        entry_price=exec_entry_price,
-                        atr=atr,
-                        atr_multiplier=atr_stop_mult,
-                        risk_pct=account_risk_pct,
-                        is_short=False,
-                    )
-                    max_allowed_units = (equity * 0.95) / exec_entry_price
-                    units = min(units, max_allowed_units)
+                    if fill_mode == "next_open":
+                        pending_signal = ("LONG", atr)
+                    else:
+                        pos_side = "LONG"
+                        exec_entry_price = close * (1.0 + slippage_pct)
+                        units, initial_stop, dollar_risk = risk_engine.calculate_position(
+                            equity=equity,
+                            entry_price=exec_entry_price,
+                            atr=atr,
+                            atr_multiplier=atr_stop_mult,
+                            risk_pct=account_risk_pct,
+                            is_short=False,
+                        )
+                        max_allowed_units = (equity * 0.95) / exec_entry_price
+                        units = min(units, max_allowed_units)
 
-                    if units > 0:
-                        entry_fee = (units * exec_entry_price) * fee_pct
-                        total_fees += entry_fee
-                        equity -= entry_fee
-                        in_position = True
-                        entry_price = exec_entry_price
-                        entry_time = idx
-                        bars_held = 0
-                        stop_loss = initial_stop
-                        tp_hit = False
+                        if units > 0:
+                            entry_fee = (units * exec_entry_price) * fee_pct
+                            total_fees += entry_fee
+                            equity -= entry_fee
+                            in_position = True
+                            entry_price = exec_entry_price
+                            entry_time = idx
+                            bars_held = 0
+                            stop_loss = initial_stop
+                            tp_hit = False
 
                 # Short entry: overbought reversal setup
                 elif allow_short and close >= bb_upper and rsi > rsi_overbought:
-                    pos_side = "SHORT"
-                    exec_entry_price = close * (1.0 - slippage_pct)
-                    units, initial_stop, dollar_risk = risk_engine.calculate_position(
-                        equity=equity,
-                        entry_price=exec_entry_price,
-                        atr=atr,
-                        atr_multiplier=atr_stop_mult,
-                        risk_pct=account_risk_pct,
-                        is_short=True,
-                    )
-                    max_allowed_units = (equity * 0.95) / exec_entry_price
-                    units = min(units, max_allowed_units)
+                    if fill_mode == "next_open":
+                        pending_signal = ("SHORT", atr)
+                    else:
+                        pos_side = "SHORT"
+                        exec_entry_price = close * (1.0 - slippage_pct)
+                        units, initial_stop, dollar_risk = risk_engine.calculate_position(
+                            equity=equity,
+                            entry_price=exec_entry_price,
+                            atr=atr,
+                            atr_multiplier=atr_stop_mult,
+                            risk_pct=account_risk_pct,
+                            is_short=True,
+                        )
+                        max_allowed_units = (equity * 0.95) / exec_entry_price
+                        units = min(units, max_allowed_units)
 
-                    if units > 0:
-                        entry_fee = (units * exec_entry_price) * fee_pct
-                        total_fees += entry_fee
-                        equity -= entry_fee
-                        in_position = True
-                        entry_price = exec_entry_price
+                        if units > 0:
+                            entry_fee = (units * exec_entry_price) * fee_pct
+                            total_fees += entry_fee
+                            equity -= entry_fee
+                            in_position = True
+                            entry_price = exec_entry_price
+                            entry_time = idx
+                            bars_held = 0
+                            stop_loss = initial_stop
+                            tp_hit = False
                         entry_time = idx
                         bars_held = 0
                         stop_loss = initial_stop

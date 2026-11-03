@@ -16,7 +16,7 @@ from typing import Dict, Any, List
 from core.paper_account import PaperAccount
 from core.risk_engine import RiskEngine
 from core.coordinator import PortfolioCoordinator
-from core.data_loader import fetch_ohlcv, check_data_quality
+from core.data_loader import fetch_ohlcv, check_data_quality, is_crypto_symbol
 from core.process_lock import SingleInstanceLock, AlreadyRunningError
 from agent.optimizer import run_optimization_cycle
 
@@ -116,8 +116,11 @@ def run_portfolio_tick(
     for symbol in watchlist:
         try:
             timeframe = coordinator.symbol_config(symbol).get("timeframe", config.get("timeframe", "1h"))
-            df = fetch_ohlcv(symbol=symbol, timeframe=timeframe, days=30, force_refresh=True)
-            valid, reason = check_data_quality(df, max_stale_minutes=120)
+            fetch_days = 30 if is_crypto_symbol(symbol) else 90
+            df = fetch_ohlcv(symbol=symbol, timeframe=timeframe, days=fetch_days, force_refresh=True, closed_only=True)
+            # Stocks close overnight/weekends, so allow 0 (skip age check) for equities; allow 180m for 1h crypto closed bars
+            stale_limit = 180 if is_crypto_symbol(symbol) else 0
+            valid, reason = check_data_quality(df, max_stale_minutes=stale_limit)
             if not valid:
                 log(f"   ⚠️ Data quality warning on {symbol}: {reason}")
                 continue
@@ -128,6 +131,15 @@ def run_portfolio_tick(
 
     # Run cycle through the authoritative Coordinator
     cycle_report = coordinator.run_cycle(market_data)
+
+    # Settle past decisions once their forward window has traded
+    try:
+        from core.journal import settle_journal
+        settled_cnt, _ = settle_journal(market_data, holding_bars=24)
+        if settled_cnt > 0:
+            log(f"   [Journal] Settled {settled_cnt} past decisions against forward alpha benchmark")
+    except Exception as e:
+        pass
 
     for d in cycle_report.decisions:
         sym = d.symbol
@@ -196,13 +208,19 @@ def main():
     parser = argparse.ArgumentParser(description="Multi-Asset Live Paper Trading Runner")
     parser.add_argument("--once", action="store_true", help="Run a single live portfolio scan across all assets")
     parser.add_argument("--status", action="store_true", help="Display current multi-asset portfolio status")
+    parser.add_argument("--journal", action="store_true", help="Display audit report of settled decision journal and gate alpha")
     parser.add_argument("--reset", action="store_true", help="Reset portfolio to $10,000 initial cash")
     parser.add_argument("--interval", type=int, default=60, help="Loop interval in seconds (default: 60s)")
     parser.add_argument("--optimize-hours", type=int, default=6, help="Self-improvement tournament interval in hours (default: 6)")
     parser.add_argument("--loop", action="store_true", help="Run continuous monitoring loop")
     args = parser.parse_args()
 
-    # --status is read-only and may run alongside the bot.
+    # --status and --journal are read-only and may run alongside the bot.
+    if args.journal:
+        from core.journal import generate_journal_report
+        print(generate_journal_report())
+        return
+
     if args.status:
         _run(args)
         return
@@ -234,7 +252,8 @@ def _run(args):
         prices = {}
         for sym in watchlist:
             try:
-                df = fetch_ohlcv(symbol=sym, timeframe=config.get("timeframe", "1h"), days=2, force_refresh=True)
+                fetch_days = 2 if is_crypto_symbol(sym) else 7
+                df = fetch_ohlcv(symbol=sym, timeframe=config.get("timeframe", "1h"), days=fetch_days, force_refresh=True, closed_only=True)
                 prices[sym] = float(df.iloc[-1]["close"])
             except Exception:
                 pass

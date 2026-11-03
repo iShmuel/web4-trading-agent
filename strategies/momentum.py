@@ -49,7 +49,7 @@ class MomentumStrategy:
         self.fee_pct = config.get("fee_pct", 0.0006)
         self.slippage_pct = config.get("slippage_pct", 0.0004)
         self.min_atr_filter = config.get("min_atr_ratio", 0.0)  # minimum ATR/price ratio
-        self.max_stale_minutes = config.get("max_stale_minutes", 120)
+        self.max_stale_minutes = config.get("max_stale_minutes", 180)
         self.macro_ema_period = config.get("macro_ema_period", 200)
 
     def evaluate(

@@ -22,6 +22,10 @@ from core.strategy import (
 )
 from strategies.momentum import MomentumStrategy
 from strategies.mean_reversion import MeanReversionStrategy
+from core.journal import log_decision
+from core.polymarket_radar import PolymarketRadar, MacroEventRisk
+from core.fred_radar import FredMacroRadar, MacroRegimeReport
+from core.preflight import PreFlightChecker, PreFlightVerdict
 
 
 @dataclass
@@ -101,6 +105,15 @@ class PortfolioCoordinator:
         # Timestamp of most recent crypto stop-loss exit for contagion cooldown protection
         self._last_crypto_stop_time: Optional[pd.Timestamp] = None
 
+        # Institutional Alpha Radars & Execution Pre-Flight
+        self.polymarket_radar = PolymarketRadar()
+        self.fred_radar = FredMacroRadar()
+        self.preflight_checker = PreFlightChecker(
+            max_spread_pct=float(config.get("preflight_max_spread_pct", 0.0015)),
+            max_staleness_seconds=int(config.get("preflight_max_staleness_seconds", 180)),
+            max_volume_participation_pct=float(config.get("preflight_max_volume_participation_pct", 0.02)),
+        )
+
     def symbol_config(self, symbol: str) -> Dict[str, Any]:
         return self._engines_for(symbol)[0]
 
@@ -142,7 +155,12 @@ class PortfolioCoordinator:
             adx = mr_ind.get("adx") if "adx" in mr_ind else mom_ind.get("adx")
 
             # Rule 1: Macro Bear Gate (Block long breakouts when below 200 EMA)
-            if macro_ema is not None and cur_price < macro_ema and momentum_sig.direction == SignalDirection.LONG:
+            if (
+                macro_ema is not None
+                and not pd.isna(macro_ema)
+                and cur_price < macro_ema
+                and momentum_sig.direction == SignalDirection.LONG
+            ):
                 if mom_entry:
                     mom_entry = False
                     momentum_sig = create_no_trade_signal(
@@ -176,6 +194,16 @@ class PortfolioCoordinator:
                 momentum_sig = create_no_trade_signal(
                     "momentum", symbol, cur_price,
                     f"Blocked by Overheated Funding Rate ({mom_ind.get('funding_rate_pct', 0.0):+.3f}% per 8h)",
+                    indicators=momentum_sig.indicators,
+                )
+
+            # Rule 5: Macro Crash Defense Gate (VIX Panic & Credit Spread Radar)
+            macro_report = self.fred_radar.evaluate()
+            if enable_regime_filter and not macro_report.allow_long_breakouts and mom_entry and momentum_sig.direction == SignalDirection.LONG:
+                mom_entry = False
+                momentum_sig = create_no_trade_signal(
+                    "momentum", symbol, cur_price,
+                    f"Blocked by Macro Crash Defense ({macro_report.reason})",
                     indicators=momentum_sig.indicators,
                 )
 
@@ -373,7 +401,7 @@ class PortfolioCoordinator:
         # Determine current market regime
         macro_ema_val = merged_ind.get("macro_ema")
         adx_val = merged_ind.get("adx", 25.0)
-        if macro_ema_val is not None and cur_price < macro_ema_val:
+        if macro_ema_val is not None and not pd.isna(macro_ema_val) and cur_price < macro_ema_val:
             regime = "MACRO_BEAR"
         elif adx_val >= self.config.get("adx_trend_threshold", 25.0):
             regime = "TREND_EXPANSION"
@@ -451,6 +479,18 @@ class PortfolioCoordinator:
             if vol_ratio >= surge_mult or aligned_absorption:
                 vol_risk_mult = boost_factor
 
+        # Institutional Macro Radar: Polymarket Binary Event Odds + FRED VIX Regime
+        poly_risk = self.polymarket_radar.evaluate()
+        fred_report = self.fred_radar.evaluate()
+        macro_risk_mult = poly_risk.recommended_risk_multiplier * fred_report.risk_scale_factor
+
+        merged_ind["polymarket_risk"] = poly_risk.risk_level
+        merged_ind["recession_prob"] = poly_risk.recession_probability
+        merged_ind["vix_level"] = fred_report.vix_level
+        merged_ind["vix_regime"] = fred_report.regime
+
+        combined_risk_mult = vol_risk_mult * macro_risk_mult
+
         risk_verdict = self.risk_engine.validate_proposed_entry(
             symbol=symbol,
             side=chosen_sig.direction.value,
@@ -465,7 +505,7 @@ class PortfolioCoordinator:
             fee_pct=chosen_sig.estimated_fee_pct,
             requested_risk_pct=effective_risk_pct,
             current_time=last_ts,
-            risk_multiplier=vol_risk_mult,
+            risk_multiplier=combined_risk_mult,
         )
 
         if not risk_verdict.approved:
@@ -475,6 +515,36 @@ class PortfolioCoordinator:
                 strategy_id=chosen_sig.strategy_id,
                 price=cur_price,
                 reason=f"Risk check blocked: {risk_verdict.reason}",
+                signal=chosen_sig,
+                risk_verdict=risk_verdict,
+                indicators=merged_ind,
+            )
+
+        # Institutional Pre-Flight Execution Safety Guard
+        hourly_vol = float(df["volume"].iloc[-1]) if "volume" in df.columns and len(df) > 0 else None
+        quote_time = getattr(chosen_sig, "timestamp", last_ts)
+        order_notional = risk_verdict.suggested_units * cur_price
+
+        preflight = self.preflight_checker.check(
+            symbol=symbol,
+            side="BUY" if chosen_sig.direction == SignalDirection.LONG else "SELL",
+            price=cur_price,
+            bid=cur_price * 0.9997,
+            ask=cur_price * 1.0003,
+            last_quote_time=quote_time,
+            hourly_volume=hourly_vol,
+            proposed_units=risk_verdict.suggested_units,
+            available_cash=self.account.cash,
+            order_notional=order_notional,
+        )
+
+        if not preflight.passed:
+            return CoordinatorDecision(
+                symbol=symbol,
+                action="REJECTED",
+                strategy_id=chosen_sig.strategy_id,
+                price=cur_price,
+                reason=f"Blocked by Pre-Flight: {preflight.reason}",
                 signal=chosen_sig,
                 risk_verdict=risk_verdict,
                 indicators=merged_ind,
@@ -559,6 +629,19 @@ class PortfolioCoordinator:
             decision = self.process_symbol(symbol, df, current_prices)
             decision.indicators["rs_score"] = symbol_priority(symbol)
             decisions.append(decision)
+
+            # Persist decision into persistent audit journal
+            try:
+                log_decision(
+                    symbol=symbol,
+                    action=decision.action,
+                    strategy_id=decision.strategy_id,
+                    reason=decision.reason,
+                    reference_price=decision.price,
+                    indicators=decision.indicators,
+                )
+            except Exception:
+                pass
 
             if decision.action == "CONFLICT":
                 conflicts += 1

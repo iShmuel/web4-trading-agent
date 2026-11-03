@@ -10,8 +10,9 @@ This document details the architectural specifications, mathematical equations, 
 ╠═══════════════════════════════════╬═══════════════════════════════════╬═══════════════════════════════════════╣
 ║ • Multi-Sensor Data Ingestion     ║ • Van Tharp R-Risk Sizing (1%-5%) ║ • Half-Kelly Dynamic Growth           ║
 ║ • Microstructure Order Flow (CVD) ║ • Real-time Circuit Breakers (DD) ║ • Hierarchical Risk Parity (HRP)      ║
-║ • Derivatives Funding Radar       ║ • Macro Bear & Chop Gates         ║ • Statistical Arbitrage Pairs (Beta)  ║
-║ • Cognitive Signal Reconciliation ║ • Atomic State Persistence (.bak) ║ • Walk-Forward Out-of-Sample Arena    ║
+║ • Polymarket Leading Macro Radar  ║ • Macro Crash Defense & Chop Gate ║ • Statistical Arbitrage Pairs (Beta)  ║
+║ • FRED & VIX Stress Radar         ║ • Pre-Flight Execution Guards     ║ • Decision Journal & Alpha Settlement ║
+║ • Cognitive Signal Reconciliation ║ • Atomic State Persistence (.bak) ║ • Zero-Cost Local LLM Pre-Flight     ║
 ╚═══════════════════════════════════╩═══════════════════════════════════╩═══════════════════════════════════════╝
 ```
 
@@ -38,6 +39,12 @@ Level 1 represents the sensory nervous system and cognitive decision-making cort
   * 14-period ADX (Average Directional Index): Distinguishes directional expansion ($ADX \ge 25$) from stationary chop ($ADX < 20$).
 * **Order Flow & Liquidation Wicks** (`detect_liquidation_absorption`):
   * Identifies forced liquidation flushes where volume surges $\ge 2.0\times$ its 20-period moving average and lower/upper shadows cover $\ge 50\%$ of the total candle range.
+* **Polymarket Leading Macro Event Radar** (`core/polymarket_radar.py`):
+  * Queries Polymarket's public Gamma API (`https://gamma-api.polymarket.com/events`) with zero API keys and zero cost.
+  * Evaluates real-time crowd-priced probabilities for binary events (Fed rate cuts, surprise hikes, US recession odds). If recession probability $\ge 60\%$, scales risk by $0.50\times$.
+* **FRED & Market Volatility Radar** (`core/fred_radar.py`):
+  * Pulls live CBOE VIX (`^VIX`) and High-Yield OAS Credit Spreads (`BAMLH0A0HYM2`).
+  * Classifies regimes into `STABLE`, `VOLATILITY_EXPANSION` (VIX 22–30), and `CRASH_DEFENSE` (VIX $\ge 30$).
 * **Derivatives Funding Rate Radar** (`fetch_funding_rate`):
   * Queries 8-hour perpetual funding rates with a 1-hour in-memory TTL cache. Halts aggressive breakout longs if funding $> +0.05\%$ (`OVERHEATED_LONGS`).
 
@@ -61,18 +68,26 @@ $$\text{Position Units} = \frac{\text{Account Equity} \times \text{Risk Percenta
 * **Stop-Loss Guarantee**: Dynamic ATR-based stop loss is calculated before trade submission:
   $$\text{Initial Stop} = \text{Entry Price} \pm (\text{ATR} \times 2.25)$$
 
-### 2. Autonomous Regime Gating & Chop Defense (`core/coordinator.py`)
+### 2. Autonomous Regime Gating & Crash Defense (`core/coordinator.py`)
 * **Macro Bear Gate**: If an asset is below its 200 EMA, Long breakout entries are blocked. This preserved 95.8% of user capital during the 2025–2026 crypto bear crash.
+* **Macro Crash Defense Gate**: If VIX $\ge 30.0$ or high-yield credit spreads blow out ($\ge 500$ bps), all long breakouts are blocked and risk scales down to 1.0% floor.
 * **Chop-Zone Risk Throttling**: When $ADX < 20.0$, the coordinator cuts risk in half (from 2.0% down to 1.0%), suppressing false-breakout whipsaw costs.
+* **Crash Contagion Cooldown**: If a crypto stop-loss hits during an impulsive dump, new crypto entries pause for 3 hours.
 * **Strict Bear-Market Shorting**: When market conditions are in macro bear territory, the engine enters short only on exhausted rallies (`RSI > 75.0` at the Upper Bollinger Band).
 
-### 3. Emergency Circuit Breakers / Kill Switches (`core/risk_engine.py`)
+### 3. Institutional Pre-Flight Execution Safety Guards (`core/preflight.py`)
+* **Spread Guard**: Rejects orders if $(Ask - Bid) / Mid > 0.15\%$ (`PREFLIGHT_SPREAD_TOO_WIDE`), protecting against off-hours illiquidity slippage.
+* **Tick Staleness Guard**: Blocks orders if quotes are delayed $> 180$ seconds (`PREFLIGHT_PRICE_STALE`).
+* **Volume Participation Depth Guard**: Caps order size to $\le 2.0\%$ of the hourly volume to avoid market impact (`PREFLIGHT_EXCEEDS_LIQUIDITY_DEPTH`).
+* **Cash Buffer & Min Notional**: Enforces exchange minimum notional ($\ge \$10.00$) and confirms cash availability before routing.
+
+### 4. Emergency Circuit Breakers / Kill Switches (`core/risk_engine.py`)
 * **Daily Loss Circuit Breaker**: If equity drops by $\ge 5.0\%$ from the start-of-day equity, the kill switch triggers, halting all trading until the next calendar day.
 * **Max Drawdown Circuit Breaker**: If equity drops by $\ge 15.0\%$ from the high-watermark peak, all entries are halted, locking portfolio capital in safe cash.
 
-### 4. Atomic State Persistence & Immunity (`core/paper_account.py`)
+### 5. Atomic State Persistence & Immunity (`core/paper_account.py`)
 * **Zero Corruption Guarantee**: The account state (`data/paper_portfolio.json`) writes to a `.tmp` file, calls OS `fsync()`, and atomically renames the file with an active `.bak` fallback.
-* **Process Concurrency Lock** (`core/process_lock.py`): Enforces `/tmp/paper_trader.pid` lockfiles to eliminate dual-process race conditions.
+* **Process Concurrency Lock** (`core/process_lock.py`): Enforces `data/live_trader.lock` lockfiles to eliminate dual-process race conditions.
 
 ---
 
@@ -80,27 +95,35 @@ $$\text{Position Units} = \frac{\text{Account Equity} \times \text{Risk Percenta
 
 Level 3 allows the agent to self-calibrate, adapt to market volatility, and capture non-correlated alpha.
 
-### 1. Dynamic Half-Kelly Compounding (`core/risk_engine.py`)
+### 1. Decision Journal & Benchmark Alpha Settlement (`core/journal.py`)
+* Records every trade proposal, entry, exit, and blocked gate decision into `data/decision_journal.jsonl`.
+* Once 24 hours of market trading elapses, automatically settles past decisions against raw return and benchmark alpha (BTC for crypto, SPY for stocks), computing empirical hit rates and alpha protection scores across all gates.
+
+### 2. Zero-Cost Local LLM Pre-Flight Sanity Engine (`core/preflight.py`)
+* Connects to local Ollama instance (`http://localhost:11434`) running lightweight reasoning models (e.g. `phi4-mini:latest` or `qwen3.5:4b`) directly on the local GPU.
+* Operates out-of-band: Triggers strictly on proposed entry orders (taking ~0.70s with zero API costs) to detect breaking news, regulatory halts, or earnings blackouts without slowing the 60s math loop.
+
+### 3. Dynamic Half-Kelly Compounding (`core/risk_engine.py`)
 Sizing scales dynamically based on rolling empirical win rate ($W$) and payoff ratio ($R$):
 
 $$f^* = \frac{W(R + 1) - 1}{R}, \quad \text{Half-Kelly} = 0.5 \times f^*$$
 
 * Blends $0.5 \times \text{Base Risk} + 0.5 \times \text{Half-Kelly}$, clamped strictly within $[1\%, 5\%]$.
 
-### 2. Hierarchical Risk Parity (HRP) Sector Clustering (`core/risk_engine.py`)
+### 4. Hierarchical Risk Parity (HRP) Sector Clustering (`core/risk_engine.py`)
 * Calculates the rolling 30-day covariance matrix and correlation distance tree across all assets.
 * When correlation between crypto assets spikes ($\rho > 0.85$), HRP treats them as a single risk cluster and scales down exposure, while allocating risk to independent equities (`AMD`, `SPY`).
 
-### 3. Market-Neutral Statistical Arbitrage (`strategies/stat_arb_pairs.py`)
+### 5. Market-Neutral Statistical Arbitrage (`strategies/stat_arb_pairs.py`)
 * Tracks cointegrated pairs (`SOL` vs `AVAX`, `NVDA` vs `AMD`, `ETH` vs `BTC`).
 * Computes rolling hedge ratio ($\beta = \text{Cov}(A,B) / \text{Var}(B)$) and spread Z-Score ($Z$).
 * Enters long the undervalued asset and short the overvalued asset when $|Z| \ge 2.0$, and exits upon mean-reversion ($|Z| \le 0.5$), delivering zero-beta market-neutral returns.
 
-### 4. Smart Order Routing / Execution Alpha (`core/coordinator.py`)
+### 6. Smart Order Routing / Execution Alpha (`core/coordinator.py`)
 * Supports `execution_mode: maker` post-only limit orders.
 * Eliminates slippage ($0.00\%$) and drops fees from $0.06\%$ to $0.02\%$, delivering a proven $+4.50\%$ pure alpha gain directly into net profit.
 
-### 5. Automated Walk-Forward Optimization Arena (`agent/optimizer.py`)
+### 7. Automated Walk-Forward Optimization Arena (`agent/optimizer.py`)
 * Periodically audits performance and backtests mutations across lookbacks, EMA trend filters, and ATR multipliers.
 * Validates candidates against out-of-sample data with full fees and slippage; automatically rejects overfitted parameter sets.
 

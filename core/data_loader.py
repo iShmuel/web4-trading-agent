@@ -28,6 +28,48 @@ def is_crypto_symbol(symbol: str) -> bool:
     return ("/" in sym) or sym.endswith("USDT") or ("-" in sym and sym.endswith("USD"))
 
 
+def parse_timeframe_to_timedelta(timeframe: str) -> timedelta:
+    """Parse timeframe string (e.g. '15m', '1h', '4h', '1d') into a timedelta."""
+    tf = timeframe.strip().lower()
+    if tf.endswith("m"):
+        return timedelta(minutes=int(tf[:-1]))
+    elif tf.endswith("h"):
+        return timedelta(hours=int(tf[:-1]))
+    elif tf.endswith("d"):
+        return timedelta(days=int(tf[:-1]))
+    elif tf.endswith("w"):
+        return timedelta(weeks=int(tf[:-1]))
+    return timedelta(hours=1)
+
+
+def filter_closed_bars(
+    df: Optional[pd.DataFrame],
+    timeframe: str = "1h",
+    as_of: Optional[datetime] = None,
+) -> pd.DataFrame:
+    """Drop incomplete, actively trading (unsettled) bars.
+
+    A candle opening at T spans [T, T + timeframe). It is closed only when
+    current time >= T + timeframe. Computing indicators and signals strictly on
+    closed bars prevents repainting, false breakouts, and distorted volume metrics.
+    """
+    if df is None or df.empty:
+        return df
+
+    tf_delta = parse_timeframe_to_timedelta(timeframe)
+    ref_time = as_of if as_of is not None else datetime.now(timezone.utc)
+
+    # Ensure tz-aware index comparison
+    idx = df.index
+    if not hasattr(idx, "tz") or idx.tz is None:
+        idx = idx.tz_localize(timezone.utc)
+        df = df.copy()
+        df.index = idx
+
+    mask = (df.index + tf_delta) <= ref_time
+    return df[mask]
+
+
 def check_data_quality(
     df: Optional[pd.DataFrame],
     max_stale_minutes: int = 120,
@@ -181,19 +223,45 @@ def fetch_ohlcv(
     timeframe: str = "1h",
     days: int = 180,
     force_refresh: bool = False,
+    max_cache_age_hours: Optional[float] = None,
+    closed_only: bool = True,
 ) -> pd.DataFrame:
     """
-    Unified entry point for both Crypto and Stocks/ETFs with local CSV caching.
+    Unified entry point for both Crypto and Stocks/ETFs with local CSV caching,
+    automatic cache staleness invalidation, and closed-candle filtering.
     """
     clean_symbol = symbol.replace("/", "_")
     source_prefix = "crypto" if is_crypto_symbol(symbol) else "stock"
     cache_path = get_data_dir() / f"{source_prefix}_{clean_symbol}_{timeframe}_{days}d.csv"
+    tf_delta = parse_timeframe_to_timedelta(timeframe)
 
     if cache_path.exists() and not force_refresh:
-        df = pd.read_csv(cache_path, parse_dates=["timestamp"])
-        df.set_index("timestamp", inplace=True)
-        print(f"[DataLoader] Loaded {len(df)} candles from local cache: {cache_path.name}")
-        return df
+        try:
+            df = pd.read_csv(cache_path, parse_dates=["timestamp"])
+            df.set_index("timestamp", inplace=True)
+            if not df.empty:
+                # Check cache freshness against current time
+                last_ts = df.index[-1]
+                if not hasattr(last_ts, "tzinfo") or last_ts.tzinfo is None:
+                    last_ts = last_ts.tz_localize(timezone.utc)
+                now_utc = datetime.now(timezone.utc)
+                age_seconds = (now_utc - last_ts).total_seconds()
+
+                # Default max cache age: 2 * candle duration, minimum 1 hour
+                allowed_age = (
+                    max_cache_age_hours * 3600.0
+                    if max_cache_age_hours is not None
+                    else max(3600.0, tf_delta.total_seconds() * 2)
+                )
+                if age_seconds <= allowed_age:
+                    print(f"[DataLoader] Loaded {len(df)} candles from fresh local cache: {cache_path.name}")
+                    return filter_closed_bars(df, timeframe) if closed_only else df
+                else:
+                    print(
+                        f"[DataLoader] Cache {cache_path.name} is stale (last bar age: {age_seconds / 3600.0:.1f}h > {allowed_age / 3600.0:.1f}h limit). Refreshing..."
+                    )
+        except Exception as e:
+            print(f"[DataLoader] Warning reading cache {cache_path.name}: {e}. Refreshing...")
 
     if is_crypto_symbol(symbol):
         df = fetch_crypto_ohlcv(symbol=symbol, timeframe=timeframe, days=days)
@@ -203,7 +271,7 @@ def fetch_ohlcv(
     # Save to local CSV cache
     df.to_csv(cache_path)
     print(f"[DataLoader] Saved {len(df)} candles to local cache: {cache_path.name}")
-    return df
+    return filter_closed_bars(df, timeframe) if closed_only else df
 
 
 if __name__ == "__main__":

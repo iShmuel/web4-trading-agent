@@ -55,7 +55,7 @@ class MeanReversionStrategy:
         self.fee_pct = config.get("fee_pct", 0.0006)
         self.slippage_pct = config.get("slippage_pct", 0.0004)
         self.min_bb_width = config.get("min_bb_width", 0.005)  # minimum band width
-        self.max_stale_minutes = config.get("max_stale_minutes", 120)
+        self.max_stale_minutes = config.get("max_stale_minutes", 180)
         self.scale_out_enabled = config.get("mr_scale_out_enabled", True)
         self.scale_out_ratio = config.get("mr_scale_out_ratio", 0.5)
         self.enable_liquidity_sweep = config.get("enable_liquidity_sweep", True)
