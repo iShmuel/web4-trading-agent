@@ -22,7 +22,7 @@ from core.strategy import (
 )
 from strategies.momentum import MomentumStrategy
 from strategies.mean_reversion import MeanReversionStrategy
-from core.journal import log_decision
+from core.journal import log_decision, get_gate_alpha_feedback
 from core.polymarket_radar import PolymarketRadar, MacroEventRisk
 from core.fred_radar import FredMacroRadar, MacroRegimeReport
 from core.basis_yield import BasisYieldEngine, BasisOpportunity
@@ -447,16 +447,19 @@ class PortfolioCoordinator:
         merged_ind["confluence"] = conf_desc
         merged_ind["confluence_score"] = conf_score
 
-        # Upgrade 2: Multi-Timeframe Trend Anchor Gate
+        # Upgrade 2: Multi-Timeframe Trend Anchor Gate with Closed-Loop Web4 Feedback
         if self.config.get("enable_confluence_gate", False) and chosen_sig.strategy_id == "momentum":
-            min_score = float(self.config.get("min_confluence_score", 0.70))
+            base_score = float(self.config.get("min_confluence_score", 0.70))
+            feedback = get_gate_alpha_feedback()
+            delta = feedback.get("recommended_confluence_delta", 0.0)
+            min_score = max(0.60, min(0.85, base_score + delta))
             if conf_score < min_score:
                 return CoordinatorDecision(
                     symbol=symbol,
                     action="REJECTED",
                     strategy_id=chosen_sig.strategy_id,
                     price=cur_price,
-                    reason=f"Blocked by Multi-Timeframe Trend Anchor (Score {conf_score:.2f} < {min_score:.2f}: {conf_desc})",
+                    reason=f"Blocked by Multi-Timeframe Trend Anchor (Score {conf_score:.2f} < {min_score:.2f} [base {base_score:.2f}{delta:+.2f}]: {conf_desc})",
                     signal=chosen_sig,
                     indicators=merged_ind,
                 )

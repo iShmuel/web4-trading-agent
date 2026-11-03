@@ -102,6 +102,8 @@ Level 3 allows the agent to self-calibrate, adapt to market volatility, and capt
 ### 1. Decision Journal & Benchmark Alpha Settlement (`core/journal.py`)
 * Records every trade proposal, entry, exit, and blocked gate decision into `data/decision_journal.jsonl`.
 * Once 24 hours of market trading elapses, automatically settles past decisions against raw return and benchmark alpha (BTC for crypto, SPY for stocks), computing empirical hit rates and alpha protection scores across all gates.
+* **Closed-Loop Feedback Circuit** (`get_gate_alpha_feedback`): Analyzes settled gate efficacy to dynamically adjust runtime confluence thresholds (`min_confluence_score`), automatically tightening filters when market conditions produce false breakouts.
+* **Autonomous LLM Post-Mortem Reflection** (`generate_llm_reflection`): Local `phi4-mini` GPU LLM generates concise 2-sentence institutional post-mortems on settled trades, building an evolving memory log.
 
 ### 2. Zero-Cost Local LLM Pre-Flight Sanity Engine (`core/preflight.py`)
 * Connects to local Ollama instance (`http://localhost:11434`) running lightweight reasoning models (e.g. `phi4-mini:latest` or `qwen3.5:4b`) directly on the local GPU.
@@ -127,9 +129,11 @@ $$f^* = \frac{W(R + 1) - 1}{R}, \quad \text{Half-Kelly} = 0.5 \times f^*$$
 * Supports `execution_mode: maker` post-only limit orders.
 * Eliminates slippage ($0.00\%$) and drops fees from $0.06\%$ to $0.02\%$, delivering a proven $+4.50\%$ pure alpha gain directly into net profit.
 
-### 7. Automated Walk-Forward Optimization Arena (`agent/optimizer.py`)
-* Periodically audits performance and backtests mutations across lookbacks, EMA trend filters, and ATR multipliers.
-* Validates candidates against out-of-sample data with full fees and slippage; automatically rejects overfitted parameter sets.
+### 7. Automated Multi-Profile Walk-Forward Optimization Arena (`agent/optimizer.py`)
+* Periodically executes (every 6 hours) out-of-sample tournaments across asset profiles (`crypto_micro_swing`, `stocks_growth`, `macro_hedges`).
+* Mutates lookbacks (16–32), EMA trend filters (50–200), and ATR multipliers (2.0–3.0) on 70% In-Sample training data.
+* Strictly validates top candidates on unseen 30% Out-of-Sample testing data; enforces maximum drawdown limits ($<14\%$) to prevent curve-fitting.
+* Runs the full automated regression test suite (`pytest`); upon green verification, automatically executes `git commit` and `git push` to deploy parameter patches without human intervention.
 
 ---
 

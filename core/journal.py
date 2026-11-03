@@ -315,3 +315,50 @@ def generate_journal_report(journal_path: Optional[Path] = None) -> str:
 
     lines.append("=" * 70)
     return "\n".join(lines)
+
+
+def get_gate_alpha_feedback(
+    journal_path: Optional[Path] = None,
+    lookback_entries: int = 50,
+) -> Dict[str, Any]:
+    """Analyze settled decisions to provide closed-loop alpha feedback.
+    
+    Evaluates empirical effectiveness of gate blocks and entries:
+    - If macro bear gate & confluence blocks averted losses (effective_call == True),
+      it indicates high-risk market chop where tightening confluence is prudent.
+    - Returns a recommended delta to min_confluence_score (between -0.05 and +0.05).
+    """
+    entries = load_journal_entries(journal_path)
+    settled = [e for e in entries if e.get("settled", False)]
+    if not settled:
+        return {
+            "has_feedback": False,
+            "sample_size": 0,
+            "recommended_confluence_delta": 0.0,
+            "mean_alpha": 0.0,
+        }
+
+    recent = settled[-lookback_entries:]
+    alphas = [e.get("alpha_pct", 0.0) for e in recent if e.get("alpha_pct") is not None]
+    mean_alpha = float(np.mean(alphas)) if alphas else 0.0
+
+    blocked = [e for e in recent if "Blocked" in e.get("reason", "") or e.get("action") == "REJECTED"]
+    eff_blocks = [e for e in blocked if e.get("effective_call") is True]
+    eff_ratio = (len(eff_blocks) / len(blocked)) if blocked else 0.5
+
+    rec_delta = 0.0
+    if len(blocked) >= 5:
+        if eff_ratio >= 0.70:
+            rec_delta = +0.03
+        elif eff_ratio <= 0.35:
+            rec_delta = -0.02
+
+    return {
+        "has_feedback": True,
+        "sample_size": len(recent),
+        "blocked_count": len(blocked),
+        "block_efficacy_ratio": round(eff_ratio, 3),
+        "mean_alpha": round(mean_alpha, 3),
+        "recommended_confluence_delta": rec_delta,
+    }
+

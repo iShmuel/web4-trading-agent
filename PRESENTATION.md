@@ -799,7 +799,34 @@ The desk runs 24/7 with zero cloud dependency and zero token API costs:
 
 ---
 
-## 14. The Capital Scaling Roadmap to $3,000 / Month
+## 14. Web4 Autonomous Self-Improvement & Meta-Learning
+
+The desk does not remain static; it executes a **continuous self-calibration and learning loop**:
+
+<div class="grid-2">
+  <div class="card">
+    <h4>🔄 1. Walk-Forward Parameter Arena (`optimizer.py`)</h4>
+    <p>• <b>In-Sample / Out-of-Sample Split</b>: 70% discovery vs. 30% unseen testing data.<br/>
+    • <b>Anti-Overfitting Filter</b>: Rejects mutations unless Sharpe improves on BOTH sets with Max DD $<14\%$.<br/>
+    • <b>Multi-Profile Tuning</b>: Calibrates Crypto Micro, Tech Growth, and Macro Hedges independently.<br/>
+    • <b>Zero Human Intervention</b>: Runs regression tests, executes <code>git commit</code>, and pushes live.</p>
+  </div>
+  <div class="card">
+    <h4>🧠 2. Closed-Loop Journal & AI Reflection</h4>
+    <p>• <b>Benchmark Alpha Settlement</b>: Evaluates whether trades & gates beat BTC / SPY over 24h.<br/>
+    • <b>Dynamic Confluence Feedback</b>: Tightens gate ($\Delta +0.03$) if false breakouts spike.<br/>
+    • <b>Local GPU LLM Reflections</b>: Local <code>phi4-mini</code> logs institutional post-mortems for every trade.<br/>
+    • <b>Half-Kelly Dynamic Growth</b>: Automatically scales position sizing with rolling win rate.</p>
+  </div>
+</div>
+
+<div class="takeaway">
+  🌐 <b>The Web4 Concept</b>: <i>"An autonomous machine agent that perceives, executes, settles, learns from its own decisions, and evolves its logic—completely free of human emotional error."</i>
+</div>
+
+---
+
+## 15. The Capital Scaling Roadmap to $3,000 / Month
 
 To generate a consistent **$3,000/month living income**, capital scales through 3 phases:
 
@@ -844,7 +871,7 @@ To generate a consistent **$3,000/month living income**, capital scales through 
 
 ---
 
-## 15. System Invariants & Institutional Commitments
+## 16. System Invariants & Institutional Commitments
 
 Every autonomous agent in this codebase is bound by **5 non-negotiable invariant rules**:
 
