@@ -21,6 +21,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from core.data_loader import fetch_ohlcv, get_data_dir
 from core.backtest_engine import run_backtest, run_mean_reversion_backtest, BacktestResult
+from core.coordinator import resolve_symbol_config
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_FILE = PROJECT_ROOT / "data" / "profitability_research.json"
@@ -97,21 +98,32 @@ def run_comparative_research(
     timeframe: str = "1h",
     days: int = 180,
 ) -> Dict[str, Any]:
+    config_path = PROJECT_ROOT / "config" / "active_config.json"
+    active_config = {}
+    if config_path.exists():
+        with open(config_path) as f:
+            active_config = json.load(f)
+
     if symbols is None:
-        symbols = ["BTC/USDT", "ETH/USDT", "SOL/USDT", "NVDA", "SPY"]
+        symbols = [
+            "BTC/USDT", "ETH/USDT", "SOL/USDT",
+            "NVDA", "AMD", "AAPL",
+            "SPY", "QQQ", "GLD", "TLT"
+        ]
 
     print("=" * 80)
     print("      PROFITABILITY RESEARCH: INDEPENDENT STRATEGY BASELINE EVALUATION")
     print("=" * 80)
     print(f"Watchlist:      {', '.join(symbols)}")
     print(f"Timeframe:      {timeframe} | History: ~{days} days")
-    print(f"Fee Model:      0.06% exchange fee + 0.04% slippage (round-trip 0.20%)")
+    print(f"Fee Model:      0.06% exchange fee + 0.04% slippage (round-trip 0.20%) | Fill Mode: next_open")
     print("-" * 80)
 
     full_results: Dict[str, Any] = {}
 
     for sym in symbols:
         try:
+            sym_cfg = resolve_symbol_config(active_config, sym) if active_config else {}
             df = fetch_ohlcv(symbol=sym, timeframe=timeframe, days=days)
         except Exception as e:
             print(f"⚠️ Skipping {sym}: failed to load ({e})")
@@ -122,20 +134,21 @@ def run_comparative_research(
         # 1. Buy and Hold
         bh = evaluate_buy_and_hold(df)
 
-        # 2. Momentum Strategy
+        # 2. Momentum Strategy (with per-asset profile parameters)
         mom_res = run_backtest(
             df=df,
             initial_capital=10000.0,
-            account_risk_pct=0.02,
-            breakout_lookback=24,
-            ema_trend_filter=50 if "/" in sym else 100,
-            atr_period=14,
-            atr_multiplier=3.0 if "/" in sym else 2.5,
-            take_profit_atr_mult=2.0,
-            take_profit_ratio=0.5,
-            allow_short=True,
-            fee_pct=0.0006,
-            slippage_pct=0.0004,
+            account_risk_pct=sym_cfg.get("account_risk_pct", 0.02),
+            breakout_lookback=sym_cfg.get("breakout_lookback", 24),
+            ema_trend_filter=sym_cfg.get("ema_trend_filter", 50 if "/" in sym else 100),
+            atr_period=sym_cfg.get("atr_period", 14),
+            atr_multiplier=sym_cfg.get("atr_multiplier", 2.5),
+            take_profit_atr_mult=sym_cfg.get("take_profit_atr_mult", 2.5),
+            take_profit_ratio=sym_cfg.get("take_profit_ratio", 0.5),
+            allow_short=sym_cfg.get("allow_short", False),
+            fee_pct=sym_cfg.get("fee_pct", 0.0006),
+            slippage_pct=sym_cfg.get("slippage_pct", 0.0004),
+            fill_mode="next_open",
         )
         mom_metrics = analyze_trades(mom_res)
 
@@ -157,6 +170,7 @@ def run_comparative_research(
             allow_short=False,
             fee_pct=0.0006,
             slippage_pct=0.0004,
+            fill_mode="next_open",
         )
         mr_metrics = analyze_trades(mr_res)
 

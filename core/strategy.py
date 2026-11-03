@@ -180,11 +180,13 @@ def compute_mean_reversion_indicators(
 
 def calculate_multi_timeframe_confluence(
     df: pd.DataFrame,
+    direction: str = "LONG",
     breakout_high_col: str = "breakout_high",
+    breakdown_low_col: str = "breakdown_low",
     fast_ema_col: str = "ema_filter",
     macro_ema_col: str = "macro_ema",
 ) -> Tuple[bool, float, str]:
-    """Evaluate multi-timeframe alignment across macro, intermediate, and micro channels.
+    """Evaluate multi-timeframe alignment across macro (4h/1D equivalent), intermediate (1h), and micro channels.
 
     Returns:
         (has_confluence, confidence_score, description)
@@ -197,19 +199,21 @@ def calculate_multi_timeframe_confluence(
     macro_ema = float(latest.get(macro_ema_col, price))
     fast_ema = float(latest.get(fast_ema_col, price))
     breakout_high = float(latest.get(breakout_high_col, price))
+    breakdown_low = float(latest.get(breakdown_low_col, 0.0))
 
-    macro_bull = price > macro_ema
-    inter_bull = price > fast_ema
-    breakout_active = price > breakout_high
+    is_long = (str(direction).upper() == "LONG")
+    macro_aligned = (price > macro_ema) if is_long else (price < macro_ema)
+    inter_aligned = (price > fast_ema) if is_long else (price < fast_ema)
+    breakout_aligned = (price > breakout_high) if is_long else (price < breakdown_low if breakdown_low > 0 else True)
 
-    if macro_bull and inter_bull and breakout_active:
-        return True, 0.95, "Triple Confluence: Macro(4h)+Inter(1h)+Breakout Aligned"
-    elif inter_bull and breakout_active:
-        return True, 0.75, "Dual Confluence: 1h Trend + Breakout Aligned"
-    elif macro_bull and inter_bull:
-        return False, 0.60, "Trend Bullish, Waiting for Breakout"
+    if macro_aligned and inter_aligned and breakout_aligned:
+        return True, 0.95, f"Triple Confluence: Macro(4h)+Inter(1h)+Breakout Aligned ({direction})"
+    elif inter_aligned and breakout_aligned:
+        return True, 0.75, f"Dual Confluence: 1h Trend + Breakout Aligned ({direction})"
+    elif macro_aligned and inter_aligned:
+        return False, 0.60, f"Trend Aligned, Waiting for Breakout ({direction})"
     else:
-        return False, 0.30, "No Confluence / Counter-Trend"
+        return False, 0.30, f"No Confluence / Counter-Trend ({direction})"
 
 
 def calculate_relative_strength(

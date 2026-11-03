@@ -25,6 +25,7 @@ from strategies.mean_reversion import MeanReversionStrategy
 from core.journal import log_decision
 from core.polymarket_radar import PolymarketRadar, MacroEventRisk
 from core.fred_radar import FredMacroRadar, MacroRegimeReport
+from core.basis_yield import BasisYieldEngine, BasisOpportunity
 from core.preflight import (
     PreFlightChecker,
     PreFlightVerdict,
@@ -121,6 +122,10 @@ class PortfolioCoordinator:
         self.llm_screener = LocalLLMScreener(
             model=config.get("local_llm_model", "phi4-mini:latest"),
             enabled=config.get("enable_local_llm_preflight", False),
+        )
+        self.basis_yield_engine = BasisYieldEngine(
+            hurdle_apr=float(config.get("basis_hurdle_apr", 8.0)),
+            max_portfolio_allocation_pct=float(config.get("max_basis_allocation_pct", 0.30)),
         )
 
     def symbol_config(self, symbol: str) -> Dict[str, Any]:
@@ -433,6 +438,29 @@ class PortfolioCoordinator:
                 indicators=merged_ind,
             )
 
+        # Multi-timeframe confluence evaluation for chosen trade direction
+        chosen_dir_str = chosen_sig.direction.value if chosen_sig is not None else "LONG"
+        has_confluence, conf_score, conf_desc = calculate_multi_timeframe_confluence(
+            df,
+            direction=chosen_dir_str,
+        )
+        merged_ind["confluence"] = conf_desc
+        merged_ind["confluence_score"] = conf_score
+
+        # Upgrade 2: Multi-Timeframe Trend Anchor Gate
+        if self.config.get("enable_confluence_gate", False) and chosen_sig.strategy_id == "momentum":
+            min_score = float(self.config.get("min_confluence_score", 0.70))
+            if conf_score < min_score:
+                return CoordinatorDecision(
+                    symbol=symbol,
+                    action="REJECTED",
+                    strategy_id=chosen_sig.strategy_id,
+                    price=cur_price,
+                    reason=f"Blocked by Multi-Timeframe Trend Anchor (Score {conf_score:.2f} < {min_score:.2f}: {conf_desc})",
+                    signal=chosen_sig,
+                    indicators=merged_ind,
+                )
+
         # Fix #3: Sector Crash Contagion Cooldown (Block same-bar / immediate contagion entries after a crypto stop-loss)
         if is_crypto_symbol(symbol) and self.config.get("enable_crash_cooldown", True):
             cooldown_hours = float(self.config.get("crypto_crash_cooldown_hours", 3.0))
@@ -475,6 +503,18 @@ class PortfolioCoordinator:
             effective_risk_pct = max(0.01, base_risk_pct * 0.50)
         else:
             effective_risk_pct = base_risk_pct
+
+        # Upgrade 5: Dynamic Volatility Targeting (Risk Parity)
+        if self.config.get("enable_volatility_targeting", False):
+            ref_atr_pct = float(self.config.get("target_atr_pct", 0.025))  # 2.5% baseline reference ATR
+            actual_atr = chosen_sig.atr if (chosen_sig and chosen_sig.atr > 0) else (cur_price * 0.02)
+            actual_atr_pct = (actual_atr / cur_price) if cur_price > 0 else ref_atr_pct
+            vol_scale = ref_atr_pct / max(0.005, actual_atr_pct)
+            vol_scale = max(0.60, min(1.40, vol_scale))
+            fred_report = self.fred_radar.evaluate()
+            if fred_report.vix_level > 25.0:
+                vol_scale *= 0.80
+            effective_risk_pct = max(0.01, min(0.05, effective_risk_pct * vol_scale))
 
         # Surge-Volume Conviction Boost: Scale risk by 1.2x on >=1.5x volume surge or aligned absorption wick (clamped <= 5%)
         vol_risk_mult = 1.0
