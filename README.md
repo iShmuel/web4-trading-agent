@@ -1,6 +1,6 @@
 # Web4 Autonomous Quantitative Trading Desk
 
-[![Tests: 80/80 Passing](https://img.shields.io/badge/pytest-80%2F80%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
+[![Tests: 83/83 Passing](https://img.shields.io/badge/pytest-83%2F83%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
 [![Execution Mode](https://img.shields.io/badge/execution-strictly%20simulated%20paper-38bdf8?style=for-the-badge)](core/paper_account.py)
 [![Asset Universe](https://img.shields.io/badge/universe-21%20multi--sector%20assets-8b5cf6?style=for-the-badge)](config/active_config.json)
 [![Local LLM](https://img.shields.io/badge/local%20gpu%20llm-phi4--mini%20(0.70s)-f59e0b?style=for-the-badge)](core/preflight.py)
@@ -84,7 +84,7 @@ The desk operates in an autonomous 60-second real-time loop orchestrated across 
 5. **Coordinator Arbiter Agent (`core/coordinator.py`)**: Central authority reconciling signals, resolving thesis conflicts, enforcing the 200 EMA Macro Gate, and managing sector exposure.
 6. **Risk Governor Agent (`core/risk_engine.py`)**: Fixed-fractional volatility sizing strictly clamped to $[1\%, 5\%]$ account equity, with automated daily and drawdown circuit breakers.
 7. **Execution & Ledger Agent (`core/paper_account.py`)**: Smart Maker limit routing ($0.02\%$ fees, $0.00\%$ slippage), kernel-level PID lockfiles, and zero-corruption atomic `.bak` state persistence.
-8. **Meta-Optimizer Agent (`core/optimizer.py`)**: Offline walk-forward optimization arena auditing parameter stability over rolling historical windows without loosening risk bounds.
+8. **Local GPU Devil's Advocate Agent (`core/preflight.py`)**: Sub-second qualitative news screener running local `phi4-mini` via Ollama on GPU VRAM (0.70s) to veto proposed entries on black-swan headlines (SEC lawsuits, hacks, exploits). Supported by the offline **Meta-Optimizer Agent (`agent/optimizer.py`)** for walk-forward parameter arena tuning.
 
 ---
 
@@ -150,7 +150,7 @@ pip install -r requirements.txt
 
 ### 2. Run Test Suite
 ```bash
-# Run all 80 unit tests
+# Run all 83 unit tests
 .venv/bin/pytest -v
 ```
 

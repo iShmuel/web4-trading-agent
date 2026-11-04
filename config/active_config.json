@@ -22,7 +22,6 @@
     "TLT",
     "XLE"
   ],
-  "symbol": "BTC/USDT",
   "timeframe": "1h",
   "max_concurrent_positions": 5,
   "max_crypto_positions": 2,
