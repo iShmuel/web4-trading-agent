@@ -170,3 +170,19 @@ def test_mean_reversion_bullish_liquidity_sweep_reclaim():
     assert sig.direction == SignalDirection.LONG
     assert sig.indicators.get("liquidity_sweep") == "BULLISH_SWEEP_RECLAIM"
 
+
+def test_run_mean_reversion_backtest_next_open_modes():
+    """Verify run_mean_reversion_backtest executes cleanly with next_open fill mode and allow_long toggle."""
+    from core.backtest_engine import run_mean_reversion_backtest
+
+    df = create_range_ohlcv(bars=120, amplitude=10.0)
+
+    # Test with allow_long=True and next_open
+    res_long = run_mean_reversion_backtest(df, fill_mode="next_open", allow_long=True)
+    assert res_long.initial_capital == 10000.0
+
+    # Test with allow_long=False and allow_short=True
+    res_short = run_mean_reversion_backtest(df, fill_mode="next_open", allow_long=False, allow_short=True)
+    assert res_short.initial_capital == 10000.0
+
+

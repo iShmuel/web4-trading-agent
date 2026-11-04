@@ -425,6 +425,7 @@ def run_mean_reversion_backtest(
     max_hold_bars: int = 48,
     scale_out_ratio: float = 0.5,
     allow_short: bool = False,
+    allow_long: bool = True,
     fee_pct: float = 0.0006,
     slippage_pct: float = 0.0004,
     fill_mode: str = "close",
@@ -533,7 +534,7 @@ def run_mean_reversion_backtest(
             # Check range-bound regime
             if adx <= adx_threshold:
                 # Long entry: oversold bounce setup
-                if close <= bb_lower and rsi < rsi_oversold:
+                if allow_long and close <= bb_lower and rsi < rsi_oversold:
                     if fill_mode == "next_open":
                         pending_signal = ("LONG", atr)
                     else:
