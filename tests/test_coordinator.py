@@ -300,8 +300,26 @@ def test_coordinator_crypto_crash_contagion_cooldown(tmp_path):
     assert account.get_position("SOL/USDT") is None
 
 
-def test_coordinator_surge_volume_conviction_boost(tmp_path):
+def test_coordinator_surge_volume_conviction_boost(tmp_path, monkeypatch):
     """Verify >= 1.5x volume surge boosts position sizing by 1.2x while respecting [1%, 5%] risk bounds."""
+    from core.polymarket_radar import MacroEventRisk
+    from core.fred_radar import MacroRegimeReport
+
+    monkeypatch.setattr(
+        "core.coordinator.PolymarketRadar.evaluate",
+        lambda self, force_refresh=False: MacroEventRisk(risk_level="LOW", recommended_risk_multiplier=1.0),
+    )
+    monkeypatch.setattr(
+        "core.coordinator.FredMacroRadar.evaluate",
+        lambda self, force_refresh=False: MacroRegimeReport(
+            regime="STABLE",
+            vix_level=15.0,
+            risk_scale_factor=1.0,
+            allow_long_breakouts=True,
+            reason="Stable",
+        ),
+    )
+
     now = datetime.now(timezone.utc)
     entry_sig = TradingSignal(
         strategy_id="momentum",
