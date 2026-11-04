@@ -79,8 +79,8 @@
   "slippage_pct": 0.0004,
   "execution_mode": "maker",
   "maker_fee_pct": 0.0002,
-  "breakout_lookback": 20,
-  "ema_trend_filter": 32,
+  "breakout_lookback": 48,
+  "ema_trend_filter": 50,
   "atr_period": 14,
   "atr_multiplier": 2.25,
   "take_profit_atr_mult": 2.5,
@@ -123,19 +123,35 @@
       "symbols": [
         "SOL/USDT",
         "SUI/USDT",
-        "TAO/USDT",
-        "DOGE/USDT",
         "NEAR/USDT",
         "AVAX/USDT",
         "LINK/USDT"
       ],
       "timeframe": "1h",
-      "breakout_lookback": 16,
-      "ema_trend_filter": 32,
+      "breakout_lookback": 48,
+      "ema_trend_filter": 50,
       "atr_period": 14,
       "atr_multiplier": 2.0,
       "take_profit_atr_mult": 2.5,
       "take_profit_ratio": 0.5,
+      "allow_long": true,
+      "allow_short": false,
+      "mr_allow_short": true,
+      "rsi_overbought": 75.0
+    },
+    "crypto_range_mean_reversion": {
+      "symbols": [
+        "TAO/USDT",
+        "DOGE/USDT"
+      ],
+      "timeframe": "1h",
+      "breakout_lookback": 48,
+      "ema_trend_filter": 50,
+      "atr_period": 14,
+      "atr_multiplier": 2.0,
+      "take_profit_atr_mult": 2.5,
+      "take_profit_ratio": 0.5,
+      "allow_long": false,
       "allow_short": false,
       "mr_allow_short": true,
       "rsi_overbought": 75.0
@@ -147,12 +163,13 @@
         "BNB/USDT"
       ],
       "timeframe": "1h",
-      "breakout_lookback": 20,
-      "ema_trend_filter": 50,
+      "breakout_lookback": 48,
+      "ema_trend_filter": 100,
       "atr_period": 14,
       "atr_multiplier": 2.25,
       "take_profit_atr_mult": 3.0,
       "take_profit_ratio": 0.5,
+      "allow_long": true,
       "allow_short": false,
       "mr_allow_short": false
     },
@@ -165,12 +182,13 @@
         "TSLA"
       ],
       "timeframe": "1h",
-      "breakout_lookback": 24,
+      "breakout_lookback": 48,
       "ema_trend_filter": 50,
       "atr_period": 14,
       "atr_multiplier": 2.5,
       "take_profit_atr_mult": 2.5,
       "take_profit_ratio": 0.5,
+      "allow_long": true,
       "allow_short": false,
       "mr_allow_short": true,
       "rsi_overbought": 75.0
@@ -185,12 +203,13 @@
         "XLE"
       ],
       "timeframe": "1h",
-      "breakout_lookback": 24,
+      "breakout_lookback": 48,
       "ema_trend_filter": 100,
       "atr_period": 14,
       "atr_multiplier": 2.0,
       "take_profit_atr_mult": 2.0,
       "take_profit_ratio": 0.5,
+      "allow_long": true,
       "allow_short": false,
       "mr_allow_short": false
     }

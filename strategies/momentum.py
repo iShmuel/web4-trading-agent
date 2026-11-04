@@ -44,6 +44,7 @@ class MomentumStrategy:
         self.atr_multiplier = config.get("atr_multiplier", 3.0)
         self.take_profit_atr_mult = config.get("take_profit_atr_mult", 0.0)
         self.take_profit_ratio = config.get("take_profit_ratio", 0.0)
+        self.allow_long = config.get("allow_long", True)
         self.allow_short = config.get("allow_short", False)
         self.short_requires_macro_bear = config.get("short_requires_macro_bear", True)
         self.fee_pct = config.get("fee_pct", 0.0006)
@@ -146,7 +147,7 @@ class MomentumStrategy:
         # --- No position: evaluate entry ---
 
         # Long entry
-        if in_uptrend and price > breakout_high:
+        if self.allow_long and in_uptrend and price > breakout_high:
             stop = max(0.0, price - (atr * self.atr_multiplier))
             tp = price + (atr * self.take_profit_atr_mult) if self.take_profit_atr_mult > 0 else 0.0
 

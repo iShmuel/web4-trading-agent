@@ -69,6 +69,7 @@ def run_backtest(
     atr_multiplier: float = 2.5,
     take_profit_atr_mult: float = 2.0,
     take_profit_ratio: float = 0.5,
+    allow_long: bool = True,
     allow_short: bool = True,
     fee_pct: float = 0.0006,
     slippage_pct: float = 0.0004,
@@ -118,7 +119,7 @@ def run_backtest(
         if not in_position and fill_mode == "next_open" and pending_signal is not None:
             sig_side, sig_atr = pending_signal
             pending_signal = None
-            if sig_side == "LONG":
+            if sig_side == "LONG" and allow_long:
                 pos_side = "LONG"
                 exec_entry_price = row_open * (1.0 + slippage_pct)
                 units, initial_stop, dollar_risk = risk_engine.calculate_position(
@@ -171,7 +172,7 @@ def run_backtest(
 
         if not in_position:
             # Check Long signal
-            if row.get("long_signal", row.get("entry_signal", False)):
+            if allow_long and row.get("long_signal", row.get("entry_signal", False)):
                 if fill_mode == "next_open":
                     pending_signal = ("LONG", atr)
                 else:
@@ -479,7 +480,7 @@ def run_mean_reversion_backtest(
         if not in_position and fill_mode == "next_open" and pending_signal is not None:
             sig_side, sig_atr = pending_signal
             pending_signal = None
-            if sig_side == "LONG":
+            if sig_side == "LONG" and allow_long:
                 pos_side = "LONG"
                 exec_entry_price = row_open * (1.0 + slippage_pct)
                 units, initial_stop, dollar_risk = risk_engine.calculate_position(
