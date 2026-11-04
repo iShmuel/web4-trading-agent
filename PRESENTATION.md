@@ -9,21 +9,21 @@ style: |
     background: radial-gradient(circle at 15% 15%, #0e172a 0%, #030712 100%);
     color: #e2e8f0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    padding: 30px 40px;
-    font-size: 16.5px;
+    padding: 28px 38px;
+    font-size: 16px;
     letter-spacing: -0.01em;
   }
   h1 {
     color: #38bdf8;
-    font-size: 1.8em;
+    font-size: 1.75em;
     margin-bottom: 0.12em;
     font-weight: 800;
     letter-spacing: -0.03em;
   }
   h2 {
     color: #38bdf8;
-    font-size: 1.28em;
-    margin: 0 0 0.25em 0;
+    font-size: 1.25em;
+    margin: 0 0 0.22em 0;
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -31,16 +31,16 @@ style: |
   }
   h3 {
     color: #94a3b8;
-    font-size: 0.95em;
-    margin: 0 0 0.3em 0;
+    font-size: 0.92em;
+    margin: 0 0 0.28em 0;
     font-weight: 600;
   }
   table {
     border-collapse: separate;
     border-spacing: 0;
     width: 100%;
-    margin: 8px 0;
-    font-size: 0.73em;
+    margin: 6px 0;
+    font-size: 0.72em;
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid #1e293b;
@@ -48,14 +48,14 @@ style: |
   th {
     background-color: #0f172a;
     color: #38bdf8;
-    padding: 6px 10px;
+    padding: 5px 8px;
     border-bottom: 1px solid #1e293b;
     text-transform: uppercase;
     font-weight: 700;
     letter-spacing: 0.05em;
   }
   td {
-    padding: 5px 10px;
+    padding: 4px 8px;
     border-bottom: 1px solid #151e32;
     background-color: rgba(11, 17, 32, 0.75);
     color: #cbd5e1;
@@ -97,26 +97,26 @@ style: |
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 10px;
-    margin: 10px 0;
+    margin: 9px 0;
   }
   .grid-3 {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 11px;
-    margin: 11px 0;
+    gap: 10px;
+    margin: 9px 0;
   }
   .grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin: 10px 0;
+    gap: 11px;
+    margin: 9px 0;
   }
   .stat-card {
     background: rgba(15, 23, 42, 0.85);
     border: 1px solid #1e293b;
     border-top: 3px solid #38bdf8;
     border-radius: 8px;
-    padding: 10px 8px;
+    padding: 9px 7px;
     text-align: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
   }
@@ -124,7 +124,7 @@ style: |
   .stat-card.purple { border-top-color: #8b5cf6; }
   .stat-card.gold { border-top-color: #f59e0b; }
   .stat-number {
-    font-size: 1.95em;
+    font-size: 1.9em;
     font-weight: 800;
     line-height: 1.1;
     margin-bottom: 2px;
@@ -135,7 +135,7 @@ style: |
   .stat-number.purple { color: #a78bfa; }
   .stat-number.gold { color: #fbbf24; }
   .stat-label {
-    font-size: 0.70em;
+    font-size: 0.69em;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: #94a3b8;
@@ -145,49 +145,49 @@ style: |
     background: rgba(15, 23, 42, 0.7);
     border: 1px solid #1e293b;
     border-radius: 8px;
-    padding: 10px 12px;
-    line-height: 1.38;
+    padding: 9px 11px;
+    line-height: 1.36;
   }
   .card h4 {
-    margin: 0 0 5px 0;
+    margin: 0 0 4px 0;
     color: #38bdf8;
-    font-size: 0.92em;
+    font-size: 0.90em;
     display: flex;
     align-items: center;
     gap: 6px;
   }
   .card p {
     margin: 0;
-    font-size: 0.79em;
+    font-size: 0.77em;
     color: #94a3b8;
   }
   .card-danger {
     background: rgba(244, 63, 94, 0.08);
     border: 1px solid rgba(244, 63, 94, 0.35);
     border-radius: 8px;
-    padding: 11px 13px;
+    padding: 10px 12px;
   }
   .card-danger h4 {
-    margin: 0 0 5px 0;
+    margin: 0 0 4px 0;
     color: #f43f5e;
-    font-size: 0.92em;
+    font-size: 0.90em;
   }
   .card-success {
     background: rgba(16, 185, 129, 0.08);
     border: 1px solid rgba(16, 185, 129, 0.35);
     border-radius: 8px;
-    padding: 11px 13px;
+    padding: 10px 12px;
   }
   .card-success h4 {
-    margin: 0 0 5px 0;
+    margin: 0 0 4px 0;
     color: #10b981;
-    font-size: 0.92em;
+    font-size: 0.90em;
   }
   .pill {
     display: inline-block;
-    padding: 2px 8px;
+    padding: 2px 7px;
     border-radius: 9999px;
-    font-size: 0.71em;
+    font-size: 0.70em;
     font-weight: 700;
     letter-spacing: 0.03em;
   }
@@ -220,8 +220,8 @@ style: |
     background: rgba(9, 14, 26, 0.9);
     border: 1px solid #1e293b;
     border-radius: 6px;
-    padding: 8px 11px;
-    margin-bottom: 6px;
+    padding: 7px 10px;
+    margin-bottom: 5px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -230,21 +230,21 @@ style: |
     background: #1e293b;
     color: #38bdf8;
     font-weight: 800;
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    font-size: 0.80em;
-    margin-right: 8px;
+    font-size: 0.78em;
+    margin-right: 7px;
   }
   .takeaway {
     background: rgba(15, 23, 42, 0.9);
     border-left: 3px solid #38bdf8;
-    padding: 7px 11px;
-    margin-top: 9px;
-    font-size: 0.78em;
+    padding: 6px 10px;
+    margin-top: 8px;
+    font-size: 0.76em;
     color: #94a3b8;
     border-radius: 0 6px 6px 0;
   }
@@ -253,23 +253,23 @@ style: |
     align-items: center;
     justify-content: space-between;
     gap: 6px;
-    margin: 12px 0;
+    margin: 10px 0;
   }
   .flow-node {
     background: rgba(15, 23, 42, 0.9);
     border: 1px solid #1e293b;
     border-radius: 8px;
-    padding: 8px 6px;
+    padding: 7px 5px;
     text-align: center;
     flex: 1;
-    min-height: 80px;
+    min-height: 74px;
     display: flex;
     flex-direction: column;
     justify-content: center;
   }
   .flow-arrow {
     color: #38bdf8;
-    font-size: 1.15em;
+    font-size: 1.1em;
     font-weight: 800;
     flex-shrink: 0;
   }
@@ -278,7 +278,7 @@ style: |
     border: 1px solid #1e293b;
     border-top: 3px solid #38bdf8;
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 9px 11px;
     height: 100%;
   }
   .phase-box.gold { border-top-color: #fbbf24; }
@@ -290,20 +290,20 @@ style: |
     background: rgba(15, 23, 42, 0.85);
     border: 1px solid #1e293b;
     border-radius: 8px;
-    padding: 8px 11px;
-    line-height: 1.34;
-    font-size: 0.75em;
+    padding: 7px 10px;
+    line-height: 1.32;
+    font-size: 0.74em;
   }
   .agent-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
     border-bottom: 1px solid rgba(30, 41, 59, 0.8);
-    padding-bottom: 4px;
+    padding-bottom: 3px;
   }
   .agent-title {
-    font-size: 1.08em;
+    font-size: 1.05em;
     font-weight: 800;
     color: #38bdf8;
     display: flex;
@@ -324,6 +324,14 @@ style: |
   .agent-label.what { color: #38bdf8; }
   .agent-label.how { color: #a78bfa; }
   .agent-label.why { color: #10b981; }
+  .base-badge {
+    font-size: 0.68em;
+    color: #64748b;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 ---
 
 # Web4 Autonomous Trading Desk
@@ -359,6 +367,10 @@ style: |
 <span class="pill pill-purple">📊 21-ASSET UNIVERSE</span> &nbsp;
 <span class="pill pill-amber">🔒 ZERO REAL-MONEY RISK</span>
 
+<div class="base-badge">
+  🔍 <b>Verification Base:</b> <a href="PRESENTATION_VERIFICATION_BASE.md#slide-0-title-slide">PRESENTATION_VERIFICATION_BASE.md#slide-0</a> • Active Workspace: <code><repo_root></code>
+</div>
+
 ---
 
 ## 1. Executive Snapshot: The Institutional Edge
@@ -382,6 +394,10 @@ The system solves the #1 flaw of automated trading: **unconstrained volatility b
 
 <div class="takeaway">
   💡 <b>Core Philosophy</b>: <i>"Living off trading requires low drawdown and capital preservation, not reckless 20x gambling."</i>
+</div>
+
+<div class="base-badge">
+  🔍 <b>Base:</b> <a href="core/risk_engine.py"><code>core/risk_engine.py:40-250</code></a> • <a href="live_paper_trader.py"><code>live_paper_trader.py:120-195</code></a> • Invariant Rules 1–5 in <code>AGENTS.md</code>
 </div>
 
 ---
@@ -425,7 +441,7 @@ To ensure academic and institutional precision, the core components are formally
   <div class="card">
     <h4>🧩 Components (Infrastructure)</h4>
     <p style="font-size: 0.75em; color: #94a3b8; line-height: 1.4;">
-      • <b>Definition</b>: Deterministic service modules (RiskEngine, PaperAccount, DataFetcher).<br/>
+      • <b>Definition</b>: Deterministic service modules (RiskEngine, PaperAccount, DataLoader).<br/>
       • <b>Scope</b>: Provide shared, reusable mathematical infrastructure across all agents.
     </p>
   </div>
@@ -433,6 +449,10 @@ To ensure academic and institutional precision, the core components are formally
 
 <div class="takeaway">
   💡 <b>Architectural Hierarchy</b>: The <b>Bot</b> runs the loop $\rightarrow$ coordinates the <b>Agents</b> $\rightarrow$ who execute <b>Strategies</b> configured by <b>Parameters</b> on top of deterministic <b>Components</b>.
+</div>
+
+<div class="base-badge">
+  🔍 <b>Base:</b> Russell & Norvig (2020) Ch. 2 • Wooldridge (2009) • Code Mapping in <a href="PRESENTATION_VERIFICATION_BASE.md#slide-1b-system-taxonomy">PRESENTATION_VERIFICATION_BASE.md#slide-1b</a>
 </div>
 
 ---
@@ -475,6 +495,10 @@ To ensure academic and institutional precision, the core components are formally
   </div>
 </div>
 
+<div class="base-badge">
+  🔍 <b>Base:</b> Fee Model in <a href="core/paper_account.py"><code>core/paper_account.py:28-65</code></a> • Circuit Breakers in <a href="core/risk_engine.py"><code>core/risk_engine.py:108-160</code></a>
+</div>
+
 ---
 
 ## 3. Web4 Framework: Architecture & Component Responsibilities
@@ -486,7 +510,7 @@ The system implements the **Web4 Autonomous Agent Paradigm** across 3 functional
     <div style="margin-bottom: 6px;"><span class="pill pill-cyan">LAYER 1</span></div>
     <h4 style="color: #38bdf8; margin: 0 0 6px 0;">Perception & Ingestion</h4>
     <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>Data Scout Sentinel</b> (<code>DataFetcher</code>): Binance & Yahoo live feeds.<br/>
+      • <b>Data Scout Sentinel</b> (<code>core/data_loader.py</code>): Binance & Yahoo live feeds.<br/>
       • <b>Data Sanitizer</b>: Active candle rejection & geometric OHLCV validation.<br/>
       • <b>Macro Telemetry</b>: FRED interest rates, VIX index, & Polymarket radar.<br/>
       • <b>Responsibility</b>: Deliver clean, verified market state every 60 seconds.
@@ -518,6 +542,10 @@ The system implements the **Web4 Autonomous Agent Paradigm** across 3 functional
 
 <div class="takeaway">
   💡 <b>Web4 Framework Principle</b>: High-frequency deterministic mathematical reflex agents (sub-millisecond execution) paired with local cognitive intelligence (semantic reasoning) under unalterable risk bounds.
+</div>
+
+<div class="base-badge">
+  🔍 <b>Base:</b> Architecture Whitepaper in <a href="docs/web4-autonomous-levels.md"><code>docs/web4-autonomous-levels.md</code></a> • Code in <code>core/</code>
 </div>
 
 ---
@@ -577,6 +605,10 @@ The trading desk operates as an ensemble of **8 specialized autonomous agents** 
   💡 <b>Modular Resilience</b>: If any single agent detects danger or data degradation, the trade is rejected instantly without human intervention.
 </div>
 
+<div class="base-badge">
+  🔍 <b>Base:</b> Full Agent Pipeline in <a href="live_paper_trader.py"><code>live_paper_trader.py:120-220</code></a> • 8 Specialized Nodes
+</div>
+
 ---
 
 ## 4B. Theoretical Grounding: Academic Definition of Agency
@@ -616,63 +648,160 @@ Validated by **Russell & Norvig (UC Berkeley/Google)** • **Wooldridge (Oxford)
   💡 <b>Academic Verdict</b>: The system is an authentic <b>Neuro-Symbolic Multi-Agent Ensemble</b>: 7 deterministic mathematical reflex agents + 1 generative neural LLM agent communicating in an autonomous pipelined consensus loop.
 </div>
 
+<div class="base-badge">
+  🔍 <b>Base:</b> Russell & Norvig (2020) ISBN 978-0134610993 • Wooldridge (2009) ISBN 978-0470519462 • FINRA Notice 15-09
+</div>
+
 ---
 
-## 4C. Runtime Agent Architecture & Interaction Visualization
+## 4C. Runtime Agent Architecture: Real-Time Execution Flow
 
-The diagram illustrates the actual executed loop running every 60 seconds in <a href="live_paper_trader.py"><code>live_paper_trader.py</code></a>:
+The visual execution pipeline running every 60 seconds in <a href="live_paper_trader.py"><code>live_paper_trader.py</code></a>:
 
-<div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #1e293b; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px;">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-    <div style="background: #1e293b; border-left: 3px solid #38bdf8; padding: 6px 10px; border-radius: 4px; font-size: 0.78em; flex: 1.2;">
-      <b style="color: #38bdf8;">1. Perception Layer</b><br/>
-      Binance / Yahoo / FRED / RSS<br/>
-      $\rightarrow$ <code>DataScoutSentinel</code>
+<div style="background: rgba(15, 23, 42, 0.95); border: 1px solid #1e293b; border-radius: 8px; padding: 9px 12px; font-size: 0.73em; margin-bottom: 6px;">
+
+  <!-- ROW 1: SENSORS & DATA SCOUT -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+    <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 5px 8px; flex: 1; text-align: center;">
+      <b style="color: #94a3b8;">SENSORS & TELEMETRY</b><br/>
+      Binance REST v3 • Yahoo Finance • FRED VIX • Polymarket • News RSS
     </div>
-    <div style="color: #38bdf8; font-weight: 800; padding: 0 8px;">➔</div>
-    <div style="background: #1e293b; border-left: 3px solid #a78bfa; padding: 6px 10px; border-radius: 4px; font-size: 0.78em; flex: 1.5;">
-      <b style="color: #a78bfa;">2. Alpha Engine Ensemble</b><br/>
-      • Trend Momentum (Donchian)<br/>
-      • Mean Reversion (Bollinger)<br/>
-      • Basis Yield (Funding Arbitrage)
-    </div>
-    <div style="color: #a78bfa; font-weight: 800; padding: 0 8px;">➔</div>
-    <div style="background: #1e293b; border-left: 3px solid #38bdf8; padding: 6px 10px; border-radius: 4px; font-size: 0.78em; flex: 1.3;">
-      <b style="color: #38bdf8;">3. Coordination Arbiter</b><br/>
-      • Reconcile Directional Conflicts<br/>
-      • 200 EMA Macro Regime Gate<br/>
-      • Signal Confidence Aggregation
+    <div style="color: #38bdf8; font-weight: 800;">➔</div>
+    <div style="background: rgba(56, 189, 248, 0.12); border: 1px solid #0284c7; border-radius: 6px; padding: 5px 8px; flex: 1.3;">
+      <span class="pill pill-cyan">AGENT 1</span> <b style="color: #38bdf8;">Data Scout Sentinel</b> (<code>core/data_loader.py</code>)<br/>
+      • <code>filter_closed_bars()</code>: Drops forming candle (anti-repainting)<br/>
+      • <code>check_data_quality()</code>: Asserts monotonic time & geometric $H \ge L$
     </div>
   </div>
 
-  <div style="text-align: center; color: #f43f5e; font-weight: 800; margin: 4px 0;">▼ (Approved Trade Candidates)</div>
+  <div style="text-align: center; color: #a78bfa; font-size: 0.86em; margin: 2px 0;">▼ Clean OHLCV Broadcasted in Parallel to 3 Alpha Engines</div>
 
-  <div style="display: flex; justify-content: space-between; align-items: center;">
-    <div style="background: #1e293b; border-left: 3px solid #f43f5e; padding: 6px 10px; border-radius: 4px; font-size: 0.78em; flex: 1.5;">
-      <b style="color: #f43f5e;">4. Risk Governor (Supreme Veto)</b><br/>
-      • Van Tharp $1\% - 5\%$ Sizing Clamp<br/>
-      • 5% Daily Loss Halt & 15% Max DD Kill Switch<br/>
-      • Crypto Sector Cap (Max 2 Coins) & 3h Cooldown
+  <!-- ROW 2: PARALLEL ALPHA ENGINES -->
+  <div style="display: flex; gap: 7px;">
+    <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid #7c3aed; border-radius: 6px; padding: 5px 7px; flex: 1;">
+      <span class="pill pill-purple">AGENT 2</span> <b style="color: #a78bfa;">Trend Momentum</b><br/>
+      <code>strategies/momentum.py</code><br/>
+      Donchian 16/24 Breakout + 32/200 EMA + Confluence $\ge 0.70$
     </div>
-    <div style="color: #f43f5e; font-weight: 800; padding: 0 8px;">➔</div>
-    <div style="background: #1e293b; border-left: 3px solid #a78bfa; padding: 6px 10px; border-radius: 4px; font-size: 0.78em; flex: 1.3;">
-      <b style="color: #a78bfa;">5. Local LLM Screener</b><br/>
-      • <code>phi4-mini</code> GPU Inference ($0.70\text{s}$)<br/>
-      • Real-time News Headline Filter<br/>
-      • Devil's Advocate Veto on Black Swans
+    <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid #7c3aed; border-radius: 6px; padding: 5px 7px; flex: 1;">
+      <span class="pill pill-purple">AGENT 3</span> <b style="color: #a78bfa;">Mean Reversion</b><br/>
+      <code>strategies/mean_reversion.py</code><br/>
+      Bollinger 2.0 Snipe + RSI Extreme ($<30 / >70$) + Vol $\ge 1.25\times$
     </div>
-    <div style="color: #10b981; font-weight: 800; padding: 0 8px;">➔</div>
-    <div style="background: #1e293b; border-left: 3px solid #10b981; padding: 6px 10px; border-radius: 4px; font-size: 0.78em; flex: 1.2;">
-      <b style="color: #10b981;">6. Execution & State</b><br/>
-      • Smart Maker Limit Orders<br/>
-      • <code>PaperAccount</code> Virtual Ledger<br/>
-      • Atomic <code>.bak</code> State Persistence
+    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #059669; border-radius: 6px; padding: 5px 7px; flex: 1;">
+      <span class="pill pill-green">AGENT 4</span> <b style="color: #10b981;">Basis Yield</b><br/>
+      <code>core/basis_yield.py</code><br/>
+      Delta-Neutral Long Spot + Short 1x Perp (Funding $>0.01\%$/8h)
     </div>
   </div>
+
+  <div style="text-align: center; color: #38bdf8; font-size: 0.86em; margin: 2px 0;">▼ Directional Signals [-1.0, +1.0] Passed to Arbiter Cortex</div>
+
+  <!-- ROW 3: COORDINATOR & RISK GOVERNOR -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+    <div style="background: rgba(56, 189, 248, 0.12); border: 1px solid #0284c7; border-radius: 6px; padding: 5px 8px; flex: 1.1;">
+      <span class="pill pill-cyan">AGENT 5</span> <b style="color: #38bdf8;">Coordinator Arbiter</b> (<code>core/coordinator.py</code>)<br/>
+      • Reconciles conflicts (Long vs Short $\rightarrow$ FLAT)<br/>
+      • 200 EMA Macro Regime Gate (No buying in bear trends)
+    </div>
+    <div style="color: #f43f5e; font-weight: 800;">➔</div>
+    <div style="background: rgba(244, 63, 94, 0.12); border: 1px solid #e11d48; border-radius: 6px; padding: 5px 8px; flex: 1.3;">
+      <span class="pill pill-red">AGENT 6</span> <b style="color: #f43f5e;">Institutional Risk Governor</b> (<code>core/risk_engine.py</code>)<br/>
+      • Van Tharp Sizing clamped to $[1\%, 5\%]$ • Max 4 open trades (max 2 crypto)<br/>
+      • <b>Circuit Breakers</b>: 5% daily loss halt • 15% Max DD kill switch • 3h cooldown
+    </div>
+  </div>
+
+  <div style="text-align: center; color: #fbbf24; font-size: 0.86em; margin: 2px 0;">▼ Approved Risk-Sized Order Ticket Passed to Pre-Flight Safety & AI Screener</div>
+
+  <!-- ROW 4: PRE-FLIGHT / LOCAL LLM & SMART MAKER LEDGER -->
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+    <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid #d97706; border-radius: 6px; padding: 5px 8px; flex: 1.2;">
+      <span class="pill pill-amber">AGENT 8</span> <b style="color: #fbbf24;">Local GPU Devil's Advocate</b> (<code>core/preflight.py</code>)<br/>
+      • <code>validate_order_preflight()</code>: Spread $\le 0.15\%$, Tick $\le 180\text{s}$<br/>
+      • <code>LocalLLMScreener</code>: <code>phi4-mini</code> on GPU ($0.70\text{s}$) news headline veto
+    </div>
+    <div style="color: #10b981; font-weight: 800;">➔</div>
+    <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid #059669; border-radius: 6px; padding: 5px 8px; flex: 1.2;">
+      <span class="pill pill-green">AGENT 7</span> <b style="color: #10b981;">Smart Maker Ledger</b> (<code>core/paper_account.py</code>)<br/>
+      • Routes passive Maker limit order ($0.02\%$ fee, $0.00\%$ slippage)<br/>
+      • Atomic state commit: <code>paper_portfolio.json</code> + duplicate <code>.bak</code>
+    </div>
+  </div>
+
 </div>
 
 <div class="takeaway">
-  💡 <b>Deterministic Pipeline Flow</b>: Information strictly flows from left to right. Every gate acts as an independent circuit breaker; if any agent raises an exception or flags danger, the loop aborts and defaults to capital protection.
+  🛡️ <b>Unconditional Veto Branches</b>: If <i>any</i> agent raises a red flag (data corruption, bear macro, circuit breaker, or black-swan headline), the loop triggers an immediate <b>VETO $\rightarrow$ 100% Cash Defense</b> with zero capital at risk.
+</div>
+
+<div class="base-badge">
+  🔍 <b>Base:</b> Full Architecture Diagram & Code Line Mapping in <a href="PRESENTATION_VERIFICATION_BASE.md#slide-4c-runtime-agent-architecture">PRESENTATION_VERIFICATION_BASE.md#slide-4c</a>
+</div>
+
+---
+
+## 4D. Inter-Agent Communication Bus & Data Payload Contracts
+
+The 8 agents communicate asynchronously in Python via strongly-typed payload contracts:
+
+<table style="width: 100%; font-size: 0.73em; margin: 6px 0;">
+  <tr>
+    <th>Stage</th>
+    <th>Sender $\rightarrow$ Receiver</th>
+    <th>Payload Contract</th>
+    <th>Deterministic Verification & Gate</th>
+  </tr>
+  <tr>
+    <td><b>1. Perception</b></td>
+    <td>Exchanges $\rightarrow$ <b>Agent 1</b> (Scout)</td>
+    <td><code>RawOHLCVDict</code></td>
+    <td><code>check_data_quality()</code>: Asserts no NaNs, monotonic time, tick age $\le 180\text{s}$</td>
+  </tr>
+  <tr>
+    <td><b>2. Sanitization</b></td>
+    <td><b>Agent 1</b> $\rightarrow$ <b>Agents 2, 3, 4</b></td>
+    <td><code>CleanCandleFrame</code></td>
+    <td><code>filter_closed_bars()</code>: Strips incomplete bar, eliminating repainting</td>
+  </tr>
+  <tr>
+    <td><b>3. Alpha Signals</b></td>
+    <td><b>Agents 2, 3, 4</b> $\rightarrow$ <b>Agent 5</b></td>
+    <td><code>StrategySignal</code></td>
+    <td>Returns direction $\in \{-1, 0, 1\}$, confidence $[0, 1]$, and ATR stop baseline</td>
+  </tr>
+  <tr>
+    <td><b>4. Arbitration</b></td>
+    <td><b>Agent 5</b> $\rightarrow$ <b>Agent 6</b></td>
+    <td><code>ArbitratedCandidate</code></td>
+    <td>Eliminates contradictory signals; applies 200 EMA Macro Regime Gate</td>
+  </tr>
+  <tr>
+    <td><b>5. Risk Allocation</b></td>
+    <td><b>Agent 6</b> $\rightarrow$ <b>Agent 8</b></td>
+    <td><code>ApprovedOrderTicket</code></td>
+    <td>Van Tharp formula sizes risk to $[1\%, 5\%]$; enforces daily loss & 15% Max DD</td>
+  </tr>
+  <tr>
+    <td><b>6. AI Screening</b></td>
+    <td><b>Agent 8</b> $\rightarrow$ <b>Agent 7</b></td>
+    <td><code>LLMScreenVerdict</code></td>
+    <td>Local <code>phi4-mini</code> ($0.70\text{s}$) confirms absence of black-swan news headlines</td>
+  </tr>
+  <tr>
+    <td><b>7. Execution & State</b></td>
+    <td><b>Agent 7</b> $\rightarrow$ Storage / Disk</td>
+    <td><code>PortfolioStateSnapshot</code></td>
+    <td>Deducts $0.02\%$ maker fee; writes atomic JSON with <code>.bak</code> recovery</td>
+  </tr>
+</table>
+
+<div class="takeaway">
+  ⚡ <b>Sub-Second Execution Latency</b>: Deterministic Agents 1–7 execute in $0.005\text{s}$ (5 milliseconds); Agent 8 GPU LLM inference completes in $0.70\text{s}$, well within the 60-second operational cycle.
+</div>
+
+<div class="base-badge">
+  🔍 <b>Base:</b> Payload Schemas in <a href="core/coordinator.py"><code>core/coordinator.py</code></a>, <a href="core/risk_engine.py"><code>core/risk_engine.py</code></a>, <a href="core/preflight.py"><code>core/preflight.py</code></a>
 </div>
 
 ---
@@ -721,6 +850,10 @@ The diagram illustrates the actual executed loop running every 60 seconds in <a 
   </div>
 </div>
 
+<div class="base-badge">
+  🔍 <b>Base:</b> <a href="core/data_loader.py"><code>core/data_loader.py</code></a> • <a href="strategies/momentum.py"><code>strategies/momentum.py</code></a> • <a href="strategies/mean_reversion.py"><code>strategies/mean_reversion.py</code></a> • <a href="core/basis_yield.py"><code>core/basis_yield.py</code></a>
+</div>
+
 ---
 
 ## 6. Arbitration, Governance & Safe Execution (Agents 5 to 8)
@@ -767,6 +900,10 @@ The diagram illustrates the actual executed loop running every 60 seconds in <a 
   </div>
 </div>
 
+<div class="base-badge">
+  🔍 <b>Base:</b> <a href="core/coordinator.py"><code>core/coordinator.py</code></a> • <a href="core/risk_engine.py"><code>core/risk_engine.py</code></a> • <a href="core/paper_account.py"><code>core/paper_account.py</code></a> • <a href="core/preflight.py"><code>core/preflight.py</code></a>
+</div>
+
 ---
 
 ## 6B. Data Quality, Ingestion & Sanitization Engine
@@ -777,7 +914,7 @@ Garbage in, garbage out: the trading desk implements a **3-tier data validation 
   <div class="card">
     <h4>🧹 1. Closed-Bar Filtering</h4>
     <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>Mechanism</b>: <a href="core/data_fetcher.py"><code>filter_closed_bars()</code></a> actively drops the current unclosed, forming candle.<br/>
+      • <b>Mechanism</b>: <a href="core/data_loader.py"><code>filter_closed_bars()</code></a> actively drops the current unclosed, forming candle.<br/>
       • <b>Repainting Prevention</b>: Indicators only calculate on finalized historical bars.<br/>
       • <b>Guarantee</b>: Eliminates intra-candle false triggers and indicator recalculation flutter.
     </p>
@@ -786,17 +923,17 @@ Garbage in, garbage out: the trading desk implements a **3-tier data validation 
   <div class="card">
     <h4>🛡️ 2. Geometric & Chronological Validation</h4>
     <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>Mechanism</b>: <a href="core/data_fetcher.py"><code>validate_ohlcv()</code></a> asserts strict data invariants.<br/>
+      • <b>Mechanism</b>: <a href="core/data_loader.py"><code>check_data_quality()</code></a> asserts strict data invariants.<br/>
       • <b>Monotonicity</b>: Datetime index must be strictly increasing without gaps.<br/>
       • <b>Price Logic</b>: $High \ge Low$, $High \ge Open/Close$, $Low \le Open/Close$.<br/>
-      • <b>Volume Integrity</b>: Rejects negative volume or zero-spread quotes.
+      • <b>Volume Integrity</b>: Rejects negative volume, NaNs, or zero-spread quotes.
     </p>
   </div>
 
   <div class="card">
     <h4>⚡ 3. Real-Time Pre-Flight Guard</h4>
     <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>Mechanism</b>: <a href="core/execution_engine.py"><code>PreFlightChecker</code></a> intercepts orders before execution.<br/>
+      • <b>Mechanism</b>: <a href="core/preflight.py"><code>validate_order_preflight()</code></a> intercepts orders before execution.<br/>
       • <b>Spread Filter</b>: Rejects market if Bid/Ask spread $> 0.15\%$ (liquidity void).<br/>
       • <b>Tick Staleness</b>: Rejects quotes $> 180\text{s}$ old (connection lag).<br/>
       • <b>Market Impact Cap</b>: Blocks order sizes $> 2.0\%$ of 24h rolling volume.
@@ -806,6 +943,10 @@ Garbage in, garbage out: the trading desk implements a **3-tier data validation 
 
 <div class="takeaway">
   💡 <b>Zero Compromise on Data</b>: Corrupted candles or lagged quotes are rejected instantly; the bot logs the anomaly and remains 100% in cash defense rather than trading on bad telemetry.
+</div>
+
+<div class="base-badge">
+  🔍 <b>Base:</b> <a href="core/data_loader.py"><code>core/data_loader.py:45-115</code></a> • <a href="core/preflight.py"><code>core/preflight.py:155-220</code></a> • Verified in <code>tests/test_data_quality.py</code>
 </div>
 
 ---
@@ -818,7 +959,7 @@ Look-ahead bias is the primary reason academic backtests fail in production. Our
   <div class="card">
     <h4>📐 Causal Indicator Computation</h4>
     <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.45;">
-      • <b>Explicit Lag Shifts</b>: Donchian channels in <a href="agent/strategy_donchian.py"><code>strategy_donchian.py</code></a> use <code>high.shift(1).rolling(period).max()</code>. Candle $t$ threshold is computed strictly from candles $0 \dots t-1$.<br/>
+      • <b>Explicit Lag Shifts</b>: Donchian channels in <a href="core/strategy.py"><code>core/strategy.py:115-119</code></a> use <code>high.shift(1).rolling(period).max()</code>. Candle $t$ threshold is computed strictly from candles $0 \dots t-1$.<br/>
       • <b>True Range Causality</b>: ATR utilizes <code>prev_close = close.shift(1)</code>, ensuring no same-bar settlement leakage.<br/>
       • <b>Autoregressive EMAs</b>: Moving averages use recursive exponential weights where $EMA_t = \alpha P_t + (1-\alpha) EMA_{t-1}$, preventing forward-looking interpolation.
     </p>
@@ -827,8 +968,8 @@ Look-ahead bias is the primary reason academic backtests fail in production. Our
   <div class="card">
     <h4>⏱️ Next-Open Execution & Chronological Splits</h4>
     <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.45;">
-      • <b>Realistic Fill Emulation</b>: In <a href="core/backtest_engine.py"><code>backtest_engine.py</code></a>, signals generated at the close of candle $t$ are filled at <code>open[t+1]</code> with maker/taker fee and slippage modeling.<br/>
-      • <b>Strict Walk-Forward Splitting</b>: In <a href="agent/validator.py"><code>agent/validator.py</code></a>, historical data is partitioned chronologically (70% in-sample, 30% out-of-sample).<br/>
+      • <b>Realistic Fill Emulation</b>: In <a href="core/backtest_engine.py"><code>core/backtest_engine.py:480-520</code></a>, signals generated at the close of candle $t$ are filled at <code>open[t+1]</code> with maker/taker fee and slippage modeling.<br/>
+      • <b>Strict Walk-Forward Splitting</b>: In <a href="agent/validator.py"><code>agent/validator.py:30-80</code></a>, historical data is partitioned chronologically (70% in-sample, 30% out-of-sample).<br/>
       • <b>Zero Shuffling</b>: Random k-fold cross-validation is strictly banned to protect the arrow of time.
     </p>
   </div>
@@ -836,6 +977,10 @@ Look-ahead bias is the primary reason academic backtests fail in production. Our
 
 <div class="takeaway">
   💡 <b>Causal Guarantee</b>: Every decision made at time $t$ has mathematical access strictly to information generated at $t \le t_{\text{current}}$, verified by automated regression test suites.
+</div>
+
+<div class="base-badge">
+  🔍 <b>Base:</b> <a href="core/strategy.py"><code>core/strategy.py:115-125</code></a> • <a href="core/backtest_engine.py"><code>core/backtest_engine.py:483</code></a> • <a href="agent/validator.py"><code>agent/validator.py:30-85</code></a>
 </div>
 
 ---
@@ -886,6 +1031,10 @@ All ingested market data originates from verified, institutional-grade, and offi
   </div>
 </div>
 
+<div class="base-badge">
+  🔍 <b>Base:</b> CCXT Binance Adapter • Yahoo Finance v8 Documentation • Federal Reserve Bank of St. Louis FRED Portal
+</div>
+
 ---
 
 ## 7. The 21-Asset Multi-Sector Universe
@@ -919,6 +1068,10 @@ Capital dynamically rotates across **4 completely uncorrelated market sectors**:
   💡 <b>Ray Dalio's Holy Grail</b>: <i>"Holding 15+ uncorrelated return streams cuts portfolio risk by up to 80% without sacrificing return."</i>
 </div>
 
+<div class="base-badge">
+  🔍 <b>Base:</b> Universe Definition in <a href="config/active_config.json"><code>config/active_config.json</code></a> • Ray Dalio (2018) Principles
+</div>
+
 ---
 
 ## 8. How the Bot Makes Money in UPTRENDS 🟢
@@ -944,6 +1097,10 @@ The bot rides expansions using a **4-Stage Execution Ladder**:
 
 <div class="takeaway">
   💡 <b>The Result</b>: Even with a modest 45% win rate, a 3:1 reward-to-risk ratio mathematically guarantees compounding growth.
+</div>
+
+<div class="base-badge">
+  🔍 <b>Base:</b> <a href="strategies/momentum.py"><code>strategies/momentum.py</code></a> • Trailing Logic in <a href="core/risk_engine.py"><code>core/risk_engine.py:402-420</code></a>
 </div>
 
 ---
@@ -991,6 +1148,10 @@ When markets crash, the bot deploys **3 institutional wealth-extraction mechanis
   🛡️ <b>100% Cash Defense</b>: While retail buy-and-hold crashes -35% to -65%, our 200 EMA Macro Gate keeps capital in cash until the storm passes.
 </div>
 
+<div class="base-badge">
+  🔍 <b>Base:</b> <a href="strategies/mean_reversion.py"><code>strategies/mean_reversion.py</code></a> • <a href="core/basis_yield.py"><code>core/basis_yield.py</code></a> • <a href="core/coordinator.py"><code>core/coordinator.py:65-95</code></a>
+</div>
+
 ---
 
 ## 10. Delta-Neutral Basis Yield Engine (`basis_yield.py`)
@@ -1016,6 +1177,10 @@ A non-directional **"Paycheck Engine"** that harvests perpetual futures funding 
 
 <div class="takeaway">
   💡 <b>Living Off Trading</b>: The Basis Engine provides a stable baseline income floor so you never have to force bad directional trades.
+</div>
+
+<div class="base-badge">
+  🔍 <b>Base:</b> <a href="core/basis_yield.py"><code>core/basis_yield.py:32-150</code></a> • Verified in <code>tests/test_institutional_income_upgrades.py</code>
 </div>
 
 ---
@@ -1064,6 +1229,10 @@ Risk management in <a href="core/risk_engine.py"><code>core/risk_engine.py</code
   </div>
 </div>
 
+<div class="base-badge">
+  🔍 <b>Base:</b> <a href="core/risk_engine.py"><code>core/risk_engine.py:40-250</code></a> • Van Tharp (2008) • SEC Rule 15c3-5
+</div>
+
 ---
 
 ## 11B. Technical & Architectural Design Decisions & Justifications
@@ -1106,6 +1275,10 @@ Every architectural choice was selected to maximize reliability, determinism, an
   </div>
 </div>
 
+<div class="base-badge">
+  🔍 <b>Base:</b> Justification Analysis in <a href="PRESENTATION_VERIFICATION_BASE.md#slide-11b-technical--architectural-design-decisions">PRESENTATION_VERIFICATION_BASE.md#slide-11b</a>
+</div>
+
 ---
 
 ## 12. Empirical 180-Day Institutional Backtest Audit
@@ -1142,6 +1315,10 @@ Full candle-by-candle replay across 21 assets with **0.06% fees + 0.04% slippage
 
 <div class="takeaway">
   💡 <b>The Empirical Proof</b>: The defense gates filtered out 900+ losing false breakouts and fee bleed, transforming an unfiltered -6% raw loss into a <b>+66.4% net institutional winner</b>.
+</div>
+
+<div class="base-badge">
+  🔍 <b>Base:</b> Audit Script in <a href="research/backtest_live_replay.py"><code>research/backtest_live_replay.py</code></a> • Artifact: <code>data/live_replay_backtest.json</code>
 </div>
 
 ---
@@ -1181,6 +1358,10 @@ Granular trade attribution reveals where alpha is generated and how to unlock **
 
 <div class="takeaway">
   🎯 <b>The Strategic Edge</b>: By simply cutting off momentum entries on 2 chronic losing coins (TAO & DOGE), the bot's profit surges from +66% to nearly +100% while cutting drawdown in half.
+</div>
+
+<div class="base-badge">
+  🔍 <b>Base:</b> Attribution Analysis in <a href="research/backtest_live_replay.py"><code>research/backtest_live_replay.py:280-320</code></a>
 </div>
 
 ---
@@ -1226,6 +1407,10 @@ $$\text{CPI} = 100 \times \left( 0.30 \cdot \frac{\text{Sharpe}}{3.0} + 0.25 \cd
   ⚠️ <i>Note: Baselines 1 and 2 are conceptual benchmark models formulated for academic comparison; they are not active software components in the repository.</i>
 </div>
 
+<div class="base-badge">
+  🔍 <b>Base:</b> Future Roadmap in <a href="FUTURE_DEVELOPMENT_NOTES.md#1-automated-central-performance-index-cpi-benchmark-harness">FUTURE_DEVELOPMENT_NOTES.md#item-1</a>
+</div>
+
 ---
 
 ## 12D. Architectural Trade-Offs: Advantages & Disadvantages
@@ -1256,6 +1441,10 @@ An honest engineering appraisal of the operational advantages and inherent desig
 
 <div class="takeaway">
   💡 <b>Design Priority</b>: Every trade-off deliberately favors <b>capital preservation, mathematical certainty, and zero cloud cost</b> over reckless profit chasing.
+</div>
+
+<div class="base-badge">
+  🔍 <b>Base:</b> Engineering Trade-off Ledger in <a href="PRESENTATION_VERIFICATION_BASE.md#slide-12d-architectural-trade-offs">PRESENTATION_VERIFICATION_BASE.md#slide-12d</a>
 </div>
 
 ---
@@ -1292,6 +1481,10 @@ The desk runs 24/7 on standard consumer hardware with **$0 cloud dependency and 
   </div>
 </div>
 
+<div class="base-badge">
+  🔍 <b>Base:</b> <a href="core/preflight.py"><code>core/preflight.py:61-145</code></a> • Host System: Linux Ubuntu, NVIDIA GPU VRAM
+</div>
+
 ---
 
 ## 14. Web4 Autonomous Self-Improvement & Meta-Learning
@@ -1300,14 +1493,14 @@ The desk does not remain static; it executes a **continuous self-calibration and
 
 <div class="grid-2">
   <div class="card">
-    <h4>🔄 1. Walk-Forward Parameter Arena (`optimizer.py`)</h4>
+    <h4>🔄 1. Walk-Forward Parameter Arena (`agent/optimizer.py`)</h4>
     <p>• <b>In-Sample / Out-of-Sample Split</b>: 70% discovery vs. 30% unseen testing data.<br/>
     • <b>Anti-Overfitting Filter</b>: Rejects mutations unless Sharpe improves on BOTH sets with Max DD $<14\%$.<br/>
     • <b>Multi-Profile Tuning</b>: Calibrates Crypto Micro, Tech Growth, and Macro Hedges independently.<br/>
     • <b>Zero Human Intervention</b>: Runs regression tests, executes <code>git commit</code>, and pushes live.</p>
   </div>
   <div class="card">
-    <h4>🧠 2. Closed-Loop Journal & AI Reflection</h4>
+    <h4>🧠 2. Closed-Loop Journal & AI Reflection (`core/journal.py`)</h4>
     <p>• <b>Benchmark Alpha Settlement</b>: Evaluates whether trades & gates beat BTC / SPY over 24h.<br/>
     • <b>Dynamic Confluence Feedback</b>: Tightens gate ($\Delta +0.03$) if false breakouts spike.<br/>
     • <b>Local GPU LLM Reflections</b>: Local <code>phi4-mini</code> logs institutional post-mortems for every trade.<br/>
@@ -1317,6 +1510,10 @@ The desk does not remain static; it executes a **continuous self-calibration and
 
 <div class="takeaway">
   🌐 <b>The Web4 Concept</b>: <i>"An autonomous machine agent that perceives, executes, settles, learns from its own decisions, and evolves its logic—completely free of human emotional error."</i>
+</div>
+
+<div class="base-badge">
+  🔍 <b>Base:</b> <a href="agent/optimizer.py"><code>agent/optimizer.py</code></a> • <a href="agent/validator.py"><code>agent/validator.py</code></a> • <a href="core/journal.py"><code>core/journal.py</code></a>
 </div>
 
 ---
@@ -1364,6 +1561,10 @@ To generate a consistent **$3,000/month living income**, capital scales through 
   ⚠️ <b>The Golden Rule</b>: Never withdraw $3,000/month from a $10,000 account (+30%/mo = 100% risk of ruin). Allow capital to compound to $75k–$100k, where $3,000/month requires only a safe, low-stress <b>+3.5% monthly return</b>.
 </div>
 
+<div class="base-badge">
+  🔍 <b>Base:</b> Mathematical Compounding Models • Van Tharp (2008) • Half-Kelly Sizing
+</div>
+
 ---
 
 ## 16. System Invariants & Institutional Commitments
@@ -1389,6 +1590,10 @@ Every autonomous agent in this codebase is bound by **5 non-negotiable invariant
 <div class="step-box">
   <div><span class="step-num">5</span> <b>Evidence-Based Profitability</b>: Only declare edge with cost-adjusted metrics (fees + slippage) on next-open fills</div>
   <span class="pill pill-purple">TRUTH IN METRICS</span>
+</div>
+
+<div class="base-badge">
+  🔍 <b>Base:</b> Hard-coded Invariants in <a href="AGENTS.md"><code>AGENTS.md</code></a> • <a href="core/risk_engine.py"><code>core/risk_engine.py:100-106</code></a>
 </div>
 
 ---
@@ -1421,4 +1626,8 @@ Foundational citations supporting the multi-agent architecture, risk engineering
 
 <div class="takeaway">
   📄 <b>Open-Source Repository</b>: <a href="https://github.com/iShmuel/web4-trading-agent">https://github.com/iShmuel/web4-trading-agent</a> • <b>Autonomous Paper Desk</b>: Verified 84/84 Unit Tests Green.
+</div>
+
+<div class="base-badge">
+  🔍 <b>Master Audit Base:</b> <a href="PRESENTATION_VERIFICATION_BASE.md">PRESENTATION_VERIFICATION_BASE.md</a> (Complete Slide-by-Slide Verification Document)
 </div>
