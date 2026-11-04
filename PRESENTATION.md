@@ -9,21 +9,21 @@ style: |
     background: radial-gradient(circle at 15% 15%, #0e172a 0%, #030712 100%);
     color: #e2e8f0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    padding: 28px 38px;
-    font-size: 16px;
+    padding: 26px 36px;
+    font-size: 15.8px;
     letter-spacing: -0.01em;
   }
   h1 {
     color: #38bdf8;
-    font-size: 1.75em;
-    margin-bottom: 0.12em;
+    font-size: 1.72em;
+    margin-bottom: 0.1em;
     font-weight: 800;
     letter-spacing: -0.03em;
   }
   h2 {
     color: #38bdf8;
-    font-size: 1.25em;
-    margin: 0 0 0.22em 0;
+    font-size: 1.22em;
+    margin: 0 0 0.20em 0;
     font-weight: 700;
     display: flex;
     align-items: center;
@@ -31,8 +31,8 @@ style: |
   }
   h3 {
     color: #94a3b8;
-    font-size: 0.92em;
-    margin: 0 0 0.28em 0;
+    font-size: 0.90em;
+    margin: 0 0 0.25em 0;
     font-weight: 600;
   }
   table {
@@ -40,7 +40,7 @@ style: |
     border-spacing: 0;
     width: 100%;
     margin: 6px 0;
-    font-size: 0.72em;
+    font-size: 0.71em;
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid #1e293b;
@@ -96,27 +96,27 @@ style: |
   .grid-4 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    margin: 9px 0;
+    gap: 9px;
+    margin: 8px 0;
   }
   .grid-3 {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin: 9px 0;
+    gap: 9px;
+    margin: 8px 0;
   }
   .grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 11px;
-    margin: 9px 0;
+    gap: 10px;
+    margin: 8px 0;
   }
   .stat-card {
     background: rgba(15, 23, 42, 0.85);
     border: 1px solid #1e293b;
     border-top: 3px solid #38bdf8;
     border-radius: 8px;
-    padding: 9px 7px;
+    padding: 8px 6px;
     text-align: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
   }
@@ -124,7 +124,7 @@ style: |
   .stat-card.purple { border-top-color: #8b5cf6; }
   .stat-card.gold { border-top-color: #f59e0b; }
   .stat-number {
-    font-size: 1.9em;
+    font-size: 1.85em;
     font-weight: 800;
     line-height: 1.1;
     margin-bottom: 2px;
@@ -135,7 +135,7 @@ style: |
   .stat-number.purple { color: #a78bfa; }
   .stat-number.gold { color: #fbbf24; }
   .stat-label {
-    font-size: 0.69em;
+    font-size: 0.68em;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: #94a3b8;
@@ -145,49 +145,49 @@ style: |
     background: rgba(15, 23, 42, 0.7);
     border: 1px solid #1e293b;
     border-radius: 8px;
-    padding: 9px 11px;
-    line-height: 1.36;
+    padding: 8px 10px;
+    line-height: 1.34;
   }
   .card h4 {
-    margin: 0 0 4px 0;
+    margin: 0 0 3px 0;
     color: #38bdf8;
-    font-size: 0.90em;
+    font-size: 0.88em;
     display: flex;
     align-items: center;
     gap: 6px;
   }
   .card p {
     margin: 0;
-    font-size: 0.77em;
+    font-size: 0.75em;
     color: #94a3b8;
   }
   .card-danger {
     background: rgba(244, 63, 94, 0.08);
     border: 1px solid rgba(244, 63, 94, 0.35);
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 9px 11px;
   }
   .card-danger h4 {
-    margin: 0 0 4px 0;
+    margin: 0 0 3px 0;
     color: #f43f5e;
-    font-size: 0.90em;
+    font-size: 0.88em;
   }
   .card-success {
     background: rgba(16, 185, 129, 0.08);
     border: 1px solid rgba(16, 185, 129, 0.35);
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 9px 11px;
   }
   .card-success h4 {
-    margin: 0 0 4px 0;
+    margin: 0 0 3px 0;
     color: #10b981;
-    font-size: 0.90em;
+    font-size: 0.88em;
   }
   .pill {
     display: inline-block;
     padding: 2px 7px;
     border-radius: 9999px;
-    font-size: 0.70em;
+    font-size: 0.69em;
     font-weight: 700;
     letter-spacing: 0.03em;
   }
@@ -220,8 +220,8 @@ style: |
     background: rgba(9, 14, 26, 0.9);
     border: 1px solid #1e293b;
     border-radius: 6px;
-    padding: 7px 10px;
-    margin-bottom: 5px;
+    padding: 6px 9px;
+    margin-bottom: 4px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -236,15 +236,15 @@ style: |
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    font-size: 0.78em;
+    font-size: 0.77em;
     margin-right: 7px;
   }
   .takeaway {
     background: rgba(15, 23, 42, 0.9);
     border-left: 3px solid #38bdf8;
     padding: 6px 10px;
-    margin-top: 8px;
-    font-size: 0.76em;
+    margin-top: 7px;
+    font-size: 0.75em;
     color: #94a3b8;
     border-radius: 0 6px 6px 0;
   }
@@ -252,24 +252,24 @@ style: |
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 6px;
-    margin: 10px 0;
+    gap: 5px;
+    margin: 8px 0;
   }
   .flow-node {
     background: rgba(15, 23, 42, 0.9);
     border: 1px solid #1e293b;
-    border-radius: 8px;
-    padding: 7px 5px;
+    border-radius: 7px;
+    padding: 6px 5px;
     text-align: center;
     flex: 1;
-    min-height: 74px;
+    min-height: 70px;
     display: flex;
     flex-direction: column;
     justify-content: center;
   }
   .flow-arrow {
     color: #38bdf8;
-    font-size: 1.1em;
+    font-size: 1.05em;
     font-weight: 800;
     flex-shrink: 0;
   }
@@ -278,7 +278,7 @@ style: |
     border: 1px solid #1e293b;
     border-top: 3px solid #38bdf8;
     border-radius: 8px;
-    padding: 9px 11px;
+    padding: 8px 10px;
     height: 100%;
   }
   .phase-box.gold { border-top-color: #fbbf24; }
@@ -290,20 +290,20 @@ style: |
     background: rgba(15, 23, 42, 0.85);
     border: 1px solid #1e293b;
     border-radius: 8px;
-    padding: 7px 10px;
-    line-height: 1.32;
-    font-size: 0.74em;
+    padding: 7px 9px;
+    line-height: 1.30;
+    font-size: 0.73em;
   }
   .agent-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
     border-bottom: 1px solid rgba(30, 41, 59, 0.8);
-    padding-bottom: 3px;
+    padding-bottom: 2px;
   }
   .agent-title {
-    font-size: 1.05em;
+    font-size: 1.03em;
     font-weight: 800;
     color: #38bdf8;
     display: flex;
@@ -311,7 +311,7 @@ style: |
     gap: 5px;
   }
   .agent-row {
-    margin-bottom: 3px;
+    margin-bottom: 2px;
     color: #cbd5e1;
   }
   .agent-label {
@@ -325,12 +325,65 @@ style: |
   .agent-label.how { color: #a78bfa; }
   .agent-label.why { color: #10b981; }
   .base-badge {
-    font-size: 0.68em;
+    font-size: 0.67em;
     color: #64748b;
-    margin-top: 6px;
+    margin-top: 5px;
     display: flex;
     align-items: center;
+    gap: 5px;
+  }
+  .level-box {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 7px 10px;
+    margin-bottom: 6px;
+  }
+  .level-simple {
+    background: rgba(16, 185, 129, 0.10);
+    border-left: 3px solid #10b981;
+    padding: 4px 8px;
+    border-radius: 0 4px 4px 0;
+    margin-bottom: 4px;
+    font-size: 0.75em;
+    color: #cbd5e1;
+    line-height: 1.35;
+  }
+  .level-tech {
+    background: rgba(56, 189, 248, 0.09);
+    border-left: 3px solid #38bdf8;
+    padding: 4px 8px;
+    border-radius: 0 4px 4px 0;
+    font-size: 0.73em;
+    color: #94a3b8;
+    line-height: 1.35;
+  }
+  .timeline-flow {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
     gap: 6px;
+    margin: 8px 0;
+  }
+  .timeline-card {
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid #1e293b;
+    border-radius: 6px;
+    padding: 8px 8px;
+    text-align: center;
+    flex: 1;
+    font-size: 0.72em;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .timeline-card.active {
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.12);
+  }
+  .timeline-card.future {
+    border-color: #f43f5e;
+    background: rgba(244, 63, 94, 0.08);
   }
 ---
 
@@ -377,6 +430,15 @@ style: |
 
 The system solves the #1 flaw of automated trading: **unconstrained volatility bleed during market chop and crashes**.
 
+<div class="level-box">
+  <div class="level-simple">
+    💬 <b>In Plain English:</b> Most retail trading bots gamble and blow up in sudden crashes. Our desk acts like a disciplined fund manager: it rides big trends, automatically banks profits into cash as prices rise, and steps aside into 100% cash when markets dump.
+  </div>
+  <div class="level-tech">
+    ⚙️ <b>Under the Hood:</b> 16/24 Donchian breakouts + 200 EMA Macro Regime Gate + Van Tharp $[1\%, 5\%]$ risk clamp + 15% Max DD portfolio kill switch.
+  </div>
+</div>
+
 <div class="grid-2">
   <div class="card">
     <h4>📈 Asymmetric Upside Capture</h4>
@@ -392,10 +454,6 @@ The system solves the #1 flaw of automated trading: **unconstrained volatility b
   </div>
 </div>
 
-<div class="takeaway">
-  💡 <b>Core Philosophy</b>: <i>"Living off trading requires low drawdown and capital preservation, not reckless 20x gambling."</i>
-</div>
-
 <div class="base-badge">
   🔍 <b>Base:</b> <a href="core/risk_engine.py"><code>core/risk_engine.py:40-250</code></a> • <a href="live_paper_trader.py"><code>live_paper_trader.py:120-195</code></a> • Invariant Rules 1–5 in <code>AGENTS.md</code>
 </div>
@@ -404,51 +462,55 @@ The system solves the #1 flaw of automated trading: **unconstrained volatility b
 
 ## 1B. System Taxonomy: Clear Definitions & Scope
 
-To ensure academic and institutional precision, the core components are formally defined:
+To ensure academic precision, here is how the core software components relate to each other:
+
+<div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #1e293b; border-radius: 8px; padding: 7px 10px; margin-bottom: 7px; text-align: center; font-size: 0.74em;">
+  <span class="pill pill-cyan">THE BOT</span> <code>live_paper_trader.py</code> ➔
+  <span class="pill pill-purple">8 AGENTS</span> Autonomous PEAS Nodes ➔
+  <span class="pill pill-green">STRATEGIES</span> Alpha Math ➔
+  <span class="pill pill-amber">PARAMETERS</span> Calibrated Knobs ➔
+  <span class="pill pill-red">COMPONENTS</span> Shared Services
+</div>
 
 <div class="grid-2">
   <div class="card">
     <h4>🤖 The Bot (The Trading Desk)</h4>
-    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
-      • <b>Definition</b>: The overarching autonomous runtime daemon (<a href="live_paper_trader.py"><code>live_paper_trader.py</code></a>) executing 24/7.<br/>
-      • <b>Scope</b>: Orchestrates the event loop, state persistence, graceful shutdowns, and error recovery without human intervention.
+    <p style="font-size: 0.75em; color: #94a3b8; line-height: 1.4;">
+      • 💬 <i>Plain English</i>: The 24/7 operating engine running the whole office.<br/>
+      • ⚙️ <i>Technical</i>: The top-level daemon (<a href="live_paper_trader.py"><code>live_paper_trader.py</code></a>) handling timing, recovery, and persistence.
     </p>
   </div>
   <div class="card">
     <h4>🧠 Autonomous Agents (8 Nodes)</h4>
-    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
-      • <b>Definition</b>: Independent software entities embodying the PEAS model (Perception, Environment, Actuators, Sensors).<br/>
-      • <b>Scope</b>: Specialize in telemetry, alpha generation, arbitration, risk veto, execution, and semantic news screening.
+    <p style="font-size: 0.75em; color: #94a3b8; line-height: 1.4;">
+      • 💬 <i>Plain English</i>: Specialized workers (Scout, Sniper, Risk Officer, AI Reader).<br/>
+      • ⚙️ <i>Technical</i>: PEAS entities perceiving environment, maintaining state, and executing.
     </p>
   </div>
 </div>
 
-<div class="grid-3" style="margin-top: 6px;">
+<div class="grid-3" style="margin-top: 5px;">
   <div class="card">
-    <h4>📈 Strategies (Alpha Engines)</h4>
-    <p style="font-size: 0.75em; color: #94a3b8; line-height: 1.4;">
-      • <b>Definition</b>: Algorithmic mathematical logic (Donchian, Bollinger, Basis Yield).<br/>
-      • <b>Scope</b>: Convert historical candles into normalized directional signals $[-1.0, +1.0]$.
+    <h4>📈 Strategies (Alpha)</h4>
+    <p style="font-size: 0.73em; color: #94a3b8;">
+      • 💬 <i>Simple</i>: Formulas that spot setups.<br/>
+      • ⚙️ <i>Code</i>: Donchian, Bollinger, Basis Yield.
     </p>
   </div>
   <div class="card">
-    <h4>⚙️ Parameters (Calibrated Inputs)</h4>
-    <p style="font-size: 0.75em; color: #94a3b8; line-height: 1.4;">
-      • <b>Definition</b>: Tunable numeric thresholds (e.g., Donchian $= 20$, $\text{ATR} = 2.5$).<br/>
-      • <b>Scope</b>: Optimized out-of-sample via Walk-Forward Arena to prevent curve-fitting.
+    <h4>⚙️ Parameters (Inputs)</h4>
+    <p style="font-size: 0.73em; color: #94a3b8;">
+      • 💬 <i>Simple</i>: Numbers that tune the bot.<br/>
+      • ⚙️ <i>Code</i>: Lookbacks, stop distances, caps.
     </p>
   </div>
   <div class="card">
-    <h4>🧩 Components (Infrastructure)</h4>
-    <p style="font-size: 0.75em; color: #94a3b8; line-height: 1.4;">
-      • <b>Definition</b>: Deterministic service modules (RiskEngine, PaperAccount, DataLoader).<br/>
-      • <b>Scope</b>: Provide shared, reusable mathematical infrastructure across all agents.
+    <h4>🧩 Components (Tools)</h4>
+    <p style="font-size: 0.73em; color: #94a3b8;">
+      • 💬 <i>Simple</i>: Reusable internal engine parts.<br/>
+      • ⚙️ <i>Code</i>: DataLoader, RiskEngine, PaperAccount.
     </p>
   </div>
-</div>
-
-<div class="takeaway">
-  💡 <b>Architectural Hierarchy</b>: The <b>Bot</b> runs the loop $\rightarrow$ coordinates the <b>Agents</b> $\rightarrow$ who execute <b>Strategies</b> configured by <b>Parameters</b> on top of deterministic <b>Components</b>.
 </div>
 
 <div class="base-badge">
@@ -462,7 +524,7 @@ To ensure academic and institutional precision, the core components are formally
 <div class="grid-2">
   <div class="card-danger">
     <h4>❌ RETAIL TRADING FAILURE MODES</h4>
-    <p style="color: #fca5a5; line-height: 1.55; font-size: 0.8em;">
+    <p style="color: #fca5a5; line-height: 1.5; font-size: 0.78em;">
       • <b>Revenge Trading</b>: Increases position sizes into losing streaks until liquidation.<br/>
       • <b>Massive Fee Drag</b>: Taker market orders & wide spreads consume 15%–25% annually.<br/>
       • <b>No Macro Filter</b>: Buys bull traps at the top of relief rallies in bear markets.<br/>
@@ -471,7 +533,7 @@ To ensure academic and institutional precision, the core components are formally
   </div>
   <div class="card-success">
     <h4>🟢 OUR INSTITUTIONAL QUANTITATIVE DESK</h4>
-    <p style="color: #86efac; line-height: 1.55; font-size: 0.8em;">
+    <p style="color: #86efac; line-height: 1.5; font-size: 0.78em;">
       • <b>Strict 1%–5% Risk Clamp</b>: Hard-coded limits prevent over-sizing on any single trade.<br/>
       • <b>Smart Maker Limit Orders</b>: Post-only execution slashes trading fees by 66%.<br/>
       • <b>200 EMA + Confluence Gate</b>: 100% Cash Defense during confirmed macro bear regimes.<br/>
@@ -480,7 +542,7 @@ To ensure academic and institutional precision, the core components are formally
   </div>
 </div>
 
-<div class="grid-3" style="margin-top: 8px;">
+<div class="grid-3" style="margin-top: 6px;">
   <div class="card">
     <h4>🚫 Over-Trading in Chop</h4>
     <p>Filtered out by Volatility Targeting & ATR noise thresholds.</p>
@@ -507,41 +569,43 @@ The system implements the **Web4 Autonomous Agent Paradigm** across 3 functional
 
 <div class="grid-3">
   <div class="phase-box">
-    <div style="margin-bottom: 6px;"><span class="pill pill-cyan">LAYER 1</span></div>
-    <h4 style="color: #38bdf8; margin: 0 0 6px 0;">Perception & Ingestion</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>Data Scout Sentinel</b> (<code>core/data_loader.py</code>): Binance & Yahoo live feeds.<br/>
-      • <b>Data Sanitizer</b>: Active candle rejection & geometric OHLCV validation.<br/>
-      • <b>Macro Telemetry</b>: FRED interest rates, VIX index, & Polymarket radar.<br/>
-      • <b>Responsibility</b>: Deliver clean, verified market state every 60 seconds.
+    <div style="margin-bottom: 5px;"><span class="pill pill-cyan">LAYER 1</span></div>
+    <h4 style="color: #38bdf8; margin: 0 0 5px 0;">Perception & Ingestion</h4>
+    <div class="level-simple" style="font-size: 0.71em; margin-bottom: 4px;">
+      💬 <b>The Eyes & Ears:</b> Collects and cleans price ticks and news every 60s.
+    </div>
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.38;">
+      • <b>Data Scout</b> (<code>core/data_loader.py</code>): Binance & Yahoo feeds.<br/>
+      • <b>Data Sanitizer</b>: Drops incomplete bars; asserts $H \ge L$.<br/>
+      • <b>Macro Telemetry</b>: FRED interest rates, VIX, & Polymarket.
     </p>
   </div>
 
   <div class="phase-box green">
-    <div style="margin-bottom: 6px;"><span class="pill pill-green">LAYER 2</span></div>
-    <h4 style="color: #10b981; margin: 0 0 6px 0;">Governance & Immunity</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>Coordinator Arbiter</b>: Reconciles signals & blocks contradictory orders.<br/>
-      • <b>Risk Governor</b>: Enforces $[1\%, 5\%]$ Van Tharp sizing & position limits.<br/>
-      • <b>Defensive Circuit Breakers</b>: 5% daily loss halt & 15% Max DD kill switch.<br/>
-      • <b>Responsibility</b>: Absolute capital preservation & regulatory compliance.
+    <div style="margin-bottom: 5px;"><span class="pill pill-green">LAYER 2</span></div>
+    <h4 style="color: #10b981; margin: 0 0 5px 0;">Governance & Immunity</h4>
+    <div class="level-simple" style="font-size: 0.71em; margin-bottom: 4px;">
+      💬 <b>The Safety Guard:</b> Vetoes bad trades and protects capital with hard rules.
+    </div>
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.38;">
+      • <b>Coordinator Arbiter</b>: Eliminates conflicting signals.<br/>
+      • <b>Risk Governor</b>: Enforces $[1\%, 5\%]$ Van Tharp position bounds.<br/>
+      • <b>Circuit Breakers</b>: 5% daily loss halt & 15% Max DD lock.
     </p>
   </div>
 
   <div class="phase-box gold">
-    <div style="margin-bottom: 6px;"><span class="pill pill-amber">LAYER 3</span></div>
-    <h4 style="color: #fbbf24; margin: 0 0 6px 0;">Alpha, Execution & Meta</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>Alpha Engines</b>: Momentum, Mean Reversion, & Basis Yield.<br/>
-      • <b>Smart Maker Ledger</b>: Post-only order fills & atomic <code>.bak</code> state persistence.<br/>
-      • <b>Local GPU LLM</b>: 0.70s qualitative news screening via <code>phi4-mini</code>.<br/>
-      • <b>Responsibility</b>: Cost-optimized execution & continuous alpha generation.
+    <div style="margin-bottom: 5px;"><span class="pill pill-amber">LAYER 3</span></div>
+    <h4 style="color: #fbbf24; margin: 0 0 5px 0;">Alpha, Execution & Meta</h4>
+    <div class="level-simple" style="font-size: 0.71em; margin-bottom: 4px;">
+      💬 <b>The Executioner:</b> Routes cheap limit orders & screens news via GPU AI.
+    </div>
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.38;">
+      • <b>Alpha Engines</b>: Momentum, Mean Reversion, Basis Yield.<br/>
+      • <b>Smart Maker Ledger</b>: Post-only fills; atomic <code>.bak</code> state.<br/>
+      • <b>Local GPU LLM</b>: 0.70s headline screening via <code>phi4-mini</code>.
     </p>
   </div>
-</div>
-
-<div class="takeaway">
-  💡 <b>Web4 Framework Principle</b>: High-frequency deterministic mathematical reflex agents (sub-millisecond execution) paired with local cognitive intelligence (semantic reasoning) under unalterable risk bounds.
 </div>
 
 <div class="base-badge">
@@ -557,36 +621,36 @@ The trading desk operates as an ensemble of **8 specialized autonomous agents** 
 <div class="flow-pipeline">
   <div class="flow-node">
     <span class="pill pill-cyan" style="margin-bottom: 3px;">AGENT 1</span>
-    <b style="font-size: 0.82em; color: #38bdf8;">Data Scout</b>
-    <span style="font-size: 0.70em; color: #94a3b8;">Binance / Yahoo Telemetry</span>
+    <b style="font-size: 0.80em; color: #38bdf8;">Data Scout</b>
+    <span style="font-size: 0.68em; color: #94a3b8;">Binance / Yahoo Telemetry</span>
   </div>
   <div class="flow-arrow">→</div>
   <div class="flow-node">
     <span class="pill pill-purple" style="margin-bottom: 3px;">AGENTS 2-4</span>
-    <b style="font-size: 0.82em; color: #a78bfa;">Alpha Engines</b>
-    <span style="font-size: 0.70em; color: #94a3b8;">Momentum • Mean-Rev • Basis</span>
+    <b style="font-size: 0.80em; color: #a78bfa;">Alpha Engines</b>
+    <span style="font-size: 0.68em; color: #94a3b8;">Momentum • Mean-Rev • Basis</span>
   </div>
   <div class="flow-arrow">→</div>
   <div class="flow-node">
     <span class="pill pill-cyan" style="margin-bottom: 3px;">AGENT 5</span>
-    <b style="font-size: 0.82em; color: #38bdf8;">Coordinator</b>
-    <span style="font-size: 0.70em; color: #94a3b8;">Arbiter & Confluence Gate</span>
+    <b style="font-size: 0.80em; color: #38bdf8;">Coordinator</b>
+    <span style="font-size: 0.68em; color: #94a3b8;">Arbiter & Confluence Gate</span>
   </div>
   <div class="flow-arrow">→</div>
   <div class="flow-node">
     <span class="pill pill-red" style="margin-bottom: 3px;">AGENT 6</span>
-    <b style="font-size: 0.82em; color: #f43f5e;">Risk Governor</b>
-    <span style="font-size: 0.70em; color: #94a3b8;">1%-5% Clamp & Veto</span>
+    <b style="font-size: 0.80em; color: #f43f5e;">Risk Governor</b>
+    <span style="font-size: 0.68em; color: #94a3b8;">1%-5% Clamp & Veto</span>
   </div>
   <div class="flow-arrow">→</div>
   <div class="flow-node">
     <span class="pill pill-green" style="margin-bottom: 3px;">AGENTS 7-8</span>
-    <b style="font-size: 0.82em; color: #10b981;">Execution & Meta</b>
-    <span style="font-size: 0.70em; color: #94a3b8;">Maker Ledger & LLM Guard</span>
+    <b style="font-size: 0.80em; color: #10b981;">Execution & Meta</b>
+    <span style="font-size: 0.68em; color: #94a3b8;">Maker Ledger & LLM Guard</span>
   </div>
 </div>
 
-<div class="grid-3" style="margin-top: 6px;">
+<div class="grid-3" style="margin-top: 5px;">
   <div class="card">
     <h4>👁️ 1. Perception Layer</h4>
     <p>Ingests multi-exchange OHLCV, orderbook spreads, news sentiment, and macro indicators.</p>
@@ -615,37 +679,36 @@ The trading desk operates as an ensemble of **8 specialized autonomous agents** 
 
 Validated by **Russell & Norvig (UC Berkeley/Google)** • **Wooldridge (Oxford)** • **Neuro-Symbolic MAS**:
 
-<div class="grid-2">
-  <div class="card">
-    <h4>📚 Canonical Computer Science Definition</h4>
-    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
-      • <b>Russell & Norvig</b> (<i>Artificial Intelligence: A Modern Approach</i>, 4th Ed., Pearson):<br/>
-      &nbsp;&nbsp;→ <i>"An agent is anything that can be viewed as perceiving its environment through sensors and acting upon that environment through actuators toward an objective."</i><br/>
-      • <b>PEAS Framework Formal Verification</b>:<br/>
-      &nbsp;&nbsp;→ <b>P (Performance)</b>: Net return, Sharpe ratio, Max DD $\le 15\%$, fee control.<br/>
-      &nbsp;&nbsp;→ <b>E (Environment)</b>: 21-asset multi-exchange order books & feeds.<br/>
-      &nbsp;&nbsp;→ <b>A (Actuators)</b>: Limit orders, trailing stops, risk circuit breakers.<br/>
-      &nbsp;&nbsp;→ <b>S (Sensors)</b>: Binance/Yahoo API, FRED macro data, RSS feeds.<br/>
-      • <b>Wooldridge</b> (<i>Introduction to MultiAgent Systems</i>, Oxford/Wiley):<br/>
-      &nbsp;&nbsp;→ Defined by autonomy, reactivity, pro-activeness & pipelined arbitration.
-    </p>
+<div class="level-box">
+  <div class="level-simple">
+    💬 <b>In Plain English:</b> An "Agent" is not just a script with rules. It acts like an autonomous worker: it takes in data (sensors), makes decisions toward a goal (net profit with low drawdown), and takes real actions (actuators).
   </div>
-
-  <div class="card">
-    <h4>🧠 Neuro-Symbolic Hybrid Architecture: 7 + 1</h4>
-    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
-      • <b>7 Deterministic Symbolic Agents (Math, State & Risk)</b>:<br/>
-      &nbsp;&nbsp;→ <b>Zero Arithmetic Hallucination</b>: Position risk strictly clamped to $[1\%, 5\%]$ in immutable deterministic Python logic.<br/>
-      &nbsp;&nbsp;→ <b>Sub-Millisecond Speed</b>: Evaluates 21 assets in $0.005\text{s}$ (vs. 2s LLM).<br/>
-      &nbsp;&nbsp;→ <b>Regulatory Compliance</b>: FINRA Notice 15-09 & SEC Rule 15c3-5 mandate deterministic pre-trade risk controls.<br/>
-      • <b>1 Neural Cognitive Agent (Agent 8: Local GPU LLM)</b>:<br/>
-      &nbsp;&nbsp;→ <b>Semantic Qualitative Reasoning</b>: Ingests unstructured English headlines via <code>phi4-mini</code> on private GPU VRAM in $0.70\text{s}$ to catch black swans.
-    </p>
+  <div class="level-tech">
+    ⚙️ <b>Formal Computer Science Grounding:</b> Verified under the canonical PEAS model (Performance, Environment, Actuators, Sensors) and Wooldridge multi-agent criteria.
   </div>
 </div>
 
-<div class="takeaway">
-  💡 <b>Academic Verdict</b>: The system is an authentic <b>Neuro-Symbolic Multi-Agent Ensemble</b>: 7 deterministic mathematical reflex agents + 1 generative neural LLM agent communicating in an autonomous pipelined consensus loop.
+<div class="grid-2">
+  <div class="card">
+    <h4>📚 Canonical Definition (Russell & Norvig)</h4>
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.4;">
+      • <b>P (Performance)</b>: Net return $>50\%$, Max DD $\le 15\%$, fee minimization.<br/>
+      • <b>E (Environment)</b>: 21-asset order books across Binance and US Equities.<br/>
+      • <b>A (Actuators)</b>: Maker limit orders, trailing stops, circuit breakers.<br/>
+      • <b>S (Sensors)</b>: Binance/Yahoo REST APIs, FRED VIX, Google News RSS.
+    </p>
+  </div>
+
+  <div class="card">
+    <h4>🧠 Neuro-Symbolic Hybrid Ensemble (7 + 1)</h4>
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.4;">
+      • <b>7 Deterministic Symbolic Agents (Math & Risk)</b>:<br/>
+      &nbsp;&nbsp;→ <b>0% Math Hallucination</b>: Position sizing clamped strictly to $[1\%, 5\%]$.<br/>
+      &nbsp;&nbsp;→ <b>5ms Speed</b>: Evaluates 21 assets in $0.005\text{s}$ (FINRA Notice 15-09 compliant).<br/>
+      • <b>1 Neural Cognitive Agent (Agent 8: GPU LLM)</b>:<br/>
+      &nbsp;&nbsp;→ <b>Language Reasoning</b>: Reads news via <code>phi4-mini</code> in $0.70\text{s}$ to catch black swans.
+    </p>
+  </div>
 </div>
 
 <div class="base-badge">
@@ -658,71 +721,71 @@ Validated by **Russell & Norvig (UC Berkeley/Google)** • **Wooldridge (Oxford)
 
 The visual execution pipeline running every 60 seconds in <a href="live_paper_trader.py"><code>live_paper_trader.py</code></a>:
 
-<div style="background: rgba(15, 23, 42, 0.95); border: 1px solid #1e293b; border-radius: 8px; padding: 9px 12px; font-size: 0.73em; margin-bottom: 6px;">
+<div style="background: rgba(15, 23, 42, 0.95); border: 1px solid #1e293b; border-radius: 8px; padding: 8px 12px; font-size: 0.72em; margin-bottom: 5px;">
 
   <!-- ROW 1: SENSORS & DATA SCOUT -->
   <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-    <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 5px 8px; flex: 1; text-align: center;">
+    <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 4px 8px; flex: 1; text-align: center;">
       <b style="color: #94a3b8;">SENSORS & TELEMETRY</b><br/>
       Binance REST v3 • Yahoo Finance • FRED VIX • Polymarket • News RSS
     </div>
     <div style="color: #38bdf8; font-weight: 800;">➔</div>
-    <div style="background: rgba(56, 189, 248, 0.12); border: 1px solid #0284c7; border-radius: 6px; padding: 5px 8px; flex: 1.3;">
+    <div style="background: rgba(56, 189, 248, 0.12); border: 1px solid #0284c7; border-radius: 6px; padding: 4px 8px; flex: 1.3;">
       <span class="pill pill-cyan">AGENT 1</span> <b style="color: #38bdf8;">Data Scout Sentinel</b> (<code>core/data_loader.py</code>)<br/>
       • <code>filter_closed_bars()</code>: Drops forming candle (anti-repainting)<br/>
       • <code>check_data_quality()</code>: Asserts monotonic time & geometric $H \ge L$
     </div>
   </div>
 
-  <div style="text-align: center; color: #a78bfa; font-size: 0.86em; margin: 2px 0;">▼ Clean OHLCV Broadcasted in Parallel to 3 Alpha Engines</div>
+  <div style="text-align: center; color: #a78bfa; font-size: 0.85em; margin: 2px 0;">▼ Clean OHLCV Broadcasted in Parallel to 3 Alpha Engines</div>
 
   <!-- ROW 2: PARALLEL ALPHA ENGINES -->
   <div style="display: flex; gap: 7px;">
-    <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid #7c3aed; border-radius: 6px; padding: 5px 7px; flex: 1;">
+    <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid #7c3aed; border-radius: 6px; padding: 4px 7px; flex: 1;">
       <span class="pill pill-purple">AGENT 2</span> <b style="color: #a78bfa;">Trend Momentum</b><br/>
       <code>strategies/momentum.py</code><br/>
       Donchian 16/24 Breakout + 32/200 EMA + Confluence $\ge 0.70$
     </div>
-    <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid #7c3aed; border-radius: 6px; padding: 5px 7px; flex: 1;">
+    <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid #7c3aed; border-radius: 6px; padding: 4px 7px; flex: 1;">
       <span class="pill pill-purple">AGENT 3</span> <b style="color: #a78bfa;">Mean Reversion</b><br/>
       <code>strategies/mean_reversion.py</code><br/>
       Bollinger 2.0 Snipe + RSI Extreme ($<30 / >70$) + Vol $\ge 1.25\times$
     </div>
-    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #059669; border-radius: 6px; padding: 5px 7px; flex: 1;">
+    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #059669; border-radius: 6px; padding: 4px 7px; flex: 1;">
       <span class="pill pill-green">AGENT 4</span> <b style="color: #10b981;">Basis Yield</b><br/>
       <code>core/basis_yield.py</code><br/>
       Delta-Neutral Long Spot + Short 1x Perp (Funding $>0.01\%$/8h)
     </div>
   </div>
 
-  <div style="text-align: center; color: #38bdf8; font-size: 0.86em; margin: 2px 0;">▼ Directional Signals [-1.0, +1.0] Passed to Arbiter Cortex</div>
+  <div style="text-align: center; color: #38bdf8; font-size: 0.85em; margin: 2px 0;">▼ Directional Signals [-1.0, +1.0] Passed to Arbiter Cortex</div>
 
   <!-- ROW 3: COORDINATOR & RISK GOVERNOR -->
   <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-    <div style="background: rgba(56, 189, 248, 0.12); border: 1px solid #0284c7; border-radius: 6px; padding: 5px 8px; flex: 1.1;">
+    <div style="background: rgba(56, 189, 248, 0.12); border: 1px solid #0284c7; border-radius: 6px; padding: 4px 8px; flex: 1.1;">
       <span class="pill pill-cyan">AGENT 5</span> <b style="color: #38bdf8;">Coordinator Arbiter</b> (<code>core/coordinator.py</code>)<br/>
       • Reconciles conflicts (Long vs Short $\rightarrow$ FLAT)<br/>
       • 200 EMA Macro Regime Gate (No buying in bear trends)
     </div>
     <div style="color: #f43f5e; font-weight: 800;">➔</div>
-    <div style="background: rgba(244, 63, 94, 0.12); border: 1px solid #e11d48; border-radius: 6px; padding: 5px 8px; flex: 1.3;">
+    <div style="background: rgba(244, 63, 94, 0.12); border: 1px solid #e11d48; border-radius: 6px; padding: 4px 8px; flex: 1.3;">
       <span class="pill pill-red">AGENT 6</span> <b style="color: #f43f5e;">Institutional Risk Governor</b> (<code>core/risk_engine.py</code>)<br/>
       • Van Tharp Sizing clamped to $[1\%, 5\%]$ • Max 4 open trades (max 2 crypto)<br/>
       • <b>Circuit Breakers</b>: 5% daily loss halt • 15% Max DD kill switch • 3h cooldown
     </div>
   </div>
 
-  <div style="text-align: center; color: #fbbf24; font-size: 0.86em; margin: 2px 0;">▼ Approved Risk-Sized Order Ticket Passed to Pre-Flight Safety & AI Screener</div>
+  <div style="text-align: center; color: #fbbf24; font-size: 0.85em; margin: 2px 0;">▼ Approved Risk-Sized Order Ticket Passed to Pre-Flight Safety & AI Screener</div>
 
   <!-- ROW 4: PRE-FLIGHT / LOCAL LLM & SMART MAKER LEDGER -->
   <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-    <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid #d97706; border-radius: 6px; padding: 5px 8px; flex: 1.2;">
+    <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid #d97706; border-radius: 6px; padding: 4px 8px; flex: 1.2;">
       <span class="pill pill-amber">AGENT 8</span> <b style="color: #fbbf24;">Local GPU Devil's Advocate</b> (<code>core/preflight.py</code>)<br/>
       • <code>validate_order_preflight()</code>: Spread $\le 0.15\%$, Tick $\le 180\text{s}$<br/>
       • <code>LocalLLMScreener</code>: <code>phi4-mini</code> on GPU ($0.70\text{s}$) news headline veto
     </div>
     <div style="color: #10b981; font-weight: 800;">➔</div>
-    <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid #059669; border-radius: 6px; padding: 5px 8px; flex: 1.2;">
+    <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid #059669; border-radius: 6px; padding: 4px 8px; flex: 1.2;">
       <span class="pill pill-green">AGENT 7</span> <b style="color: #10b981;">Smart Maker Ledger</b> (<code>core/paper_account.py</code>)<br/>
       • Routes passive Maker limit order ($0.02\%$ fee, $0.00\%$ slippage)<br/>
       • Atomic state commit: <code>paper_portfolio.json</code> + duplicate <code>.bak</code>
@@ -745,7 +808,7 @@ The visual execution pipeline running every 60 seconds in <a href="live_paper_tr
 
 The 8 agents communicate asynchronously in Python via strongly-typed payload contracts:
 
-<table style="width: 100%; font-size: 0.73em; margin: 6px 0;">
+<table style="width: 100%; font-size: 0.72em; margin: 5px 0;">
   <tr>
     <th>Stage</th>
     <th>Sender $\rightarrow$ Receiver</th>
@@ -910,33 +973,48 @@ The 8 agents communicate asynchronously in Python via strongly-typed payload con
 
 Garbage in, garbage out: the trading desk implements a **3-tier data validation and filtering firewall**:
 
+<div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #1e293b; border-radius: 8px; padding: 7px 10px; margin-bottom: 6px; font-size: 0.74em; text-align: center;">
+  Raw Exchange Feed ➔
+  <span class="pill pill-cyan">1. Drop Incomplete Bars</span> ➔
+  <span class="pill pill-purple">2. Assert Monotonic Time & $H \ge L$</span> ➔
+  <span class="pill pill-amber">3. Check Spread $\le 0.15\%$</span> ➔
+  <span class="pill pill-green">Approved Clean OHLCV</span>
+</div>
+
 <div class="grid-3">
   <div class="card">
     <h4>🧹 1. Closed-Bar Filtering</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>Mechanism</b>: <a href="core/data_loader.py"><code>filter_closed_bars()</code></a> actively drops the current unclosed, forming candle.<br/>
-      • <b>Repainting Prevention</b>: Indicators only calculate on finalized historical bars.<br/>
-      • <b>Guarantee</b>: Eliminates intra-candle false triggers and indicator recalculation flutter.
+    <div class="level-simple" style="font-size: 0.70em; margin-bottom: 3px;">
+      💬 <i>Simple</i>: Don't judge a candle before it finishes.
+    </div>
+    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
+      • <b>Mechanism</b>: <a href="core/data_loader.py"><code>filter_closed_bars()</code></a> drops forming candle.<br/>
+      • <b>Repainting Prevention</b>: Indicators only calculate on finalized bars.<br/>
+      • <b>Guarantee</b>: Eliminates intra-candle false triggers.
     </p>
   </div>
 
   <div class="card">
-    <h4>🛡️ 2. Geometric & Chronological Validation</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>Mechanism</b>: <a href="core/data_loader.py"><code>check_data_quality()</code></a> asserts strict data invariants.<br/>
-      • <b>Monotonicity</b>: Datetime index must be strictly increasing without gaps.<br/>
-      • <b>Price Logic</b>: $High \ge Low$, $High \ge Open/Close$, $Low \le Open/Close$.<br/>
-      • <b>Volume Integrity</b>: Rejects negative volume, NaNs, or zero-spread quotes.
+    <h4>🛡️ 2. Geometric Validation</h4>
+    <div class="level-simple" style="font-size: 0.70em; margin-bottom: 3px;">
+      💬 <i>Simple</i>: Reject price glitches and time travel.
+    </div>
+    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
+      • <b>Mechanism</b>: <a href="core/data_loader.py"><code>check_data_quality()</code></a> asserts data logic.<br/>
+      • <b>Monotonicity</b>: Datetime must be strictly increasing.<br/>
+      • <b>Price Invariants</b>: $High \ge Low$, positive volume, no NaNs.
     </p>
   </div>
 
   <div class="card">
-    <h4>⚡ 3. Real-Time Pre-Flight Guard</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>Mechanism</b>: <a href="core/preflight.py"><code>validate_order_preflight()</code></a> intercepts orders before execution.<br/>
-      • <b>Spread Filter</b>: Rejects market if Bid/Ask spread $> 0.15\%$ (liquidity void).<br/>
-      • <b>Tick Staleness</b>: Rejects quotes $> 180\text{s}$ old (connection lag).<br/>
-      • <b>Market Impact Cap</b>: Blocks order sizes $> 2.0\%$ of 24h rolling volume.
+    <h4>⚡ 3. Pre-Flight Guard</h4>
+    <div class="level-simple" style="font-size: 0.70em; margin-bottom: 3px;">
+      💬 <i>Simple</i>: Check the toll booth before trading.
+    </div>
+    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
+      • <b>Mechanism</b>: <a href="core/preflight.py"><code>validate_order_preflight()</code></a>.<br/>
+      • <b>Spread Filter</b>: Rejects if spread $> 0.15\%$ (liquidity void).<br/>
+      • <b>Tick Staleness</b>: Rejects quotes $> 180\text{s}$ old (lag).
     </p>
   </div>
 </div>
@@ -953,30 +1031,38 @@ Garbage in, garbage out: the trading desk implements a **3-tier data validation 
 
 ## 6C. Elimination of Look-Ahead Bias & Data Leakage
 
-Look-ahead bias is the primary reason academic backtests fail in production. Our codebase enforces strict causal separation:
+Look-ahead bias is the primary reason backtests fail. Our codebase enforces strict causal separation:
 
-<div class="grid-2">
-  <div class="card">
-    <h4>📐 Causal Indicator Computation</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.45;">
-      • <b>Explicit Lag Shifts</b>: Donchian channels in <a href="core/strategy.py"><code>core/strategy.py:115-119</code></a> use <code>high.shift(1).rolling(period).max()</code>. Candle $t$ threshold is computed strictly from candles $0 \dots t-1$.<br/>
-      • <b>True Range Causality</b>: ATR utilizes <code>prev_close = close.shift(1)</code>, ensuring no same-bar settlement leakage.<br/>
-      • <b>Autoregressive EMAs</b>: Moving averages use recursive exponential weights where $EMA_t = \alpha P_t + (1-\alpha) EMA_{t-1}$, preventing forward-looking interpolation.
-    </p>
+<div class="timeline-flow">
+  <div class="timeline-card">
+    <span class="pill pill-cyan" style="margin-bottom: 2px;">PAST DATA: BAR $t-1$</span>
+    <b>Indicators Calculated</b><br/>
+    <code>high.shift(1).rolling(20)</code><br/>
+    <span style="color: #94a3b8;">Uses strictly completed bars</span>
   </div>
-
-  <div class="card">
-    <h4>⏱️ Next-Open Execution & Chronological Splits</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.45;">
-      • <b>Realistic Fill Emulation</b>: In <a href="core/backtest_engine.py"><code>core/backtest_engine.py:480-520</code></a>, signals generated at the close of candle $t$ are filled at <code>open[t+1]</code> with maker/taker fee and slippage modeling.<br/>
-      • <b>Strict Walk-Forward Splitting</b>: In <a href="agent/validator.py"><code>agent/validator.py:30-80</code></a>, historical data is partitioned chronologically (70% in-sample, 30% out-of-sample).<br/>
-      • <b>Zero Shuffling</b>: Random k-fold cross-validation is strictly banned to protect the arrow of time.
-    </p>
+  <div class="flow-arrow">➔</div>
+  <div class="timeline-card active">
+    <span class="pill pill-purple" style="margin-bottom: 2px;">TIME $t$: BAR CLOSE</span>
+    <b>Signal Generated</b><br/>
+    Close crosses Donchian High<br/>
+    <span style="color: #38bdf8;">Decision made at close</span>
+  </div>
+  <div class="flow-arrow">➔</div>
+  <div class="timeline-card future">
+    <span class="pill pill-green" style="margin-bottom: 2px;">TIME $t+1$: NEXT OPEN</span>
+    <b>Execution Fill</b><br/>
+    Filled at <code>open[t+1]</code><br/>
+    <span style="color: #10b981;">+ fees & slippage modeled</span>
   </div>
 </div>
 
-<div class="takeaway">
-  💡 <b>Causal Guarantee</b>: Every decision made at time $t$ has mathematical access strictly to information generated at $t \le t_{\text{current}}$, verified by automated regression test suites.
+<div class="level-box">
+  <div class="level-simple">
+    💬 <b>In Plain English:</b> You cannot read tomorrow's newspaper today. When our bot decides to buy at 10:00 AM, it only knows prices up to 10:00 AM. It enters the trade at 10:01 AM when the next candle opens.
+  </div>
+  <div class="level-tech">
+    ⚙️ <b>Under the Hood:</b> Explicit <code>.shift(1)</code> in <a href="core/strategy.py"><code>core/strategy.py:115-119</code></a> + next-open execution in <a href="core/backtest_engine.py"><code>core/backtest_engine.py:483</code></a> + chronological 70/30 split in <a href="agent/validator.py"><code>agent/validator.py</code></a> (zero k-fold shuffling).
+  </div>
 </div>
 
 <div class="base-badge">
@@ -987,12 +1073,12 @@ Look-ahead bias is the primary reason academic backtests fail in production. Our
 
 ## 6D. Data Provider Verification & Source Legitimateness
 
-All ingested market data originates from verified, institutional-grade, and official public APIs:
+All market data originates from verified, institutional-grade, and official public APIs:
 
 <div class="grid-2">
   <div class="card">
     <h4>🪙 Digital Assets: Binance REST API v3 (via CCXT)</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.4;">
       • <b>Provider</b>: Binance Holdings Ltd. (world's largest crypto exchange by volume).<br/>
       • <b>Protocol</b>: CCXT open-source library connecting to official REST v3 endpoints.<br/>
       • <b>Verification</b>: Direct HMAC-SHA256 authenticated endpoints; verified against Binance Official Developer Documentation.<br/>
@@ -1002,7 +1088,7 @@ All ingested market data originates from verified, institutional-grade, and offi
 
   <div class="card">
     <h4>📈 US Equities & Commodities: Yahoo Finance (yfinance)</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.4;">
       • <b>Provider</b>: Yahoo Finance / Refinitiv consolidated market data.<br/>
       • <b>Protocol</b>: <code>yfinance</code> Python library querying official v8 chart endpoints.<br/>
       • <b>Verification</b>: Cross-validated with NYSE/NASDAQ consolidated tape quotes.<br/>
@@ -1011,10 +1097,10 @@ All ingested market data originates from verified, institutional-grade, and offi
   </div>
 </div>
 
-<div class="grid-2" style="margin-top: 6px;">
+<div class="grid-2" style="margin-top: 5px;">
   <div class="card">
     <h4>🏛️ Macroeconomic Indicators: FRED API</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.4;">
       • <b>Provider</b>: Federal Reserve Bank of St. Louis (Economic Research Division).<br/>
       • <b>Series Ingested</b>: CBOE VIX Index (<code>VIXCLS</code>), Fed Funds Rate, High Yield Spread.<br/>
       • <b>Legitimacy</b>: Authoritative US central bank official statistical release.
@@ -1023,7 +1109,7 @@ All ingested market data originates from verified, institutional-grade, and offi
 
   <div class="card">
     <h4>🌐 Prediction Markets & News Telemetry</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.4;">
       • <b>Polymarket Gamma API</b>: Decentralized order-book probability for macro events.<br/>
       • <b>Google News RSS</b>: Authoritative global news aggregator parsed locally by private GPU LLM.<br/>
       • <b>Compliance</b>: Free of scrape locks; adheres strictly to public API terms of service.
@@ -1044,22 +1130,22 @@ Capital dynamically rotates across **4 completely uncorrelated market sectors**:
 <div class="grid-4">
   <div class="card">
     <h4>🚀 High-Beta Crypto</h4>
-    <div style="font-size: 0.77em; color: #38bdf8; font-weight: 700; margin-bottom: 4px;">SOL • SUI • TAO • DOGE • AVAX • NEAR • LINK</div>
+    <div style="font-size: 0.75em; color: #38bdf8; font-weight: 700; margin-bottom: 3px;">SOL • SUI • TAO • DOGE • AVAX • NEAR • LINK</div>
     <p>High-velocity momentum runners; clean $15\% - 30\%$ multi-day trend expansions.</p>
   </div>
   <div class="card">
     <h4>⚓ Macro Anchors</h4>
-    <div style="font-size: 0.77em; color: #10b981; font-weight: 700; margin-bottom: 4px;">BTC • ETH • BNB</div>
+    <div style="font-size: 0.75em; color: #10b981; font-weight: 700; margin-bottom: 3px;">BTC • ETH • BNB</div>
     <p>Institutional benchmarks; basis funding rate radar and macro direction indicators.</p>
   </div>
   <div class="card">
     <h4>💻 US Tech Growth</h4>
-    <div style="font-size: 0.77em; color: #a78bfa; font-weight: 700; margin-bottom: 4px;">NVDA • AMD • AAPL • PLTR • TSLA</div>
+    <div style="font-size: 0.75em; color: #a78bfa; font-weight: 700; margin-bottom: 3px;">NVDA • AMD • AAPL • PLTR • TSLA</div>
     <p>Multi-billion daily volume; continuous institutional accumulation trends.</p>
   </div>
   <div class="card">
     <h4>🛡️ Macro & Hedges</h4>
-    <div style="font-size: 0.77em; color: #fbbf24; font-weight: 700; margin-bottom: 4px;">SPY • QQQ • GLD • SLV • TLT • XLE</div>
+    <div style="font-size: 0.75em; color: #fbbf24; font-weight: 700; margin-bottom: 3px;">SPY • QQQ • GLD • SLV • TLT • XLE</div>
     <p>Gold, Silver, Treasuries & Energy; negative correlation during crises.</p>
   </div>
 </div>
@@ -1095,8 +1181,10 @@ The bot rides expansions using a **4-Stage Execution Ladder**:
   <span class="pill pill-purple">ZERO RISK</span>
 </div>
 
-<div class="takeaway">
-  💡 <b>The Result</b>: Even with a modest 45% win rate, a 3:1 reward-to-risk ratio mathematically guarantees compounding growth.
+<div class="level-box" style="margin-top: 6px;">
+  <div class="level-simple">
+    💬 <b>Why This Math Works:</b> Even with a modest 45% win rate, banking $3\times$ what you risk guarantees strong compounding growth while keeping stress zero.
+  </div>
 </div>
 
 <div class="base-badge">
@@ -1111,9 +1199,9 @@ When markets crash, the bot deploys **3 institutional wealth-extraction mechanis
 
 <div class="grid-3">
   <div class="phase-box">
-    <div style="margin-bottom: 6px;"><span class="pill pill-red">MECHANISM A</span></div>
-    <h4 style="color: #f43f5e; margin: 0 0 6px 0;">Short Overbought Fades</h4>
-    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
+    <div style="margin-bottom: 5px;"><span class="pill pill-red">MECHANISM A</span></div>
+    <h4 style="color: #f43f5e; margin: 0 0 5px 0;">Short Overbought Fades</h4>
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.4;">
       • Trigger: Bear regime ($< 200$ EMA).<br/>
       • Signal: Dead-cat bounce with $\text{RSI} > 75$.<br/>
       • Execution: Short upper Bollinger Band.<br/>
@@ -1122,9 +1210,9 @@ When markets crash, the bot deploys **3 institutional wealth-extraction mechanis
   </div>
 
   <div class="phase-box gold">
-    <div style="margin-bottom: 6px;"><span class="pill pill-amber">MECHANISM B</span></div>
-    <h4 style="color: #fbbf24; margin: 0 0 6px 0;">Panic Capitulation Snipes</h4>
-    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
+    <div style="margin-bottom: 5px;"><span class="pill pill-amber">MECHANISM B</span></div>
+    <h4 style="color: #fbbf24; margin: 0 0 5px 0;">Panic Capitulation Snipes</h4>
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.4;">
       • Trigger: Volume surge $\ge 1.5\times$ average.<br/>
       • Signal: Extreme oversold $\text{RSI} < 30$.<br/>
       • Execution: Buy panic wick rejection.<br/>
@@ -1133,9 +1221,9 @@ When markets crash, the bot deploys **3 institutional wealth-extraction mechanis
   </div>
 
   <div class="phase-box green">
-    <div style="margin-bottom: 6px;"><span class="pill pill-green">MECHANISM C</span></div>
-    <h4 style="color: #10b981; margin: 0 0 6px 0;">Delta-Neutral Basis Yield</h4>
-    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
+    <div style="margin-bottom: 5px;"><span class="pill pill-green">MECHANISM C</span></div>
+    <h4 style="color: #10b981; margin: 0 0 5px 0;">Delta-Neutral Basis Yield</h4>
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.4;">
       • Trigger: Positive crypto funding rate.<br/>
       • Structure: Long Spot + Short Perp.<br/>
       • Market Risk: Exactly 0.0 Delta.<br/>
@@ -1158,25 +1246,28 @@ When markets crash, the bot deploys **3 institutional wealth-extraction mechanis
 
 A non-directional **"Paycheck Engine"** that harvests perpetual futures funding rates:
 
+<div class="level-box">
+  <div class="level-simple">
+    💬 <b>In Plain English:</b> If you own 1 Bitcoin on the spot market and simultaneously short 1 Bitcoin in futures, your market risk is exactly ZERO. You don't care if Bitcoin is at $100k or $20k. Meanwhile, speculative traders pay you an 8-hour cash fee just for holding the position!
+  </div>
+  <div class="level-tech">
+    ⚙️ <b>Under the Hood:</b> <a href="core/basis_yield.py"><code>core/basis_yield.py</code></a> pairs Long Spot with Short 1x Perp on funding $>0.01\%$/8h, harvesting 8%–18% APY cash flow.
+  </div>
+</div>
+
 <div class="grid-2">
   <div class="card">
     <h4>💰 Zero Market Risk Cash Flow</h4>
     <p>• Perpetual futures longs pay shorts an 8-hour funding fee ~80% of the time.<br/>
     • Simultaneously holding <b>Long Spot + Short Perp</b> creates exact <b>0.0 Delta</b>.<br/>
-    • Whether Bitcoin is at $100k or crashes to $20k, price P&L is exactly $0.<br/>
     • Funding payments are credited directly into cash balance every 8 hours.</p>
   </div>
   <div class="card">
     <h4>📊 Annualized Baseline Yield</h4>
     <p>• Historical baseline yield: <b>8% to 18% APY</b>.<br/>
     • Automatically scans active crypto universe for funding $>0.01\%$ per 8h.<br/>
-    • Deploys idle treasury cash to generate steady monthly income.<br/>
     • Pays for server overhead and base living expenses during market chop.</p>
   </div>
-</div>
-
-<div class="takeaway">
-  💡 <b>Living Off Trading</b>: The Basis Engine provides a stable baseline income floor so you never have to force bad directional trades.
 </div>
 
 <div class="base-badge">
@@ -1187,45 +1278,54 @@ A non-directional **"Paycheck Engine"** that harvests perpetual futures funding 
 
 ## 11. Quantitative Risk Management & Deterministic Governance in Practice
 
-Risk management in <a href="core/risk_engine.py"><code>core/risk_engine.py</code></a> is hard-coded and immutable, operating on strict mathematical bounds:
+Risk management in <a href="core/risk_engine.py"><code>core/risk_engine.py</code></a> is hard-coded and immutable, operating as a **4-Layer Defense Shield**:
 
-<div class="grid-2">
-  <div class="card">
-    <h4>📐 Van Tharp Volatility-Adjusted Sizing</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.45;">
-      • <b>Formula</b>: $\text{Position Size} = \frac{\text{Account Equity} \times \text{Risk Fraction}}{\text{Entry Price} - \text{Stop Loss Price}}$<br/>
-      • <b>Hard Clamp Bounds</b>: $\text{Risk Fraction} \in [1.0\%, 5.0\%]$ (default 2.0%).<br/>
-      • <b>Invariant #3</b>: Hard-coded in Python; no optimizer or AI prompt can loosen this limit.<br/>
-      • <b>Position Cap</b>: Maximum 4 concurrent trades; maximum 2 crypto positions to prevent sector contagion.
+<div class="grid-4" style="margin-bottom: 6px;">
+  <div class="card" style="border-top: 3px solid #38bdf8;">
+    <b style="color: #38bdf8; font-size: 0.85em;">Shield 1: The Sizing Clamp</b>
+    <p style="font-size: 0.72em; margin-top: 3px;">
+      <b>Formula</b>: $\frac{\text{Equity} \times 2\%}{\text{Entry} - \text{Stop}}$<br/>
+      Clamped strictly to $[1\%, 5\%]$. Never over-sizes.
     </p>
   </div>
-
-  <div class="card">
-    <h4>🚨 Hard Circuit Breakers & Cooldowns</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.45;">
-      • <b>5% Daily Loss Halt</b>: If rolling 24h loss reaches 5%, all entries are frozen.<br/>
-      • <b>15% Max DD Kill Switch</b>: If drawdown from high-water mark reaches 15%, the portfolio locks permanently into 100% Cash Defense.<br/>
-      • <b>3-Hour Crash Contagion Cooldown</b>: Any asset stopped out enters a mandatory 180-minute blackout to prevent revenge whipsawing.
+  <div class="card" style="border-top: 3px solid #10b981;">
+    <b style="color: #10b981; font-size: 0.85em;">Shield 2: Profit Vault</b>
+    <p style="font-size: 0.72em; margin-top: 3px;">
+      Bank 50% at $+2.5\times\text{ATR}$.<br/>
+      Raise stop to Entry at $+1.2\times\text{ATR}$ (Free roll).
+    </p>
+  </div>
+  <div class="card" style="border-top: 3px solid #fbbf24;">
+    <b style="color: #fbbf24; font-size: 0.85em;">Shield 3: Daily Circuit</b>
+    <p style="font-size: 0.72em; margin-top: 3px;">
+      5% rolling 24h loss halt.<br/>
+      3h contagion cooldown on stopped-out assets.
+    </p>
+  </div>
+  <div class="card" style="border-top: 3px solid #f43f5e;">
+    <b style="color: #f43f5e; font-size: 0.85em;">Shield 4: Kill Switch</b>
+    <p style="font-size: 0.72em; margin-top: 3px;">
+      15% Max DD triggers permanent Cash Defense.<br/>
+      Guarantees 85% safe.
     </p>
   </div>
 </div>
 
-<div class="grid-2" style="margin-top: 6px;">
+<div class="grid-2">
   <div class="card">
-    <h4>🎯 Dynamic Staged Profit Harvesting</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>50% Banked at $+2.5\times\text{ATR}$</b>: Automatically locks half position to cash.<br/>
-      • <b>Break-Even Lock</b>: Once profit reaches $+1.2\times\text{ATR}$, trailing stop is raised to entry price + fees, guaranteeing a risk-free runner.
-    </p>
+    <h4>📐 Asymmetry of Losses</h4>
+    <table style="width: 100%; font-size: 0.75em; margin-top: 2px;">
+      <tr><th>Drawdown</th><th>Gain to Recover</th><th>Status</th></tr>
+      <tr><td><b>-5%</b></td><td>+5.3%</td><td>Normal trading</td></tr>
+      <tr><td><b>-15%</b></td><td><span class="highlight"><b>+17.6% (Easy)</b></span></td><td><span class="highlight"><b>KILL SWITCH (Safe)</b></span></td></tr>
+      <tr><td><b>-50%</b></td><td><span class="warning">+100.0% (Double)</span></td><td>❌ Retail ruin point</td></tr>
+    </table>
   </div>
-
   <div class="card">
-    <h4>🔒 Asymmetry of Loss Defense</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • Halting at $-15\%$ requires only $+17.6\%$ to recover (manageable).<br/>
-      • Unconstrained retail bots that hit $-50\%$ require $+100.0\%$ just to break even.<br/>
-      • <b>Zero Risk of Ruin</b>: Capital preservation is the non-negotiable objective.
-    </p>
+    <h4>🛡️ Why 15% Max DD Matters</h4>
+    <div class="level-simple" style="font-size: 0.71em; margin-top: 2px;">
+      💬 <i>Simple:</i> Recovering from -15% requires only a modest +17.6% bounce. Unmanaged retail bots that hit -50% must double their money just to break even!
+    </div>
   </div>
 </div>
 
@@ -1242,35 +1342,43 @@ Every architectural choice was selected to maximize reliability, determinism, an
 <div class="grid-2">
   <div class="card">
     <h4>🧠 1. Neuro-Symbolic MAS vs. Pure LLM Agent</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>Decision</b>: 7 deterministic symbolic Python agents + 1 neural LLM agent.<br/>
-      • <b>Why Chosen</b>: Pure LLMs suffer from arithmetic hallucinations, high latency (1–3s), and non-deterministic logic. Symbolic math guarantees 100% reproducibility and compliance with SEC Rule 15c3-5 and FINRA Notice 15-09.
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.38;">
+      • <b>We Chose</b>: 7 deterministic symbolic Python agents + 1 neural LLM agent.<br/>
+      • <b>Alternative Rejected</b>: Pure End-to-End LLM Agent.<br/>
+      • <b>Why Chosen</b>: Pure LLMs hallucinate arithmetic, add 2s latency, and violate determinism. Symbolic math guarantees 100% reproducibility and compliance with SEC Rule 15c3-5.<br/>
+      • <b>Trade-Off</b>: Requires hand-coded rules for market indicators.
     </p>
   </div>
 
   <div class="card">
     <h4>🖥️ 2. Local GPU Inference (`phi4-mini`) vs. Cloud API</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>Decision</b>: Local <code>phi4-mini</code> running on local 6GB VRAM GPU in $0.70\text{s}$.<br/>
-      • <b>Why Chosen</b>: Zero marginal API token costs ($0/mo), complete privacy of portfolio signals, immunity to cloud API rate limits, and ultra-low deterministic latency.
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.38;">
+      • <b>We Chose</b>: Local <code>phi4-mini</code> running on local 6GB VRAM GPU ($0.70\text{s}$).<br/>
+      • <b>Alternative Rejected</b>: OpenAI GPT-4o / Anthropic Claude API.<br/>
+      • <b>Why Chosen</b>: $0 marginal API token costs, complete data privacy, immunity to cloud API outages or rate limits, and sub-second deterministic latency.<br/>
+      • <b>Trade-Off</b>: Requires modern local GPU hardware.
     </p>
   </div>
 </div>
 
-<div class="grid-2" style="margin-top: 6px;">
+<div class="grid-2" style="margin-top: 5px;">
   <div class="card">
     <h4>📊 3. Trend & Mean Reversion vs. Deep RL</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>Decision</b>: Donchian Breakouts + Bollinger Sniping + Basis Yield.<br/>
-      • <b>Why Chosen</b>: Deep Reinforcement Learning overfits financial noise and fails unpredictably during regime shifts. Classical robust indicators have convex payoffs and explainable parameters.
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.38;">
+      • <b>We Chose</b>: Donchian Breakouts + Bollinger Sniping + Basis Yield.<br/>
+      • <b>Alternative Rejected</b>: Deep Reinforcement Learning (PPO / DQN).<br/>
+      • <b>Why Chosen</b>: Deep RL overfits financial noise and fails unpredictably during regime shifts. Classical robust indicators have convex payoffs and explainable parameters.<br/>
+      • <b>Trade-Off</b>: Does not automatically invent new indicator math.
     </p>
   </div>
 
   <div class="card">
     <h4>💾 4. Atomic JSON + `.bak` vs. Heavy SQL Database</h4>
-    <p style="font-size: 0.76em; color: #94a3b8; line-height: 1.42;">
-      • <b>Decision</b>: Atomic file write via temporary file replacement + dual backups.<br/>
-      • <b>Why Chosen</b>: Eliminates external database dependencies, connection pooling overhead, and migration corruptions. Guaranteed zero state corruption during crashes.
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.38;">
+      • <b>We Chose</b>: Atomic file write via temporary file replacement + dual backups.<br/>
+      • <b>Alternative Rejected</b>: PostgreSQL / SQLAlchemy server.<br/>
+      • <b>Why Chosen</b>: Eliminates external database dependencies, connection pooling crashes, and migration corruptions. Guaranteed zero state corruption during power cuts.<br/>
+      • <b>Trade-Off</b>: Not designed for multi-million row relational queries.
     </p>
   </div>
 </div>
@@ -1288,7 +1396,7 @@ Full candle-by-candle replay across 21 assets with **0.06% fees + 0.04% slippage
 <div class="grid-2">
   <div class="card">
     <h4>📊 Full Live Bot Replay vs. Raw Baseline ($10,000 Capital)</h4>
-    <table style="width: 100%; font-size: 0.76em; margin-top: 4px;">
+    <table style="width: 100%; font-size: 0.76em; margin-top: 3px;">
       <tr><th>Metric</th><th>Raw Unfiltered</th><th>Live Bot Replay</th></tr>
       <tr><td><b>Net Portfolio Return</b></td><td>$-6.08\%$ ($-25.5\text{k}$)</td><td><span class="highlight"><b>+66.42% (+$6,642)</b></span></td></tr>
       <tr><td><b>Ending Equity</b></td><td>$\$9,391$</td><td><span class="highlight"><b>$16,641.99</b></span></td></tr>
@@ -1302,7 +1410,7 @@ Full candle-by-candle replay across 21 assets with **0.06% fees + 0.04% slippage
 
   <div class="card">
     <h4>🛡️ Why the Live Bot Wins: 1,800+ Bad Trades Blocked</h4>
-    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
+    <p style="font-size: 0.75em; color: #94a3b8; line-height: 1.42;">
       • <b>Crypto Correlation Guard</b>: Blocked <b>690 over-concentrated trades</b>.<br/>
       • <b>200 EMA Macro Gate</b>: Blocked <b>499 bear trend cascade trades</b>.<br/>
       • <b>ADX Range Chop Gate</b>: Blocked <b>346 low-volatility false breakouts</b>.<br/>
@@ -1330,7 +1438,7 @@ Granular trade attribution reveals where alpha is generated and how to unlock **
 <div class="grid-2">
   <div class="card">
     <h4>🏆 Asset Attribution: Winners vs. Bleeders</h4>
-    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.4;">
       • <span class="highlight"><b>NEAR/USDT</b></span>: <b>+$7,163.19</b> (66.7% WR, +$5.6k Momentum).<br/>
       • <span class="highlight"><b>AVAX/USDT</b></span>: <b>+$1,259.93</b> (68.0% WR, +$972 Momentum).<br/>
       • <span class="highlight"><b>SUI/USDT</b></span>: <b>+$894.01</b> (58.0% WR, +$1.3k Momentum).<br/>
@@ -1343,7 +1451,7 @@ Granular trade attribution reveals where alpha is generated and how to unlock **
 
   <div class="card">
     <h4>🚀 Projected Bottom Line After Optimizations</h4>
-    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.4;">
       • <b>Option B (Bench TAO/DOGE Momentum)</b>:<br/>
       &nbsp;&nbsp;→ Instantly eliminates <b>-$2,378 in momentum drag</b>.<br/>
       &nbsp;&nbsp;→ Frees max-2 crypto slots for NEAR and AVAX.<br/>
@@ -1372,7 +1480,7 @@ To theoretically evaluate our multi-agent architecture against alternative parad
 
 $$\text{CPI} = 100 \times \left( 0.30 \cdot \frac{\text{Sharpe}}{3.0} + 0.25 \cdot (1 - \text{MaxDD}) + 0.15 \cdot \text{Win\%} + 0.20 \cdot \frac{\text{PF}}{2.0} - 0.10 \cdot \frac{\text{FeeDrag}}{0.10} \right)$$
 
-<table style="width: 100%; font-size: 0.73em; margin: 6px 0;">
+<table style="width: 100%; font-size: 0.72em; margin: 5px 0;">
   <tr>
     <th>Architecture Topology</th>
     <th>Regime Adaptability</th>
@@ -1420,7 +1528,7 @@ An honest engineering appraisal of the operational advantages and inherent desig
 <div class="grid-2">
   <div class="card-success">
     <h4>🟢 ARCHITECTURAL ADVANTAGES</h4>
-    <p style="color: #86efac; font-size: 0.76em; line-height: 1.45;">
+    <p style="color: #86efac; font-size: 0.74em; line-height: 1.42;">
       • <b>Strict Fault Isolation</b>: Modularity ensures a failure in news screening or one strategy cannot crash the core risk governor or execution ledger.<br/>
       • <b>Zero Arithmetic Hallucination</b>: Deterministic Python rules govern position sizing, risk clamps, and orders with 100% mathematical fidelity.<br/>
       • <b>Sub-Millisecond Reflex Speed</b>: Evaluates 21 assets in $<5\text{ms}$ while LLM processes qualitative sentiment in parallel ($0.70\text{s}$).<br/>
@@ -1430,7 +1538,7 @@ An honest engineering appraisal of the operational advantages and inherent desig
 
   <div class="card-danger">
     <h4>⚠️ INHERENT TRADE-OFFS & LIMITATIONS</h4>
-    <p style="color: #fca5a5; font-size: 0.76em; line-height: 1.45;">
+    <p style="color: #fca5a5; font-size: 0.74em; line-height: 1.42;">
       • <b>Opportunity Cost of Cash Defense</b>: Preserving capital by staying 100% in cash during macro downtrends means missing sudden V-shaped relief spikes.<br/>
       • <b>Limit Order Execution Risk</b>: Passive maker orders may experience non-fills during violent gapping expansion candles.<br/>
       • <b>Hardware Footprint</b>: Local LLM sentiment analysis requires a modern GPU with 6GB+ VRAM (or degrades to CPU fallback).<br/>
@@ -1470,7 +1578,7 @@ The desk runs 24/7 on standard consumer hardware with **$0 cloud dependency and 
   </div>
 </div>
 
-<div class="grid-2" style="margin-top: 6px;">
+<div class="grid-2" style="margin-top: 5px;">
   <div class="card">
     <h4>🖥️ Local GPU LLM Devil's Advocate</h4>
     <p>Screens live Google News RSS headlines in 0.70s before entry; vetoes trades on hacks or bans with $0 API fees.</p>
@@ -1494,17 +1602,25 @@ The desk does not remain static; it executes a **continuous self-calibration and
 <div class="grid-2">
   <div class="card">
     <h4>🔄 1. Walk-Forward Parameter Arena (`agent/optimizer.py`)</h4>
-    <p>• <b>In-Sample / Out-of-Sample Split</b>: 70% discovery vs. 30% unseen testing data.<br/>
-    • <b>Anti-Overfitting Filter</b>: Rejects mutations unless Sharpe improves on BOTH sets with Max DD $<14\%$.<br/>
-    • <b>Multi-Profile Tuning</b>: Calibrates Crypto Micro, Tech Growth, and Macro Hedges independently.<br/>
-    • <b>Zero Human Intervention</b>: Runs regression tests, executes <code>git commit</code>, and pushes live.</p>
+    <div class="level-simple" style="font-size: 0.70em; margin-bottom: 3px;">
+      💬 <i>Simple:</i> Tests new settings on past data and only adopts what wins on unseen data.
+    </div>
+    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
+      • <b>In-Sample / Out-of-Sample Split</b>: 70% discovery vs. 30% unseen testing data.<br/>
+      • <b>Anti-Overfitting Filter</b>: Rejects mutations unless Sharpe improves on BOTH sets with Max DD $<14\%$.<br/>
+      • <b>Multi-Profile Tuning</b>: Calibrates Crypto Micro, Tech Growth, and Macro Hedges independently.
+    </p>
   </div>
   <div class="card">
     <h4>🧠 2. Closed-Loop Journal & AI Reflection (`core/journal.py`)</h4>
-    <p>• <b>Benchmark Alpha Settlement</b>: Evaluates whether trades & gates beat BTC / SPY over 24h.<br/>
-    • <b>Dynamic Confluence Feedback</b>: Tightens gate ($\Delta +0.03$) if false breakouts spike.<br/>
-    • <b>Local GPU LLM Reflections</b>: Local <code>phi4-mini</code> logs institutional post-mortems for every trade.<br/>
-    • <b>Half-Kelly Dynamic Growth</b>: Automatically scales position sizing with rolling win rate.</p>
+    <div class="level-simple" style="font-size: 0.70em; margin-bottom: 3px;">
+      💬 <i>Simple:</i> Reviews every trade, benchmarks against BTC/SPY, and adjusts risk automatically.
+    </div>
+    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
+      • <b>Benchmark Alpha Settlement</b>: Evaluates whether trades & gates beat BTC / SPY over 24h.<br/>
+      • <b>Dynamic Confluence Feedback</b>: Tightens gate ($\Delta +0.03$) if false breakouts spike.<br/>
+      • <b>Half-Kelly Dynamic Growth</b>: Automatically scales position sizing with rolling win rate.
+    </p>
   </div>
 </div>
 
@@ -1524,9 +1640,9 @@ To generate a consistent **$3,000/month living income**, capital scales through 
 
 <div class="grid-3">
   <div class="phase-box">
-    <div style="margin-bottom: 6px;"><span class="pill pill-cyan">PHASE 1</span></div>
-    <h4 style="color: #38bdf8; margin: 0 0 6px 0;">Compounding Base</h4>
-    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
+    <div style="margin-bottom: 5px;"><span class="pill pill-cyan">PHASE 1</span></div>
+    <h4 style="color: #38bdf8; margin: 0 0 5px 0;">Compounding Base</h4>
+    <p style="font-size: 0.75em; color: #94a3b8; line-height: 1.4;">
       • <b>Capital</b>: $10,000 → $25,000<br/>
       • <b>Annual Target</b>: +35% to +50%<br/>
       • <b>Withdrawals</b>: <b>$0 (Zero)</b><br/>
@@ -1535,9 +1651,9 @@ To generate a consistent **$3,000/month living income**, capital scales through 
   </div>
 
   <div class="phase-box gold">
-    <div style="margin-bottom: 6px;"><span class="pill pill-amber">PHASE 2</span></div>
-    <h4 style="color: #fbbf24; margin: 0 0 6px 0;">Capital Acceleration</h4>
-    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
+    <div style="margin-bottom: 5px;"><span class="pill pill-amber">PHASE 2</span></div>
+    <h4 style="color: #fbbf24; margin: 0 0 5px 0;">Capital Acceleration</h4>
+    <p style="font-size: 0.75em; color: #94a3b8; line-height: 1.4;">
       • <b>Capital</b>: $25,000 → $75,000<br/>
       • <b>Annual Target</b>: +35% to +45%<br/>
       • <b>Withdrawals</b>: <b>$0 (Zero)</b><br/>
@@ -1546,9 +1662,9 @@ To generate a consistent **$3,000/month living income**, capital scales through 
   </div>
 
   <div class="phase-box green">
-    <div style="margin-bottom: 6px;"><span class="pill pill-green">PHASE 3</span></div>
-    <h4 style="color: #10b981; margin: 0 0 6px 0;">Living Income Harvest</h4>
-    <p style="font-size: 0.77em; color: #94a3b8; line-height: 1.45;">
+    <div style="margin-bottom: 5px;"><span class="pill pill-green">PHASE 3</span></div>
+    <h4 style="color: #10b981; margin: 0 0 5px 0;">Living Income Harvest</h4>
+    <p style="font-size: 0.75em; color: #94a3b8; line-height: 1.4;">
       • <b>Capital</b>: $75,000 → $100,000+<br/>
       • <b>Monthly Target</b>: +3% to +4% / mo<br/>
       • <b>Monthly Payout</b>: <b>$3,000 / month</b><br/>
@@ -1605,7 +1721,7 @@ Foundational citations supporting the multi-agent architecture, risk engineering
 <div class="grid-2">
   <div class="card">
     <h4>📚 Academic & Multi-Agent Foundations</h4>
-    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.42;">
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.4;">
       • <b>Russell, S., & Norvig, P. (2020)</b>. <i>Artificial Intelligence: A Modern Approach</i> (4th ed.). Pearson. [PEAS framework, Goal-based & Reflex Agents, Chapter 2].<br/>
       • <b>Wooldridge, M. (2009)</b>. <i>An Introduction to MultiAgent Systems</i> (2nd ed.). John Wiley & Sons. [Decentralized coordination, autonomy, and multi-agent consensus].<br/>
       • <b>Tharp, V. K. (2008)</b>. <i>Definitive Guide to Position Sizing</i>. International Institute of Trading Mastery. [Mathematical R-risk models and risk of ruin].<br/>
@@ -1615,7 +1731,7 @@ Foundational citations supporting the multi-agent architecture, risk engineering
 
   <div class="card">
     <h4>🏛️ Regulatory, Exchange & Data Standards</h4>
-    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.42;">
+    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.4;">
       • <b>SEC Rule 15c3-5 (17 CFR § 240.15c3-5)</b>. <i>Risk Management Controls for Brokers or Dealers with Market Access</i>. [Mandatory pre-trade risk controls and circuit breakers].<br/>
       • <b>FINRA Regulatory Notice 15-09 (2015)</b>. <i>Guidance on Effective Supervision for Algorithmic Trading</i>. [Supervisory controls, testing, and algorithmic safeguards].<br/>
       • <b>Federal Reserve Bank of St. Louis (2024)</b>. <i>Federal Reserve Economic Data (FRED) API</i>. [VIXCLS & macroeconomic time series telemetry].<br/>
