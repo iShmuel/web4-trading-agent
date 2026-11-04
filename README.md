@@ -1,6 +1,6 @@
 # Web4 Autonomous Quantitative Trading Desk
 
-[![Tests: 83/83 Passing](https://img.shields.io/badge/pytest-83%2F83%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
+[![Tests: 84/84 Passing](https://img.shields.io/badge/pytest-84%2F84%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
 [![Execution Mode](https://img.shields.io/badge/execution-strictly%20simulated%20paper-38bdf8?style=for-the-badge)](core/paper_account.py)
 [![Asset Universe](https://img.shields.io/badge/universe-21%20multi--sector%20assets-8b5cf6?style=for-the-badge)](config/active_config.json)
 [![Local LLM](https://img.shields.io/badge/local%20gpu%20llm-phi4--mini%20(0.70s)-f59e0b?style=for-the-badge)](core/preflight.py)
@@ -150,7 +150,7 @@ pip install -r requirements.txt
 
 ### 2. Run Test Suite
 ```bash
-# Run all 83 unit tests
+# Run all 84 unit tests
 .venv/bin/pytest -v
 ```
 
