@@ -92,12 +92,20 @@ def run_single_replay(
     cfg["enable_local_llm_preflight"] = False
     cfg["execution_mode"] = execution_mode
 
-    tmp_port = Path(f"/tmp/live_replay_{execution_mode}.json")
+    tmp_port = Path(f"/tmp/live_replay_{execution_mode}_{int(time.time()*1000)}.json")
     if tmp_port.exists():
         tmp_port.unlink()
+    if tmp_port.with_suffix(".json.bak").exists():
+        tmp_port.with_suffix(".json.bak").unlink()
 
     account = PaperAccount(initial_capital=initial_capital, portfolio_file=tmp_port)
     account._save_state = lambda: None  # fast in-memory state during replay
+    account.state = {
+        "cash": initial_capital,
+        "positions": {},
+        "closed_trades": [],
+        "initial_capital": initial_capital,
+    }
 
     risk = RiskEngine(
         default_risk_pct=float(cfg.get("account_risk_pct", 0.02)),
