@@ -51,6 +51,7 @@ class MeanReversionStrategy:
         self.adx_period = config.get("adx_period", 14)
         self.adx_threshold = config.get("adx_threshold", 25)  # below this = range-bound
         self.max_hold_bars = config.get("mr_max_hold_bars", 48)  # max holding period
+        self.allow_long = config.get("mr_allow_long", config.get("allow_long", True))
         self.allow_short = config.get("mr_allow_short", False)
         self.fee_pct = config.get("fee_pct", 0.0006)
         self.slippage_pct = config.get("slippage_pct", 0.0004)
@@ -156,7 +157,7 @@ class MeanReversionStrategy:
             )
 
         # Long entry: oversold condition
-        if price <= bb_lower and rsi < self.rsi_oversold:
+        if self.allow_long and price <= bb_lower and rsi < self.rsi_oversold:
             stop = max(0.0, price - (atr * self.atr_stop_mult))
             # Target: return to SMA (the mean)
             tp = bb_sma
@@ -193,7 +194,7 @@ class MeanReversionStrategy:
             )
 
         # Long entry #2: Bullish Liquidity Sweep-and-Reclaim (Stop-Hunt below prior N-bar low & green reclaim)
-        if self.enable_liquidity_sweep and len(data) >= self.sweep_lookback + 2 and rsi < self.sweep_rsi_max:
+        if self.allow_long and self.enable_liquidity_sweep and len(data) >= self.sweep_lookback + 2 and rsi < self.sweep_rsi_max:
             low_s = data["low"].astype(float)
             open_p = float(latest["open"])
             cur_low = float(latest["low"])

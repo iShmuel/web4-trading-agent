@@ -153,6 +153,7 @@
       "take_profit_ratio": 0.5,
       "allow_long": false,
       "allow_short": false,
+      "mr_allow_long": false,
       "mr_allow_short": true,
       "rsi_overbought": 75.0
     },
