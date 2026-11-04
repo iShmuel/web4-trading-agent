@@ -91,15 +91,18 @@ class MeanReversionStrategy:
                 f"Stale data: {staleness_minutes:.0f}m old > {self.max_stale_minutes}m limit",
             )
 
-        # Compute indicators
-        data = compute_mean_reversion_indicators(
-            df,
-            bb_period=self.bb_period,
-            bb_std=self.bb_std,
-            rsi_period=self.rsi_period,
-            atr_period=self.atr_period,
-            adx_period=self.adx_period,
-        )
+        # Compute indicators (or reuse precomputed columns during fast replay)
+        if "_precomputed" in df.columns:
+            data = df
+        else:
+            data = compute_mean_reversion_indicators(
+                df,
+                bb_period=self.bb_period,
+                bb_std=self.bb_std,
+                rsi_period=self.rsi_period,
+                atr_period=self.atr_period,
+                adx_period=self.adx_period,
+            )
 
         latest = data.iloc[-1]
         price = float(latest["close"])

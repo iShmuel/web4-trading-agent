@@ -90,14 +90,17 @@ class MomentumStrategy:
                 f"Stale data: {staleness_minutes:.0f}m old > {self.max_stale_minutes}m limit",
             )
 
-        # Compute indicators
-        data = compute_indicators(
-            df,
-            breakout_lookback=self.breakout_lookback,
-            ema_trend_filter=self.ema_trend_filter,
-            atr_period=self.atr_period,
-            macro_ema_period=self.macro_ema_period,
-        )
+        # Compute indicators (or reuse precomputed columns during fast replay)
+        if "_precomputed" in df.columns:
+            data = df
+        else:
+            data = compute_indicators(
+                df,
+                breakout_lookback=self.breakout_lookback,
+                ema_trend_filter=self.ema_trend_filter,
+                atr_period=self.atr_period,
+                macro_ema_period=self.macro_ema_period,
+            )
 
         latest = data.iloc[-1]
         price = float(latest["close"])

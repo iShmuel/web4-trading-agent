@@ -376,7 +376,7 @@ class PortfolioCoordinator:
                     merged_ind[k] = v
 
         # Multi-timeframe confluence evaluation
-        has_confluence, conf_score, conf_desc = calculate_multi_timeframe_confluence(df)
+        has_confluence, conf_score, conf_desc = calculate_multi_timeframe_confluence(df, indicators=merged_ind)
         merged_ind["confluence"] = conf_desc
         merged_ind["confluence_score"] = conf_score
 
@@ -388,9 +388,14 @@ class PortfolioCoordinator:
             vol_sma20 = float(vol_series.iloc[-20:].mean())
             if vol_sma20 > 0:
                 vol_ratio = float(vol_series.iloc[-1]) / vol_sma20
-            abs_series = detect_liquidation_absorption(df.iloc[-25:])
-            if len(abs_series) > 0 and pd.notna(abs_series.iloc[-1]):
-                absorption_val = str(abs_series.iloc[-1])
+            if "absorption" in df.columns:
+                last_abs = df["absorption"].iloc[-1]
+                if pd.notna(last_abs):
+                    absorption_val = str(last_abs)
+            else:
+                abs_series = detect_liquidation_absorption(df.iloc[-25:])
+                if len(abs_series) > 0 and pd.notna(abs_series.iloc[-1]):
+                    absorption_val = str(abs_series.iloc[-1])
         merged_ind["vol_ratio"] = round(vol_ratio, 3)
         merged_ind["absorption"] = absorption_val
 
@@ -443,6 +448,7 @@ class PortfolioCoordinator:
         has_confluence, conf_score, conf_desc = calculate_multi_timeframe_confluence(
             df,
             direction=chosen_dir_str,
+            indicators=merged_ind,
         )
         merged_ind["confluence"] = conf_desc
         merged_ind["confluence_score"] = conf_score

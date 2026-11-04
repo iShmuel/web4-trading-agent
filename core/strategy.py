@@ -185,6 +185,7 @@ def calculate_multi_timeframe_confluence(
     breakdown_low_col: str = "breakdown_low",
     fast_ema_col: str = "ema_filter",
     macro_ema_col: str = "macro_ema",
+    indicators: Optional[Dict[str, Any]] = None,
 ) -> Tuple[bool, float, str]:
     """Evaluate multi-timeframe alignment across macro (4h/1D equivalent), intermediate (1h), and micro channels.
 
@@ -195,11 +196,12 @@ def calculate_multi_timeframe_confluence(
         return False, 0.5, "Insufficient data for confluence"
 
     latest = df.iloc[-1]
+    ind = indicators or {}
     price = float(latest["close"])
-    macro_ema = float(latest.get(macro_ema_col, price))
-    fast_ema = float(latest.get(fast_ema_col, price))
-    breakout_high = float(latest.get(breakout_high_col, price))
-    breakdown_low = float(latest.get(breakdown_low_col, 0.0))
+    macro_ema = float(latest.get(macro_ema_col, ind.get(macro_ema_col, price)))
+    fast_ema = float(latest.get(fast_ema_col, ind.get(fast_ema_col, price)))
+    breakout_high = float(latest.get(breakout_high_col, ind.get(breakout_high_col, price)))
+    breakdown_low = float(latest.get(breakdown_low_col, ind.get(breakdown_low_col, 0.0)))
 
     is_long = (str(direction).upper() == "LONG")
     macro_aligned = (price > macro_ema) if is_long else (price < macro_ema)
