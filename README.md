@@ -1,6 +1,6 @@
 # Web4 Autonomous Quantitative Trading Desk
 
-[![Tests: 97/97 Passing](https://img.shields.io/badge/pytest-97%2F97%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
+[![Tests: 98/98 Passing](https://img.shields.io/badge/pytest-98%2F98%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
 [![Execution Mode](https://img.shields.io/badge/execution-strictly%20simulated%20paper-38bdf8?style=for-the-badge)](core/paper_account.py)
 [![Architecture](https://img.shields.io/badge/architecture-12--Agent%20Heterogeneous%20MAS-8b5cf6?style=for-the-badge)](agent/)
 [![Local LLM](https://img.shields.io/badge/local%20gpu%20llm-phi4--mini%20(0.70s)-f59e0b?style=for-the-badge)](core/preflight.py)

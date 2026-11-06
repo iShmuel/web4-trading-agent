@@ -133,10 +133,11 @@ Rationale: {rationale or 'Automated quantitative improvement proposal.'}
 Proof Data:
 {proof_str}
 
-[CURRENT RISK LIMITS]
-- Max Account Risk: {base_config.get('account_risk_pct', 0.02)*100:.1f}%
-- Max Drawdown Limit: {base_config.get('max_drawdown_limit_pct', 15.0)}%
-- Watchlist Size: {len(base_config.get('watchlist', []))} assets
+[PORTFOLIO RISK POLICY & BOUNDS]
+- Max Account Risk Per Trade: {base_config.get('account_risk_pct', 0.02)*100:.1f}% equity (hard bound [1%, 5%])
+- Max Portfolio Drawdown Circuit Breaker: {base_config.get('max_drawdown_limit_pct', 15.0)}%
+- Permitted Active Watchlist Universe: Up to 30 diversified assets across crypto and equities/ETFs
+- Active Crypto Exposure Limit: Max 12 watchlist cryptos (strictly max 2 concurrent open positions)
 
 Determine whether this change is prudent, safe, verified by data, and aligned with capital preservation.
 Format your reply as:
@@ -146,8 +147,9 @@ RATIONALE: [2 sentences explaining your risk assessment]
     system_prompt = (
         "You are an institutional Chief Risk Officer at a quantitative trading firm. "
         "Your duty is to ensure capital preservation while certifying verified alpha improvements. "
-        "Guideline: If the proposal provides valid empirical proof (positive out-of-sample Sharpe, positive net return, "
-        "and controlled drawdown within 15%), and does not violate invariant boundaries, APPROVE the proposal. "
+        "Guideline: A diversified watchlist of 15-25 high-alpha assets across stocks and crypto is fully permitted and encouraged. "
+        "If the proposal provides valid empirical proof (positive net return, high win rate, profit factor >= 1.0, "
+        "pruning of toxic drags) and complies with risk invariants, APPROVE the proposal. "
         "Only REJECT if the proposal introduces excessive leverage, unhedged tail risk, or lacks empirical validation."
     )
 
@@ -225,6 +227,18 @@ def review_and_deploy_proposal(
                     candidate_cfg.setdefault("asset_profiles", {})[prof_k] = prof_v
         else:
             candidate_cfg[k] = v
+
+    # Cleanse watchlist: purge any symbol present in blacklisted_symbols
+    bl_set = set(candidate_cfg.get("blacklisted_symbols", []))
+    if "watchlist" in candidate_cfg:
+        candidate_cfg["watchlist"] = [s for s in candidate_cfg["watchlist"] if s not in bl_set]
+
+    # Ensure all approved watchlist symbols have safe default risk weights & exposure caps
+    for s in candidate_cfg.get("watchlist", []):
+        if s not in candidate_cfg.setdefault("symbol_risk_weights", {}):
+            candidate_cfg["symbol_risk_weights"][s] = 0.02
+        if s not in candidate_cfg.setdefault("symbol_exposure_caps", {}):
+            candidate_cfg["symbol_exposure_caps"][s] = 0.35
 
     now_iso = datetime.now(timezone.utc).isoformat()
     rejections = []

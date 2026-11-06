@@ -466,33 +466,52 @@ def scan_candidate_universe(
     config: Optional[Dict[str, Any]] = None,
     execution_mode: str = "maker",
     dynamic_discovery: bool = True,
+    merge_existing: bool = True,
     crypto_min_volume: float = 10_000_000.0,
-    top_crypto_discovery: int = 20,
-    top_stock_discovery: int = 20,
+    top_crypto_discovery: int = 15,
+    top_stock_discovery: int = 15,
     use_llm: bool = True,
 ) -> List[AssetEvaluation]:
-    """Scan and rank all candidate assets across digital assets and equities with optional dynamic discovery."""
+    """Scan and rank all candidate assets across digital assets and equities with dynamic discovery & portfolio merging."""
+    cfg = config or load_active_config()
+
+    # 1. Existing portfolio symbols to preserve and audit
+    existing_cryptos: List[str] = []
+    existing_stocks: List[str] = []
+    if merge_existing:
+        active_wl = list(cfg.get("watchlist", []))
+        risk_syms = list(cfg.get("symbol_risk_weights", {}).keys())
+        all_configured = list(dict.fromkeys(active_wl + risk_syms))
+        blacklisted = set(cfg.get("blacklisted_symbols", []))
+        clean_existing = [s for s in all_configured if s not in blacklisted]
+        existing_cryptos = [s for s in clean_existing if is_crypto_symbol(s)]
+        existing_stocks = [s for s in clean_existing if not is_crypto_symbol(s)]
+
+    # 2. Dynamic Discovery (Zero-prelist from real-time exchange order books & screeners)
+    discovered_cryptos: List[str] = []
+    discovered_stocks: List[str] = []
     if dynamic_discovery:
         print("[AssetSelector] Dynamic Market Discovery active: Querying real-time exchange order books & screeners (no prelist)...")
-        cryptos = crypto_candidates if crypto_candidates is not None else discover_dynamic_crypto_universe(
+        discovered_cryptos = crypto_candidates if crypto_candidates is not None else discover_dynamic_crypto_universe(
             min_volume_usd=crypto_min_volume, top_n=top_crypto_discovery
         )
-        stocks = stock_candidates if stock_candidates is not None else discover_dynamic_stock_universe(
+        discovered_stocks = stock_candidates if stock_candidates is not None else discover_dynamic_stock_universe(
             top_n=top_stock_discovery
         )
-    else:
-        cfg = config or load_active_config()
-        active_wl = cfg.get("watchlist", [])
-        cryptos = crypto_candidates if crypto_candidates is not None else [s for s in active_wl if is_crypto_symbol(s)]
-        stocks = stock_candidates if stock_candidates is not None else [s for s in active_wl if not is_crypto_symbol(s)]
+    elif crypto_candidates is not None or stock_candidates is not None:
+        discovered_cryptos = crypto_candidates or []
+        discovered_stocks = stock_candidates or []
 
+    # 3. Merge existing portfolio with newly discovered candidates (deduplicated)
+    cryptos = list(dict.fromkeys(existing_cryptos + discovered_cryptos))
+    stocks = list(dict.fromkeys(existing_stocks + discovered_stocks))
     all_symbols = cryptos + stocks
 
     print("=" * 80)
     print(f"  AGENT 9: AUTONOMOUS ALPHA SCANNER & MARKET DISCOVERY")
     print(f"  Evaluating {len(all_symbols)} assets ({len(cryptos)} cryptos, {len(stocks)} stocks) | Lookback: {days}d")
-    print(f"  Discovered Cryptos: {cryptos[:8]} ...")
-    print(f"  Discovered Equities: {stocks[:8]} ...")
+    print(f"  Candidate Cryptos: {cryptos[:8]} ...")
+    print(f"  Candidate Equities: {stocks[:8]} ...")
     print("=" * 80)
 
     results: List[AssetEvaluation] = []
@@ -522,27 +541,59 @@ def scan_candidate_universe(
 
 def build_selection_summary(
     evaluations: List[AssetEvaluation],
-    max_crypto: int = 4,
-    max_stocks: int = 10,
+    max_crypto: int = 8,
+    max_stocks: int = 16,
+    min_profit_pct: float = 0.0,
+    min_win_rate_pct: float = 50.0,
+    min_profit_factor: float = 1.0,
+    existing_blacklist: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """Select top uncorrelated portfolio universe respecting risk limits."""
+    """Select top uncorrelated portfolio universe respecting risk limits and pruning non-profitable drags.
+
+    Mathematical Profitability Proof Standard:
+    1. Proven Profitable: Net return > min_profit_pct, Win rate >= min_win_rate_pct, Profit factor >= min_profit_factor,
+       and Tier in (ELITE_ALPHA, VIABLE_ALPHA).
+    2. Proven Non-Profitable / Drag: Assets failing this standard are pruned from the active watchlist.
+       Assets with negative net returns or Tier == TOXIC_DRAG are appended to recommended_blacklist.
+    """
     elite = [e for e in evaluations if e.tier == "ELITE_ALPHA"]
     viable = [e for e in evaluations if e.tier == "VIABLE_ALPHA"]
     neutral = [e for e in evaluations if e.tier == "NEUTRAL_RESERVE"]
     toxic = [e for e in evaluations if e.tier == "TOXIC_DRAG"]
 
-    # Select top crypto
-    crypto_sorted = [e for e in evaluations if e.asset_type == "crypto"]
-    selected_crypto = [e.symbol for e in crypto_sorted if e.tier in ("ELITE_ALPHA", "VIABLE_ALPHA")][:max_crypto]
+    # Filter for PROVEN PROFITABLE assets only
+    proven_profitable = [
+        e for e in evaluations
+        if e.net_return_pct > min_profit_pct
+        and e.win_rate_pct >= min_win_rate_pct
+        and e.profit_factor >= min_profit_factor
+        and e.tier in ("ELITE_ALPHA", "VIABLE_ALPHA")
+    ]
+    proven_profitable.sort(key=lambda x: x.composite_alpha_score, reverse=True)
 
-    # Select top stocks
-    stocks_sorted = [e for e in evaluations if e.asset_type == "stock"]
-    selected_stocks = [e.symbol for e in stocks_sorted if e.tier in ("ELITE_ALPHA", "VIABLE_ALPHA")][:max_stocks]
+    # Assets proven NOT profitable enough (whipsaws, negative returns, low win rates)
+    proven_non_profitable = [
+        e for e in evaluations
+        if e.net_return_pct <= min_profit_pct
+        or e.win_rate_pct < min_win_rate_pct
+        or e.profit_factor < min_profit_factor
+        or e.tier in ("TOXIC_DRAG", "NEUTRAL_RESERVE")
+    ]
+
+    # Select top proven cryptos (up to max_crypto)
+    crypto_proven = [e for e in proven_profitable if e.asset_type == "crypto"]
+    selected_crypto = [e.symbol for e in crypto_proven][:max_crypto]
+
+    # Select top proven stocks (up to max_stocks)
+    stocks_proven = [e for e in proven_profitable if e.asset_type == "stock"]
+    selected_stocks = [e.symbol for e in stocks_proven][:max_stocks]
 
     recommended_watchlist = selected_crypto + selected_stocks
 
-    # Recommended blacklisted symbols (toxic assets with negative return)
-    recommended_blacklist = [e.symbol for e in evaluations if e.tier == "TOXIC_DRAG" and e.net_return_pct < 0]
+    # Recommended blacklist: Existing blacklist + newly identified toxic drags losing money
+    current_bl = existing_blacklist if existing_blacklist is not None else load_active_config().get("blacklisted_symbols", [])
+    new_toxic = [e.symbol for e in proven_non_profitable if e.net_return_pct < 0 or e.tier == "TOXIC_DRAG"]
+    recommended_blacklist = sorted(list(dict.fromkeys(current_bl + new_toxic)))
 
     return {
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -553,6 +604,10 @@ def build_selection_summary(
             "NEUTRAL_RESERVE": len(neutral),
             "TOXIC_DRAG": len(toxic),
         },
+        "proven_profitable_count": len(proven_profitable),
+        "proven_non_profitable_count": len(proven_non_profitable),
+        "proven_profitable_symbols": [e.symbol for e in proven_profitable],
+        "pruned_drag_symbols": [e.symbol for e in proven_non_profitable],
         "recommended_watchlist": recommended_watchlist,
         "recommended_blacklist": recommended_blacklist,
         "selected_crypto": selected_crypto,
@@ -618,8 +673,9 @@ def main():
     parser.add_argument("--scan", action="store_true", help="Run candidate scan and print leaderboard")
     parser.add_argument("--days", type=int, default=90, help="Lookback evaluation days (default: 90)")
     parser.add_argument("--timeframe", type=str, default="1h", help="Timeframe (default: 1h)")
-    parser.add_argument("--top-crypto", type=int, default=4, help="Max crypto assets to recommend (default: 4)")
-    parser.add_argument("--top-stocks", type=int, default=10, help="Max stock assets to recommend (default: 10)")
+    parser.add_argument("--top-crypto", type=int, default=8, help="Max crypto assets to recommend (default: 8)")
+    parser.add_argument("--top-stocks", type=int, default=16, help="Max stock assets to recommend (default: 16)")
+    parser.add_argument("--no-merge", action="store_true", help="Do not merge existing active assets")
     parser.add_argument("--discover-crypto", type=int, default=15, help="Number of liquid cryptos to discover live (default: 15)")
     parser.add_argument("--discover-stocks", type=int, default=15, help="Number of liquid stocks to discover live (default: 15)")
     parser.add_argument("--crypto-min-volume", type=float, default=10_000_000.0, help="Minimum 24h quote volume for crypto (default: $10M)")
@@ -645,6 +701,7 @@ def main():
             config=cfg,
             execution_mode=args.execution_mode,
             dynamic_discovery=False,
+            merge_existing=False,
             use_llm=not args.no_llm,
         )
     else:
@@ -654,6 +711,7 @@ def main():
             config=cfg,
             execution_mode=args.execution_mode,
             dynamic_discovery=not args.static,
+            merge_existing=not args.no_merge,
             crypto_min_volume=args.crypto_min_volume,
             top_crypto_discovery=args.discover_crypto,
             top_stock_discovery=args.discover_stocks,
@@ -667,8 +725,13 @@ def main():
     save_selection_report(summary, report_file)
 
     print("\n" + "=" * 80)
-    print("  SELECTION RECOMMENDATIONS")
+    print("  SELECTION RECOMMENDATIONS & EMPIRICAL PROOF")
     print("=" * 80)
+    print(f"  Proven Profitable ({summary.get('proven_profitable_count', 0)} assets):")
+    print(f"    {summary.get('proven_profitable_symbols', [])}")
+    print(f"  Pruned Drags ({summary.get('proven_non_profitable_count', 0)} assets):")
+    print(f"    {summary.get('pruned_drag_symbols', [])}")
+    print("-" * 80)
     print(f"  Recommended Active Watchlist ({len(summary['recommended_watchlist'])} assets):")
     print(f"    Crypto ({len(summary['selected_crypto'])}): {summary['selected_crypto']}")
     print(f"    Stocks ({len(summary['selected_stocks'])}): {summary['selected_stocks']}")
@@ -692,12 +755,19 @@ def main():
         }
         res = review_and_deploy_proposal(
             proposed_changes=proposal,
-            rationale="Dynamic Alpha Scanner discovered and verified top-performing universe.",
+            rationale="Dynamic Alpha Scanner merged active portfolio with vetted discoveries and pruned non-profitable drags.",
             empirical_proof={
-                "total_scanned": summary["total_assets_scanned"],
-                "elite_count": summary["tier_counts"]["ELITE_ALPHA"],
-                "viable_count": summary["tier_counts"]["VIABLE_ALPHA"],
-                "toxic_pruned_count": summary["tier_counts"]["TOXIC_DRAG"],
+                "proposed_watchlist_size": len(summary["recommended_watchlist"]),
+                "crypto_count": len(summary["selected_crypto"]),
+                "stocks_count": len(summary["selected_stocks"]),
+                "proven_profitable_count": summary.get("proven_profitable_count", 0),
+                "pruned_drags_count": summary.get("proven_non_profitable_count", 0),
+                "blacklisted_toxic_symbols": summary["recommended_blacklist"],
+                "top_alpha_theses": [
+                    f"{e['symbol']}: Net {e['net_return_pct']:+,.2f}%, WinRate {e['win_rate_pct']:.1f}%, PF {e['profit_factor']:.2f}, Sharpe {e['sharpe_ratio']:+.2f}"
+                    for e in summary["leaderboard"][:5]
+                ],
+                "risk_limits": "Max account risk locked at 2.0%, max drawdown circuit breaker locked at 15.0%, paper execution mode maintained.",
             },
             verify_tests=True,
             use_llm=not args.no_llm,

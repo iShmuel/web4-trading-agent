@@ -342,12 +342,13 @@ def _run(args):
                         evals = scan_candidate_universe(
                             days=90,
                             dynamic_discovery=True,
+                            merge_existing=True,
                             top_crypto_discovery=15,
                             top_stock_discovery=15,
                             use_llm=True,
                         )
-                        summary = build_selection_summary(evals, max_crypto=4, max_stocks=10)
-                        if summary.get("selected_crypto") or summary.get("selected_stocks"):
+                        summary = build_selection_summary(evals, max_crypto=8, max_stocks=16)
+                        if summary.get("recommended_watchlist"):
                             from agent.governor import review_and_deploy_proposal
                             prop = {
                                 "watchlist": summary["recommended_watchlist"],
@@ -355,9 +356,11 @@ def _run(args):
                             }
                             res = review_and_deploy_proposal(
                                 proposed_changes=prop,
-                                rationale="Periodic market discovery scan identified optimal alpha universe.",
+                                rationale="Periodic market discovery scan merged active portfolio with vetted discoveries and pruned non-profitable drags.",
                                 empirical_proof={
                                     "scanned": summary["total_assets_scanned"],
+                                    "proven_profitable": summary.get("proven_profitable_count", 0),
+                                    "pruned_drags": summary.get("proven_non_profitable_count", 0),
                                     "elite_assets": summary["tier_counts"]["ELITE_ALPHA"],
                                     "viable_assets": summary["tier_counts"]["VIABLE_ALPHA"],
                                 },
@@ -366,7 +369,7 @@ def _run(args):
                             )
                             if res.approved:
                                 coordinator.reload_config(load_config())
-                                log(f"[Market Discovery] Approved & deployed {len(summary['recommended_watchlist'])} assets to active watchlist.")
+                                log(f"[Market Discovery] Approved & deployed {len(summary['recommended_watchlist'])} proven assets to active watchlist (Pruned: {len(summary['recommended_blacklist'])}).")
                     except Exception as e:
                         log(f"[Market Discovery Notice] {e}")
                     last_scan_time = time.time()

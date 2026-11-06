@@ -195,3 +195,75 @@ def test_apply_recommendations_safe_backup(tmp_path):
 
     assert updated["watchlist"] == new_watchlist
     assert "OLD/USDT" in updated["blacklisted_symbols"]
+
+
+def test_build_selection_summary_proven_pruning():
+    """Verify that assets proven non-profitable are pruned and added to blacklist."""
+    profitable_crypto = AssetEvaluation(
+        symbol="WIN/USDT",
+        asset_type="crypto",
+        primary_strategy="MOMENTUM",
+        days_evaluated=90,
+        total_bars=2000,
+        adx_trend_ratio=40.0,
+        volatility_atr_pct=2.5,
+        momentum_return_pct=5.0,
+        mean_reversion_return_pct=1.0,
+        in_sample_return_pct=4.0,
+        out_of_sample_return_pct=3.5,
+        net_return_pct=4.5,
+        net_pnl=450.0,
+        win_rate_pct=75.0,
+        profit_factor=2.0,
+        max_drawdown_pct=3.0,
+        sharpe_ratio=2.5,
+        payoff_ratio=1.5,
+        total_trades=20,
+        winning_trades=15,
+        losing_trades=5,
+        composite_alpha_score=25.0,
+        tier="ELITE_ALPHA",
+        recommendation="ADD_TO_WATCHLIST",
+        rationale="Proven winner",
+    )
+    losing_stock = AssetEvaluation(
+        symbol="DRAG",
+        asset_type="stock",
+        primary_strategy="MOMENTUM",
+        days_evaluated=90,
+        total_bars=440,
+        adx_trend_ratio=15.0,
+        volatility_atr_pct=3.0,
+        momentum_return_pct=-3.5,
+        mean_reversion_return_pct=-2.0,
+        in_sample_return_pct=-1.5,
+        out_of_sample_return_pct=-2.0,
+        net_return_pct=-3.5,
+        net_pnl=-350.0,
+        win_rate_pct=30.0,
+        profit_factor=0.5,
+        max_drawdown_pct=8.0,
+        sharpe_ratio=-1.1,
+        payoff_ratio=0.8,
+        total_trades=10,
+        winning_trades=3,
+        losing_trades=7,
+        composite_alpha_score=-15.0,
+        tier="TOXIC_DRAG",
+        recommendation="BLACKLIST_OR_PRUNE",
+        rationale="Proven loser",
+    )
+
+    summary = build_selection_summary(
+        [profitable_crypto, losing_stock],
+        max_crypto=5,
+        max_stocks=10,
+        existing_blacklist=["PREV_BAD"],
+    )
+
+    assert "WIN/USDT" in summary["recommended_watchlist"]
+    assert "DRAG" not in summary["recommended_watchlist"]
+    assert "DRAG" in summary["recommended_blacklist"]
+    assert "PREV_BAD" in summary["recommended_blacklist"]
+    assert "WIN/USDT" in summary["proven_profitable_symbols"]
+    assert "DRAG" in summary["pruned_drag_symbols"]
