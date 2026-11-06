@@ -212,6 +212,7 @@ def main():
     parser.add_argument("--reset", action="store_true", help="Reset portfolio to $10,000 initial cash")
     parser.add_argument("--interval", type=int, default=60, help="Loop interval in seconds (default: 60s)")
     parser.add_argument("--optimize-hours", type=int, default=6, help="Self-improvement tournament interval in hours (default: 6)")
+    parser.add_argument("--scan-hours", type=int, default=24, help="Dynamic market universe discovery interval in hours (default: 24)")
     parser.add_argument("--loop", action="store_true", help="Run continuous monitoring loop")
     args = parser.parse_args()
 
@@ -290,16 +291,38 @@ def _run(args):
     if args.loop:
         log(f"\n[Engine] Starting continuous portfolio monitoring loop (Checking every {args.interval}s)...")
         last_opt_time = time.time()
+        last_scan_time = time.time()
+        last_analyzed_trade_count = len(account.state.get("closed_trades", []))
+        forensic_interval = int(config.get("forensic_trade_interval", 15))
 
         try:
             while True:
                 run_portfolio_tick(account, risk_engine, coordinator)
 
-                # Periodic self-improvement check
+                # Event-driven post-trade forensic audit trigger (every X closed trades)
+                cur_closed = len(account.state.get("closed_trades", []))
+                if (cur_closed - last_analyzed_trade_count) >= forensic_interval and cur_closed > 0:
+                    log("\n" + "=" * 68)
+                    log(f"   🔍 AGENT 10: AUTOMATED POST-TRADE FORENSIC AUDIT TRIGGERED ({cur_closed} trades)")
+                    log("=" * 68)
+                    try:
+                        from agent.trade_analyst import run_trade_forensic_analysis
+                        summary = run_trade_forensic_analysis(
+                            trade_window=forensic_interval,
+                            use_llm=True,
+                            auto_submit_to_governor=True,
+                        )
+                        coordinator.reload_config(load_config())
+                        log(f"[Trade Forensic Audit] WR: {summary.win_rate_pct}% | PnL: ${summary.total_realized_pnl:+,.2f} | PF: {summary.profit_factor:.2f}")
+                    except Exception as e:
+                        log(f"[Trade Forensic Notice] {e}")
+                    last_analyzed_trade_count = cur_closed
+
+                # Periodic self-improvement tournament (Agent 11)
                 elapsed = time.time() - last_opt_time
                 if elapsed >= (args.optimize_hours * 3600):
                     log("\n" + "=" * 68)
-                    log("   ⏰ PERIODIC SELF-IMPROVEMENT TOURNAMENT TRIGGERED")
+                    log("   ⏰ PERIODIC SELF-IMPROVEMENT TOURNAMENT TRIGGERED (Agent 11)")
                     log("=" * 68)
                     try:
                         res = run_optimization_cycle(auto_commit=True)
@@ -307,6 +330,46 @@ def _run(args):
                     except Exception as e:
                         log(f"[Auto-Optimize Error] {e}")
                     last_opt_time = time.time()
+
+                # Periodic dynamic market universe discovery (Agent 9 & 12)
+                scan_elapsed = time.time() - last_scan_time
+                if scan_elapsed >= (args.scan_hours * 3600):
+                    log("\n" + "=" * 68)
+                    log("   🌐 PERIODIC DYNAMIC MARKET DISCOVERY TRIGGERED (Agent 9)")
+                    log("=" * 68)
+                    try:
+                        from agent.asset_selector import scan_candidate_universe, build_selection_summary
+                        evals = scan_candidate_universe(
+                            days=90,
+                            dynamic_discovery=True,
+                            top_crypto_discovery=15,
+                            top_stock_discovery=15,
+                            use_llm=True,
+                        )
+                        summary = build_selection_summary(evals, max_crypto=4, max_stocks=10)
+                        if summary.get("selected_crypto") or summary.get("selected_stocks"):
+                            from agent.governor import review_and_deploy_proposal
+                            prop = {
+                                "watchlist": summary["recommended_watchlist"],
+                                "blacklisted_symbols": summary["recommended_blacklist"],
+                            }
+                            res = review_and_deploy_proposal(
+                                proposed_changes=prop,
+                                rationale="Periodic market discovery scan identified optimal alpha universe.",
+                                empirical_proof={
+                                    "scanned": summary["total_assets_scanned"],
+                                    "elite_assets": summary["tier_counts"]["ELITE_ALPHA"],
+                                    "viable_assets": summary["tier_counts"]["VIABLE_ALPHA"],
+                                },
+                                verify_tests=True,
+                                use_llm=True,
+                            )
+                            if res.approved:
+                                coordinator.reload_config(load_config())
+                                log(f"[Market Discovery] Approved & deployed {len(summary['recommended_watchlist'])} assets to active watchlist.")
+                    except Exception as e:
+                        log(f"[Market Discovery Notice] {e}")
+                    last_scan_time = time.time()
 
                 time.sleep(args.interval)
         except KeyboardInterrupt:

@@ -18,6 +18,7 @@ data/
 
 # Logs & Secrets
 *.log
+*.bak
 .env
 config.local.json
 .secrets/

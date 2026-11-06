@@ -49,11 +49,16 @@ CONFIG_PATH = PROJECT_ROOT / "config" / "active_config.json"
 OUTPUT_FILE = PROJECT_ROOT / "data" / "live_replay_backtest.json"
 
 
-def prepare_precomputed_dfs(cfg: Dict[str, Any], days: int = 180) -> Dict[str, pd.DataFrame]:
-    """Load 180d OHLCV and precompute strictly causal indicator columns once per symbol."""
+def prepare_precomputed_dfs(cfg: Dict[str, Any], days: int = 180, offset_days: int = 0) -> Dict[str, pd.DataFrame]:
+    """Load OHLCV and precompute strictly causal indicator columns once per symbol.
+    
+    If offset_days > 0, fetches (days + offset_days) of data and slices the window
+    corresponding to [now - (days + offset_days) : now - offset_days].
+    """
+    total_days = days + offset_days
     dfs: Dict[str, pd.DataFrame] = {}
     for sym in cfg["watchlist"]:
-        raw = fetch_ohlcv(sym, "1h", days=days)
+        raw = fetch_ohlcv(sym, "1h", days=total_days)
         if raw is None or len(raw) < 250:
             continue
         scfg = resolve_symbol_config(cfg, sym)
@@ -75,7 +80,15 @@ def prepare_precomputed_dfs(cfg: Dict[str, Any], days: int = 180) -> Dict[str, p
         for col in ["bb_sma", "bb_std", "bb_upper", "bb_lower", "bb_width", "z_score", "rsi"]:
             mom_df[col] = mr_df[col]
         mom_df["_precomputed"] = True
-        dfs[sym] = mom_df
+
+        if offset_days > 0:
+            cutoff_date = mom_df.index[-1] - pd.Timedelta(days=offset_days)
+            start_date = cutoff_date - pd.Timedelta(days=days)
+            sliced_df = mom_df.loc[(mom_df.index >= start_date) & (mom_df.index < cutoff_date)]
+            if len(sliced_df) >= 150:
+                dfs[sym] = sliced_df
+        else:
+            dfs[sym] = mom_df
     return dfs
 
 
@@ -302,12 +315,27 @@ def run_single_replay(
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Full Live-Coordinator Historical Replay Backtest")
+    parser.add_argument("--days", type=int, default=180, help="Number of historical days to replay (default: 180)")
+    parser.add_argument("--offset-days", type=int, default=0, help="Historical offset days back in time (default: 0)")
+    parser.add_argument("--output", type=str, default=None, help="Output JSON path (optional)")
+    args = parser.parse_args()
+
+    days = args.days
+    offset_days = args.offset_days
+    out_file = Path(args.output) if args.output else OUTPUT_FILE
+
     t0 = time.time()
     cfg = json.loads(CONFIG_PATH.read_text())
     print("=" * 95)
-    print("  OPTION A: FULL LIVE-COORDINATOR HISTORICAL REPLAY (180 DAYS, 21 ASSETS, ALL FILTERS ON)")
+    title = f"FULL LIVE-COORDINATOR HISTORICAL REPLAY ({days} DAYS"
+    if offset_days > 0:
+        title += f", OFFSET {offset_days} DAYS PRIOR"
+    title += f", {len(cfg.get('watchlist', []))} ASSETS, ALL FILTERS ON)"
+    print(f"  {title}")
     print("=" * 95)
-    dfs = prepare_precomputed_dfs(cfg, days=180)
+    dfs = prepare_precomputed_dfs(cfg, days=days, offset_days=offset_days)
     print(f"Precomputed causal indicator matrices for {len(dfs)} assets in {time.time() - t0:.1f}s")
 
     t1 = time.time()
@@ -351,14 +379,14 @@ def main():
         print(f"{sym:<12}{stats['trades']:>8}{stats['shorts']:>8}{stats['win_rate_pct']:>11.1f}%   ${stats['fees']:>10.2f}     ${stats['pnl']:>+14.2f}")
 
     print("\n" + "=" * 95)
-    print("DEFENSE GATES TRIGGERED ACROSS 180 DAYS (CANDLE EVALUATIONS BLOCKED)")
+    print("DEFENSE GATES TRIGGERED ACROSS PERIOD (CANDLE EVALUATIONS BLOCKED)")
     print("-" * 95)
     for gate, cnt in res_taker["gate_counts"].items():
         print(f"  {gate:<48} {cnt:>8,d} times")
     print("=" * 95)
 
-    OUTPUT_FILE.write_text(json.dumps({"taker_slippage": res_taker, "maker": res_maker}, indent=2))
-    print(f"Saved full replay report -> {OUTPUT_FILE.relative_to(PROJECT_ROOT)}")
+    out_file.write_text(json.dumps({"taker_slippage": res_taker, "maker": res_maker}, indent=2))
+    print(f"Saved full replay report -> {out_file.relative_to(PROJECT_ROOT) if out_file.is_relative_to(PROJECT_ROOT) else out_file}")
 
 
 if __name__ == "__main__":

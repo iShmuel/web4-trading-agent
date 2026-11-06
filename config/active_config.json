@@ -1,26 +1,15 @@
 {
   "watchlist": [
-    "BTC/USDT",
-    "ETH/USDT",
     "SOL/USDT",
-    "SUI/USDT",
-    "TAO/USDT",
-    "DOGE/USDT",
-    "AVAX/USDT",
-    "BNB/USDT",
-    "NEAR/USDT",
-    "LINK/USDT",
-    "NVDA",
-    "AMD",
-    "AAPL",
-    "PLTR",
-    "TSLA",
-    "SPY",
-    "QQQ",
-    "GLD",
-    "SLV",
-    "TLT",
-    "XLE"
+    "XRP/USDT",
+    "ZEC/USDT",
+    "NOK",
+    "IREN",
+    "INTC",
+    "NU",
+    "GRAB",
+    "WULF",
+    "NVDA"
   ],
   "timeframe": "1h",
   "max_concurrent_positions": 5,
@@ -33,10 +22,8 @@
     "SUI/USDT": 0.025,
     "TAO/USDT": 0.025,
     "DOGE/USDT": 0.02,
-    "AVAX/USDT": 0.025,
     "NEAR/USDT": 0.025,
     "LINK/USDT": 0.02,
-    "ETH/USDT": 0.025,
     "BTC/USDT": 0.015,
     "BNB/USDT": 0.015,
     "NVDA": 0.025,
@@ -52,14 +39,12 @@
     "XLE": 0.02
   },
   "symbol_exposure_caps": {
-    "SOL/USDT": 0.40,
+    "SOL/USDT": 0.4,
     "SUI/USDT": 0.35,
     "TAO/USDT": 0.35,
-    "DOGE/USDT": 0.30,
-    "AVAX/USDT": 0.35,
+    "DOGE/USDT": 0.3,
     "NEAR/USDT": 0.35,
-    "LINK/USDT": 0.30,
-    "ETH/USDT": 0.35,
+    "LINK/USDT": 0.3,
     "BTC/USDT": 0.25,
     "BNB/USDT": 0.25,
     "NVDA": 0.35,
@@ -71,8 +56,8 @@
     "QQQ": 0.35,
     "GLD": 0.35,
     "SLV": 0.35,
-    "TLT": 0.30,
-    "XLE": 0.30
+    "TLT": 0.3,
+    "XLE": 0.3
   },
   "fee_pct": 0.0006,
   "slippage_pct": 0.0004,
@@ -90,7 +75,7 @@
   "short_requires_macro_bear": true,
   "enable_regime_filter": true,
   "macro_ema_period": 200,
-  "adx_chop_threshold": 20.0,
+  "adx_chop_threshold": 22.0,
   "adx_trend_threshold": 25.0,
   "enable_breakeven_lock": true,
   "breakeven_atr_mult": 1.2,
@@ -110,8 +95,9 @@
   "enable_vix_regime_filter": true,
   "enable_local_llm_preflight": true,
   "local_llm_model": "phi4-mini:latest",
+  "forensic_trade_interval": 15,
   "enable_confluence_gate": true,
-  "min_confluence_score": 0.70,
+  "min_confluence_score": 0.7,
   "enable_volatility_targeting": true,
   "target_atr_pct": 0.025,
   "enable_basis_yield": true,
@@ -123,7 +109,6 @@
         "SOL/USDT",
         "SUI/USDT",
         "NEAR/USDT",
-        "AVAX/USDT",
         "LINK/USDT"
       ],
       "timeframe": "1h",
@@ -159,7 +144,6 @@
     "crypto_macro": {
       "symbols": [
         "BTC/USDT",
-        "ETH/USDT",
         "BNB/USDT"
       ],
       "timeframe": "1h",
@@ -213,5 +197,10 @@
       "allow_short": false,
       "mr_allow_short": false
     }
-  }
+  },
+  "blacklisted_symbols": [
+    "AVAX/USDT",
+    "ETH/USDT",
+    "SPCX"
+  ]
 }

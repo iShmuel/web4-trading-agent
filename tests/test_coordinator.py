@@ -371,3 +371,51 @@ def test_coordinator_surge_volume_conviction_boost(tmp_path, monkeypatch):
     assert abs(dec_surge.units / dec_norm.units - 1.2) < 1e-4
 
 
+
+
+def test_asset_pruning_blacklist_defense(tmp_path):
+    """Verify that blacklisted/pruned assets are strictly rejected on entry but allowed to exit."""
+    account = PaperAccount(10000.0, portfolio_file=tmp_path / "prune_port.json")
+    risk_engine = RiskEngine()
+    coordinator = PortfolioCoordinator(
+        account,
+        risk_engine,
+        config={"blacklisted_symbols": ["ETH/USDT", "AVAX/USDT"], "enable_funding_radar": False},
+    )
+
+    df = make_trending_df(n=50, start=2000.0, step=10.0)
+
+    # 1. Fresh entry on blacklisted symbol must be REJECTED immediately
+    decision = coordinator.process_symbol("ETH/USDT", df, {})
+    assert decision.action == "REJECTED"
+    assert "Asset Pruned: ETH/USDT is blacklisted" in decision.reason
+
+    # 2. Existing position must still be allowed to exit gracefully
+    account.open_position(
+        symbol="ETH/USDT",
+        entry_price=2500.0,
+        units=1.0,
+        stop_loss=2400.0,
+        dollar_risk=50.0,
+        side="LONG",
+        strategy_id="momentum",
+    )
+    assert account.has_position("ETH/USDT")
+
+    # Mock an exit signal
+    exit_sig = TradingSignal(
+        status=SignalStatus.EXIT,
+        strategy_id="momentum",
+        symbol="ETH/USDT",
+        timestamp=datetime.now(timezone.utc),
+        direction=SignalDirection.FLAT,
+        signal_strength=1.0,
+        reference_price=2300.0,
+        exit_reason="Stop Loss Hit",
+    )
+    _, mom_engine, _ = coordinator._engines_for("ETH/USDT")
+    mom_engine.evaluate = lambda sym, d, existing_position=None: exit_sig
+
+    exit_decision = coordinator.process_symbol("ETH/USDT", df, {})
+    assert exit_decision.action == "EXIT"
+    assert not account.has_position("ETH/USDT")

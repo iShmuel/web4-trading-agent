@@ -268,6 +268,16 @@ class PortfolioCoordinator:
         existing_pos = self.account.get_position(symbol)
         sym_cfg, momentum_strategy, mean_reversion_strategy = self._engines_for(symbol)
 
+        # Asset Pruning Defense: Reject blacklisted underperforming assets unless exiting an open position
+        blacklisted = self.config.get("blacklisted_symbols", [])
+        if symbol in blacklisted and existing_pos is None:
+            return CoordinatorDecision(
+                symbol=symbol,
+                action="REJECTED",
+                strategy_id="coordinator",
+                reason=f"Asset Pruned: {symbol} is blacklisted due to historical underperformance",
+            )
+
         # 1. Evaluate exit conditions if already holding
         if existing_pos is not None:
             pos_strategy = existing_pos.get("strategy_id", "momentum")

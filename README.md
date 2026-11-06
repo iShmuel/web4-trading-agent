@@ -1,12 +1,12 @@
 # Web4 Autonomous Quantitative Trading Desk
 
-[![Tests: 84/84 Passing](https://img.shields.io/badge/pytest-84%2F84%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
+[![Tests: 97/97 Passing](https://img.shields.io/badge/pytest-97%2F97%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
 [![Execution Mode](https://img.shields.io/badge/execution-strictly%20simulated%20paper-38bdf8?style=for-the-badge)](core/paper_account.py)
-[![Asset Universe](https://img.shields.io/badge/universe-21%20multi--sector%20assets-8b5cf6?style=for-the-badge)](config/active_config.json)
+[![Architecture](https://img.shields.io/badge/architecture-12--Agent%20Heterogeneous%20MAS-8b5cf6?style=for-the-badge)](agent/)
 [![Local LLM](https://img.shields.io/badge/local%20gpu%20llm-phi4--mini%20(0.70s)-f59e0b?style=for-the-badge)](core/preflight.py)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 
-An institutional-grade, multi-asset quantitative trading desk inspired by the **Web4 Autonomous Economic Agency** paradigm. Operates 24/7 across **Crypto Perpetuals, US Growth Equities, and Macro Sector ETFs**, coordinating multiple independent alpha strategies under centralized risk governance and deterministic capital immunity.
+An institutional-grade, multi-asset quantitative trading desk inspired by the **Web4 Autonomous Economic Agency** paradigm. Operates 24/7 across **Crypto Perpetuals, US Growth Equities, and Macro Sector ETFs**, coordinating a 12-agent heterogeneous multi-agent system (MAS) with zero-prelist dynamic market discovery, automated post-trade forensics, and centralized risk governance under deterministic capital immunity.
 
 ---
 
