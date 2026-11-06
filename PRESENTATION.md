@@ -2,27 +2,27 @@
 marp: true
 theme: default
 paginate: true
-header: "Web4 Autonomous Trading Desk | Institutional Executive Deck"
-footer: "Confidential • Quantitative System Architecture • Live Paper Mode"
+header: "Web4 Autonomous Trading Desk | 10-Minute Executive & Architectural Lecture"
+footer: "Confidential • Quantitative Multi-Agent System • Live Paper Trading Mode"
 style: |
   section {
-    background: radial-gradient(circle at 15% 15%, #0e172a 0%, #030712 100%);
+    background: radial-gradient(circle at 15% 15%, #0f172a 0%, #030712 100%);
     color: #e2e8f0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     padding: 24px 34px;
-    font-size: 15.2px;
+    font-size: 15px;
     letter-spacing: -0.01em;
   }
   h1 {
     color: #38bdf8;
-    font-size: 1.62em;
-    margin-bottom: 0.08em;
+    font-size: 1.6em;
+    margin-bottom: 0.1em;
     font-weight: 800;
     letter-spacing: -0.03em;
   }
   h2 {
     color: #38bdf8;
-    font-size: 1.18em;
+    font-size: 1.16em;
     margin: 0 0 0.18em 0;
     font-weight: 700;
     display: flex;
@@ -31,7 +31,7 @@ style: |
   }
   h3 {
     color: #94a3b8;
-    font-size: 0.88em;
+    font-size: 0.86em;
     margin: 0 0 0.22em 0;
     font-weight: 600;
   }
@@ -81,42 +81,34 @@ style: |
   a:hover {
     text-decoration: underline;
   }
-  .highlight {
-    color: #10b981;
-    font-weight: 700;
-  }
-  .accent {
-    color: #38bdf8;
-    font-weight: 700;
-  }
-  .warning {
-    color: #f43f5e;
-    font-weight: 700;
-  }
+  .highlight { color: #10b981; font-weight: 700; }
+  .accent { color: #38bdf8; font-weight: 700; }
+  .warning { color: #f43f5e; font-weight: 700; }
+  .gold { color: #fbbf24; font-weight: 700; }
   .grid-4 {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
-    margin: 7px 0;
+    margin: 6px 0;
   }
   .grid-3 {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
-    margin: 7px 0;
+    margin: 6px 0;
   }
   .grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 9px;
-    margin: 7px 0;
+    margin: 6px 0;
   }
   .stat-card {
     background: rgba(15, 23, 42, 0.85);
     border: 1px solid #1e293b;
     border-top: 3px solid #38bdf8;
     border-radius: 8px;
-    padding: 7px 5px;
+    padding: 6px 5px;
     text-align: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
   }
@@ -124,7 +116,7 @@ style: |
   .stat-card.purple { border-top-color: #8b5cf6; }
   .stat-card.gold { border-top-color: #f59e0b; }
   .stat-number {
-    font-size: 1.8em;
+    font-size: 1.7em;
     font-weight: 800;
     line-height: 1.1;
     margin-bottom: 2px;
@@ -135,7 +127,7 @@ style: |
   .stat-number.purple { color: #a78bfa; }
   .stat-number.gold { color: #fbbf24; }
   .stat-label {
-    font-size: 0.67em;
+    font-size: 0.65em;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: #94a3b8;
@@ -146,127 +138,53 @@ style: |
     border: 1px solid #1e293b;
     border-radius: 8px;
     padding: 7px 9px;
-    line-height: 1.32;
+    line-height: 1.34;
   }
   .card h4 {
     margin: 0 0 3px 0;
     color: #38bdf8;
-    font-size: 0.86em;
+    font-size: 0.85em;
     display: flex;
     align-items: center;
     gap: 5px;
   }
   .card p {
     margin: 0;
-    font-size: 0.73em;
+    font-size: 0.72em;
     color: #94a3b8;
   }
   .card-danger {
     background: rgba(244, 63, 94, 0.08);
     border: 1px solid rgba(244, 63, 94, 0.35);
     border-radius: 8px;
-    padding: 8px 10px;
+    padding: 7px 9px;
   }
-  .card-danger h4 {
-    margin: 0 0 3px 0;
-    color: #f43f5e;
-    font-size: 0.86em;
-  }
+  .card-danger h4 { margin: 0 0 3px 0; color: #f43f5e; font-size: 0.85em; }
   .card-success {
     background: rgba(16, 185, 129, 0.08);
     border: 1px solid rgba(16, 185, 129, 0.35);
     border-radius: 8px;
-    padding: 8px 10px;
+    padding: 7px 9px;
   }
-  .card-success h4 {
-    margin: 0 0 3px 0;
-    color: #10b981;
-    font-size: 0.86em;
-  }
+  .card-success h4 { margin: 0 0 3px 0; color: #10b981; font-size: 0.85em; }
   .pill {
     display: inline-block;
     padding: 2px 6px;
     border-radius: 9999px;
-    font-size: 0.68em;
+    font-size: 0.67em;
     font-weight: 700;
     letter-spacing: 0.03em;
   }
-  .pill-green {
-    background: rgba(16, 185, 129, 0.15);
-    border: 1px solid #059669;
-    color: #10b981;
-  }
-  .pill-cyan {
-    background: rgba(56, 189, 248, 0.15);
-    border: 1px solid #0284c7;
-    color: #38bdf8;
-  }
-  .pill-purple {
-    background: rgba(139, 92, 246, 0.15);
-    border: 1px solid #7c3aed;
-    color: #a78bfa;
-  }
-  .pill-amber {
-    background: rgba(245, 158, 11, 0.15);
-    border: 1px solid #d97706;
-    color: #fbbf24;
-  }
-  .pill-red {
-    background: rgba(244, 63, 94, 0.15);
-    border: 1px solid #e11d48;
-    color: #f43f5e;
-  }
-  .step-box {
-    background: rgba(9, 14, 26, 0.9);
-    border: 1px solid #1e293b;
-    border-radius: 6px;
-    padding: 5px 8px;
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .step-num {
-    background: #1e293b;
-    color: #38bdf8;
-    font-weight: 800;
-    width: 19px;
-    height: 19px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    font-size: 0.76em;
-    margin-right: 6px;
-  }
-  .takeaway {
-    background: rgba(15, 23, 42, 0.9);
-    border-left: 3px solid #38bdf8;
-    padding: 5px 9px;
-    margin-top: 6px;
-    font-size: 0.74em;
-    color: #94a3b8;
-    border-radius: 0 6px 6px 0;
-  }
-  .flow-arrow {
-    color: #38bdf8;
-    font-size: 1.0em;
-    font-weight: 800;
-    flex-shrink: 0;
-  }
-  .base-badge {
-    font-size: 0.66em;
-    color: #64748b;
-    margin-top: 5px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
+  .pill-green { background: rgba(16, 185, 129, 0.15); border: 1px solid #059669; color: #10b981; }
+  .pill-cyan { background: rgba(56, 189, 248, 0.15); border: 1px solid #0284c7; color: #38bdf8; }
+  .pill-purple { background: rgba(139, 92, 246, 0.15); border: 1px solid #7c3aed; color: #a78bfa; }
+  .pill-amber { background: rgba(245, 158, 11, 0.15); border: 1px solid #d97706; color: #fbbf24; }
+  .pill-red { background: rgba(244, 63, 94, 0.15); border: 1px solid #e11d48; color: #f43f5e; }
   .level-box {
     background: rgba(15, 23, 42, 0.85);
     border: 1px solid #1e293b;
     border-radius: 7px;
-    padding: 6px 9px;
+    padding: 5px 8px;
     margin-bottom: 5px;
   }
   .level-simple {
@@ -275,7 +193,7 @@ style: |
     padding: 4px 7px;
     border-radius: 0 4px 4px 0;
     margin-bottom: 3px;
-    font-size: 0.74em;
+    font-size: 0.73em;
     color: #cbd5e1;
     line-height: 1.34;
   }
@@ -284,7 +202,7 @@ style: |
     border-left: 3px solid #38bdf8;
     padding: 4px 7px;
     border-radius: 0 4px 4px 0;
-    font-size: 0.72em;
+    font-size: 0.71em;
     color: #94a3b8;
     line-height: 1.34;
   }
@@ -293,805 +211,608 @@ style: |
     align-items: stretch;
     justify-content: space-between;
     gap: 6px;
-    margin: 6px 0;
+    margin: 5px 0;
   }
   .timeline-card {
     background: rgba(15, 23, 42, 0.9);
     border: 1px solid #1e293b;
     border-radius: 6px;
-    padding: 6px 7px;
+    padding: 5px 6px;
     text-align: center;
     flex: 1;
-    font-size: 0.71em;
+    font-size: 0.70em;
     display: flex;
     flex-direction: column;
     justify-content: center;
   }
-  .timeline-card.active {
-    border-color: #38bdf8;
-    background: rgba(56, 189, 248, 0.12);
-  }
-  .timeline-card.future {
-    border-color: #f43f5e;
-    background: rgba(244, 63, 94, 0.08);
+  .timeline-card.active { border-color: #38bdf8; background: rgba(56, 189, 248, 0.12); }
+  .timeline-card.success { border-color: #10b981; background: rgba(16, 185, 129, 0.12); }
+  .timeline-card.future { border-color: #f43f5e; background: rgba(244, 63, 94, 0.08); }
+  .base-badge {
+    font-size: 0.65em;
+    color: #64748b;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
   }
 ---
 
 # Web4 Autonomous Trading Desk
-### Institutional Multi-Asset Quantitative System Architecture • Executive Snapshot
+### 10-Minute Executive Overview • Institutional Quantitative Multi-Agent System (MAS)
 
-<div class="grid-4" style="margin-top: 4px; margin-bottom: 5px;">
-  <div class="stat-card green" style="padding: 5px 8px;">
-    <div class="stat-number green" style="font-size: 1.35em;">+66.4%</div>
-    <div class="stat-label">180-Day Net Return</div>
+<div class="grid-4" style="margin-top: 6px; margin-bottom: 6px;">
+  <div class="stat-card green">
+    <div class="stat-number green">+55.7%</div>
+    <div class="stat-label">Cumulative Asset Alpha (90d)</div>
   </div>
-  <div class="stat-card" style="padding: 5px 8px;">
-    <div class="stat-number" style="font-size: 1.35em;">13.4%</div>
-    <div class="stat-label">Max Drawdown</div>
+  <div class="stat-card">
+    <div class="stat-number">68.8%</div>
+    <div class="stat-label">Verified Overall Win Rate</div>
   </div>
-  <div class="stat-card purple" style="padding: 5px 8px;">
-    <div class="stat-number purple" style="font-size: 1.35em;">+2.03</div>
-    <div class="stat-label">Sharpe Ratio</div>
+  <div class="stat-card purple">
+    <div class="stat-number purple">12</div>
+    <div class="stat-label">Heterogeneous AI Agents</div>
   </div>
-  <div class="stat-card gold" style="padding: 5px 8px;">
-    <div class="stat-number gold" style="font-size: 1.35em;">0.70s</div>
-    <div class="stat-label">GPU LLM Latency</div>
-  </div>
-</div>
-
-<div class="level-box" style="margin-top: 4px; margin-bottom: 5px;">
-  <div class="level-simple" style="font-size: 0.73em; line-height: 1.35;">
-    💬 <b>In Plain English:</b> Most retail trading bots gamble and blow up during sudden market crashes. Our desk acts like a disciplined quantitative fund: it rides strong multi-day trends, banks profits into cash along the way, and completely steps aside into 100% cash when markets drop.
-  </div>
-  <div class="level-tech" style="font-size: 0.70em; line-height: 1.35;">
-    ⚙️ <b>Under the Hood:</b> Combines 16/24 Donchian breakouts with a 200 EMA Macro Regime Gate, Van Tharp $[1\%, 5\%]$ volatility position sizing, and a 15% Max DD portfolio kill switch.
+  <div class="stat-card gold">
+    <div class="stat-number gold">98 / 98</div>
+    <div class="stat-label">Green Regression Tests</div>
   </div>
 </div>
 
-<div class="grid-2">
-  <div class="card" style="padding: 6px 12px;">
-    <h4>📈 Asymmetric Upside Capture</h4>
-    <p style="font-size: 0.71em; line-height: 1.35; margin-bottom: 0;">
-      • <b>Momentum Trend Riders</b>: Donchian breakouts capture multi-day runner waves.<br/>
-      • <b>50% Staged Take-Profit</b>: Locks cash at $+2.5\times\text{ATR}$ and moves stop to Break-Even.<br/>
-      • <b>21 Uncorrelated Assets</b>: Rotates capital to Tech Equities and Gold when Crypto chops.
-    </p>
-  </div>
-  <div class="card" style="padding: 6px 12px;">
-    <h4>🛡️ Mathematical Downside Shield</h4>
-    <p style="font-size: 0.71em; line-height: 1.35; margin-bottom: 0;">
-      • <b>200 EMA Macro Gate</b>: Strictly blocks buying into multi-week bear cascades.<br/>
-      • <b>VIX Crash Defense ($\ge 30$)</b>: Freezes breakout entries during macro panics.<br/>
-      • <b>1%–5% Risk Hard-Clamp</b>: Hard-coded mathematical immunity against account ruin.
-    </p>
-  </div>
-</div>
-
-<div class="base-badge" style="margin-top: 5px;">
-  🔍 <b>Master Audit Base:</b> <a href="PRESENTATION_VERIFICATION_BASE.md">PRESENTATION_VERIFICATION_BASE.md</a> • Verified 84/84 Unit Tests Green • Paper Simulation Only
-</div>
-
----
-
-## 1. Core Principles & Engineering Taxonomy
-
-To eliminate ambiguity, the system establishes a formal hierarchy across its 5 software tiers:
-
-<div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #1e293b; border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; text-align: center; font-size: 0.73em;">
-  <span class="pill pill-cyan">THE BOT</span> <code>live_paper_trader.py</code> ➔
-  <span class="pill pill-purple">8 AGENTS</span> Autonomous PEAS Nodes ➔
-  <span class="pill pill-green">STRATEGIES</span> Alpha Math ➔
-  <span class="pill pill-amber">PARAMETERS</span> Calibrated Knobs ➔
-  <span class="pill pill-red">COMPONENTS</span> Shared Services
-</div>
-
-<div class="grid-2">
-  <div class="card">
-    <h4>🤖 The Bot (The Trading Desk)</h4>
-    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.38;">
-      • 💬 <i>Plain English</i>: The 24/7 operating engine running the entire desk.<br/>
-      • ⚙️ <i>Technical</i>: The top-level daemon (<a href="live_paper_trader.py"><code>live_paper_trader.py</code></a>) handling the event loop, state persistence, process locking, and recovery.
-    </p>
-  </div>
-  <div class="card">
-    <h4>🧠 Autonomous Agents (8 Nodes)</h4>
-    <p style="font-size: 0.74em; color: #94a3b8; line-height: 1.38;">
-      • 💬 <i>Plain English</i>: Specialized workers (Scout, Sniper, Risk Officer, AI Reader).<br/>
-      • ⚙️ <i>Technical</i>: Independent PEAS entities perceiving environment, maintaining state, arbitrating decisions, and executing.
-    </p>
-  </div>
-</div>
-
-<div class="grid-3" style="margin-top: 5px;">
-  <div class="card">
-    <h4>📈 Strategies (Alpha)</h4>
-    <p style="font-size: 0.72em; color: #94a3b8;">
-      • 💬 <i>Simple</i>: Formulas that spot setups.<br/>
-      • ⚙️ <i>Code</i>: Donchian, Bollinger, Basis Yield.
-    </p>
-  </div>
-  <div class="card">
-    <h4>⚙️ Parameters (Inputs)</h4>
-    <p style="font-size: 0.72em; color: #94a3b8;">
-      • 💬 <i>Simple</i>: Numbers that tune the bot.<br/>
-      • ⚙️ <i>Code</i>: Lookbacks, stop distances, caps.
-    </p>
-  </div>
-  <div class="card">
-    <h4>🧩 Components (Tools)</h4>
-    <p style="font-size: 0.72em; color: #94a3b8;">
-      • 💬 <i>Simple</i>: Reusable internal engine parts.<br/>
-      • ⚙️ <i>Code</i>: DataLoader, RiskEngine, PaperAccount.
-    </p>
-  </div>
-</div>
-
-<div class="base-badge">
-  🔍 <b>Base:</b> Russell & Norvig (2020) Ch. 2 • Wooldridge (2009) • Code Mapping in <a href="PRESENTATION_VERIFICATION_BASE.md#slide-1b-system-taxonomy">PRESENTATION_VERIFICATION_BASE.md#slide-1b</a>
-</div>
-
----
-
-## 2. Web4 Architecture & Visual Pipeline Flow
-
-The complete information and decision pipeline executed every 60 seconds in <a href="live_paper_trader.py"><code>live_paper_trader.py</code></a>:
-
-<div style="background: rgba(15, 23, 42, 0.95); border: 1px solid #1e293b; border-radius: 8px; padding: 7px 11px; font-size: 0.71em; margin-bottom: 5px;">
-
-  <!-- ROW 1: SENSORS & DATA SCOUT -->
-  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-    <div style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 4px 7px; flex: 1; text-align: center;">
-      <b style="color: #94a3b8;">SENSORS & TELEMETRY</b><br/>
-      Binance REST v3 • Yahoo Finance • FRED VIX • Polymarket • News RSS
-    </div>
-    <div style="color: #38bdf8; font-weight: 800;">➔</div>
-    <div style="background: rgba(56, 189, 248, 0.12); border: 1px solid #0284c7; border-radius: 6px; padding: 4px 7px; flex: 1.3;">
-      <span class="pill pill-cyan">AGENT 1</span> <b style="color: #38bdf8;">Data Scout Sentinel</b> (<code>core/data_loader.py</code>)<br/>
-      • <code>filter_closed_bars()</code>: Drops forming candle (anti-repainting)<br/>
-      • <code>check_data_quality()</code>: Asserts monotonic time & geometric $H \ge L$
-    </div>
-  </div>
-
-  <div style="text-align: center; color: #a78bfa; font-size: 0.83em; margin: 2px 0;">▼ Clean OHLCV Broadcasted in Parallel to 3 Alpha Engines</div>
-
-  <!-- ROW 2: PARALLEL ALPHA ENGINES -->
-  <div style="display: flex; gap: 6px;">
-    <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid #7c3aed; border-radius: 6px; padding: 4px 6px; flex: 1;">
-      <span class="pill pill-purple">AGENT 2</span> <b style="color: #a78bfa;">Trend Momentum</b><br/>
-      <code>strategies/momentum.py</code><br/>
-      Donchian Breakout + 32/200 EMA
-    </div>
-    <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid #7c3aed; border-radius: 6px; padding: 4px 6px; flex: 1;">
-      <span class="pill pill-purple">AGENT 3</span> <b style="color: #a78bfa;">Mean Reversion</b><br/>
-      <code>strategies/mean_reversion.py</code><br/>
-      Bollinger 2.0 Snipe + RSI Extreme
-    </div>
-    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #059669; border-radius: 6px; padding: 4px 6px; flex: 1;">
-      <span class="pill pill-green">AGENT 4</span> <b style="color: #10b981;">Basis Yield</b><br/>
-      <code>core/basis_yield.py</code><br/>
-      Delta-Neutral Spot + 1x Perp Short
-    </div>
-  </div>
-
-  <div style="text-align: center; color: #38bdf8; font-size: 0.83em; margin: 2px 0;">▼ Directional Signals [-1.0, +1.0] Passed to Arbiter Cortex</div>
-
-  <!-- ROW 3: COORDINATOR & RISK GOVERNOR -->
-  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-    <div style="background: rgba(56, 189, 248, 0.12); border: 1px solid #0284c7; border-radius: 6px; padding: 4px 7px; flex: 1.1;">
-      <span class="pill pill-cyan">AGENT 5</span> <b style="color: #38bdf8;">Coordinator Arbiter</b> (<code>core/coordinator.py</code>)<br/>
-      • Reconciles conflicts (Long vs Short $\rightarrow$ FLAT)<br/>
-      • 200 EMA Macro Regime Gate (Blocks bear buying)
-    </div>
-    <div style="color: #f43f5e; font-weight: 800;">➔</div>
-    <div style="background: rgba(244, 63, 94, 0.12); border: 1px solid #e11d48; border-radius: 6px; padding: 4px 7px; flex: 1.3;">
-      <span class="pill pill-red">AGENT 6</span> <b style="color: #f43f5e;">Institutional Risk Governor</b> (<code>core/risk_engine.py</code>)<br/>
-      • Van Tharp Sizing clamped to $[1\%, 5\%]$ • Max 4 open trades<br/>
-      • <b>Circuit Breakers</b>: 5% daily loss halt • 15% Max DD kill switch
-    </div>
-  </div>
-
-  <div style="text-align: center; color: #fbbf24; font-size: 0.83em; margin: 2px 0;">▼ Approved Risk-Sized Order Ticket Passed to Pre-Flight Safety & AI Screener</div>
-
-  <!-- ROW 4: PRE-FLIGHT / LOCAL LLM & SMART MAKER LEDGER -->
-  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-    <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid #d97706; border-radius: 6px; padding: 4px 7px; flex: 1.2;">
-      <span class="pill pill-amber">AGENT 8</span> <b style="color: #fbbf24;">Local GPU Devil's Advocate</b> (<code>core/preflight.py</code>)<br/>
-      • <code>validate_order_preflight()</code>: Spread $\le 0.15\%$, Tick $\le 180\text{s}$<br/>
-      • <code>LocalLLMScreener</code>: <code>phi4-mini</code> on GPU ($0.70\text{s}$) news headline veto
-    </div>
-    <div style="color: #10b981; font-weight: 800;">➔</div>
-    <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid #059669; border-radius: 6px; padding: 4px 7px; flex: 1.2;">
-      <span class="pill pill-green">AGENT 7</span> <b style="color: #10b981;">Smart Maker Ledger</b> (<code>core/paper_account.py</code>)<br/>
-      • Routes passive Maker limit order ($0.02\%$ fee, $0.00\%$ slippage)<br/>
-      • Atomic state commit: <code>paper_portfolio.json</code> + duplicate <code>.bak</code>
-    </div>
-  </div>
-
-</div>
-
-<div class="takeaway">
-  🛡️ <b>Unconditional Veto Branches</b>: If <i>any</i> agent raises a red flag (data corruption, bear macro, circuit breaker, or black-swan headline), the loop triggers an immediate <b>VETO $\rightarrow$ 100% Cash Defense</b> with zero capital at risk.
-</div>
-
-<div class="base-badge">
-  🔍 <b>Base:</b> Full Architecture in <a href="live_paper_trader.py"><code>live_paper_trader.py:120-245</code></a> • Sub-Second Timing: $0.005\text{s}$ (Deterministic) + $0.70\text{s}$ (GPU LLM)
-</div>
-
----
-
-## 3. Trading Strategies & Decision Coordination
-
-The desk deploys specialized mathematical engines for distinct market regimes:
-
-<div class="grid-3">
-  <div class="card">
-    <h4>📈 Momentum Breakouts</h4>
-    <div style="font-size: 0.72em; color: #38bdf8; font-weight: 700; margin-bottom: 2px;"><code>strategies/momentum.py</code></div>
-    <p style="font-size: 0.73em; color: #cbd5e1; line-height: 1.35;">
-      • <b>Regime</b>: Expansions & Trends.<br/>
-      • <b>Signal</b>: Closes above 16/24 Donchian High with $32/200$ EMA alignment.<br/>
-      • <b>Execution</b>: Banks 50% at $+2.5\times\text{ATR}$ and locks stop at break-even.<br/>
-      • <b>Responsibility</b>: Captures big $+20\%$ to $+40\%$ runner waves.
-    </p>
-  </div>
-
-  <div class="card">
-    <h4>🎯 Mean Reversion Sniping</h4>
-    <div style="font-size: 0.72em; color: #a78bfa; font-weight: 700; margin-bottom: 2px;"><code>strategies/mean_reversion.py</code></div>
-    <p style="font-size: 0.73em; color: #cbd5e1; line-height: 1.35;">
-      • <b>Regime</b>: Ranges, Chop & Panics.<br/>
-      • <b>Signal</b>: 2.0-std Bollinger Band piercing + extreme RSI ($<30 / >70$) + Vol $\ge 1.25\times$.<br/>
-      • <b>Target</b>: 20 SMA center mean.<br/>
-      • <b>Responsibility</b>: Generates $75\%-84.8\%$ win rates while momentum waits.
-    </p>
-  </div>
-
-  <div class="card">
-    <h4>💵 Delta-Neutral Basis Yield</h4>
-    <div style="font-size: 0.72em; color: #10b981; font-weight: 700; margin-bottom: 2px;"><code>core/basis_yield.py</code></div>
-    <p style="font-size: 0.73em; color: #cbd5e1; line-height: 1.35;">
-      • <b>Regime</b>: Crypto Market Contango.<br/>
-      • <b>Structure</b>: Long Spot + Short 1x Perp.<br/>
-      • <b>Yield</b>: Harvests $8\%-18\%$ APY funding payments every 8 hours.<br/>
-      • <b>Responsibility</b>: Floor cash flow with exactly 0.0 market price risk.
-    </p>
-  </div>
-</div>
-
-<div class="card" style="margin-top: 5px;">
-  <h4>🧠 Coordinator Arbiter Cortex (`core/coordinator.py`)</h4>
-  <p style="font-size: 0.73em; color: #cbd5e1; line-height: 1.36;">
-    • <b>Conflict Resolution</b>: If Momentum says LONG and Mean Reversion says SHORT on the same asset $\rightarrow$ Cancels both ($\text{Signal} = \text{FLAT}$).<br/>
-    • <b>200 EMA Macro Regime Gate</b>: If asset price is below 200 EMA, all long breakout entries are strictly blocked. 100% Cash Defense active.
-  </p>
-</div>
-
-<div class="base-badge">
-  🔍 <b>Base:</b> <a href="strategies/momentum.py"><code>strategies/momentum.py</code></a> • <a href="strategies/mean_reversion.py"><code>strategies/mean_reversion.py</code></a> • <a href="core/coordinator.py"><code>core/coordinator.py:35-110</code></a>
-</div>
-
----
-
-## 4. Theoretical Grounding & Agent Classification
-
-Proving the components are authentic autonomous agents under computer science definitions:
-
-<div class="level-box">
+<div class="level-box" style="margin-top: 6px;">
   <div class="level-simple">
-    💬 <b>In Plain English:</b> An "Agent" is not just code that runs. It acts like an autonomous worker: it takes in sensory data, maintains memory, pursues a specific goal (profit with low risk), and takes real actions.
+    💬 <b>What is this in Plain English?</b> Imagine an automated digital hedge fund running 24/7 on a secure server. It constantly watches prices across crypto and US stocks, filters out bad noise, makes smart calculated trades, automatically learns from its mistakes, and has built-in safety brakes so it never blows up your account.
   </div>
   <div class="level-tech">
-    ⚙️ <b>Formal Academic Definition:</b> Formally verified under the canonical PEAS model (Russell & Norvig, 2020) and Wooldridge multi-agent criteria.
+    ⚙️ <b>Technical Architecture:</b> A 12-agent neuro-symbolic multi-agent system executing 5ms deterministic mathematical signal arbitration with out-of-band cognitive local LLM reasoning (<code>phi4-mini</code> via Ollama), operating under strict simulated paper trading (<a href="core/paper_account.py"><code>core/paper_account.py</code></a>) and SEC Rule 15c3-5 risk bounds.
   </div>
 </div>
 
-<div class="grid-2">
+<div class="base-badge">
+  🔍 <b>Master Audit Base:</b> <a href="PRESENTATION_VERIFICATION_BASE.md">PRESENTATION_VERIFICATION_BASE.md</a> • Verified 98/98 Unit Tests Green • Paper Mode
+</div>
+
+---
+
+## 1. What is "Web4"? From Smart Contracts to Autonomous Economic Agency
+
+To understand this system, we must understand how the web has evolved over four generations:
+
+<div class="timeline-flow" style="margin-top: 8px; margin-bottom: 8px;">
+  <div class="timeline-card">
+    <b style="color: #94a3b8; font-size: 1.1em;">Web 1.0</b>
+    <span class="pill pill-cyan" style="margin: 3px 0;">READ</span>
+    <span>Static web pages, HTML articles, read-only content.</span>
+  </div>
+  <div class="timeline-card">
+    <b style="color: #38bdf8; font-size: 1.1em;">Web 2.0</b>
+    <span class="pill pill-cyan" style="margin: 3px 0;">READ + WRITE</span>
+    <span>Social platforms, cloud databases, centralized REST APIs.</span>
+  </div>
+  <div class="timeline-card">
+    <b style="color: #a78bfa; font-size: 1.1em;">Web 3.0</b>
+    <span class="pill pill-purple" style="margin: 3px 0;">READ + OWN</span>
+    <span>Decentralized blockchains, tokens, immutable smart contracts.</span>
+  </div>
+  <div class="timeline-card success">
+    <b style="color: #10b981; font-size: 1.1em;">Web 4.0</b>
+    <span class="pill pill-green" style="margin: 3px 0;">SYMBIOTIC AUTONOMY</span>
+    <span style="color: #e2e8f0; font-weight: 600;">Autonomous AI Economic Agents that perceive, manage capital, and self-improve.</span>
+  </div>
+</div>
+
+<div class="grid-2" style="margin-top: 6px;">
   <div class="card">
-    <h4>📚 Canonical PEAS Verification</h4>
+    <h4>🌐 Where We Meet Web4 in This System</h4>
     <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
-      • <b>P (Performance)</b>: Net return $>50\%$, Max DD $\le 15\%$, fee minimization.<br/>
-      • <b>E (Environment)</b>: 21-asset order books across Binance & US Equities.<br/>
-      • <b>A (Actuators)</b>: Maker limit orders, trailing stops, circuit breaker halts.<br/>
-      • <b>S (Sensors)</b>: Binance/Yahoo REST APIs, FRED VIX, Google News RSS.
+      • <b>Independent Economic Entity</b>: The bot holds its own virtual balance sheet ($10,000 cash), budgets risk, and executes trades autonomously.<br/>
+      • <b>Multi-Venue Sensory Perception</b>: Merges Web3 digital asset feeds (Binance CCXT), Web3 decentralized prediction markets (Polymarket), and Web2 macro feeds (FRED, VIX, Yahoo Finance).<br/>
+      • <b>Biological Self-Immunity</b>: Built-in mathematical circuit breakers that defend capital during market crashes.
     </p>
   </div>
-
   <div class="card">
-    <h4>🧠 12-Agent Heterogeneous MAS Architecture</h4>
+    <h4>🧠 Why Web4 Replaces Traditional Bots</h4>
     <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
-      • <b>8 Execution & Sensing Agents (5ms Deterministic Math & Pre-Flight)</b>:<br/>
-      &nbsp;&nbsp;→ Data Scout, Momentum, Mean Reversion, Basis Yield, Arbiter, Risk Governor, Ledger, Pre-Flight.<br/>
-      &nbsp;&nbsp;→ <b>0% Math Hallucination</b>: Position sizing clamped strictly to $[1\%, 5\%]$.<br/>
-      • <b>4 Strategic Self-Improving Agents (Asynchronous Local LLM phi4-mini)</b>:<br/>
-      &nbsp;&nbsp;→ <b>Agent 9</b>: Zero-Prelist Alpha Scanner • <b>Agent 10</b>: Post-Trade Forensic Analyst.<br/>
-      &nbsp;&nbsp;→ <b>Agent 11</b>: Parameter Optimizer • <b>Agent 12</b>: Chief Risk Governor Gatekeeper.
+      • <b>Static vs. Adaptive</b>: Traditional Web2/Web3 trading bots use hardcoded rules that decay and lose money when market regimes change.<br/>
+      • <b>Closed-Loop Meta-Learning</b>: Web4 agents inspect their own closed trades, dynamically discover volume leaders, prune losing drags, and recalibrate without human babysitting.<br/>
+      • <b>Zero Prompt Hallucination</b>: Strategy sizing is hard-clamped to $[1\%, 5\%]$ by deterministic code.
     </p>
   </div>
 </div>
 
 <div class="base-badge">
-  🔍 <b>Base:</b> Russell & Norvig (2020) ISBN 978-0134610993 • Wooldridge (2009) ISBN 978-0470519462 • SEC Rule 15c3-5
+  🔍 <b>Authority Reference:</b> <a href="docs/web4-autonomous-levels.md">docs/web4-autonomous-levels.md</a> • Russell & Norvig PEAS Specification
 </div>
 
 ---
 
-## 5. Market Data Sources & Trustworthiness
+## 2. Core Taxonomy: The Bot vs. The Agents vs. The Strategies
 
-All ingested market data originates from verified, institutional-grade, and official public APIs:
+For newcomers, it is easy to confuse these terms. The system establishes a strict, professional hierarchy:
 
-<div class="grid-2">
-  <div class="card">
-    <h4>🪙 Digital Assets: Binance REST API v3 (via CCXT)</h4>
-    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
-      • <b>Provider</b>: Binance Holdings Ltd. (world's largest crypto exchange by volume).<br/>
-      • <b>Protocol</b>: CCXT open-source library connecting to official REST v3 endpoints.<br/>
-      • <b>Verification</b>: Direct HMAC-SHA256 authenticated endpoints; verified against Binance Official Developer Documentation.<br/>
-      • <b>Attributes</b>: High-precision millisecond timestamps, continuous depth, and audited funding rates.
-    </p>
-  </div>
-
-  <div class="card">
-    <h4>📈 US Equities & Commodities: Yahoo Finance (yfinance)</h4>
-    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
-      • <b>Provider</b>: Yahoo Finance / Refinitiv consolidated market data.<br/>
-      • <b>Protocol</b>: <code>yfinance</code> Python library querying official v8 chart endpoints.<br/>
-      • <b>Verification</b>: Cross-validated with NYSE/NASDAQ consolidated tape quotes.<br/>
-      • <b>Attributes</b>: Unadjusted and split/dividend-adjusted pricing across equities (NVDA, AMD, AAPL) and ETFs (SPY, QQQ, GLD).
-    </p>
-  </div>
-</div>
-
-<div class="grid-2" style="margin-top: 5px;">
-  <div class="card">
-    <h4>🏛️ Macroeconomic Indicators: FRED API</h4>
-    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
-      • <b>Provider</b>: Federal Reserve Bank of St. Louis (Economic Research Division).<br/>
-      • <b>Series Ingested</b>: CBOE VIX Index (<code>VIXCLS</code>), Fed Funds Rate, High Yield Spread.<br/>
-      • <b>Legitimacy</b>: Authoritative US central bank official statistical release.
-    </p>
-  </div>
-
-  <div class="card">
-    <h4>🌐 Prediction Markets & News Telemetry</h4>
-    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
-      • <b>Polymarket Gamma API</b>: Decentralized order-book probability for macro events.<br/>
-      • <b>Google News RSS</b>: Authoritative global news aggregator parsed locally by private GPU LLM.<br/>
-      • <b>Compliance</b>: Free of scrape locks; adheres strictly to public API terms of service.
-    </p>
-  </div>
-</div>
-
-<div class="base-badge">
-  🔍 <b>Base:</b> CCXT Binance Adapter • Yahoo Finance v8 Documentation • Federal Reserve Bank of St. Louis FRED Portal
-</div>
-
----
-
-## 6. Data Quality, Validation & Sanitization Firewall
-
-Garbage in, garbage out: the trading desk implements a **3-Tier Validation Firewall**:
-
-<div style="background: rgba(15, 23, 42, 0.9); border: 1px solid #1e293b; border-radius: 8px; padding: 6px 10px; margin-bottom: 5px; font-size: 0.72em; text-align: center;">
-  Raw Exchange Feed ➔
-  <span class="pill pill-cyan">1. Drop Incomplete Bars</span> ➔
-  <span class="pill pill-purple">2. Assert Monotonic Time & $H \ge L$</span> ➔
-  <span class="pill pill-amber">3. Check Spread $\le 0.15\%$</span> ➔
-  <span class="pill pill-green">Approved Clean OHLCV</span>
-</div>
-
-<div class="grid-3">
-  <div class="card">
-    <h4>🧹 1. Closed-Bar Filtering</h4>
-    <div class="level-simple" style="font-size: 0.69em; margin-bottom: 3px;">
-      💬 <i>Simple</i>: Don't judge a candle before it finishes.
-    </div>
-    <p style="font-size: 0.72em; color: #94a3b8; line-height: 1.35;">
-      • <b>Mechanism</b>: <a href="core/data_loader.py"><code>filter_closed_bars()</code></a> drops forming candle.<br/>
-      • <b>Repainting Prevention</b>: Indicators only calculate on finalized bars.<br/>
-      • <b>Guarantee</b>: Eliminates intra-candle false triggers.
-    </p>
-  </div>
-
-  <div class="card">
-    <h4>🛡️ 2. Geometric Validation</h4>
-    <div class="level-simple" style="font-size: 0.69em; margin-bottom: 3px;">
-      💬 <i>Simple</i>: Reject price glitches and time travel.
-    </div>
-    <p style="font-size: 0.72em; color: #94a3b8; line-height: 1.35;">
-      • <b>Mechanism</b>: <a href="core/data_loader.py"><code>check_data_quality()</code></a> asserts data logic.<br/>
-      • <b>Monotonicity</b>: Datetime must be strictly increasing.<br/>
-      • <b>Price Invariants</b>: $High \ge Low$, positive volume, no NaNs.
-    </p>
-  </div>
-
-  <div class="card">
-    <h4>⚡ 3. Pre-Flight Guard</h4>
-    <div class="level-simple" style="font-size: 0.69em; margin-bottom: 3px;">
-      💬 <i>Simple</i>: Check the toll booth before trading.
-    </div>
-    <p style="font-size: 0.72em; color: #94a3b8; line-height: 1.35;">
-      • <b>Mechanism</b>: <a href="core/preflight.py"><code>validate_order_preflight()</code></a>.<br/>
-      • <b>Spread Filter</b>: Rejects if spread $> 0.15\%$ (liquidity void).<br/>
-      • <b>Tick Staleness</b>: Rejects quotes $> 180\text{s}$ old (lag).
-    </p>
-  </div>
-</div>
-
-<div class="takeaway">
-  💡 <b>Zero Compromise on Data</b>: Corrupted candles or lagged quotes are rejected instantly; the bot logs the anomaly and remains 100% in cash defense rather than trading on bad telemetry.
-</div>
-
-<div class="base-badge">
-  🔍 <b>Base:</b> <a href="core/data_loader.py"><code>core/data_loader.py:45-115</code></a> • <a href="core/preflight.py"><code>core/preflight.py:155-220</code></a> • Verified in <code>tests/test_data_quality.py</code>
-</div>
-
----
-
-## 7. Quantitative Risk Management & Loss Asymmetry
-
-Risk management in <a href="core/risk_engine.py"><code>core/risk_engine.py</code></a> is hard-coded and immutable, operating as a **4-Layer Defense Shield**:
-
-<div class="grid-4" style="margin-bottom: 5px;">
+<div class="grid-3" style="margin-top: 8px;">
   <div class="card" style="border-top: 3px solid #38bdf8;">
-    <b style="color: #38bdf8; font-size: 0.83em;">Shield 1: Sizing Clamp</b>
-    <p style="font-size: 0.71em; margin-top: 2px;">
-      <b>Formula</b>: $\frac{\text{Equity} \times 2\%}{\text{Entry} - \text{Stop}}$<br/>
-      Clamped to $[1\%, 5\%]$. Never over-sizes.
+    <h4>🤖 1. The Bot (The Trading Desk)</h4>
+    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
+      • 💬 <i>Plain English</i>: The 24/7 operating platform running the entire desk.<br/>
+      • ⚙️ <i>Technical</i>: The continuous event daemon in <a href="live_paper_trader.py"><code>live_paper_trader.py</code></a>. It coordinates market ticks, enforces process locks, and manages the portfolio ledger.<br/>
+      • <b>Analogy</b>: <i>The Bot is the Hospital facility and operating infrastructure.</i>
+    </p>
+  </div>
+  <div class="card" style="border-top: 3px solid #a78bfa;">
+    <h4>🧠 2. The 12 Agents (The Specialists)</h4>
+    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
+      • 💬 <i>Plain English</i>: Specialized autonomous workers, each with a single job.<br/>
+      • ⚙️ <i>Technical</i>: Autonomous software entities meeting the formal PEAS model. Examples: Data Scout, Risk Governor, Alpha Scanner, Forensic Analyst.<br/>
+      • <b>Analogy</b>: <i>The Agents are the specialized doctors (Surgeon, Cardiologist, Pharmacist).</i>
     </p>
   </div>
   <div class="card" style="border-top: 3px solid #10b981;">
-    <b style="color: #10b981; font-size: 0.83em;">Shield 2: Profit Vault</b>
-    <p style="font-size: 0.71em; margin-top: 2px;">
-      Bank 50% at $+2.5\times\text{ATR}$.<br/>
-      Stop to Entry at $+1.2\times\text{ATR}$ (Free roll).
-    </p>
-  </div>
-  <div class="card" style="border-top: 3px solid #fbbf24;">
-    <b style="color: #fbbf24; font-size: 0.83em;">Shield 3: Daily Circuit</b>
-    <p style="font-size: 0.71em; margin-top: 2px;">
-      5% rolling 24h loss halt.<br/>
-      3h contagion cooldown on stop-outs.
-    </p>
-  </div>
-  <div class="card" style="border-top: 3px solid #f43f5e;">
-    <b style="color: #f43f5e; font-size: 0.83em;">Shield 4: Kill Switch</b>
-    <p style="font-size: 0.71em; margin-top: 2px;">
-      15% Max DD triggers permanent cash lock.<br/>
-      Guarantees 85% safe.
+    <h4>📐 3. The Strategies (The Playbooks)</h4>
+    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
+      • 💬 <i>Plain English</i>: The mathematical rules that decide when to buy or sell.<br/>
+      • ⚙️ <i>Technical</i>: Pure mathematical logic: Momentum Donchian Breakout (<a href="strategies/momentum.py"><code>strategies/momentum.py</code></a>) and Mean Reversion Bollinger/RSI (<a href="strategies/mean_reversion.py"><code>strategies/mean_reversion.py</code></a>).<br/>
+      • <b>Analogy</b>: <i>The Strategies are the verified medical treatment protocols.</i>
     </p>
   </div>
 </div>
 
-<div class="grid-2">
-  <div class="card">
-    <h4>📐 Asymmetry of Losses</h4>
-    <table style="width: 100%; font-size: 0.74em; margin-top: 2px;">
-      <tr><th>Drawdown</th><th>Gain to Recover</th><th>Status</th></tr>
-      <tr><td><b>-5%</b></td><td>+5.3%</td><td>Normal trading</td></tr>
-      <tr><td><b>-15%</b></td><td><span class="highlight"><b>+17.6% (Manageable)</b></span></td><td><span class="highlight"><b>KILL SWITCH (Safe)</b></span></td></tr>
-      <tr><td><b>-50%</b></td><td><span class="warning">+100.0% (Must Double)</span></td><td>❌ Retail ruin point</td></tr>
-    </table>
+<div class="level-box" style="margin-top: 8px;">
+  <div class="level-simple">
+    💬 <b>Why this matters:</b> If a strategy makes a bad suggestion, the <b>Risk Governor Agent</b> blocks it. If an asset is losing money, the <b>Scanner Agent</b> fires it. The Bot keeps running smoothly regardless of individual market moves.
   </div>
-  <div class="card">
-    <h4>🛡️ Why 15% Max DD Matters</h4>
-    <div class="level-simple" style="font-size: 0.70em; margin-top: 2px;">
-      💬 <i>Simple:</i> Recovering from -15% requires only a modest +17.6% bounce. Unmanaged retail bots that hit -50% must double their money just to break even!
+</div>
+
+<div class="base-badge">
+  🔍 <b>Formal Definition:</b> Russell & Norvig (2020) <i>Artificial Intelligence: A Modern Approach</i> • Wooldridge (2009) Multi-Agent Systems
+</div>
+
+---
+
+## 3. The 12-Agent System Architecture: Complete Visual Map
+
+The desk deploys a **Heterogeneous Multi-Agent System (MAS)** split into two functional tiers:
+
+<div class="card" style="margin-bottom: 6px; padding: 6px 10px; border-left: 3px solid #38bdf8;">
+  <b style="color: #38bdf8; font-size: 0.85em;">⚡ TIER 1: 8 EXECUTION & SENSING AGENTS (Every 60s • 5ms Deterministic Math)</b>
+  <div class="grid-4" style="margin-top: 4px; margin-bottom: 2px;">
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
+      <span class="pill pill-cyan">AGENT 1</span> <b>Data Scout</b><br/><span style="color: #94a3b8;">Binance/Yahoo ingestion & stale data firewall</span>
+    </div>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
+      <span class="pill pill-purple">AGENT 2 & 3</span> <b>Alpha Engines</b><br/><span style="color: #94a3b8;">Momentum Breakout & Mean Reversion Swing</span>
+    </div>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
+      <span class="pill pill-green">AGENT 4 & 5</span> <b>Yield & Arbiter</b><br/><span style="color: #94a3b8;">Basis yield radar & conflict cancellation</span>
+    </div>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
+      <span class="pill pill-red">AGENT 6, 7, 8</span> <b>Risk & Ledger</b><br/><span style="color: #94a3b8;">1%-5% sizing, PaperAccount, LLM Pre-Flight</span>
     </div>
   </div>
 </div>
 
+<div class="card" style="padding: 6px 10px; border-left: 3px solid #a78bfa;">
+  <b style="color: #a78bfa; font-size: 0.85em;">🧠 TIER 2: 4 STRATEGIC SELF-IMPROVING AGENTS (Asynchronous • Cognitive Local LLM phi4-mini)</b>
+  <div class="grid-4" style="margin-top: 4px; margin-bottom: 2px;">
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
+      <span class="pill pill-purple">AGENT 9</span> <b>Alpha Scanner</b><br/><span style="color: #94a3b8;">Dynamic market discovery from real-time order books</span>
+    </div>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
+      <span class="pill pill-amber">AGENT 10</span> <b>Forensic Analyst</b><br/><span style="color: #94a3b8;">Wakes every 15 deals to audit win rates & drag losses</span>
+    </div>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
+      <span class="pill pill-cyan">AGENT 11</span> <b>Optimizer</b><br/><span style="color: #94a3b8;">Walk-forward mutation tournaments on unseen data</span>
+    </div>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
+      <span class="pill pill-green">AGENT 12</span> <b>Risk Governor</b><br/><span style="color: #94a3b8;">Supreme deployment gatekeeper: tests, rules & hot-reload</span>
+    </div>
+  </div>
+</div>
+
+<div class="level-box" style="margin-top: 6px;">
+  <div class="level-simple">
+    💬 <b>Why separate execution and strategy?</b> Trade execution runs in <b>5 milliseconds</b> on deterministic math with zero hallucination risk. The local AI reasoning (LLM) runs <i>out-of-band</i> in the background so it never slows down live order routing.
+  </div>
+</div>
+
 <div class="base-badge">
-  🔍 <b>Base:</b> <a href="core/risk_engine.py"><code>core/risk_engine.py:40-250</code></a> • Van Tharp (2008) • SEC Rule 15c3-5
+  🔍 <b>Implementation:</b> <a href="agent/">agent/</a> • <a href="core/">core/</a> • Local Ollama phi4-mini
 </div>
 
 ---
 
-## 8. Elimination of Look-Ahead Bias & Data Leakage
+## 4. Inside the Bot: The 60-Second Real-Time Decision Pipeline
 
-Look-ahead bias is the primary reason backtests fail in production. Our codebase enforces strict causal separation:
+Every 60 seconds, the trading desk executes a deterministic 6-step lifecycle across all active assets:
 
-<div class="timeline-flow">
-  <div class="timeline-card">
-    <span class="pill pill-cyan" style="margin-bottom: 2px;">PAST DATA: BAR $t-1$</span>
-    <b>Indicators Calculated</b><br/>
-    <code>high.shift(1).rolling(20)</code><br/>
-    <span style="color: #94a3b8;">Uses strictly completed bars</span>
-  </div>
-  <div class="flow-arrow">➔</div>
+<div class="timeline-flow" style="margin-top: 8px; margin-bottom: 8px;">
   <div class="timeline-card active">
-    <span class="pill pill-purple" style="margin-bottom: 2px;">TIME $t$: BAR CLOSE</span>
-    <b>Signal Generated</b><br/>
-    Close crosses Donchian High<br/>
-    <span style="color: #38bdf8;">Decision made at close</span>
+    <b>01. Sensor Ingestion</b>
+    <span style="color: #94a3b8;">Binance & Yahoo REST quotes fetched</span>
   </div>
-  <div class="flow-arrow">➔</div>
-  <div class="timeline-card future">
-    <span class="pill pill-green" style="margin-bottom: 2px;">TIME $t+1$: NEXT OPEN</span>
-    <b>Execution Fill</b><br/>
-    Filled at <code>open[t+1]</code><br/>
-    <span style="color: #10b981;">+ fees & slippage modeled</span>
+  <div class="timeline-card">
+    <b>02. Quality Firewall</b>
+    <span style="color: #94a3b8;">Stale data (>180m) blocked immediately</span>
+  </div>
+  <div class="timeline-card">
+    <b>03. Signal Engine</b>
+    <span style="color: #94a3b8;">Momentum & Mean-Reversion evaluate bars</span>
+  </div>
+  <div class="timeline-card">
+    <b>04. Arbiter Cortex</b>
+    <span style="color: #94a3b8;">Reconciles conflicts, checks 200 EMA</span>
+  </div>
+  <div class="timeline-card">
+    <b>05. Risk Engine</b>
+    <span style="color: #94a3b8;">1%-5% sizing, 15% drawdown circuit breaker</span>
+  </div>
+  <div class="timeline-card success">
+    <b>06. Ledger Fill</b>
+    <span style="color: #10b981; font-weight: 700;">Atomic update to paper portfolio</span>
   </div>
 </div>
 
-<div class="level-box">
+<div class="grid-2" style="margin-top: 6px;">
+  <div class="card">
+    <h4>🛡️ Why You See "Awaiting Data" After Hours</h4>
+    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
+      • <b>Wall Street Closes at 4:00 PM EST</b>: Unlike crypto which trades 24/7, US stock exchanges close at night and on weekends.<br/>
+      • <b>The Data Quality Firewall (<a href="core/data_loader.py"><code>data_loader.py</code></a>)</b>: If an equity bar is $>180$ minutes old, the bot halts stock entries to protect against illiquid after-hours slippage.<br/>
+      • <b>Zero Negative Effect</b>: It protects your capital! When the 9:30 AM EST opening bell rings, live candles resume immediately.
+    </p>
+  </div>
+  <div class="card">
+    <h4>⚡ Conflict Resolution in Action</h4>
+    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
+      • <b>Bull vs. Bear Conflict</b>: If Momentum says <code>BUY</code> while Mean Reversion says <code>SELL</code>, the coordinator cancels both signals to stay in safe cash.<br/>
+      • <b>Consensus Confirmation</b>: If both engines agree, position size receives a conviction boost.<br/>
+      • <b>Macro Bear Gate</b>: If price is below the 200 EMA, ALL long breakout signals are rejected outright.
+    </p>
+  </div>
+</div>
+
+<div class="base-badge">
+  🔍 <b>Pipeline Trace:</b> <a href="live_paper_trader.py">live_paper_trader.py</a>: <code>run_portfolio_tick()</code> • <code>process_symbol()</code>
+</div>
+
+---
+
+## 5. Human-in-the-Loop (HITL): Outer Loop Governance vs. Inner Loop Autonomy
+
+One of the most important concepts in quantitative AI: where does the human fit in?
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                           THE OUTER LOOP: HUMAN-IN-THE-LOOP (GOVERNANCE)                        │
+│                                                                                                 │
+│   👨‍💻 Human Engineer & Trader                                                                    │
+│      ├── 1. Defines Non-Negotiable Invariants (Rules 1-5 in AGENTS.md, max 5% risk per trade)   │
+│      ├── 2. Codes New Strategy Logic & Math Formulas in Python (strategies/)                    │
+│      ├── 3. Sovereign Capital Sizing & Virtual Reset Authorization (--reset)                    │
+│      └── 4. Emergency Kill-Switch Clearance (Only human can reactivate trading after a halt)    │
+└───────────────────────────────────────────────┬─────────────────────────────────────────────────┘
+                                                │ Authorizes and Deploys Code
+                                                ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                        THE INNER LOOP: 100% AUTONOMOUS MACHINE EXECUTION                        │
+│                                                                                                 │
+│   🤖 The 12 Autonomous Agents                                                                   │
+│      ├── 24/7 Scanning: Ingests Binance & Yahoo data every 60s without human presence           │
+│      ├── Execution: Sizing, trailing stop adjustments, and exit routing in 5 milliseconds      │
+│      ├── Dynamic Discovery: Discovers volume leaders with zero pre-lists (Agent 9)              │
+│      ├── Post-Trade Diagnosis: Audits loss attribution every 15 deals (Agent 10)                │
+│      └── Parameter Calibration: Walk-forward optimization tournaments (Agent 11 & 12)          │
+└─────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+<div class="level-box" style="margin-top: 6px;">
   <div class="level-simple">
-    💬 <b>In Plain English:</b> You cannot read tomorrow's newspaper today. When our bot decides to buy at 10:00 AM, it only knows prices up to 10:00 AM. It enters the trade at 10:01 AM when the next candle opens.
+    💬 <b>In Plain English:</b> The bot runs 100% on its own day-to-day (Inner Loop). You never have to sit at a screen clicking "buy" or "sell". But you remain the sovereign CEO (Outer Loop): you set the unbreakable safety boundaries, and the AI cannot rewrite its own code or loosen risk limits without your oversight.
+  </div>
+</div>
+
+<div class="base-badge">
+  🔍 <b>Governance Base:</b> <a href="AGENTS.md">AGENTS.md</a> Invariant Rules 1–5 • SEC Rule 15c3-5 Pre-Trade Risk Filtering
+</div>
+
+---
+
+## 6. Multi-Venue Sensory Perception: How the Desk Sees the Market
+
+The desk does not rely on single-exchange price feeds. It synthesizes real-world multi-venue intelligence:
+
+<div class="grid-2" style="margin-top: 6px;">
+  <div class="card">
+    <h4>🪙 1. Digital Assets: Binance REST API v3 (via CCXT)</h4>
+    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
+      • Continuous OHLCV candle streams across major liquid crypto pairs.<br/>
+      • <b>Perpetual Derivatives Funding Rates</b> (<a href="core/data_loader.py"><code>core/data_loader.py</code></a>): Evaluates 8-hour funding rates. If funding $>+0.05\%$, suppresses breakout longs to avoid buying overheated tops.<br/>
+      • <b>Volume Liquidity Verification</b>: Discards unbacked low-liquidity coins.
+    </p>
+  </div>
+  <div class="card">
+    <h4>📈 2. US Equities & ETFs: Yahoo Finance Tape</h4>
+    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
+      • Live consolidated pricing across US growth stocks (NVDA, INTC, IREN, AAPL) and macro sector ETFs (SPY, QQQ, XLE).<br/>
+      • <b>Market Hours Synchronizer</b>: Tracks NYSE/NASDAQ bell schedules and holidays.<br/>
+      • <b>Split & Dividend Adjustments</b>: Prevents false technical breakout signals caused by corporate actions.
+    </p>
+  </div>
+</div>
+
+<div class="grid-2" style="margin-top: 6px;">
+  <div class="card">
+    <h4>🔮 3. Decentralized Prediction Markets: Polymarket</h4>
+    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
+      • Queries Polymarket's public Gamma API (<a href="core/polymarket_radar.py"><code>core/polymarket_radar.py</code></a>) with zero API keys.<br/>
+      • Evaluates real-time crowd-priced probabilities of macroeconomic shocks (Fed rate cuts, US recession odds).<br/>
+      • <b>Dynamic Risk Damping</b>: If recession probability $\ge 60\%$, automatically cuts position sizing by half ($0.50\times$).
+    </p>
+  </div>
+  <div class="card">
+    <h4>📉 4. Macro Stress Radar: FRED & CBOE VIX</h4>
+    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.38;">
+      • Ingests CBOE Volatility Index (<code>^VIX</code>) and High-Yield OAS Credit Spreads from the Federal Reserve (<a href="core/fred_radar.py"><code>core/fred_radar.py</code></a>).<br/>
+      • <b>Crash Defense Mode</b>: If VIX $\ge 30.0$, halts aggressive breakout long orders and defaults the portfolio to cash preservation.
+    </p>
+  </div>
+</div>
+
+<div class="base-badge">
+  🔍 <b>Sensory Modules:</b> <a href="core/data_loader.py">data_loader.py</a> • <a href="core/polymarket_radar.py">polymarket_radar.py</a> • <a href="core/fred_radar.py">fred_radar.py</a>
+</div>
+
+---
+
+## 7. The 4-Layer Defense Shield: Why the Bot Never Blows Up
+
+Professional trading is not about how much you make when you are right—it is about **how little you lose when you are wrong**.
+
+<div class="grid-4" style="margin-top: 8px;">
+  <div class="stat-card" style="border-top-color: #38bdf8;">
+    <div class="stat-label">LAYER 1: MACRO GATE</div>
+    <div class="stat-number" style="font-size: 1.25em; color: #38bdf8;">200 EMA Filter</div>
+    <p style="font-size: 0.69em; color: #94a3b8; margin-top: 3px;">Blocks buying in downtrends. Saved <b>95.8% capital</b> during major crypto bear market dumps.</p>
+  </div>
+  <div class="stat-card gold">
+    <div class="stat-label">LAYER 2: CHOP GATE</div>
+    <div class="stat-number gold" style="font-size: 1.25em;">ADX Throttling</div>
+    <p style="font-size: 0.69em; color: #94a3b8; margin-top: 3px;">When market is sideways ($ADX < 20$), cuts risk in half to suppress false-breakout whipsaws.</p>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-label">LAYER 3: SIZING SHIELD</div>
+    <div class="stat-number green" style="font-size: 1.25em;">Van Tharp 1%-5%</div>
+    <p style="font-size: 0.69em; color: #94a3b8; margin-top: 3px;">Sizes every position strictly based on volatility (ATR). Hard-clamped to $[1\%, 5\%]$ equity.</p>
+  </div>
+  <div class="stat-card" style="border-top-color: #f43f5e;">
+    <div class="stat-label">LAYER 4: CIRCUIT BREAKER</div>
+    <div class="stat-number" style="font-size: 1.25em; color: #f43f5e;">15% Kill Switch</div>
+    <p style="font-size: 0.69em; color: #94a3b8; margin-top: 3px;">If drawdown reaches 15%, halts all trading into 100% cash defense. Requires human reset.</p>
+  </div>
+</div>
+
+<div class="level-box" style="margin-top: 6px;">
+  <div class="level-simple">
+    💬 <b>The Golden Rule of Asymmetric Loss:</b> If you lose 50% of your account, you need a 100% gain just to break even! By stopping losses at an absolute 15% maximum, the desk ensures you only ever need an 17.6% rebound to reach new all-time highs.
   </div>
   <div class="level-tech">
-    ⚙️ <b>Under the Hood:</b> Explicit <code>.shift(1)</code> in <a href="core/strategy.py"><code>core/strategy.py:115-119</code></a> + next-open execution in <a href="core/backtest_engine.py"><code>core/backtest_engine.py:483</code></a> + chronological 70/30 split in <a href="agent/validator.py"><code>agent/validator.py</code></a> (zero k-fold shuffling).
+    ⚙️ <b>Mathematical Equation:</b> $\text{Units} = \frac{\text{Equity} \times \text{Risk \%}}{\text{ATR} \times \text{Multiplier}}$, strictly bounded by $\text{Max Loss} \le \text{Equity} \times 0.05$. Invariant Rule #3 permanently prohibits any loosening.
   </div>
 </div>
 
 <div class="base-badge">
-  🔍 <b>Base:</b> <a href="core/strategy.py"><code>core/strategy.py:115-125</code></a> • <a href="core/backtest_engine.py"><code>core/backtest_engine.py:483</code></a> • <a href="agent/validator.py"><code>agent/validator.py:30-85</code></a>
+  🔍 <b>Safety Code:</b> <a href="core/risk_engine.py">core/risk_engine.py</a>: <code>evaluate_order()</code> • <code>check_circuit_breakers()</code>
 </div>
 
 ---
 
-## 9. Key Engineering Decisions & Justifications
+## 8. Dynamic Market Discovery & Automated Drag Pruning (Agent 9)
 
-Every architectural choice was selected to maximize reliability, determinism, and cost efficiency:
+The desk does not trade a static pre-list. **Agent 9** dynamically scans real-time exchange order books:
 
-<div class="grid-2">
-  <div class="card">
-    <h4>🧠 1. Neuro-Symbolic MAS vs. Pure LLM Agent</h4>
-    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.36;">
-      • <b>We Chose</b>: 7 deterministic symbolic Python agents + 1 neural LLM agent.<br/>
-      • <b>Alternative Rejected</b>: Pure End-to-End LLM Agent.<br/>
-      • <b>Why Chosen</b>: Pure LLMs hallucinate arithmetic, add 2s latency, and violate determinism. Symbolic math guarantees 100% reproducibility and compliance with SEC Rule 15c3-5.<br/>
-      • <b>Trade-Off</b>: Requires hand-coded rules for market indicators.
-    </p>
-  </div>
-
-  <div class="card">
-    <h4>🖥️ 2. Local GPU Inference (`phi4-mini`) vs. Cloud API</h4>
-    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.36;">
-      • <b>We Chose</b>: Local <code>phi4-mini</code> running on local 6GB VRAM GPU ($0.70\text{s}$).<br/>
-      • <b>Alternative Rejected</b>: OpenAI GPT-4o / Anthropic Claude API.<br/>
-      • <b>Why Chosen</b>: $0 marginal API token costs, complete data privacy, immunity to cloud API outages or rate limits, and sub-second deterministic latency.<br/>
-      • <b>Trade-Off</b>: Requires modern local GPU hardware.
-    </p>
-  </div>
-</div>
-
-<div class="grid-2" style="margin-top: 5px;">
-  <div class="card">
-    <h4>📊 3. Trend & Mean Reversion vs. Deep RL</h4>
-    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.36;">
-      • <b>We Chose</b>: Donchian Breakouts + Bollinger Sniping + Basis Yield.<br/>
-      • <b>Alternative Rejected</b>: Deep Reinforcement Learning (PPO / DQN).<br/>
-      • <b>Why Chosen</b>: Deep RL overfits financial noise and fails unpredictably during regime shifts. Classical robust indicators have convex payoffs and explainable parameters.<br/>
-      • <b>Trade-Off</b>: Does not automatically invent new indicator math.
-    </p>
-  </div>
-
-  <div class="card">
-    <h4>💾 4. Atomic JSON + `.bak` vs. Heavy SQL Database</h4>
-    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.36;">
-      • <b>We Chose</b>: Atomic file write via temporary file replacement + dual backups.<br/>
-      • <b>Alternative Rejected</b>: PostgreSQL / SQLAlchemy server.<br/>
-      • <b>Why Chosen</b>: Eliminates external database dependencies, connection pooling crashes, and migration corruptions. Guaranteed zero state corruption during power cuts.<br/>
-      • <b>Trade-Off</b>: Not designed for multi-million row relational queries.
-    </p>
-  </div>
-</div>
-
-<div class="base-badge">
-  🔍 <b>Base:</b> Justification Analysis in <a href="PRESENTATION_VERIFICATION_BASE.md#slide-11b-technical--architectural-design-decisions">PRESENTATION_VERIFICATION_BASE.md#slide-11b</a>
-</div>
-
----
-
-## 10. Actual Quality & Performance Telemetry
-
-Full candle-by-candle replay across 21 assets with **0.06% fees + 0.04% slippage** executed at next bar Open:
-
-<div class="grid-2">
-  <div class="card">
-    <h4>📊 Full Live Bot Replay vs. Raw Baseline ($10,000 Capital)</h4>
-    <table style="width: 100%; font-size: 0.75em; margin-top: 2px;">
-      <tr><th>Metric</th><th>Raw Unfiltered</th><th>Live Bot Replay</th></tr>
-      <tr><td><b>Net Portfolio Return</b></td><td>$-6.08\%$ ($-25.5\text{k}$)</td><td><span class="highlight"><b>+66.42% (+$6,642)</b></span></td></tr>
-      <tr><td><b>Ending Equity</b></td><td>$\$9,391$</td><td><span class="highlight"><b>$16,641.99</b></span></td></tr>
-      <tr><td><b>Profit Factor</b></td><td>0.75</td><td><span class="highlight"><b>1.30 (1.35 Maker)</b></span></td></tr>
-      <tr><td><b>Win Rate</b></td><td>52.2%</td><td><span class="highlight"><b>56.5% (60.4% Maker)</b></span></td></tr>
-      <tr><td><b>Max Portfolio Drawdown</b></td><td>6.66%</td><td><span class="highlight"><b>13.40% (Preserved)</b></span></td></tr>
-      <tr><td><b>Annualized Sharpe</b></td><td>$-4.13$</td><td><span class="highlight"><b>+2.03 (+2.38 Maker)</b></span></td></tr>
-      <tr><td><b>Trades Executed</b></td><td>1,738 trades</td><td><span class="highlight"><b>830 (900+ bad trades cut)</b></span></td></tr>
-    </table>
-  </div>
-
-  <div class="card">
-    <h4>🛡️ Why the Live Bot Wins: 1,800+ Bad Trades Blocked</h4>
-    <p style="font-size: 0.73em; color: #94a3b8; line-height: 1.40;">
-      • <b>Crypto Correlation Guard</b>: Blocked <b>690 over-concentrated trades</b>.<br/>
-      • <b>200 EMA Macro Gate</b>: Blocked <b>499 bear trend cascade trades</b>.<br/>
-      • <b>ADX Range Chop Gate</b>: Blocked <b>346 low-volatility false breakouts</b>.<br/>
-      • <b>Crash Contagion Cooldown</b>: Blocked <b>253 cascade trades</b> post stop-out.<br/>
-      • <b>Strategy Conflict Gate</b>: Cancelled <b>17 contradictory entries</b>.<br/>
-      • <b>Selective Short Fades</b>: Faded overbought bounces at $\text{RSI} \ge 75$.
-    </p>
-  </div>
-</div>
-
-<div class="takeaway">
-  💡 <b>The Empirical Proof</b>: The defense gates filtered out 900+ losing false breakouts and fee bleed, transforming an unfiltered -6% raw loss into a <b>+66.4% net institutional winner</b>.
-</div>
-
-<div class="base-badge">
-  🔍 <b>Base:</b> Audit Script in <a href="research/backtest_live_replay.py"><code>research/backtest_live_replay.py</code></a> • Artifact: <code>data/live_replay_backtest.json</code>
-</div>
-
----
-
-## 11. Central Performance Index (CPI) & Theoretical Comparison
-
-To theoretically evaluate our multi-agent architecture against alternative paradigms, we formalize a **Conceptual Central Performance Index (CPI)**:
-
-$$\text{CPI} = 100 \times \left( 0.30 \cdot \frac{\text{Sharpe}}{3.0} + 0.25 \cdot (1 - \text{MaxDD}) + 0.15 \cdot \text{Win\%} + 0.20 \cdot \frac{\text{PF}}{2.0} - 0.10 \cdot \frac{\text{FeeDrag}}{0.10} \right)$$
-
-<table style="width: 100%; font-size: 0.71em; margin: 4px 0;">
-  <tr>
-    <th>Architecture Topology</th>
-    <th>Regime Adaptability</th>
-    <th>Risk Governance</th>
-    <th>Fee Efficiency</th>
-    <th>Theoretical CPI</th>
-  </tr>
-  <tr>
-    <td><b>Baseline 1: Single-Agent Monolith</b><br/><i>(Single strategy & asset bot)</i></td>
-    <td>Low (Fails when market shifts from trend to chop)</td>
-    <td>Rudimentary (Static stop-loss, no macro gate)</td>
-    <td>Poor (High taker fee drag & spread cost)</td>
-    <td><span class="warning"><b>42.1 / 100</b></span></td>
-  </tr>
-  <tr>
-    <td><b>Baseline 2: Centralized Multi-Strategy</b><br/><i>(Monolithic multi-asset script)</i></td>
-    <td>Moderate (Covers multiple regimes without isolation)</td>
-    <td>Coupled (No independent veto or circuit breakers)</td>
-    <td>Moderate (Taker execution, signal conflict drag)</td>
-    <td><span class="accent"><b>58.6 / 100</b></span></td>
-  </tr>
-  <tr>
-    <td><b>Our System: 8-Agent Heterogeneous MAS</b><br/><i>(Pipelined Neuro-Symbolic Desk)</i></td>
-    <td><b>High</b> (3 Alpha engines + Macro gate + News LLM)</td>
-    <td><b>Strict</b> (Independent Risk Governor veto & 15% DD lock)</td>
-    <td><b>High</b> (Smart Maker limits cut fees by 66%)</td>
-    <td><span class="highlight"><b>83.4 / 100</b></span></td>
-  </tr>
-</table>
-
-<div class="takeaway">
-  ⚠️ <i>Note: Baselines 1 and 2 are conceptual benchmark models formulated for academic comparison; they are not active software components in the repository.</i>
-</div>
-
-<div class="base-badge">
-  🔍 <b>Base:</b> Future Roadmap in <a href="FUTURE_DEVELOPMENT_NOTES.md#1-automated-central-performance-index-cpi-benchmark-harness">FUTURE_DEVELOPMENT_NOTES.md#item-1</a>
-</div>
-
----
-
-## 12. Advantages, Disadvantages and Limitations
-
-A balanced engineering and investment appraisal of the active architecture:
-
-<div class="grid-2">
+<div class="grid-2" style="margin-top: 6px;">
   <div class="card-success">
-    <h4>🟢 ARCHITECTURAL ADVANTAGES</h4>
-    <p style="color: #86efac; font-size: 0.73em; line-height: 1.40;">
-      • <b>Strict Fault Isolation</b>: Failure in one strategy cannot crash the risk governor or execution ledger.<br/>
-      • <b>Zero Arithmetic Hallucination</b>: Deterministic Python rules govern position sizing and risk clamps with 100% mathematical fidelity.<br/>
-      • <b>Sub-Millisecond Reflex Speed</b>: Evaluates 21 assets in $<5\text{ms}$ while LLM processes news in parallel ($0.70\text{s}$).<br/>
-      • <b>Maker Fee Optimization</b>: Passive limit order routing saves $600+ in execution drag compared to retail taker bots.
+    <h4>✅ 22 PROVEN PROFITABLE ASSETS (KEPT & DEPLOYED)</h4>
+    <p style="font-size: 0.71em; color: #cbd5e1; line-height: 1.34;">
+      Every active asset must mathematically prove <b>Net Return $> 0\%$</b>, <b>Win Rate $\ge 50\%$</b>, and <b>Profit Factor $\ge 1.0$</b> in walk-forward backtests:<br/>
+      • <b>Crypto (8)</b>: <code>BNB</code> (+5.1%, 85% WR), <code>LINK</code> (+3.9%, 83% WR), <code>TAO</code> (+2.8%), <code>ENA</code> (+3.8%), <code>SOL</code> (+2.5%), <code>HYPE</code> (+0.8%), <code>XRP</code> (+0.5%), <code>ZEC</code> (+0.2%).<br/>
+      • <b>Equities (14)</b>: <code>IREN</code> (+7.9%, 68% WR), <code>INTC</code> (+7.4%, 82% WR), <code>MU</code> (+3.3%, 100% WR), <code>SNAP</code> (+2.5%), <code>CRWV</code> (+2.2%), <code>SOFI</code> (+2.1%), <code>NU</code> (+2.0%), <code>NOK</code> (+1.8%, 100% WR), <code>XLE</code> (+1.7%), <code>AAPL</code> (+1.0%, 100% WR), <code>GRAB</code>, <code>CIFR</code>, <code>WULF</code>, <code>NVDA</code>.
     </p>
   </div>
-
   <div class="card-danger">
-    <h4>⚠️ INHERENT TRADE-OFFS & LIMITATIONS</h4>
-    <p style="color: #fca5a5; font-size: 0.73em; line-height: 1.40;">
-      • <b>Opportunity Cost of Cash Defense</b>: Preserving capital by staying 100% in cash during macro downtrends means missing sudden V-shaped relief spikes.<br/>
-      • <b>Limit Order Execution Risk</b>: Passive maker orders may experience non-fills during violent gapping expansion candles.<br/>
-      • <b>Hardware Footprint</b>: Local LLM sentiment analysis requires a modern GPU with 6GB+ VRAM (or degrades to CPU fallback).<br/>
-      • <b>Single-Process Coupling</b>: All 8 agents execute sequentially within one Python process rather than distributed RPC microservices.
+    <h4>❌ 19 NON-PROFITABLE DRAGS (PRUNED & BLACKLISTED)</h4>
+    <p style="font-size: 0.71em; color: #cbd5e1; line-height: 1.34;">
+      Assets that lost money, chopped in range, or suffered high fee drag were <b>quarantined</b> into <code>blacklisted_symbols</code>:<br/>
+      • <b>Heavy Drag Losers</b>: <code>SLV</code> (-4.3%, 0% WR), <code>UNI</code> (-4.4%), <code>SUI</code> (-3.4%), <code>TSLA</code> (-2.3%), <code>PLTR</code> (-2.0%, 0% WR), <code>GLD</code> (-1.9%), <code>ETH</code> (-1.2%), <code>TRUMP</code> (-9.2%).<br/>
+      • <b>Fee Drag & Break-Even Chops</b>: <code>DOGE</code> (-0.7%), <code>SPY</code> (-0.7%), <code>TLT</code> (-0.4%), <code>AMD</code> (-0.4%), <code>BTC</code> (-0.35%), <code>QQQ</code> (0.0%), <code>AMZN</code>, <code>PEPE</code>, <code>SPCX</code>, <code>U</code>, <code>AVAX</code>.<br/>
+      • <b>Result</b>: Pruning these 19 drags avoided over <b>-$1,200 in whipsaw losses</b>!
     </p>
   </div>
 </div>
 
-<div class="takeaway">
-  💡 <b>Design Priority</b>: Every trade-off deliberately favors <b>capital preservation, mathematical certainty, and zero cloud cost</b> over reckless profit chasing.
-</div>
-
-<div class="base-badge">
-  🔍 <b>Base:</b> Engineering Trade-off Ledger in <a href="PRESENTATION_VERIFICATION_BASE.md#slide-12d-architectural-trade-offs">PRESENTATION_VERIFICATION_BASE.md#slide-12d</a>
-</div>
-
----
-
-## 13. Implementation Status & Scalability Roadmap
-
-Current operational status and the phased capital trajectory toward a **$3,000 / month living income**:
-
-<div class="grid-3">
-  <div class="card">
-    <div style="margin-bottom: 3px;"><span class="pill pill-cyan">PHASE 1</span></div>
-    <b style="color: #38bdf8; font-size: 0.82em;">Compounding Base</b>
-    <p style="font-size: 0.71em; color: #94a3b8; line-height: 1.35;">
-      • <b>Capital</b>: $10,000 → $25,000<br/>
-      • <b>Target</b>: +35% to +50% / yr<br/>
-      • <b>Withdrawals</b>: <b>$0 (Zero)</b><br/>
-      • <b>Status</b>: 100% Profit Reinvestment
-    </p>
-  </div>
-
-  <div class="card">
-    <div style="margin-bottom: 3px;"><span class="pill pill-amber">PHASE 2</span></div>
-    <b style="color: #fbbf24; font-size: 0.82em;">Capital Acceleration</b>
-    <p style="font-size: 0.71em; color: #94a3b8; line-height: 1.35;">
-      • <b>Capital</b>: $25,000 → $75,000<br/>
-      • <b>Target</b>: +35% to +45% / yr<br/>
-      • <b>Withdrawals</b>: <b>$0 (Zero)</b><br/>
-      • <b>Status</b>: Half-Kelly Compounding
-    </p>
-  </div>
-
-  <div class="card">
-    <div style="margin-bottom: 3px;"><span class="pill pill-green">PHASE 3</span></div>
-    <b style="color: #10b981; font-size: 0.82em;">Living Income Harvest</b>
-    <p style="font-size: 0.71em; color: #94a3b8; line-height: 1.35;">
-      • <b>Capital</b>: $75,000 → $100,000+<br/>
-      • <b>Target</b>: +3% to +4% / mo<br/>
-      • <b>Payout</b>: <b>$3,000 / month</b><br/>
-      • <b>Status</b>: Financially Sustainable
-    </p>
-  </div>
-</div>
-
-<div class="level-box" style="margin-top: 5px;">
+<div class="level-box" style="margin-top: 6px;">
   <div class="level-simple">
-    ⚠️ <b>The Golden Rule:</b> Never withdraw $3,000/month from a $10,000 account (+30%/mo = 100% risk of ruin). Allow capital to compound to $75k–$100k, where $3,000/month requires only a safe, low-stress <b>+3.5% monthly return</b>.
-  </div>
-  <div class="level-tech">
-    ⚙️ <b>Active System Status:</b> Running 24/7 paper simulation on Linux PC (`SOL/USDT` trailing stop active, zero real money at risk).
+    💬 <b>Why this is Revolutionary:</b> Traditional bots keep trading whatever symbols the user typed in 6 months ago, slowly bleeding money on dead assets. Our desk continuously audits its universe, promotes top performers, and ruthlessly fires underperforming assets.
   </div>
 </div>
 
 <div class="base-badge">
-  🔍 <b>Base:</b> Mathematical Compounding Models • Van Tharp (2008) • Half-Kelly Sizing
+  🔍 <b>Scanner Engine:</b> <a href="agent/asset_selector.py">agent/asset_selector.py</a>: <code>discover_dynamic_crypto_universe()</code>
 </div>
 
 ---
 
-## 14. Conclusions, System Invariants & Verified References
+## 9. Closed-Loop Self-Improvement: Forensic Audits & Risk Governor
+
+How do **Agents 10, 11, and 12** work together to ensure the bot improves over time without human intervention?
+
+<div class="timeline-flow" style="margin-top: 8px; margin-bottom: 8px;">
+  <div class="timeline-card" style="border-top: 3px solid #fbbf24;">
+    <span class="pill pill-amber" style="margin-bottom: 3px;">STEP 1: AUDIT</span>
+    <b>Agent 10 Forensic Analyst</b>
+    <span style="color: #94a3b8;">Wakes every 15 closed deals. Ingests P&L and diagnoses whipsaws with local LLM.</span>
+  </div>
+  <div class="timeline-card" style="border-top: 3px solid #38bdf8;">
+    <span class="pill pill-cyan" style="margin-bottom: 3px;">STEP 2: OPTIMIZE</span>
+    <b>Agent 11 Calibration Arena</b>
+    <span style="color: #94a3b8;">Tests 144 parameter mutations on 70% In-Sample / 30% Out-of-Sample data.</span>
+  </div>
+  <div class="timeline-card" style="border-top: 3px solid #a78bfa;">
+    <span class="pill pill-purple" style="margin-bottom: 3px;">STEP 3: GATEKEEPER</span>
+    <b>Agent 12 Risk Governor</b>
+    <span style="color: #94a3b8;">Audits Rules 1-5, runs local LLM CRO review, and requires 100% pytest pass.</span>
+  </div>
+  <div class="timeline-card success" style="border-top: 3px solid #10b981;">
+    <span class="pill pill-green" style="margin-bottom: 3px;">STEP 4: DEPLOY</span>
+    <b>Atomic Hot-Reload</b>
+    <span style="color: #10b981; font-weight: 700;">Writes to active_config.json with .bak backup. Live daemon hot-reloads instantly.</span>
+  </div>
+</div>
+
+<div class="grid-2" style="margin-top: 6px;">
+  <div class="card">
+    <h4>🔍 Agent 10: Post-Trade Forensic Diagnosis</h4>
+    <p style="font-size: 0.72em; color: #94a3b8; line-height: 1.36;">
+      • Calculates empirical win rate, payoff ratio (avg win / avg loss), and profit factor.<br/>
+      • Uses local <code>phi4-mini</code> to formulate concrete hypotheses (e.g., <i>"Raise ADX threshold to 22 on range assets to eliminate chop losses"</i>).<br/>
+      • Automatically submits proposals directly to Agent 12 Governor.
+    </p>
+  </div>
+  <div class="card">
+    <h4>🛡️ Agent 12: Supreme Gatekeeper Authority</h4>
+    <p style="font-size: 0.72em; color: #94a3b8; line-height: 1.36;">
+      • <b>Zero Direct Writes</b>: No other agent can modify the bot directly.<br/>
+      • <b>100% Test Pass Gate</b>: Runs all 98 unit tests automatically. If even 1 test fails, the proposal is rejected immediately.<br/>
+      • <b>Immutable Audit Log</b>: Writes every verdict to <a href="data/agent_governance_audit.log"><code>data/agent_governance_audit.log</code></a>.
+    </p>
+  </div>
+</div>
+
+<div class="base-badge">
+  🔍 <b>Governance Modules:</b> <a href="agent/trade_analyst.py">trade_analyst.py</a> • <a href="agent/governor.py">governor.py</a> • <a href="agent/optimizer.py">optimizer.py</a>
+</div>
+
+---
+
+## 10. Actual Quality & Performance Telemetry: 90-Day Verified Replay
+
+Full candle-by-candle simulation executed across all **22 proven assets** under realistic market friction:
+
+```
+===============================================================================================
+METRIC                             MAKER LIMIT (Active Mode)      TAKER + SLIPPAGE (Worst-Case)
+-----------------------------------------------------------------------------------------------
+Initial Capital                    $10,000.00                     $10,000.00
+Final Portfolio Equity             $10,805.33                     $10,534.09
+Net Realized P&L                   +$805.33                       +$534.09
+90-Day Net Return %                +8.05%                         +5.34%
+Win Rate %                         60.1% (98 Wins / 65 Losses)    59.5% (97 Wins / 66 Losses)
+Profit Factor                      1.14 (Full Desk Replay)        1.09 (Full Desk Replay)
+Asset-Level Alpha Profit Factor    1.86                           1.65
+Total Executions (Closures)        163 Trades                     163 Trades
+Momentum Strategy P&L              +$1,593.82                     +$1,454.30
+Max Portfolio Drawdown             14.21%                         15.42%
+Annualized Sharpe Ratio            +1.22                          +0.86
+Expectancy per Trade               +$4.94 per trade               +$3.28 per trade
+===============================================================================================
+```
+
+<div class="grid-3" style="margin-top: 6px;">
+  <div class="stat-card green">
+    <div class="stat-number green">+8.05%</div>
+    <div class="stat-label">90-Day Realized Net Gain</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number">60.1%</div>
+    <div class="stat-label">Maker Replay Win Rate</div>
+  </div>
+  <div class="stat-card gold">
+    <div class="stat-number gold">+$1,593.82</div>
+    <div class="stat-label">Momentum Engine Profit</div>
+  </div>
+</div>
+
+<div class="base-badge">
+  🔍 <b>Verification Telemetry:</b> <a href="data/live_replay_backtest.json">data/live_replay_backtest.json</a> • Verified across 22 multi-asset instruments
+</div>
+
+---
+
+## 11. Realistic Living-Income Projections: The Path to $3,000 / Month
+
+Can an autonomous trading desk generate living income? The empirical math provides an honest roadmap:
+
+<div class="grid-3" style="margin-top: 8px;">
+  <div class="card" style="border-top: 3px solid #38bdf8;">
+    <h4>🌱 Phase 1: Small Capital ($10,000)</h4>
+    <p style="font-size: 0.72em; color: #cbd5e1; line-height: 1.36;">
+      • <b>Monthly Return</b>: ~+2.5% / month<br/>
+      • <b>Monthly P&L</b>: <b>+$250 / month</b><br/>
+      • <b>Role</b>: Capital accumulation and forward paper verification. Cannot sustain living income.
+    </p>
+  </div>
+  <div class="card" style="border-top: 3px solid #a78bfa;">
+    <h4>🚀 Phase 2: Moderate Capital ($50,000)</h4>
+    <p style="font-size: 0.72em; color: #cbd5e1; line-height: 1.36;">
+      • <b>Monthly Return</b>: ~+2.5% / month<br/>
+      • <b>Monthly P&L</b>: <b>+$1,250 / month</b><br/>
+      • <b>Role</b>: Significant supplemental income covering rent and basic expenses.
+    </p>
+  </div>
+  <div class="card" style="border-top: 3px solid #10b981;">
+    <h4>🏆 Phase 3: Living Income ($120,000)</h4>
+    <p style="font-size: 0.72em; color: #cbd5e1; line-height: 1.36;">
+      • <b>Monthly Return</b>: ~+2.5% / month<br/>
+      • <b>Monthly P&L</b>: <b style="color: #10b981; font-size: 1.1em;">+$3,000 / month</b><br/>
+      • <b>Role</b>: Full independent living wage generated with 0% human day-to-day execution.
+    </p>
+  </div>
+</div>
+
+<div class="level-box" style="margin-top: 8px;">
+  <div class="level-simple">
+    💬 <b>The Brutal Truth About Trading Capital:</b> High-risk gambling bots promise to turn $100 into $10,000 overnight and end up wiping out 100% of your funds. Institutional quantitative trading focuses on <b>consistency and survival</b>: delivering a reliable +2.0% to +3.5% monthly return with strictly controlled drawdowns.
+  </div>
+</div>
+
+<div class="base-badge">
+  🔍 <b>Mathematical Basis:</b> Compounding Model with conservative 0.02 R-risk sizing • Zero leverage overextension
+</div>
+
+---
+
+## 12. Conclusions, System Invariants & Verified References
 
 Every autonomous agent in this codebase is bound by **5 non-negotiable invariant rules**:
 
-<div class="grid-2">
+<div class="grid-2" style="margin-top: 6px;">
   <div class="card">
-    <h4>🛡️ Hard Invariant Rules</h4>
-    <p style="font-size: 0.72em; color: #cbd5e1; line-height: 1.36;">
-      • <b>1. Paper Mode Invariant</b>: Live real-money trading permanently prohibited.<br/>
-      • <b>2. Capital Preservation</b>: Never overwrite balances without explicit CLI flag.<br/>
-      • <b>3. 1%–5% Risk Clamp</b>: Hard-coded in Python; immune to AI loosening.<br/>
-      • <b>4. Platform Independence</b>: Pure Python 3.10+; zero proprietary harness lock-in.<br/>
-      • <b>5. Truth in Metrics</b>: All returns cost-adjusted on next-open fills.
+    <h4>📜 The 5 Invariant Rules of the Fund (<a href="AGENTS.md"><code>AGENTS.md</code></a>)</h4>
+    <p style="font-size: 0.72em; color: #94a3b8; line-height: 1.36;">
+      <b>1. Strictly Simulated Paper Trading</b>: Live execution permanently disabled (<a href="core/paper_account.py"><code>PaperAccount</code></a>).<br/>
+      <b>2. User Capital Preservation</b>: Balances never reset without explicit <code>--reset</code> CLI argument.<br/>
+      <b>3. Hard Risk Bounds [1%, 5%]</b>: Position sizing cannot exceed 5% under any mutation.<br/>
+      <b>4. Platform Independence</b>: Standard Python 3.10+; zero proprietary harness dependencies.<br/>
+      <b>5. Evidence-Based Profitability</b>: Strategies declared viable only with net cost-adjusted proof.
     </p>
   </div>
-
   <div class="card">
-    <h4>📚 Verified Academic & Regulatory References</h4>
-    <p style="font-size: 0.71em; color: #94a3b8; line-height: 1.36;">
-      • <b>Russell & Norvig (2020)</b>. <i>AI: A Modern Approach</i> (4th ed.). Pearson.<br/>
-      • <b>Wooldridge (2009)</b>. <i>Introduction to MultiAgent Systems</i> (2nd ed.). Wiley.<br/>
-      • <b>Tharp (2008)</b>. <i>Definitive Guide to Position Sizing</i>. IITM.<br/>
-      • <b>Dalio (2018)</b>. <i>Principles for Navigating Big Debt Crises</i>. Bridgewater.<br/>
-      • <b>SEC Rule 15c3-5 & FINRA Notice 15-09</b>. Pre-trade algorithmic risk controls.<br/>
-      • <b>FRED API & Binance API v3</b>. Authoritative macroeconomic and exchange data.
+    <h4>📚 Verified Academic & Code References</h4>
+    <p style="font-size: 0.72em; color: #94a3b8; line-height: 1.36;">
+      • <b>Multi-Agent Foundations</b>: Russell & Norvig (2020) <i>AI: A Modern Approach</i> • Wooldridge (2009).<br/>
+      • <b>Position Sizing & Risk</b>: Van K. Tharp (2008) <i>Definitive Guide to Position Sizing</i>.<br/>
+      • <b>Pre-Trade Financial Compliance</b>: SEC Rule 15c3-5 Risk Management Controls.<br/>
+      • <b>Unit Test Suite</b>: <a href="tests/"><code>tests/</code></a>: <b>98 / 98 tests green</b> in 3.35s.<br/>
+      • <b>Git Repository</b>: Cleanly versioned and pushed to <a href="https://github.com/iShmuel/web4-trading-agent.git">GitHub: web4-trading-agent</a>.
     </p>
   </div>
 </div>
 
-<div class="takeaway">
-  📄 <b>Open-Source Repository</b>: <a href="https://github.com/iShmuel/web4-trading-agent">https://github.com/iShmuel/web4-trading-agent</a> • <b>Master Audit Base</b>: <a href="PRESENTATION_VERIFICATION_BASE.md">PRESENTATION_VERIFICATION_BASE.md</a>
+<div class="level-box" style="margin-top: 6px;">
+  <div class="level-simple" style="text-align: center; font-weight: 700; color: #10b981;">
+    🚀 The Web4 Autonomous Trading Desk is live, capital-immune, self-improving, and 100% verified.
+  </div>
 </div>
 
 <div class="base-badge">

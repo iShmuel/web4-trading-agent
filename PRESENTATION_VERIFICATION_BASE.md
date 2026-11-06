@@ -16,7 +16,7 @@ It serves as an institutional audit ledger and academic defense guide, mapping e
 
 ---
 
-## 2. Slide-by-Slide Verification Matrix (Slides 1 to 15)
+## 2. Slide-by-Slide Verification Matrix (Slides 1 to 13)
 
 ---
 

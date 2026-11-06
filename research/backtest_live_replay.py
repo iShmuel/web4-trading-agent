@@ -140,9 +140,11 @@ def run_single_replay(
         reason="Normal market conditions",
     )
 
-    # Build unified timeline starting after 220 bars of warmup on BTC
-    btc_df = dfs["BTC/USDT"]
-    timeline = btc_df.index[220:]
+    # Build unified timeline starting after 220 bars of warmup on the primary crypto feed
+    ref_sym = "BTC/USDT" if "BTC/USDT" in dfs else next((s for s, df in dfs.items() if is_crypto_symbol(s) and len(df) >= 250), list(dfs.keys())[0])
+    ref_df = dfs[ref_sym]
+    warmup_idx = min(220, len(ref_df) // 4)
+    timeline = ref_df.index[warmup_idx:]
 
     # Map timestamps to integer row positions for O(1) lookup
     ts_to_pos: Dict[str, Dict[pd.Timestamp, int]] = {
@@ -164,14 +166,18 @@ def run_single_replay(
             continue
 
         # Sort active symbols by 24-bar Relative Strength vs BTC/SPY (just like run_cycle)
-        btc_pos = ts_to_pos["BTC/USDT"].get(ts, 0)
-        btc_slice = btc_df["close"].iloc[max(0, btc_pos - 25) : btc_pos + 1]
-        spy_pos = ts_to_pos["SPY"].get(ts) if spy_df is not None else None
-        spy_slice = (
-            spy_df["close"].iloc[max(0, spy_pos - 25) : spy_pos + 1]
-            if (spy_df is not None and spy_pos is not None)
-            else None
-        )
+        btc_slice = None
+        if "BTC/USDT" in ts_to_pos:
+            btc_pos = ts_to_pos["BTC/USDT"].get(ts, 0)
+            btc_slice = dfs["BTC/USDT"]["close"].iloc[max(0, btc_pos - 25) : btc_pos + 1]
+        elif ref_sym in ts_to_pos:
+            ref_pos = ts_to_pos[ref_sym].get(ts, 0)
+            btc_slice = ref_df["close"].iloc[max(0, ref_pos - 25) : ref_pos + 1]
+
+        spy_slice = None
+        if "SPY" in ts_to_pos and spy_df is not None:
+            spy_pos = ts_to_pos["SPY"].get(ts, 0)
+            spy_slice = spy_df["close"].iloc[max(0, spy_pos - 25) : spy_pos + 1]
 
         def rs_priority(sym: str) -> float:
             pos = ts_to_pos[sym][ts]
