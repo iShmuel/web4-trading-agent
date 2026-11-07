@@ -195,9 +195,16 @@ def run_single_replay(
             pos = ts_to_pos[sym][ts]
             if pos < 60:
                 continue
+            prev_closed_count = len(account.state["closed_trades"])
             # Pass a 60-bar slice with precomputed indicators so evaluate() & liquidity sweep work
             sub_df = dfs[sym].iloc[pos - 59 : pos + 1]
             dec = coord.process_symbol(sym, sub_df, current_prices)
+
+            # Stamp simulated historical bar time on any trade closed during this step
+            if len(account.state["closed_trades"]) > prev_closed_count:
+                ts_iso = ts.tz_localize("UTC").isoformat() if ts.tzinfo is None else ts.isoformat()
+                for ct in account.state["closed_trades"][prev_closed_count:]:
+                    ct["exit_time"] = ts_iso
 
             if dec.action == "REJECTED":
                 r = dec.reason
@@ -213,6 +220,14 @@ def run_single_replay(
                     gate_counts["Crypto Crash Contagion Cooldown (3h)"] += 1
                 elif "Correlation Guard" in r:
                     gate_counts["Crypto Correlation Guard (Max 2 Crypto)"] += 1
+                elif "Opening-Bell" in r or "NYSE" in r:
+                    gate_counts["NYSE Clock & 9:30 AM Gap Buffer"] += 1
+                elif "SEC 8-K" in r:
+                    gate_counts["SEC 8-K Filing & Earnings Veto"] += 1
+                elif "SEC XBRL" in r:
+                    gate_counts["SEC XBRL Fundamental Quality Gate"] += 1
+                elif "Repeat-Loss Guard" in r or "Wash-Sale Guard" in r:
+                    gate_counts["Per-Ticker Repeat-Loss & Wash-Sale Guard"] += 1
                 elif "Max open positions" in r or "Maximum concurrent" in r:
                     gate_counts["Max Concurrent Positions Cap (5)"] += 1
                 elif "Risk check blocked" in r:
@@ -221,6 +236,11 @@ def run_single_replay(
                     gate_counts["Pre-Flight Safety Guard"] += 1
             elif dec.action == "CONFLICT":
                 gate_counts["Strategy Conflict Cancellation"] += 1
+
+        # Portfolio Drift-Band Rebalancer Pass
+        if coord.config.get("enable_drift_rebalancer", True) and account.positions:
+            fee_rate = 0.0002 if execution_mode == "maker" else 0.0006
+            coord.drift_rebalancer.rebalance_overweight_positions(account, current_prices, fee_pct=fee_rate)
 
         # Dynamic Pairs Trading Multi-Asset Evaluation Pass
         if coord.config.get("enable_pairs_trading", True):
