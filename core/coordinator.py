@@ -33,6 +33,14 @@ from core.preflight import (
     LocalLLMScreener,
     fetch_ticker_headlines,
 )
+from core.skill_intelligence_gate import (
+    NyseMarketClock,
+    SecEdgar8KMonitor,
+    SecFundamentalGate,
+    SmartMoneyRadar,
+    WashSaleAndLossStreakGuard,
+    PortfolioDriftRebalancer,
+)
 
 
 @dataclass
@@ -130,6 +138,31 @@ class PortfolioCoordinator:
         )
         self.pairs_strategy = StatArbPairsStrategy(config)
         self.last_basis_accrual_time: Optional[datetime] = None
+
+        # 5 Institutional AGY Skill Gates (trader-alerts, trader-news, trader-analyst, trader-copycat/pelosi, trader-tax/rebalance)
+        self.nyse_clock = NyseMarketClock(
+            opening_bell_buffer_minutes=int(config.get("nyse_opening_bell_buffer_minutes", 15))
+        )
+        self.sec_8k_monitor = SecEdgar8KMonitor(
+            earnings_cooldown_hours=float(config.get("sec_8k_earnings_cooldown_hours", 24.0)),
+            adverse_cooldown_hours=float(config.get("sec_8k_adverse_cooldown_hours", 48.0)),
+            sec_user_agent=config.get("sec_user_agent"),
+        )
+        self.sec_fundamental_gate = SecFundamentalGate(
+            min_revenue_growth_yoy=float(config.get("min_sec_revenue_growth_yoy", -5.0)),
+            min_operating_margin_pct=float(config.get("min_sec_operating_margin_pct", 0.0)),
+        )
+        self.smart_money_radar = SmartMoneyRadar()
+        self.wash_and_streak_guard = WashSaleAndLossStreakGuard(
+            max_consecutive_losses=int(config.get("max_consecutive_ticker_losses", 2)),
+            crypto_cooldown_hours=float(config.get("ticker_loss_streak_cooldown_hours", 48.0)),
+            equity_wash_sale_days=int(config.get("equity_wash_sale_days", 30)),
+            wash_sale_min_loss_usd=float(config.get("wash_sale_min_loss_usd", 50.0)),
+        )
+        self.drift_rebalancer = PortfolioDriftRebalancer(
+            max_position_pct=float(config.get("max_position_pct", 25.0)),
+            rebalance_band_pct=float(config.get("rebalance_band_pct", 5.0)),
+        )
 
     def symbol_config(self, symbol: str) -> Dict[str, Any]:
         return self._engines_for(symbol)[0]
@@ -507,8 +540,89 @@ class PortfolioCoordinator:
             direction=chosen_dir_str,
             indicators=merged_ind,
         )
+        # Smart-Money 13F Whale & Congressional Pelosi PTR Conviction Radar (trader-copycat + trader-pelosi)
+        sm_verdict = self.smart_money_radar.evaluate_symbol(symbol)
+        conf_score = max(0.0, min(1.0, conf_score + sm_verdict.confluence_delta))
+        merged_ind["smart_money_flow"] = sm_verdict.summary
         merged_ind["confluence"] = conf_desc
         merged_ind["confluence_score"] = conf_score
+
+        # Extract current bar UTC timestamp for time-sensitive institutional gates
+        raw_bar_ts = df.index[-1] if isinstance(df.index[-1], pd.Timestamp) else pd.Timestamp.now(tz="UTC")
+        bar_dt_utc = (
+            raw_bar_ts.tz_localize("UTC").to_pydatetime()
+            if raw_bar_ts.tzinfo is None
+            else raw_bar_ts.tz_convert("UTC").to_pydatetime()
+        )
+
+        # Skill Gate 1: NYSE Market Clock & 9:30 AM Opening-Bell Gap Buffer (trader-alerts)
+        if self.config.get("enable_nyse_session_gate", True) and not is_crypto_symbol(symbol):
+            eq_session = self.nyse_clock.evaluate_equity_session(
+                symbol=symbol,
+                now_utc=bar_dt_utc,
+                enforce_market_hours=bool(self.config.get("enforce_nyse_market_hours", False)),
+            )
+            merged_ind["nyse_session"] = eq_session.reason
+            if not eq_session.allow_new_entry:
+                return CoordinatorDecision(
+                    symbol=symbol,
+                    action="REJECTED",
+                    strategy_id=chosen_sig.strategy_id,
+                    price=cur_price,
+                    reason=eq_session.reason,
+                    signal=chosen_sig,
+                    indicators=merged_ind,
+                )
+
+        # Skill Gate 2: SEC EDGAR 8-K Real-Time Filing & Earnings Shock Veto (trader-news)
+        if self.config.get("enable_sec_8k_gate", True) and not is_crypto_symbol(symbol):
+            sec_8k = self.sec_8k_monitor.evaluate_symbol(symbol, now_utc=bar_dt_utc)
+            merged_ind["sec_8k_status"] = sec_8k.reason
+            if not sec_8k.approved:
+                return CoordinatorDecision(
+                    symbol=symbol,
+                    action="REJECTED",
+                    strategy_id=chosen_sig.strategy_id,
+                    price=cur_price,
+                    reason=sec_8k.reason,
+                    signal=chosen_sig,
+                    indicators=merged_ind,
+                )
+
+        # Skill Gate 3: SEC XBRL 10-Q/10-K Fundamental Quality Gate (trader-analyst + trader-screener)
+        if self.config.get("enable_sec_fundamental_gate", True) and not is_crypto_symbol(symbol):
+            fund_verdict = self.sec_fundamental_gate.evaluate_equity(symbol)
+            merged_ind["sec_xbrl_quality"] = fund_verdict.quality_score
+            if not fund_verdict.passed:
+                return CoordinatorDecision(
+                    symbol=symbol,
+                    action="REJECTED",
+                    strategy_id=chosen_sig.strategy_id,
+                    price=cur_price,
+                    reason=fund_verdict.reason,
+                    signal=chosen_sig,
+                    indicators=merged_ind,
+                )
+
+        # Skill Gate 5A: Per-Ticker Repeat-Loss & 30-Day Wash-Sale Guard (trader-tax)
+        if self.config.get("enable_wash_and_streak_guard", True):
+            closed_list = getattr(self.account, "closed_trades", []) or self.account.state.get("closed_trades", [])
+            wash_verdict = self.wash_and_streak_guard.check_entry_allowed(
+                symbol=symbol,
+                closed_trades=closed_list,
+                now_utc=bar_dt_utc,
+                enable_wash_sale=bool(self.config.get("enable_wash_sale_guard", True)),
+            )
+            if not wash_verdict.allowed:
+                return CoordinatorDecision(
+                    symbol=symbol,
+                    action="REJECTED",
+                    strategy_id=chosen_sig.strategy_id,
+                    price=cur_price,
+                    reason=wash_verdict.reason,
+                    signal=chosen_sig,
+                    indicators=merged_ind,
+                )
 
         # Upgrade 2: Multi-Timeframe Trend Anchor Gate with Closed-Loop Web4 Feedback
         if self.config.get("enable_confluence_gate", False) and chosen_sig.strategy_id == "momentum":
@@ -604,7 +718,7 @@ class PortfolioCoordinator:
         merged_ind["vix_level"] = fred_report.vix_level
         merged_ind["vix_regime"] = fred_report.regime
 
-        combined_risk_mult = vol_risk_mult * macro_risk_mult
+        combined_risk_mult = vol_risk_mult * macro_risk_mult * sm_verdict.risk_multiplier
 
         risk_verdict = self.risk_engine.validate_proposed_entry(
             symbol=symbol,
@@ -922,6 +1036,26 @@ class PortfolioCoordinator:
                                     "payout": receipt["accrued_payout"],
                                 },
                             ))
+
+        # Skill Gate 5B: Portfolio Drift-Band Rebalancer Pass (trader-rebalance)
+        if self.config.get("enable_drift_rebalancer", True) and self.account.positions:
+            rebal_actions = self.drift_rebalancer.rebalance_overweight_positions(
+                account=self.account,
+                current_prices=current_prices,
+            )
+            for r_act in rebal_actions:
+                executed += 1
+                decisions.append(CoordinatorDecision(
+                    symbol=r_act["symbol"],
+                    action="REBALANCE_TRIM",
+                    strategy_id="drift_rebalancer",
+                    units=r_act["trimmed_units"],
+                    price=r_act["exit_price"],
+                    reason=(
+                        f"Trimmed overweight position ({r_act['old_weight_pct']:.1f}% -> "
+                        f"{r_act['new_weight_pct']:.1f}% equity, realized ${r_act['realized_pnl']:+.2f})"
+                    ),
+                ))
 
         total_equity = self.account.get_total_equity(current_prices)
 

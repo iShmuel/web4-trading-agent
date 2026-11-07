@@ -294,5 +294,22 @@
     "U/USDT",
     "UNI/USDT",
     "ZEC/USDT"
-  ]
+  ],
+  "enable_nyse_session_gate": true,
+  "nyse_opening_bell_buffer_minutes": 15,
+  "enable_sec_8k_gate": true,
+  "sec_8k_earnings_cooldown_hours": 24.0,
+  "sec_8k_adverse_cooldown_hours": 48.0,
+  "enable_sec_fundamental_gate": true,
+  "min_sec_revenue_growth_yoy": -5.0,
+  "min_sec_operating_margin_pct": 0.0,
+  "enable_wash_and_streak_guard": true,
+  "enable_wash_sale_guard": true,
+  "max_consecutive_ticker_losses": 2,
+  "ticker_loss_streak_cooldown_hours": 48.0,
+  "equity_wash_sale_days": 30,
+  "wash_sale_min_loss_usd": 50.0,
+  "enable_drift_rebalancer": true,
+  "max_position_pct": 25.0,
+  "rebalance_band_pct": 5.0
 }

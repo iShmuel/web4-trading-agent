@@ -52,6 +52,10 @@ from core.institutional_stress_tester import (
     run_slippage_multiplier_stress,
     calculate_underwater_and_streak_metrics,
 )
+from core.skill_intelligence_gate import (
+    SecFundamentalGate,
+    SmartMoneyRadar,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -442,8 +446,17 @@ def evaluate_candidate_asset(
         max_underwater_days=max_underwater_days,
     )
 
-    # Tier Classification & Recommendation (with Institutional Quality Gate)
-    if cas >= 5.0 and net_return_pct > 0 and win_rate_pct >= 55.0 and max_dd_pct <= 12.0 and break_even_mult >= 2.0:
+    # Tier Classification & Recommendation (with Institutional Quality Gate & SEC XBRL Fundamentals)
+    fund_verdict = SecFundamentalGate().evaluate_equity(symbol)
+    sm_verdict = SmartMoneyRadar().evaluate_symbol(symbol)
+    if sm_verdict.whale_13f_bullish or sm_verdict.congress_ptr_bullish:
+        cas = round(cas * 1.12, 2)
+
+    if not fund_verdict.passed:
+        tier = "TOXIC_DRAG"
+        recommendation = "BLACKLIST_OR_PRUNE"
+        rationale = f"{fund_verdict.reason} (Technical return {net_return_pct:+.2f}%)"
+    elif cas >= 5.0 and net_return_pct > 0 and win_rate_pct >= 55.0 and max_dd_pct <= 12.0 and break_even_mult >= 2.0:
         tier = "ELITE_ALPHA"
         recommendation = "ADD_TO_WATCHLIST"
         rationale = f"High-conviction {primary_strat} winner: +{net_return_pct}% return, {win_rate_pct}% WR, Sharpe {sharpe}, {break_even_mult:.1f}x fee buffer"
