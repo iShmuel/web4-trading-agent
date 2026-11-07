@@ -92,3 +92,17 @@ This document records architectural, analytical, and operational items identifie
   1. Enforce strict environment-variable credential isolation (zero hardcoded secrets).
   2. Pre-trade multi-signature approval cards with human-in-the-loop authorization toggles.
   3. Live margin and collateral liquidation buffers.
+
+---
+
+### 6. Forensic Audit Sample Window Calibration (Operator Reminder: Review in 1–2 Weeks)
+
+* **Status**: Queued for Operator Review (Target: Mid/Late November 2026)
+* **Suggested Priority**: Medium (P2)
+* **What is Slated for Review:**
+  Currently, `forensic_trade_interval` is kept at `15` trades in `config/active_config.json`. We evaluated increasing this parameter to `25` or `30` trades to align with the Central Limit Theorem ($N \ge 30$) and provide a richer statistical sample of losing trades (5–6 losses vs. 2–3 losses) for `Agent 10 (TradeAnalyst)` and local LLM root-cause diagnosis.
+* **Why it Matters:**
+  Running forensic audits too frequently ($N < 15$) can be susceptible to short-term market noise, potentially triggering premature parameter adjustments. Expanding to $N = 25$ provides robust statistical confidence while maintaining responsive agility.
+* **Action Item for Operator:**
+  After accumulating 1–2 weeks of forward live paper trading history (50+ closed trades across active regimes), review `data/trade_forensic_report.json` and decide whether to graduate `forensic_trade_interval` from `15` to `25`.
+
