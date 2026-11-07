@@ -267,3 +267,85 @@ def test_build_selection_summary_proven_pruning():
     assert "PREV_BAD" in summary["recommended_blacklist"]
     assert "WIN/USDT" in summary["proven_profitable_symbols"]
     assert "DRAG" in summary["pruned_drag_symbols"]
+
+
+def test_audit_and_rehabilitate_blacklist(monkeypatch):
+    """Verify that blacklisted assets with recovering alpha graduate to parole."""
+    from agent.asset_selector import audit_and_rehabilitate_blacklist, print_rehabilitation_report
+
+    mock_cfg = {
+        "blacklisted_symbols": ["RECOVERING/USDT", "STILL_BAD/USDT"],
+    }
+
+    def mock_evaluate(symbol, **kwargs):
+        if symbol == "RECOVERING/USDT":
+            return AssetEvaluation(
+                symbol="RECOVERING/USDT",
+                asset_type="crypto",
+                primary_strategy="MOMENTUM",
+                days_evaluated=60,
+                total_bars=1000,
+                adx_trend_ratio=35.0,
+                volatility_atr_pct=2.5,
+                momentum_return_pct=6.5,
+                mean_reversion_return_pct=1.0,
+                in_sample_return_pct=4.0,
+                out_of_sample_return_pct=4.5,
+                net_return_pct=5.5,
+                net_pnl=550.0,
+                win_rate_pct=65.0,
+                profit_factor=1.8,
+                max_drawdown_pct=5.0,
+                sharpe_ratio=2.1,
+                payoff_ratio=1.4,
+                total_trades=15,
+                winning_trades=10,
+                losing_trades=5,
+                composite_alpha_score=20.0,
+                tier="ELITE_ALPHA",
+                recommendation="ADD_TO_WATCHLIST",
+                rationale="Alpha recovered",
+            )
+        else:
+            return AssetEvaluation(
+                symbol="STILL_BAD/USDT",
+                asset_type="crypto",
+                primary_strategy="MOMENTUM",
+                days_evaluated=60,
+                total_bars=1000,
+                adx_trend_ratio=15.0,
+                volatility_atr_pct=2.0,
+                momentum_return_pct=-4.0,
+                mean_reversion_return_pct=-1.5,
+                in_sample_return_pct=-2.0,
+                out_of_sample_return_pct=-2.5,
+                net_return_pct=-4.0,
+                net_pnl=-400.0,
+                win_rate_pct=30.0,
+                profit_factor=0.6,
+                max_drawdown_pct=14.0,
+                sharpe_ratio=-1.0,
+                payoff_ratio=0.7,
+                total_trades=10,
+                winning_trades=3,
+                losing_trades=7,
+                composite_alpha_score=-10.0,
+                tier="TOXIC_DRAG",
+                recommendation="BLACKLIST_OR_PRUNE",
+                rationale="Persistent drag",
+            )
+
+    monkeypatch.setattr("agent.asset_selector.evaluate_candidate_asset", mock_evaluate)
+
+    report = audit_and_rehabilitate_blacklist(
+        days=60,
+        config=mock_cfg,
+    )
+
+    assert "RECOVERING/USDT" in report["rehabilitated_symbols"]
+    assert "STILL_BAD/USDT" in report["quarantine_symbols"]
+    assert report["rehabilitated_count"] == 1
+    assert report["quarantine_count"] == 1
+
+    # Ensure report printing executes without exception
+    print_rehabilitation_report(report)

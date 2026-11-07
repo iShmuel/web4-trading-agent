@@ -734,6 +734,150 @@ def print_leaderboard(evaluations: List[AssetEvaluation]):
     print("=" * 135)
 
 
+def audit_and_rehabilitate_blacklist(
+    days: int = 60,
+    timeframe: str = "1h",
+    min_profit_pct: float = 3.0,
+    min_win_rate_pct: float = 52.0,
+    min_profit_factor: float = 1.25,
+    max_drawdown_pct: float = 15.0,
+    execution_mode: str = "maker",
+    config: Optional[Dict[str, Any]] = None,
+    use_llm: bool = False,
+) -> Dict[str, Any]:
+    """
+    Parole Hearing Protocol:
+    Empirically re-audits all blacklisted assets over recent lookback window (e.g. 60d).
+    Rehabilitates assets that show verified positive alpha and passing fundamentals.
+    """
+    cfg = config or load_active_config()
+    bl_symbols = list(cfg.get("blacklisted_symbols", []))
+
+    print("=" * 95)
+    print("  AGENT 9: BLACKLIST REHABILITATION AUDIT (PAROLE HEARING)")
+    print(f"  Re-evaluating {len(bl_symbols)} quarantined assets over past {days} days")
+    print("=" * 95)
+
+    rehabilitated: List[Dict[str, Any]] = []
+    quarantine_maintained: List[Dict[str, Any]] = []
+
+    for sym in bl_symbols:
+        eval_res = evaluate_candidate_asset(
+            symbol=sym,
+            days=days,
+            timeframe=timeframe,
+            config=cfg,
+            execution_mode=execution_mode,
+            use_llm=use_llm,
+        )
+        if not eval_res:
+            quarantine_maintained.append({
+                "symbol": sym,
+                "asset_type": "crypto" if is_crypto_symbol(sym) else "stock",
+                "strategy": "N/A",
+                "net_return_pct": 0.0,
+                "win_rate_pct": 0.0,
+                "profit_factor": 0.0,
+                "max_drawdown_pct": 0.0,
+                "passed_fundamentals": False,
+                "recommendation": "MAINTAIN_QUARANTINE",
+                "rationale": "Data unavailable or insufficient historical bars",
+            })
+            continue
+
+        fund_passed = True
+        fund_reason = "Passed"
+        if eval_res.asset_type == "stock":
+            fund_verdict = SecFundamentalGate().evaluate_equity(sym)
+            fund_passed = fund_verdict.passed
+            fund_reason = fund_verdict.reason
+
+        meets_profit = eval_res.net_return_pct >= min_profit_pct
+        meets_wr = eval_res.win_rate_pct >= min_win_rate_pct
+        meets_pf = eval_res.profit_factor >= min_profit_factor
+        meets_dd = eval_res.max_drawdown_pct <= max_drawdown_pct
+
+        if meets_profit and meets_wr and meets_pf and meets_dd and fund_passed:
+            rehabilitated.append({
+                "symbol": sym,
+                "asset_type": eval_res.asset_type,
+                "strategy": eval_res.primary_strategy,
+                "net_return_pct": eval_res.net_return_pct,
+                "win_rate_pct": eval_res.win_rate_pct,
+                "profit_factor": eval_res.profit_factor,
+                "max_drawdown_pct": eval_res.max_drawdown_pct,
+                "sharpe_ratio": eval_res.sharpe_ratio,
+                "passed_fundamentals": fund_passed,
+                "recommendation": "REHABILITATE_TO_PROBATION",
+                "rationale": f"Recovered alpha: +{eval_res.net_return_pct:.2f}% net, {eval_res.win_rate_pct:.1f}% WR, PF {eval_res.profit_factor:.2f}",
+            })
+        else:
+            fail_reasons = []
+            if not meets_profit:
+                fail_reasons.append(f"Net return {eval_res.net_return_pct:+.2f}% < +{min_profit_pct}%")
+            if not meets_wr:
+                fail_reasons.append(f"Win rate {eval_res.win_rate_pct:.1f}% < {min_win_rate_pct}%")
+            if not meets_pf:
+                fail_reasons.append(f"PF {eval_res.profit_factor:.2f} < {min_profit_factor}")
+            if not meets_dd:
+                fail_reasons.append(f"MaxDD {eval_res.max_drawdown_pct:.1f}% > {max_drawdown_pct}%")
+            if not fund_passed:
+                fail_reasons.append(f"SEC Fundamentals: {fund_reason}")
+
+            quarantine_maintained.append({
+                "symbol": sym,
+                "asset_type": eval_res.asset_type,
+                "strategy": eval_res.primary_strategy,
+                "net_return_pct": eval_res.net_return_pct,
+                "win_rate_pct": eval_res.win_rate_pct,
+                "profit_factor": eval_res.profit_factor,
+                "max_drawdown_pct": eval_res.max_drawdown_pct,
+                "sharpe_ratio": eval_res.sharpe_ratio,
+                "passed_fundamentals": fund_passed,
+                "recommendation": "MAINTAIN_QUARANTINE",
+                "rationale": "; ".join(fail_reasons),
+            })
+
+    return {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "total_blacklisted_evaluated": len(bl_symbols),
+        "rehabilitated_count": len(rehabilitated),
+        "quarantine_count": len(quarantine_maintained),
+        "rehabilitated_symbols": [r["symbol"] for r in rehabilitated],
+        "quarantine_symbols": [q["symbol"] for q in quarantine_maintained],
+        "rehabilitated_details": rehabilitated,
+        "quarantine_details": quarantine_maintained,
+    }
+
+
+def print_rehabilitation_report(report: Dict[str, Any]):
+    """Print the Blacklist Rehabilitation Parole Scoreboard."""
+    print("=" * 110)
+    print("  BLACKLIST REHABILITATION PAROLE SCOREBOARD")
+    print("=" * 110)
+    rehab = report.get("rehabilitated_details", [])
+    quar = report.get("quarantine_details", [])
+
+    print(f"\n✅ ELIGIBLE FOR PAROLE / PROBATIONARY GRADUATION ({len(rehab)} assets):")
+    if rehab:
+        print(f"{'SYM':<12} {'TYPE':<7} {'STRATEGY':<15} {'NET %':<8} {'WIN %':<7} {'PF':<6} {'MAXDD':<7} {'RATIONALE'}")
+        print("-" * 110)
+        for r in rehab:
+            print(f"{r['symbol']:<12} {r.get('asset_type',''):<7} {r.get('strategy',''):<15} {r.get('net_return_pct',0):+7.2f}% {r.get('win_rate_pct',0):5.1f}% {r.get('profit_factor',0):5.2f} {r.get('max_drawdown_pct',0):5.2f}% {r.get('rationale','')}")
+    else:
+        print("  None. All quarantined assets still fail the mathematical profitability standard.")
+
+    print(f"\n🔒 QUARANTINE MAINTAINED ({len(quar)} assets):")
+    if quar:
+        print(f"{'SYM':<12} {'TYPE':<7} {'STRATEGY':<15} {'NET %':<8} {'WIN %':<7} {'PF':<6} {'MAXDD':<7} {'FAILURE REASON'}")
+        print("-" * 110)
+        for q in quar[:10]:
+            print(f"{q['symbol']:<12} {q.get('asset_type',''):<7} {q.get('strategy',''):<15} {q.get('net_return_pct',0):+7.2f}% {q.get('win_rate_pct',0):5.1f}% {q.get('profit_factor',0):5.2f} {q.get('max_drawdown_pct',0):5.2f}% {q.get('rationale','')[:45]}")
+        if len(quar) > 10:
+            print(f"  ... and {len(quar) - 10} more assets remain quarantined.")
+    print("=" * 110)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Agent 9: Autonomous Alpha Scanner & Market Discovery")
     parser.add_argument("--scan", action="store_true", help="Run candidate scan and print leaderboard")
@@ -750,10 +894,48 @@ def main():
     parser.add_argument("--execution-mode", type=str, choices=["maker", "taker"], default="maker", help="Execution mode (default: maker)")
     parser.add_argument("--apply", action="store_true", help="Send recommendations to Agent 12 Governor for approval and deployment")
     parser.add_argument("--report", type=str, default=None, help="Custom output report path")
+    parser.add_argument("--audit-blacklist", action="store_true", help="Run empirical rehabilitation audit on blacklisted assets")
+    parser.add_argument("--rehabilitate", action="store_true", help="Alias for --audit-blacklist")
     parser.add_argument("--no-llm", action="store_true", help="Bypass LLM narrative screening")
     args = parser.parse_args()
 
     cfg = load_active_config()
+
+    if args.audit_blacklist or args.rehabilitate:
+        report = audit_and_rehabilitate_blacklist(
+            days=args.days,
+            timeframe=args.timeframe,
+            execution_mode=args.execution_mode,
+            config=cfg,
+            use_llm=not args.no_llm,
+        )
+        print_rehabilitation_report(report)
+        if args.report:
+            save_selection_report(report, Path(args.report))
+        if args.apply and report["rehabilitated_symbols"]:
+            print(f"\n[AssetSelector] Submitting rehabilitation proposal to Agent 12 Governor for: {report['rehabilitated_symbols']}...")
+            from agent.governor import review_and_deploy_proposal
+            current_wl = list(cfg.get("watchlist", []))
+            new_wl = sorted(list(dict.fromkeys(current_wl + report["rehabilitated_symbols"])))
+            res = review_and_deploy_proposal(
+                proposed_changes={
+                    "rehabilitated_symbols": report["rehabilitated_symbols"],
+                    "watchlist": new_wl,
+                },
+                rationale="Automated Blacklist Rehabilitation Audit graduated recovering assets to probationary status.",
+                empirical_proof={
+                    "rehabilitated_count": len(report["rehabilitated_symbols"]),
+                    "rehabilitated_symbols": report["rehabilitated_symbols"],
+                    "rehabilitation_proof": report["rehabilitated_details"],
+                },
+                verify_tests=True,
+                use_llm=not args.no_llm,
+            )
+            if res.approved:
+                print(f"[AssetSelector] ✅ Successfully rehabilitated {len(report['rehabilitated_symbols'])} assets onto probationary watchlist!")
+            else:
+                print(f"[AssetSelector] ❌ Rehabilitation rejected by Governor: {res.llm_rationale}")
+        return
 
     if args.symbols:
         custom_syms = [s.strip() for s in args.symbols.split(",") if s.strip()]

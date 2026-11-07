@@ -140,11 +140,18 @@ def run_single_replay(
         reason="Normal market conditions",
     )
 
-    # Build unified timeline starting after 220 bars of warmup on the primary crypto feed
+    # Build unified timeline combining crypto and stock candle closes
     ref_sym = "BTC/USDT" if "BTC/USDT" in dfs else next((s for s, df in dfs.items() if is_crypto_symbol(s) and len(df) >= 250), list(dfs.keys())[0])
     ref_df = dfs[ref_sym]
     warmup_idx = min(220, len(ref_df) // 4)
-    timeline = ref_df.index[warmup_idx:]
+    min_warmup_ts = ref_df.index[warmup_idx]
+
+    all_ts = set()
+    for s, df in dfs.items():
+        for t in df.index:
+            if t >= min_warmup_ts:
+                all_ts.add(t)
+    timeline = sorted(list(all_ts))
 
     # Map timestamps to integer row positions for O(1) lookup
     ts_to_pos: Dict[str, Dict[pd.Timestamp, int]] = {
@@ -193,6 +200,7 @@ def run_single_replay(
 
         for sym in sorted_syms:
             pos = ts_to_pos[sym][ts]
+            current_prices[sym] = float(dfs[sym]["close"].iloc[pos])
             if pos < 60:
                 continue
             prev_closed_count = len(account.state["closed_trades"])
@@ -384,10 +392,39 @@ def run_single_replay(
     total_fees = round(sum(float(t.get("fees_paid", 0.0)) for t in closed), 2)
 
     # Breakdown by strategy and side
+    def _strat_metrics(sub_trades: List[Dict[str, Any]]) -> Dict[str, Any]:
+        if not sub_trades:
+            return {"trades": 0, "wins": 0, "losses": 0, "win_rate_pct": 0.0, "net_pnl": 0.0, "profit_factor": 0.0, "expectancy": 0.0}
+        t_pnls = np.array([float(t.get("pnl", 0.0)) for t in sub_trades], dtype=float)
+        t_wins = t_pnls[t_pnls > 0]
+        t_loss = t_pnls[t_pnls <= 0]
+        gw = float(t_wins.sum()) if len(t_wins) else 0.0
+        gl = float(abs(t_loss.sum())) if len(t_loss) else 0.0
+        pf_val = round(gw / gl, 2) if gl > 0 else (float("inf") if gw > 0 else 0.0)
+        wr_val = round((len(t_wins) / len(t_pnls)) * 100.0, 1) if len(t_pnls) else 0.0
+        return {
+            "trades": len(sub_trades),
+            "wins": len(t_wins),
+            "losses": len(t_loss),
+            "win_rate_pct": wr_val,
+            "net_pnl": round(float(t_pnls.sum()), 2),
+            "profit_factor": pf_val,
+            "expectancy": round(float(t_pnls.mean()), 2) if len(t_pnls) else 0.0,
+        }
+
     mom_trades = [t for t in closed if t.get("strategy_id") == "momentum"]
     mr_trades = [t for t in closed if t.get("strategy_id") == "mean_reversion"]
+    basis_trades = [t for t in closed if t.get("side") == "BASIS_YIELD" or t.get("strategy_id") == "basis_yield"]
+    pair_trades = [t for t in closed if t.get("strategy_id") == "stat_arb_pairs"]
     short_trades = [t for t in closed if t.get("side") == "SHORT"]
     long_trades = [t for t in closed if t.get("side") == "LONG"]
+
+    by_strategy = {
+        "Momentum Breakout": _strat_metrics(mom_trades),
+        "Mean Reversion": _strat_metrics(mr_trades),
+        "Basis Yield Arbitrage": _strat_metrics(basis_trades),
+        "Statistical Arbitrage Pairs": _strat_metrics(pair_trades),
+    }
 
     # Breakdown by symbol
     by_symbol: Dict[str, Dict[str, Any]] = defaultdict(lambda: {"trades": 0, "wins": 0, "pnl": 0.0, "fees": 0.0, "shorts": 0})
@@ -440,6 +477,7 @@ def run_single_replay(
             }
             for k, v in sorted(by_symbol.items(), key=lambda x: x[1]["pnl"], reverse=True)
         },
+        "by_strategy": by_strategy,
     }
 
 
@@ -498,6 +536,14 @@ def main():
     ]
     for label, v1, v2 in rows:
         print(f"{label:<34} {v1:<30} {v2:<28}")
+
+    print("\n" + "=" * 95)
+    print("DETAILED PERFORMANCE BREAKDOWN BY STRATEGY ENGINE (MAKER)")
+    print("-" * 95)
+    print(f"{'Strategy Engine':<32}{'Trades':>8}{'Win Rate':>12}{'Net Profit':>16}{'Profit Factor':>16}{'Expectancy':>14}")
+    print("-" * 95)
+    for s_name, s_data in res_maker.get("by_strategy", {}).items():
+        print(f"{s_name:<32}{s_data['trades']:>8}{s_data['win_rate_pct']:>11.1f}%   ${s_data['net_pnl']:>+13.2f}    {s_data['profit_factor']:>14.2f}   ${s_data['expectancy']:>+10.2f}")
 
     print("\n" + "=" * 95)
     print("PER-ASSET CLOSED P&L BREAKDOWN (TAKER + SLIPPAGE REPLAY)")

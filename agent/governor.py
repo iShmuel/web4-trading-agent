@@ -240,6 +240,9 @@ def review_and_deploy_proposal(
         elif k == "blacklisted_symbols":
             existing = set(candidate_cfg.get("blacklisted_symbols", []))
             candidate_cfg["blacklisted_symbols"] = sorted(list(existing.union(set(v))))
+        elif k in ("rehabilitated_symbols", "remove_blacklisted_symbols"):
+            existing = set(candidate_cfg.get("blacklisted_symbols", []))
+            candidate_cfg["blacklisted_symbols"] = sorted(list(existing - set(v)))
         elif k == "asset_profiles":
             for prof_k, prof_v in v.items():
                 if prof_k in candidate_cfg.get("asset_profiles", {}):
@@ -255,8 +258,12 @@ def review_and_deploy_proposal(
         candidate_cfg["watchlist"] = [s for s in candidate_cfg["watchlist"] if s not in bl_set]
 
     # Ensure all approved watchlist symbols have safe default risk weights & exposure caps
+    rehab_set = set(proposed_changes.get("rehabilitated_symbols", []))
     for s in candidate_cfg.get("watchlist", []):
-        if s not in candidate_cfg.setdefault("symbol_risk_weights", {}):
+        if s in rehab_set:
+            candidate_cfg.setdefault("symbol_risk_weights", {})[s] = 0.01  # Probationary risk weight
+            candidate_cfg.setdefault("symbol_exposure_caps", {})[s] = 0.20  # Probationary exposure cap
+        elif s not in candidate_cfg.setdefault("symbol_risk_weights", {}):
             candidate_cfg["symbol_risk_weights"][s] = 0.02
         if s not in candidate_cfg.setdefault("symbol_exposure_caps", {}):
             candidate_cfg["symbol_exposure_caps"][s] = 0.35

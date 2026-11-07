@@ -85,6 +85,47 @@ def test_review_and_deploy_proposal_tmp(tmp_path):
     assert "AVAX/USDT" in updated["blacklisted_symbols"]
 
 
+def test_review_and_deploy_rehabilitation_tmp(tmp_path):
+    """Verify governor removes rehabilitated symbols from blacklist and assigns 1% probationary risk weight."""
+    base_cfg = {
+        "execution_mode": "maker",
+        "account_risk_pct": 0.02,
+        "max_drawdown_limit_pct": 15.0,
+        "max_crypto_positions": 2,
+        "watchlist": ["BTC/USDT", "NVDA"],
+        "blacklisted_symbols": ["SOL/USDT", "ETH/USDT"],
+    }
+    cfg_file = tmp_path / "active_config.json"
+    cfg_file.write_text(json.dumps(base_cfg))
+
+    proposal = {
+        "rehabilitated_symbols": ["SOL/USDT"],
+        "watchlist": ["BTC/USDT", "NVDA", "SOL/USDT"],
+    }
+
+    res = review_and_deploy_proposal(
+        proposed_changes=proposal,
+        rationale="Rehabilitate SOL/USDT to probationary status",
+        empirical_proof={"rehabilitated": ["SOL/USDT"]},
+        config_path=cfg_file,
+        verify_tests=False,
+        use_llm=False,
+    )
+
+    assert res.approved is True
+    assert res.status == "DEPLOYED"
+
+    with open(cfg_file, "r") as f:
+        updated = json.load(f)
+
+    # SOL/USDT should be removed from blacklisted_symbols and present in watchlist
+    assert "SOL/USDT" not in updated["blacklisted_symbols"]
+    assert "ETH/USDT" in updated["blacklisted_symbols"]
+    assert "SOL/USDT" in updated["watchlist"]
+    # Should receive 1.0% (0.01) probationary risk weight
+    assert updated["symbol_risk_weights"]["SOL/USDT"] == 0.01
+
+
 def test_audit_invariants_rejects_invalid_symbol_risk_weights():
     """Verify governor catches and rejects per-symbol risk weights outside [1%, 5%]."""
     bad_cfg = {
