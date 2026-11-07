@@ -255,7 +255,7 @@ style: |
     <div class="stat-label">Heterogeneous AI Agents</div>
   </div>
   <div class="stat-card gold">
-    <div class="stat-number gold">101 / 101</div>
+    <div class="stat-number gold">104 / 104</div>
     <div class="stat-label">Green Regression Tests</div>
   </div>
 </div>
@@ -270,7 +270,7 @@ style: |
 </div>
 
 <div class="base-badge">
-  🔍 <b>Master Audit Base:</b> <a href="PRESENTATION_VERIFICATION_BASE.md">PRESENTATION_VERIFICATION_BASE.md</a> • Verified 101/101 Unit Tests Green • Paper Mode
+  🔍 <b>Master Audit Base:</b> <a href="PRESENTATION_VERIFICATION_BASE.md">PRESENTATION_VERIFICATION_BASE.md</a> • Verified 104/104 Unit Tests Green • Paper Mode
 </div>
 
 ---
@@ -799,7 +799,7 @@ How do **Agents 10, 11, and 12** work together to ensure the bot improves over t
     <h4>🛡️ Agent 12: Supreme Gatekeeper Authority</h4>
     <p style="font-size: 0.72em; color: #94a3b8; line-height: 1.36;">
       • <b>Zero Direct Writes</b>: No other agent can modify the bot directly.<br/>
-      • <b>100% Test Pass Gate</b>: Runs all 101 unit tests automatically. If even 1 test fails, the proposal is rejected immediately.<br/>
+      • <b>100% Test Pass Gate</b>: Runs all 104 unit tests automatically. If even 1 test fails, the proposal is rejected immediately.<br/>
       • <b>Immutable Audit Log</b>: Writes every verdict to <a href="data/agent_governance_audit.log"><code>data/agent_governance_audit.log</code></a>.
     </p>
   </div>
@@ -919,7 +919,7 @@ Every autonomous agent in this codebase is bound by **5 non-negotiable invariant
       • <b>Multi-Agent Foundations</b>: Russell & Norvig (2020) <i>AI: A Modern Approach</i> • Wooldridge (2009).<br/>
       • <b>Position Sizing & Risk</b>: Van K. Tharp (2008) <i>Definitive Guide to Position Sizing</i>.<br/>
       • <b>Pre-Trade Financial Compliance</b>: SEC Rule 15c3-5 Risk Management Controls.<br/>
-      • <b>Unit Test Suite</b>: <a href="tests/"><code>tests/</code></a>: <b>101 / 101 tests green</b>.<br/>
+      • <b>Unit Test Suite</b>: <a href="tests/"><code>tests/</code></a>: <b>104 / 104 tests green</b>.<br/>
       • <b>Git Repository</b>: Cleanly versioned and pushed to <a href="https://github.com/iShmuel/web4-trading-agent.git">GitHub: web4-trading-agent</a>.
     </p>
   </div>
@@ -932,5 +932,5 @@ Every autonomous agent in this codebase is bound by **5 non-negotiable invariant
 </div>
 
 <div class="base-badge">
-  🔍 <b>Master Audit Base:</b> <a href="PRESENTATION_VERIFICATION_BASE.md">PRESENTATION_VERIFICATION_BASE.md</a> • Verified 101/101 Unit Tests Green
+  🔍 <b>Master Audit Base:</b> <a href="PRESENTATION_VERIFICATION_BASE.md">PRESENTATION_VERIFICATION_BASE.md</a> • Verified 104/104 Unit Tests Green
 </div>

@@ -10,7 +10,7 @@ It serves as an institutional audit ledger and academic defense guide, mapping e
 
 * **Repository Working Directory**: `<repo_root>`
 * **Python Runtime**: Pure Python 3.10+ (Verified on Python 3.11, 3.12, 3.14)
-* **Unit Test Suite**: 101/101 passing tests in `tests/` (`.venv/bin/pytest`)
+* **Unit Test Suite**: 104/104 passing tests in `tests/` (`.venv/bin/pytest`)
 * **Continuous Integration**: GitHub Actions CI workflow `Continuous Integration` passing green on `main`
 * **Autonomous Operating Mode**: Strictly simulated paper trading via [`core/paper_account.py`](core/paper_account.py) (`PaperAccount`), enforcing Invariant Rules #1 through #5 in [`AGENTS.md`](AGENTS.md).
 
@@ -286,4 +286,4 @@ It serves as an institutional audit ledger and academic defense guide, mapping e
     * *FRED API & Binance API v3*. Official macroeconomic and spot/futures exchange endpoints.
 * **Codebase Grounding**:
   * Hard Invariant Rules: [`AGENTS.md:7-14`](AGENTS.md#L7-L14)
-  * Unit Test Suite: 101/101 passing tests in [`tests/`](tests)
+  * Unit Test Suite: 104/104 passing tests in [`tests/`](tests)

@@ -150,6 +150,15 @@ def run_portfolio_tick(
             side_str = "BUY (LONG)" if d.action == "ENTER_LONG" else "SELL SHORT"
             log(f"\n🚀 [PAPER ALERT] {side_str} ORDER EXECUTED ON {sym} via {d.strategy_id}!")
             log(f"   Units: {d.units:.5f} @ ${price:,.2f} | Stop: ${d.stop_loss:,.2f} | Reason: {d.reason}")
+        elif d.action in ("LONG_A_SHORT_B", "SHORT_A_LONG_B"):
+            log(f"\n⚖️ [PAIR TRADE ALERT] DUAL-LEG ENTRY EXECUTED ON {sym} via {d.strategy_id}!")
+            log(f"   Action: {d.action} | Reason: {d.reason}")
+        elif d.action == "CLOSE_PAIR":
+            log(f"\n⚖️ [PAIR TRADE ALERT] DUAL-LEG EXIT EXECUTED ON {sym} via {d.strategy_id}!")
+            log(f"   Reason: {d.reason}")
+        elif d.action == "ACCRUED_YIELD":
+            log(f"\n🌾 [YIELD HARVEST ALERT] DELTA-NEUTRAL FUNDING CASH ACCRUED ON {sym}!")
+            log(f"   Reason: {d.reason}")
         elif d.action == "PARTIAL_EXIT":
             log(f"\n🎯 [PAPER ALERT] PARTIAL TAKE-PROFIT (50% BANKED) ON {sym} via {d.strategy_id}!")
             log(f"   Scaled out {d.units:.5f} units @ ${price:,.2f} | Reason: {d.reason}")

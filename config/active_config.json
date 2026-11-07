@@ -22,7 +22,12 @@
     "CIFR",
     "GRAB",
     "PLUG",
-    "NVDA"
+    "NVDA",
+    "GLD",
+    "SLV",
+    "AMD",
+    "BTC/USDT",
+    "ETH/USDT"
   ],
   "timeframe": "1h",
   "max_concurrent_positions": 5,
@@ -149,6 +154,23 @@
   "target_atr_pct": 0.025,
   "enable_basis_yield": true,
   "basis_hurdle_apr": 8.0,
+  "max_basis_allocation_pct": 0.30,
+  "enable_pairs_trading": true,
+  "stat_arb_lookback": 48,
+  "stat_arb_entry_z": 2.0,
+  "stat_arb_exit_z": 0.5,
+  "stat_arb_stop_z": 3.5,
+  "min_pair_correlation": 0.70,
+  "max_pair_half_life_hours": 72.0,
+  "stat_arb_risk_pct": 0.02,
+  "pairs_universe": [
+    ["GLD", "SLV"],
+    ["NVDA", "AMD"],
+    ["NVDA", "SPY"],
+    ["BTC/USDT", "ETH/USDT"],
+    ["SOL/USDT", "AVAX/USDT"],
+    ["XLE", "TLT"]
+  ],
   "use_asset_profiles": true,
   "asset_profiles": {
     "crypto_micro_swing": {

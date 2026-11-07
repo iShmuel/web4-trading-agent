@@ -22,6 +22,7 @@ from core.strategy import (
 )
 from strategies.momentum import MomentumStrategy
 from strategies.mean_reversion import MeanReversionStrategy
+from strategies.stat_arb_pairs import StatArbPairsStrategy, PairTradeSignal
 from core.journal import log_decision, get_gate_alpha_feedback
 from core.polymarket_radar import PolymarketRadar, MacroEventRisk
 from core.fred_radar import FredMacroRadar, MacroRegimeReport
@@ -127,6 +128,8 @@ class PortfolioCoordinator:
             hurdle_apr=float(config.get("basis_hurdle_apr", 8.0)),
             max_portfolio_allocation_pct=float(config.get("max_basis_allocation_pct", 0.30)),
         )
+        self.pairs_strategy = StatArbPairsStrategy(config)
+        self.last_basis_accrual_time: Optional[datetime] = None
 
     def symbol_config(self, symbol: str) -> Dict[str, Any]:
         return self._engines_for(symbol)[0]
@@ -136,9 +139,14 @@ class PortfolioCoordinator:
         self.config = config
         self.momentum_strategy = MomentumStrategy(config)
         self.mean_reversion_strategy = MeanReversionStrategy(config)
+        self.pairs_strategy = StatArbPairsStrategy(config)
         self._symbol_engines.clear()
         self.llm_screener.enabled = bool(config.get("enable_local_llm_preflight", self.llm_screener.enabled))
         self.llm_screener.model = config.get("local_llm_model", self.llm_screener.model)
+        self.basis_yield_engine.hurdle_apr = float(config.get("basis_hurdle_apr", self.basis_yield_engine.hurdle_apr))
+        self.basis_yield_engine.max_portfolio_allocation_pct = float(
+            config.get("max_basis_allocation_pct", self.basis_yield_engine.max_portfolio_allocation_pct)
+        )
 
         if self.risk_engine is not None:
             self.risk_engine.risk_pct = self.risk_engine.enforce_risk_bounds(
@@ -311,7 +319,16 @@ class PortfolioCoordinator:
         # 1. Evaluate exit conditions if already holding
         if existing_pos is not None:
             pos_strategy = existing_pos.get("strategy_id", "momentum")
-            if pos_strategy == MeanReversionStrategy.STRATEGY_ID:
+            if pos_strategy == "stat_arb_pairs":
+                # Pairs positions are managed by dynamic pairs pass; hold during single-asset evaluation
+                return CoordinatorDecision(
+                    symbol=symbol,
+                    action="HOLD",
+                    strategy_id="stat_arb_pairs",
+                    price=cur_price,
+                    reason=f"Holding pair position {existing_pos.get('pair_id', 'dynamic_pair')}",
+                )
+            elif pos_strategy == MeanReversionStrategy.STRATEGY_ID:
                 sig = mean_reversion_strategy.evaluate(symbol, df, existing_position=existing_pos)
             else:
                 sig = momentum_strategy.evaluate(symbol, df, existing_position=existing_pos)
@@ -774,6 +791,137 @@ class PortfolioCoordinator:
                 executed += 1
             if decision.signal is not None and decision.signal.is_actionable:
                 signals_count += 1
+
+        # Dynamic Pairs Trading Multi-Asset Evaluation Pass
+        if self.config.get("enable_pairs_trading", True):
+            active_pairs: Dict[str, str] = {}
+            for sym, pos in self.account.positions.items():
+                pid = pos.get("pair_id")
+                if pid:
+                    active_pairs[pid] = pos.get("side", "LONG")
+
+            candidate_pairs = self.config.get("pairs_universe")
+            pair_signals = self.pairs_strategy.scan_dynamic_pairs(
+                market_data=market_data,
+                candidate_universe=candidate_pairs,
+                active_pair_positions=active_pairs,
+            )
+
+            for psig in pair_signals:
+                if psig.action == "CLOSE_PAIR":
+                    pa = current_prices.get(psig.asset_a, float(market_data[psig.asset_a]["close"].iloc[-1]))
+                    pb = current_prices.get(psig.asset_b, float(market_data[psig.asset_b]["close"].iloc[-1]))
+                    if self.account.has_position(psig.asset_a):
+                        self.account.close_position(psig.asset_a, pa, exit_reason=f"Dynamic Pair Exit ({psig.reason})")
+                        executed += 1
+                    if self.account.has_position(psig.asset_b):
+                        self.account.close_position(psig.asset_b, pb, exit_reason=f"Dynamic Pair Exit ({psig.reason})")
+                        executed += 1
+                    decisions.append(CoordinatorDecision(
+                        symbol=psig.pair_id,
+                        action="CLOSE_PAIR",
+                        strategy_id="stat_arb_pairs",
+                        price=pa,
+                        reason=psig.reason,
+                        indicators={"z_score": psig.z_score, "beta": psig.hedge_ratio, "half_life": psig.half_life, "correlation": psig.correlation},
+                    ))
+                elif psig.action in ("LONG_A_SHORT_B", "SHORT_A_LONG_B"):
+                    if not self.account.has_position(psig.asset_a) and not self.account.has_position(psig.asset_b):
+                        if len(self.account.positions) + 2 <= self.risk_engine.max_open_positions:
+                            pa = current_prices.get(psig.asset_a, float(market_data[psig.asset_a]["close"].iloc[-1]))
+                            pb = current_prices.get(psig.asset_b, float(market_data[psig.asset_b]["close"].iloc[-1]))
+                            side_a = "LONG" if psig.action == "LONG_A_SHORT_B" else "SHORT"
+                            side_b = "SHORT" if psig.action == "LONG_A_SHORT_B" else "LONG"
+
+                            raw_risk = float(self.config.get("stat_arb_risk_pct", 0.02))
+                            clamped_risk = self.risk_engine.enforce_risk_bounds(raw_risk)
+                            total_eq = self.account.get_total_equity(current_prices)
+                            dollar_risk = total_eq * (clamped_risk * 0.5)
+
+                            units_a = dollar_risk / pa if pa > 0 else 0
+                            units_b = dollar_risk / pb if pb > 0 else 0
+                            total_cost = (units_a * pa) + (units_b * pb)
+
+                            if total_cost > 0 and self.account.cash >= (total_cost * 1.002):
+                                try:
+                                    self.account.open_position(
+                                        symbol=psig.asset_a,
+                                        entry_price=pa,
+                                        units=units_a,
+                                        stop_loss=0.0,
+                                        dollar_risk=dollar_risk,
+                                        max_concurrent_positions=self.risk_engine.max_open_positions,
+                                        side=side_a,
+                                        strategy_id="stat_arb_pairs",
+                                    )
+                                    self.account.set_position_fields(psig.asset_a, pair_id=psig.pair_id, hedge_ratio=psig.hedge_ratio)
+
+                                    self.account.open_position(
+                                        symbol=psig.asset_b,
+                                        entry_price=pb,
+                                        units=units_b,
+                                        stop_loss=0.0,
+                                        dollar_risk=dollar_risk,
+                                        max_concurrent_positions=self.risk_engine.max_open_positions,
+                                        side=side_b,
+                                        strategy_id="stat_arb_pairs",
+                                    )
+                                    self.account.set_position_fields(psig.asset_b, pair_id=psig.pair_id, hedge_ratio=psig.hedge_ratio)
+
+                                    executed += 2
+                                    signals_count += 1
+                                    decisions.append(CoordinatorDecision(
+                                        symbol=psig.pair_id,
+                                        action=psig.action,
+                                        strategy_id="stat_arb_pairs",
+                                        price=pa,
+                                        reason=psig.reason,
+                                        indicators={"z_score": psig.z_score, "beta": psig.hedge_ratio, "half_life": psig.half_life, "correlation": psig.correlation},
+                                    ))
+                                except Exception:
+                                    pass
+
+        # Delta-Neutral Basis Funding Rate Yield Accrual Pass
+        if self.config.get("enable_basis_yield", True):
+            elapsed_hours = 8.0
+            if self.last_basis_accrual_time is not None:
+                elapsed_hours = (now - self.last_basis_accrual_time).total_seconds() / 3600.0
+
+            if elapsed_hours >= 8.0:
+                max_basis_pct = float(self.config.get("max_basis_allocation_pct", 0.30))
+                total_eq = self.account.get_total_equity(current_prices)
+                basis_alloc = min(self.account.cash * 0.80, total_eq * max_basis_pct)
+                if basis_alloc >= 50.0:
+                    crypto_syms = [s for s in market_data.keys() if is_crypto_symbol(s)]
+                    best_opp: Optional[BasisOpportunity] = None
+                    for csym in crypto_syms:
+                        opp = self.basis_yield_engine.evaluate_opportunity(csym)
+                        if opp.is_profitable:
+                            if best_opp is None or opp.annualized_apr > best_opp.annualized_apr:
+                                best_opp = opp
+
+                    if best_opp is not None:
+                        receipt = self.basis_yield_engine.accrue_funding_yield(
+                            account=self.account,
+                            symbol=best_opp.symbol,
+                            notional_capital=basis_alloc,
+                            funding_rate_8h=best_opp.funding_rate_8h,
+                            hours_elapsed=elapsed_hours,
+                        )
+                        self.last_basis_accrual_time = now
+                        if receipt.get("status") == "ACCRUED":
+                            decisions.append(CoordinatorDecision(
+                                symbol=best_opp.symbol,
+                                action="ACCRUED_YIELD",
+                                strategy_id="basis_yield",
+                                price=best_opp.annualized_apr,
+                                reason=f"Accrued ${receipt['accrued_payout']:.2f} cash yield ({best_opp.annualized_apr:.1f}% APR)",
+                                indicators={
+                                    "funding_rate": best_opp.funding_rate_8h,
+                                    "apr": best_opp.annualized_apr,
+                                    "payout": receipt["accrued_payout"],
+                                },
+                            ))
 
         total_equity = self.account.get_total_equity(current_prices)
 
