@@ -190,6 +190,7 @@ class PaperAccount:
             "entry_price": entry_price,
             "units": units,
             "dollar_risk": dollar_risk,
+            "initial_stop": stop_loss,
             "trailing_stop": stop_loss,
             "highest_price": entry_price,
             "lowest_price": entry_price,

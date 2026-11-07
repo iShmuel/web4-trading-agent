@@ -449,6 +449,28 @@ class PortfolioCoordinator:
                         be_stop = ep * 0.9985
                         if tp_hit or (ep - cur_price) >= (be_atr_mult * atr):
                             new_stop = min(new_stop, be_stop)
+
+                # Upgrade 3: Adaptive Chandelier Trailing Ratchet on Trend Runners
+                if self.config.get("enable_chandelier_ratchet", True):
+                    ep = existing_pos["entry_price"]
+                    init_stop = existing_pos.get("initial_stop")
+                    if init_stop is not None and abs(ep - init_stop) > 0:
+                        init_risk = abs(ep - init_stop)
+                    else:
+                        init_risk = atr * atr_mult
+                    unrealized_gain = (cur_price - ep) if not is_short else (ep - cur_price)
+                    r_mult = unrealized_gain / max(1e-6, init_risk)
+
+                    if r_mult >= 8.0:
+                        parabolic_stop = (cur_price - 0.75 * atr) if not is_short else (cur_price + 0.75 * atr)
+                        new_stop = max(new_stop, parabolic_stop) if not is_short else min(new_stop, parabolic_stop)
+                    elif r_mult >= 5.0:
+                        tight_stop = (cur_price - 1.2 * atr) if not is_short else (cur_price + 1.2 * atr)
+                        new_stop = max(new_stop, tight_stop) if not is_short else min(new_stop, tight_stop)
+                    elif r_mult >= 3.0:
+                        profit_lock = (ep + 1.0 * atr) if not is_short else (ep - 1.0 * atr)
+                        new_stop = max(new_stop, profit_lock) if not is_short else min(new_stop, profit_lock)
+
                 self.account.update_trailing_stop(symbol, new_stop, cur_price)
                 return CoordinatorDecision(
                     symbol=symbol,
@@ -463,7 +485,20 @@ class PortfolioCoordinator:
 
         # 2. No open position: generate signals from both strategies
         mom_sig = momentum_strategy.evaluate(symbol, df, existing_position=None)
-        mr_sig = mean_reversion_strategy.evaluate(symbol, df, existing_position=None)
+
+        # Altcoin Strategy Specialization: Restrict high-beta crypto altcoins to Momentum only
+        is_altcoin = is_crypto_symbol(symbol) and symbol.upper() not in ("BTC/USDT", "ETH/USDT")
+        suppress_mr = is_altcoin and self.config.get("crypto_altcoin_momentum_only", False)
+
+        if suppress_mr:
+            mr_sig = create_no_trade_signal(
+                strategy_id=MeanReversionStrategy.STRATEGY_ID,
+                symbol=symbol,
+                price=cur_price,
+                reason="Altcoin Mean-Reversion Suppressed (Momentum Only)",
+            )
+        else:
+            mr_sig = mean_reversion_strategy.evaluate(symbol, df, existing_position=None)
 
         # Merge indicator snapshot from both strategies for full transparency
         merged_ind = {}
@@ -727,7 +762,17 @@ class PortfolioCoordinator:
         merged_ind["vix_level"] = fred_report.vix_level
         merged_ind["vix_regime"] = fred_report.regime
 
-        combined_risk_mult = vol_risk_mult * macro_risk_mult * sm_verdict.risk_multiplier
+        # Confluence-Weighted Position Sizing (strictly within 1%-5% hard bounds)
+        conf_risk_mult = 1.0
+        if self.config.get("enable_confluence_sizing", True):
+            if conf_score >= 0.85:
+                conf_risk_mult = 1.75  # Boost from 2.0% -> 3.5% on A+ setups
+            elif conf_score >= 0.75:
+                conf_risk_mult = 1.25  # Boost from 2.0% -> 2.5%
+            elif conf_score < 0.70:
+                conf_risk_mult = 0.60  # Scale down to 1.2% on marginal setups
+
+        combined_risk_mult = vol_risk_mult * macro_risk_mult * sm_verdict.risk_multiplier * conf_risk_mult
 
         risk_verdict = self.risk_engine.validate_proposed_entry(
             symbol=symbol,

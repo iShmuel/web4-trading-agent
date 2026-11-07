@@ -645,9 +645,10 @@ class WashSaleAndLossStreakGuard:
         fam = get_ticker_family(sym)
         now = now_utc or datetime.now(timezone.utc)
 
-        # Filter closed trades matching this symbol or share-class family
+        # Filter closed trades matching this symbol or share-class family (scan recent for O(1) efficiency)
+        recent_closed = closed_trades[-50:] if len(closed_trades) > 50 else closed_trades
         sym_trades = [
-            t for t in closed_trades
+            t for t in recent_closed
             if str(t.get("symbol", "")).upper() in fam
             and str(t.get("side", "LONG")).upper() in ("LONG", "SHORT")
         ]
