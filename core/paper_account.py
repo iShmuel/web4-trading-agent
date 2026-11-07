@@ -240,6 +240,7 @@ class PaperAccount:
         exit_price: float,
         exit_reason: str = "Trailing Stop",
         fee_pct: float = 0.0006,
+        current_time: Optional[datetime] = None,
     ) -> Dict[str, Any]:
         """Execute paper closing order for an active position."""
         pos = self.get_position(symbol)
@@ -268,12 +269,18 @@ class PaperAccount:
 
         self.state["cash"] += net_cash_received
 
+        exit_ts = (
+            current_time.isoformat()
+            if current_time is not None
+            else datetime.now(timezone.utc).isoformat()
+        )
+
         trade_record = {
             "symbol": symbol,
             "side": side,
             "strategy_id": pos.get("strategy_id", "default"),
             "entry_time": pos["entry_time"],
-            "exit_time": datetime.now(timezone.utc).isoformat(),
+            "exit_time": exit_ts,
             "entry_price": entry_price,
             "exit_price": exit_price,
             "units": units,
@@ -296,6 +303,7 @@ class PaperAccount:
         exit_units: float,
         exit_reason: str = "Partial Take Profit",
         fee_pct: float = 0.0006,
+        current_time: Optional[datetime] = None,
     ) -> Dict[str, Any]:
         """Execute a partial scale-out for an open position."""
         pos = self.get_position(symbol)
@@ -330,12 +338,18 @@ class PaperAccount:
         pos["fees_paid"] -= portion_fee
         pos["units"] -= exit_units
 
+        exit_ts = (
+            current_time.isoformat()
+            if current_time is not None
+            else datetime.now(timezone.utc).isoformat()
+        )
+
         trade_record = {
             "symbol": symbol,
             "side": side,
             "strategy_id": pos.get("strategy_id", "default"),
             "entry_time": pos["entry_time"],
-            "exit_time": datetime.now(timezone.utc).isoformat(),
+            "exit_time": exit_ts,
             "entry_price": entry_price,
             "exit_price": exit_price,
             "units": exit_units,

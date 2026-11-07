@@ -309,7 +309,7 @@
   "ticker_loss_streak_cooldown_hours": 48.0,
   "equity_wash_sale_days": 30,
   "wash_sale_min_loss_usd": 50.0,
-  "enable_drift_rebalancer": true,
+  "enable_drift_rebalancer": false,
   "max_position_pct": 25.0,
   "rebalance_band_pct": 5.0
 }

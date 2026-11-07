@@ -237,8 +237,8 @@ def run_single_replay(
             elif dec.action == "CONFLICT":
                 gate_counts["Strategy Conflict Cancellation"] += 1
 
-        # Portfolio Drift-Band Rebalancer Pass
-        if coord.config.get("enable_drift_rebalancer", True) and account.positions:
+        # Portfolio Drift-Band Rebalancer Pass (applied only if explicitly enabled in config)
+        if coord.config.get("enable_drift_rebalancer", False) and account.positions:
             fee_rate = 0.0002 if execution_mode == "maker" else 0.0006
             coord.drift_rebalancer.rebalance_overweight_positions(account, current_prices, fee_pct=fee_rate)
 

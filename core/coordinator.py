@@ -366,12 +366,20 @@ class PortfolioCoordinator:
             else:
                 sig = momentum_strategy.evaluate(symbol, df, existing_position=existing_pos)
 
+            raw_bar_ts = df.index[-1] if isinstance(df.index[-1], pd.Timestamp) else pd.Timestamp.now(tz="UTC")
+            bar_exit_dt = (
+                raw_bar_ts.tz_localize("UTC").to_pydatetime()
+                if raw_bar_ts.tzinfo is None
+                else (raw_bar_ts.tz_convert("UTC").to_pydatetime() if hasattr(raw_bar_ts, "tz_convert") else raw_bar_ts)
+            )
+
             if sig.status == SignalStatus.EXIT:
                 trade = self.account.close_position(
                     symbol=symbol,
                     exit_price=cur_price * (0.9996 if sig.direction == SignalDirection.LONG else 1.0004),
                     exit_reason=sig.exit_reason or "Strategy Exit Signal",
                     fee_pct=sym_cfg.get("fee_pct", 0.0006),
+                    current_time=bar_exit_dt,
                 )
                 if is_crypto_symbol(symbol) and trade.get("pnl", 0.0) < 0 and "Stop" in trade.get("exit_reason", ""):
                     bar_ts = df.index[-1]
@@ -397,6 +405,7 @@ class PortfolioCoordinator:
                     exit_units=scale_units,
                     exit_reason=sig.exit_reason or "Partial Scale-Out Take-Profit",
                     fee_pct=sym_cfg.get("fee_pct", 0.0006),
+                    current_time=bar_exit_dt,
                 )
                 # Fix #1: Automatically lock stop-loss to Break-Even (+fee buffer) upon 50% scale-out
                 if self.config.get("enable_breakeven_lock", True):
