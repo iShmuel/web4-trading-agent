@@ -1,6 +1,6 @@
 # Web4 Autonomous Quantitative Trading Desk
 
-[![Tests: 98/98 Passing](https://img.shields.io/badge/pytest-98%2F98%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
+[![Tests: 101/101 Passing](https://img.shields.io/badge/pytest-101%2F101%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
 [![Execution Mode](https://img.shields.io/badge/execution-strictly%20simulated%20paper-38bdf8?style=for-the-badge)](core/paper_account.py)
 [![Architecture](https://img.shields.io/badge/architecture-12--Agent%20Heterogeneous%20MAS-8b5cf6?style=for-the-badge)](agent/)
 [![Local LLM](https://img.shields.io/badge/local%20gpu%20llm-phi4--mini%20(0.70s)-f59e0b?style=for-the-badge)](core/preflight.py)
@@ -64,27 +64,46 @@ flowchart TD
         L3["Decision Journal & 24h Alpha Settlement"]
     end
 
+    subgraph Governance["Tier 2: Strategic Cognitive & Governance Agents (agent/)"]
+        G1["Agent 9: Alpha Scanner (agent/asset_selector.py)"]
+        G2["Agent 10: Forensic Analyst (agent/trade_analyst.py)"]
+        G3["Agent 11: Optimizer Arena (agent/optimizer.py)"]
+        G4["Agent 12: Supreme Risk Governor (agent/governor.py)"]
+    end
+
     Data --> Strategies
     Strategies --> Arbiter
     Arbiter --> Risk
     Risk --> Preflight
     Preflight --> Ledger
+    Ledger -.-> G2
+    G1 & G2 & G3 --> G4
+    G4 ==>|Atomic Hot-Reload & Git Commit| Arbiter
 ```
 
 ---
 
-## The 8 Specialized Quantitative Internal Agents
+## The 12-Agent Heterogeneous Multi-Agent System
 
-The desk operates in an autonomous 60-second real-time loop orchestrated across 8 collaborating modular agents:
+The desk separates **deterministic mathematical execution** (0% AI hallucination) from **out-of-band local LLM cognition** (`phi4-mini` via Ollama) across two tiers:
 
-1. **Data Scout Agent (`core/data_loader.py`)**: Ingests multi-venue feeds, filters unclosed bars to prevent repainting, checks timestamp gaps, and invalidates stale caches.
-2. **Momentum Hunter Agent (`strategies/momentum.py`)**: Captures multi-day breakout waves using Donchian channels, EMA trend filters, dynamic ATR trailing stops, and $50\%$ staged take-profits.
-3. **Mean Reversion Agent (`strategies/mean_reversion.py`)**: Exploits rubber-band extremes, buying oversold liquidity sweeps (RSI $< 30$ below lower Bollinger Band) and taking $50\%$ profit at the 20 SMA.
-4. **Basis Yield Engine (`core/basis_yield.py`)**: Harvests market-neutral perpetual funding rates ($8\% - 18\%$ APY floor) with $0.0$ delta price exposure during sideways chop.
-5. **Coordinator Arbiter Agent (`core/coordinator.py`)**: Central authority reconciling signals, resolving thesis conflicts, enforcing the 200 EMA Macro Gate, and managing sector exposure.
-6. **Risk Governor Agent (`core/risk_engine.py`)**: Fixed-fractional volatility sizing strictly clamped to $[1\%, 5\%]$ account equity, with automated daily and drawdown circuit breakers.
-7. **Execution & Ledger Agent (`core/paper_account.py`)**: Smart Maker limit routing ($0.02\%$ fees, $0.00\%$ slippage), kernel-level PID lockfiles, and zero-corruption atomic `.bak` state persistence.
-8. **Local GPU Devil's Advocate Agent (`core/preflight.py`)**: Sub-second qualitative news screener running local `phi4-mini` via Ollama on GPU VRAM (0.70s) to veto proposed entries on black-swan headlines (SEC lawsuits, hacks, exploits). Supported by the offline **Meta-Optimizer Agent (`agent/optimizer.py`)** for walk-forward parameter arena tuning.
+### Tier 1: 8 Real-Time Execution Agents (Every 60 Seconds)
+
+1. **Agent 1 — Data Scout (`core/data_loader.py`)** `[🧮 Math / IO]`: Ingests multi-venue feeds, filters unclosed bars to prevent repainting, checks timestamp gaps, and invalidates stale caches.
+2. **Agent 2 — Momentum Hunter (`strategies/momentum.py`)** `[🧮 Math]`: Captures multi-day breakout waves using Donchian channels, EMA trend filters, dynamic ATR trailing stops, and $50\%$ staged take-profits.
+3. **Agent 3 — Mean Reversion (`strategies/mean_reversion.py`)** `[🧮 Math]`: Exploits rubber-band extremes, buying oversold liquidity sweeps (RSI $< 30$ below lower Bollinger Band) and taking $50\%$ profit at the 20 SMA.
+4. **Agent 4 — Basis Yield Engine (`core/basis_yield.py`)** `[🧮 Math]`: Harvests market-neutral perpetual funding rates ($8\% - 18\%$ APY floor) with $0.0$ delta price exposure during sideways chop.
+5. **Agent 5 — Coordinator Arbiter (`core/coordinator.py`)** `[🧮 Logic]`: Central authority reconciling signals, resolving thesis conflicts, enforcing the 200 EMA Macro Gate, and managing sector exposure.
+6. **Agent 6 — Risk Engine (`core/risk_engine.py`)** `[🧮 Math]`: Fixed-fractional volatility sizing strictly clamped to $[1\%, 5\%]$ account equity, with automated daily and drawdown circuit breakers.
+7. **Agent 7 — Execution & Atomic Ledger (`core/paper_account.py`)** `[🧮 OS / IO]`: Smart Maker limit routing ($0.02\%$ fees, $0.00\%$ slippage), kernel-level PID lockfiles, and zero-corruption atomic `.bak` state persistence.
+8. **Agent 8 — Pre-Flight Devil's Advocate (`core/preflight.py`)** `[🧮 Math + 🧠 Local LLM]`: Sub-second spread/staleness checks plus local `phi4-mini` news screener (0.70s) that vetoes proposed entries on black-swan headlines (hacks, exploits, SEC actions).
+
+### Tier 2: 4 Strategic Cognitive & Governance Agents (Asynchronous)
+
+9. **Agent 9 — Alpha Scanner & Dynamic Discovery (`agent/asset_selector.py`)** `[🧮 Math + 🧠 Local LLM]`: Scans live exchange order books every 24h, runs 90-day empirical backtest audits, classifies assets into tiers, and generates LLM alpha theses for top candidates.
+10. **Agent 10 — Post-Trade Forensic Analyst (`agent/trade_analyst.py`)** `[🧮 Math + 🧠 Local LLM]`: Wakes every 15 closed deals to audit win rates, profit factors, and loss attribution, using local `phi4-mini` to formulate concrete parameter hypotheses.
+11. **Agent 11 — Meta-Optimizer Arena (`agent/optimizer.py`)** `[🧮 Math]`: Runs walk-forward parameter tournaments every 6h across 144 permutations on a 70% In-Sample / 30% Out-of-Sample split.
+12. **Agent 12 — Supreme Risk Governor (`agent/governor.py`)** `[🧮 Pytest + 🧠 Local LLM]`: Sole write authority over `config/active_config.json`. Audits Rules 1–5, runs local LLM Chief Risk Officer review, requires 100% `pytest` pass rate, hot-reloads the live bot, and commits verified improvements to Git.
 
 ---
 
@@ -150,7 +169,7 @@ pip install -r requirements.txt
 
 ### 2. Run Test Suite
 ```bash
-# Run all 84 unit tests
+# Run all 101 unit tests
 .venv/bin/pytest -v
 ```
 

@@ -2,17 +2,18 @@
   "watchlist": [
     "BNB/USDT",
     "LINK/USDT",
+    "TRX/USDT",
     "TAO/USDT",
     "ENA/USDT",
     "SOL/USDT",
     "HYPE/USDT",
     "XRP/USDT",
-    "ZEC/USDT",
     "MU",
     "SNAP",
     "NOK",
     "AAPL",
     "CRWV",
+    "WULF",
     "IREN",
     "INTC",
     "SOFI",
@@ -20,7 +21,7 @@
     "XLE",
     "CIFR",
     "GRAB",
-    "WULF",
+    "PLUG",
     "NVDA"
   ],
   "timeframe": "1h",
@@ -63,7 +64,9 @@
     "NU": 0.02,
     "CIFR": 0.02,
     "GRAB": 0.02,
-    "WULF": 0.02
+    "WULF": 0.02,
+    "TRX/USDT": 0.02,
+    "PLUG": 0.02
   },
   "symbol_exposure_caps": {
     "SOL/USDT": 0.4,
@@ -99,7 +102,9 @@
     "NU": 0.35,
     "CIFR": 0.35,
     "GRAB": 0.35,
-    "WULF": 0.35
+    "WULF": 0.35,
+    "TRX/USDT": 0.35,
+    "PLUG": 0.35
   },
   "fee_pct": 0.0006,
   "slippage_pct": 0.0004,
@@ -241,16 +246,22 @@
     }
   },
   "blacklisted_symbols": [
+    "AAL",
     "AMD",
     "AMZN",
     "AVAX/USDT",
     "BTC/USDT",
+    "DKNG",
     "DOGE/USDT",
     "ETH/USDT",
     "GLD",
+    "KVUE",
+    "ONE/USDT",
     "PEPE/USDT",
+    "PFE",
     "PLTR",
     "QQQ",
+    "RWUSD/USDT",
     "SLV",
     "SPCX",
     "SPY",
@@ -259,6 +270,7 @@
     "TRUMP/USDT",
     "TSLA",
     "U/USDT",
-    "UNI/USDT"
+    "UNI/USDT",
+    "ZEC/USDT"
   ]
 }

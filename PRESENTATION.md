@@ -255,7 +255,7 @@ style: |
     <div class="stat-label">Heterogeneous AI Agents</div>
   </div>
   <div class="stat-card gold">
-    <div class="stat-number gold">98 / 98</div>
+    <div class="stat-number gold">101 / 101</div>
     <div class="stat-label">Green Regression Tests</div>
   </div>
 </div>
@@ -270,7 +270,7 @@ style: |
 </div>
 
 <div class="base-badge">
-  🔍 <b>Master Audit Base:</b> <a href="PRESENTATION_VERIFICATION_BASE.md">PRESENTATION_VERIFICATION_BASE.md</a> • Verified 98/98 Unit Tests Green • Paper Mode
+  🔍 <b>Master Audit Base:</b> <a href="PRESENTATION_VERIFICATION_BASE.md">PRESENTATION_VERIFICATION_BASE.md</a> • Verified 101/101 Unit Tests Green • Paper Mode
 </div>
 
 ---
@@ -375,37 +375,49 @@ For newcomers, it is easy to confuse these terms. The system establishes a stric
 The desk deploys a **Heterogeneous Multi-Agent System (MAS)** where every agent has an immutable, strictly bounded role:
 
 <div class="card" style="margin-bottom: 6px; padding: 6px 10px; border-left: 3px solid #38bdf8;">
-  <b style="color: #38bdf8; font-size: 0.85em;">⚡ TIER 1: 8 EXECUTION AGENTS (Strict Role: 5ms Deterministic Math • 0% AI Hallucination)</b>
+  <b style="color: #38bdf8; font-size: 0.82em;">⚡ TIER 1: 8 REAL-TIME EXECUTION AGENTS (Deterministic Math & OS • Sub-Second Execution • 0% Hallucination)</b>
   <div class="grid-4" style="margin-top: 4px; margin-bottom: 2px;">
-    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
-      <span class="pill pill-cyan">AGENT 1</span> <b>Data Scout</b><br/><span style="color: #94a3b8;">Binance/Yahoo ingestion & stale data firewall</span>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.68em;">
+      <span class="pill pill-cyan">AGENT 1</span> <b>Data Scout</b> <span class="pill pill-green">🧮 Math</span><br/><span style="color: #94a3b8;">Binance/Yahoo REST feeds & staleness firewall</span>
     </div>
-    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
-      <span class="pill pill-purple">AGENT 2 & 3</span> <b>Alpha Engines</b><br/><span style="color: #94a3b8;">Momentum Breakout & Mean Reversion Swing</span>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.68em;">
+      <span class="pill pill-purple">AGENT 2</span> <b>Momentum</b> <span class="pill pill-green">🧮 Math</span><br/><span style="color: #94a3b8;">Donchian breakouts & dynamic ATR trailing stops</span>
     </div>
-    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
-      <span class="pill pill-green">AGENT 4 & 5</span> <b>Yield & Arbiter</b><br/><span style="color: #94a3b8;">Basis yield radar & conflict cancellation</span>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.68em;">
+      <span class="pill pill-purple">AGENT 3</span> <b>Mean Reversion</b> <span class="pill pill-green">🧮 Math</span><br/><span style="color: #94a3b8;">Bollinger sweeps & RSI oversold bouncebacks</span>
     </div>
-    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
-      <span class="pill pill-red">AGENT 6, 7, 8</span> <b>Risk & Ledger</b><br/><span style="color: #94a3b8;">1%-5% sizing, PaperAccount, LLM Pre-Flight</span>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.68em;">
+      <span class="pill pill-green">AGENT 4</span> <b>Basis Yield</b> <span class="pill pill-green">🧮 Math</span><br/><span style="color: #94a3b8;">Delta-neutral perpetual funding rate harvester</span>
+    </div>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.68em;">
+      <span class="pill pill-green">AGENT 5</span> <b>Coordinator</b> <span class="pill pill-green">🧮 Logic</span><br/><span style="color: #94a3b8;">Thesis conflict resolution & 200 EMA Macro Gate</span>
+    </div>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.68em;">
+      <span class="pill pill-red">AGENT 6</span> <b>Risk Governor</b> <span class="pill pill-green">🧮 Math</span><br/><span style="color: #94a3b8;">Van Tharp sizing strictly clamped to 1%–5% equity</span>
+    </div>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.68em;">
+      <span class="pill pill-red">AGENT 7</span> <b>Atomic Ledger</b> <span class="pill pill-green">🧮 OS</span><br/><span style="color: #94a3b8;">Maker paper fills & zero-corruption PID lockfiles</span>
+    </div>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.68em;">
+      <span class="pill pill-red">AGENT 8</span> <b>Pre-Flight Guard</b> <span class="pill pill-purple">🧠 LLM</span><br/><span style="color: #94a3b8;">Sub-second news veto using local phi4-mini</span>
     </div>
   </div>
 </div>
 
 <div class="card" style="padding: 6px 10px; border-left: 3px solid #a78bfa;">
-  <b style="color: #a78bfa; font-size: 0.85em;">🧠 TIER 2: 4 STRATEGIC COGNITIVE AGENTS (Strict Role: Asynchronous Analysis • Proposals Only)</b>
+  <b style="color: #a78bfa; font-size: 0.82em;">🧠 TIER 2: 4 STRATEGIC COGNITIVE AGENTS (Asynchronous Governance • Proposals Only)</b>
   <div class="grid-4" style="margin-top: 4px; margin-bottom: 2px;">
-    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
-      <span class="pill pill-purple">AGENT 9</span> <b>Alpha Scanner</b><br/><span style="color: #94a3b8;">Dynamic order book discovery & mathematical proof</span>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.68em;">
+      <span class="pill pill-purple">AGENT 9</span> <b>Alpha Scanner</b> <span class="pill pill-purple">🧠 LLM + Math</span><br/><span style="color: #94a3b8;">Dynamic order book discovery & 90d audit synthesis</span>
     </div>
-    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
-      <span class="pill pill-amber">AGENT 10</span> <b>Forensic Analyst</b><br/><span style="color: #94a3b8;">Audits win rates every 15 deals with local phi4-mini</span>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.68em;">
+      <span class="pill pill-amber">AGENT 10</span> <b>Forensic Analyst</b> <span class="pill pill-purple">🧠 LLM</span><br/><span style="color: #94a3b8;">Loss attribution audits every 15 deals via phi4-mini</span>
     </div>
-    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
-      <span class="pill pill-cyan">AGENT 11</span> <b>Optimizer</b><br/><span style="color: #94a3b8;">Walk-forward mutation tournaments on unseen data</span>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.68em;">
+      <span class="pill pill-cyan">AGENT 11</span> <b>Optimizer Arena</b> <span class="pill pill-green">🧮 Math</span><br/><span style="color: #94a3b8;">144-grid walk-forward tournaments every 6h</span>
     </div>
-    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.70em;">
-      <span class="pill pill-green">AGENT 12</span> <b>Risk Governor</b><br/><span style="color: #94a3b8;">Supreme deployment authority: tests, rules & hot-reload</span>
+    <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid #1e293b; font-size: 0.68em;">
+      <span class="pill pill-green">AGENT 12</span> <b>Risk Governor</b> <span class="pill pill-purple">🧠 LLM + Gate</span><br/><span style="color: #94a3b8;">Sole write authority: 100% pytest pass + CRO review</span>
     </div>
   </div>
 </div>
@@ -418,6 +430,106 @@ The desk deploys a **Heterogeneous Multi-Agent System (MAS)** where every agent 
 
 <div class="base-badge">
   🔍 <b>Implementation:</b> <a href="agent/">agent/</a> • <a href="core/">core/</a> • Local Ollama phi4-mini
+</div>
+
+---
+
+## 3b. Neuro-Symbolic Agent Directory: Deterministic Math vs. Local LLM (phi4-mini)
+
+Why separate **Exact Math** from **Language Models**? Financial systems fail when LLMs guess numbers. We use pure math for sizing and execution, and reserve local LLMs strictly for qualitative text reasoning:
+
+<div class="grid-2" style="margin-top: 6px;">
+  <div>
+    <b style="color: #38bdf8; font-size: 0.78em;">⚡ TIER 1: FAST EXECUTION CREW (Every 60 Seconds)</b>
+    <table style="font-size: 0.62em; margin-top: 3px;">
+      <thead>
+        <tr><th>Agent & Code</th><th>Engine</th><th>Role & Metaphor</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Agent 1</b>: <a href="core/data_loader.py">Data Scout</a></td>
+          <td><span class="pill pill-green">🧮 Math</span></td>
+          <td><b>Lookout Owl</b>: Ingests 1h candles & drops stale quotes</td>
+        </tr>
+        <tr>
+          <td><b>Agent 2</b>: <a href="strategies/momentum.py">Momentum</a></td>
+          <td><span class="pill pill-green">🧮 Math</span></td>
+          <td><b>Rocket Surfer</b>: Donchian breakout trend rider</td>
+        </tr>
+        <tr>
+          <td><b>Agent 3</b>: <a href="strategies/mean_reversion.py">Mean Rev.</a></td>
+          <td><span class="pill pill-green">🧮 Math</span></td>
+          <td><b>Rubber Band</b>: Snipes oversold RSI & Bollinger dips</td>
+        </tr>
+        <tr>
+          <td><b>Agent 4</b>: <a href="core/basis_yield.py">Basis Yield</a></td>
+          <td><span class="pill pill-green">🧮 Math</span></td>
+          <td><b>Allowance</b>: 8%–18% APY perpetual funding harvester</td>
+        </tr>
+        <tr>
+          <td><b>Agent 5</b>: <a href="core/coordinator.py">Coordinator</a></td>
+          <td><span class="pill pill-green">🧮 Logic</span></td>
+          <td><b>Referee</b>: Cancels signal fights & checks 200 EMA</td>
+        </tr>
+        <tr>
+          <td><b>Agent 6</b>: <a href="core/risk_engine.py">Risk Engine</a></td>
+          <td><span class="pill pill-green">🧮 Math</span></td>
+          <td><b>Piggy Bank Guard</b>: Clamps position risk to 1%–5%</td>
+        </tr>
+        <tr>
+          <td><b>Agent 7</b>: <a href="core/paper_account.py">Paper Ledger</a></td>
+          <td><span class="pill pill-green">🧮 OS/IO</span></td>
+          <td><b>Locked Book</b>: Atomic .tmp/.bak ledger saves & PID lock</td>
+        </tr>
+        <tr>
+          <td><b>Agent 8</b>: <a href="core/preflight.py">Pre-Flight</a></td>
+          <td><span class="pill pill-purple">🧠 LLM</span></td>
+          <td><b>Detective Dog</b>: Vetoes trades on black-swan headlines (0.7s)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <b style="color: #a78bfa; font-size: 0.78em;">🧠 TIER 2: ASYNCHRONOUS COGNITIVE & GOVERNANCE CLUB</b>
+    <table style="font-size: 0.62em; margin-top: 3px;">
+      <thead>
+        <tr><th>Agent & Code</th><th>Engine</th><th>Role & Metaphor</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>Agent 9</b>: <a href="agent/asset_selector.py">Alpha Scanner</a></td>
+          <td><span class="pill pill-purple">🧠 LLM</span> + <span class="pill pill-green">🧮</span></td>
+          <td><b>Toy Scout</b>: Scans order books, runs 90d tests & writes briefs</td>
+        </tr>
+        <tr>
+          <td><b>Agent 10</b>: <a href="agent/trade_analyst.py">Forensic Analyst</a></td>
+          <td><span class="pill pill-purple">🧠 LLM</span> + <span class="pill pill-green">🧮</span></td>
+          <td><b>Tape Detective</b>: Audits closed trades & diagnoses losses</td>
+        </tr>
+        <tr>
+          <td><b>Agent 11</b>: <a href="agent/optimizer.py">Optimizer Arena</a></td>
+          <td><span class="pill pill-green">🧮 Math</span></td>
+          <td><b>Coach</b>: Tests 144 parameter variations every 6h</td>
+        </tr>
+        <tr>
+          <td><b>Agent 12</b>: <a href="agent/governor.py">Risk Governor</a></td>
+          <td><span class="pill pill-purple">🧠 LLM</span> + <span class="pill pill-green">🧮</span></td>
+          <td><b>Supreme Judge</b>: Only agent with write key (100% tests + CRO)</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="card" style="margin-top: 4px; padding: 4px 7px; border-left: 3px solid #10b981;">
+      <b style="color: #10b981; font-size: 0.72em;">💡 Key Principle: Zero AI Hallucination in Trading</b>
+      <p style="font-size: 0.65em; color: #94a3b8; line-height: 1.3;">
+        • <b>Math for Money</b>: Sizing, stop-losses, and order execution use 100% deterministic code.<br/>
+        • <b>LLMs for Language</b>: <code>phi4-mini</code> runs on local GPU solely for text synthesis and qualitative sanity checks.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="base-badge">
+  🔍 <b>Runtime Proof:</b> 8 Deterministic Math Agents • 4 Out-of-Band Cognitive LLM Agents (Local Ollama phi4-mini:latest)
 </div>
 
 ---
@@ -687,7 +799,7 @@ How do **Agents 10, 11, and 12** work together to ensure the bot improves over t
     <h4>🛡️ Agent 12: Supreme Gatekeeper Authority</h4>
     <p style="font-size: 0.72em; color: #94a3b8; line-height: 1.36;">
       • <b>Zero Direct Writes</b>: No other agent can modify the bot directly.<br/>
-      • <b>100% Test Pass Gate</b>: Runs all 98 unit tests automatically. If even 1 test fails, the proposal is rejected immediately.<br/>
+      • <b>100% Test Pass Gate</b>: Runs all 101 unit tests automatically. If even 1 test fails, the proposal is rejected immediately.<br/>
       • <b>Immutable Audit Log</b>: Writes every verdict to <a href="data/agent_governance_audit.log"><code>data/agent_governance_audit.log</code></a>.
     </p>
   </div>
@@ -807,7 +919,7 @@ Every autonomous agent in this codebase is bound by **5 non-negotiable invariant
       • <b>Multi-Agent Foundations</b>: Russell & Norvig (2020) <i>AI: A Modern Approach</i> • Wooldridge (2009).<br/>
       • <b>Position Sizing & Risk</b>: Van K. Tharp (2008) <i>Definitive Guide to Position Sizing</i>.<br/>
       • <b>Pre-Trade Financial Compliance</b>: SEC Rule 15c3-5 Risk Management Controls.<br/>
-      • <b>Unit Test Suite</b>: <a href="tests/"><code>tests/</code></a>: <b>98 / 98 tests green</b> in 3.35s.<br/>
+      • <b>Unit Test Suite</b>: <a href="tests/"><code>tests/</code></a>: <b>101 / 101 tests green</b>.<br/>
       • <b>Git Repository</b>: Cleanly versioned and pushed to <a href="https://github.com/iShmuel/web4-trading-agent.git">GitHub: web4-trading-agent</a>.
     </p>
   </div>
@@ -820,5 +932,5 @@ Every autonomous agent in this codebase is bound by **5 non-negotiable invariant
 </div>
 
 <div class="base-badge">
-  🔍 <b>Master Audit Base:</b> <a href="PRESENTATION_VERIFICATION_BASE.md">PRESENTATION_VERIFICATION_BASE.md</a> • Verified 98/98 Unit Tests Green
+  🔍 <b>Master Audit Base:</b> <a href="PRESENTATION_VERIFICATION_BASE.md">PRESENTATION_VERIFICATION_BASE.md</a> • Verified 101/101 Unit Tests Green
 </div>

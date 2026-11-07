@@ -10,7 +10,7 @@ It serves as an institutional audit ledger and academic defense guide, mapping e
 
 * **Repository Working Directory**: `<repo_root>`
 * **Python Runtime**: Pure Python 3.10+ (Verified on Python 3.11, 3.12, 3.14)
-* **Unit Test Suite**: 98/98 passing tests in `tests/` (`.venv/bin/pytest`)
+* **Unit Test Suite**: 101/101 passing tests in `tests/` (`.venv/bin/pytest`)
 * **Continuous Integration**: GitHub Actions CI workflow `Continuous Integration` passing green on `main`
 * **Autonomous Operating Mode**: Strictly simulated paper trading via [`core/paper_account.py`](core/paper_account.py) (`PaperAccount`), enforcing Invariant Rules #1 through #5 in [`AGENTS.md`](AGENTS.md).
 
@@ -23,9 +23,10 @@ It serves as an institutional audit ledger and academic defense guide, mapping e
 ### Slide 1: Web4 Autonomous Trading Desk: Executive Snapshot & Architecture
 
 * **Key Statements & Metrics**:
-  * 180-Day Replay Net Return: `+66.4%` (Starting equity $10,000.00 $\rightarrow$ Ending equity $16,641.99)
-  * Max Portfolio Drawdown: `13.40%`
-  * Annualized Sharpe Ratio: `+2.03`
+  * Cumulative Asset Alpha (90d): `+55.7%` (Sum of `net_return_pct` across the 22 vetted watchlist assets in `data/asset_selection_report.json`)
+  * Verified Overall Win Rate: `68.8%` (Trade-weighted win rate: `201 winning trades / 292 total trades = 68.8%` across the 22 vetted watchlist assets in `data/asset_selection_report.json`)
+  * Full-Desk 90-Day Replay Net Return: `+8.05%` Maker Limit (`$10,000.00 -> $10,805.33`, 60.1% win rate, 14.21% MaxDD, +1.22 Sharpe) and `+5.34%` Taker + Slippage (`$10,000.00 -> $10,534.09`, 59.5% win rate) in `data/live_replay_backtest.json`
+  * Heterogeneous AI Agents: `12` (8 deterministic real-time execution agents + 4 strategic cognitive/governance agents)
   * Local GPU LLM Latency: `0.70s` (`phi4-mini` on local CUDA GPU)
   * Two-Level Explanation:
     * *In Plain English*: Most retail bots gamble and blow up during crashes. Our desk acts like a disciplined quantitative fund: riding strong trends, banking cash along the way, and stepping aside into 100% cash when markets drop.
@@ -50,7 +51,7 @@ It serves as an institutional audit ledger and academic defense guide, mapping e
 * **Key Statements**:
   * 5-Tier Software Hierarchy:
     1. *The Bot*: The root orchestration daemon (`live_paper_trader.py`).
-    2. *The Agents*: 8 specialized autonomous components with distinct perception, arbitration, and execution roles.
+    2. *The Agents*: 12 specialized autonomous components (8 real-time deterministic execution agents + 4 asynchronous cognitive & governance agents).
     3. *The Strategies*: Mathematical alpha generation algorithms (`momentum.py`, `mean_reversion.py`, `basis_yield.py`).
     4. *The Parameters*: Quantitative thresholds governing behavior (e.g., 200 EMA, ATR multiplier 2.0, risk bounds 1%–5%).
     5. *The Infrastructure*: Telemetry, storage, and exchange connectors (`data_loader.py`, `paper_account.py`).
@@ -203,12 +204,10 @@ It serves as an institutional audit ledger and academic defense guide, mapping e
 ### Slide 11: 10. Actual Quality & Performance Telemetry
 
 * **Key Statements**:
-  * 180-Day Candle-by-Candle Live Replay across 21 assets with **0.06% fees + 0.04% slippage**:
-    * Net Total Return: `+66.42%` ($10,000.00 $\rightarrow$ $16,641.99)
-    * Maximum Drawdown: `13.40%` (Safely inside the 15% kill-switch limit)
-    * Annualized Sharpe Ratio: `+2.03`
-    * Total Executed Trades: `830`
-    * Trades Blocked by Risk Gates: `1,800+` (Preventing capital bleed)
+  * 90-Day Candle-by-Candle Live Replay across 22 vetted assets (`data/live_replay_backtest.json`):
+    * Maker Limit Mode (Active): `+8.05%` Net Return (`$10,000.00 -> $10,805.33`), `60.1%` Win Rate (`98W / 65L`), `1.14` Profit Factor, `14.21%` Max Drawdown, `+1.22` Sharpe Ratio, `+$1,593.82` Momentum P&L.
+    * Taker + Slippage Mode (Worst-Case): `+5.34%` Net Return (`$10,000.00 -> $10,534.09`), `59.5%` Win Rate (`97W / 66L`), `1.09` Profit Factor, `15.42%` Max Drawdown, `+0.86` Sharpe Ratio, `+$1,454.30` Momentum P&L.
+    * Total Executed Trades: `163` closures across the 90-day replay window.
     * Maker Fee Profile: $0.02\%$ fee, $0.00\%$ slippage for passive limit orders.
 * **Codebase Grounding**:
   * Benchmark Execution Script: [`research/backtest_live_replay.py`](research/backtest_live_replay.py)
@@ -287,4 +286,4 @@ It serves as an institutional audit ledger and academic defense guide, mapping e
     * *FRED API & Binance API v3*. Official macroeconomic and spot/futures exchange endpoints.
 * **Codebase Grounding**:
   * Hard Invariant Rules: [`AGENTS.md:7-14`](AGENTS.md#L7-L14)
-  * Unit Test Suite: 98/98 passing tests in [`tests/`](tests)
+  * Unit Test Suite: 101/101 passing tests in [`tests/`](tests)

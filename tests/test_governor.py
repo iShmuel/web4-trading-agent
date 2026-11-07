@@ -83,3 +83,52 @@ def test_review_and_deploy_proposal_tmp(tmp_path):
         updated = json.load(f)
 
     assert "AVAX/USDT" in updated["blacklisted_symbols"]
+
+
+def test_audit_invariants_rejects_invalid_symbol_risk_weights():
+    """Verify governor catches and rejects per-symbol risk weights outside [1%, 5%]."""
+    bad_cfg = {
+        "execution_mode": "maker",
+        "account_risk_pct": 0.02,
+        "max_drawdown_limit_pct": 15.0,
+        "watchlist": ["BTC/USDT", "SOL/USDT"],
+        "symbol_risk_weights": {
+            "BTC/USDT": 0.02,
+            "SOL/USDT": 0.08,  # 8% breaches 5% max bound!
+        },
+    }
+    ok, violations = audit_invariants(bad_cfg)
+    assert ok is False
+    assert any("SOL/USDT" in v and "exceeds hard bounds" in v for v in violations)
+
+
+def test_review_and_deploy_proposal_auto_commits_when_enabled(tmp_path, monkeypatch):
+    """Verify approved governance proposals automatically commit and push when auto_commit is enabled."""
+    committed_messages = []
+    monkeypatch.setattr("agent.governor.commit_and_push_config", lambda msg: committed_messages.append(msg) or True)
+
+    base_cfg = {
+        "execution_mode": "maker",
+        "account_risk_pct": 0.02,
+        "max_drawdown_limit_pct": 15.0,
+        "max_crypto_positions": 2,
+        "watchlist": ["BNB/USDT", "NVDA"],
+        "blacklisted_symbols": [],
+    }
+    cfg_file = tmp_path / "active_config.json"
+    cfg_file.write_text(json.dumps(base_cfg))
+
+    res = review_and_deploy_proposal(
+        proposed_changes={"watchlist": ["BNB/USDT", "TRX/USDT", "NVDA", "PLUG"]},
+        rationale="Add TRX/USDT and PLUG from 90d discovery audit",
+        config_path=cfg_file,
+        verify_tests=False,
+        use_llm=False,
+        auto_commit=True,
+    )
+
+    assert res.approved is True
+    assert len(committed_messages) == 1
+    assert "Add TRX/USDT and PLUG" in committed_messages[0]
+
+

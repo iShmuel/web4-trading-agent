@@ -131,6 +131,36 @@ class PortfolioCoordinator:
     def symbol_config(self, symbol: str) -> Dict[str, Any]:
         return self._engines_for(symbol)[0]
 
+    def reload_config(self, config: Dict[str, Any]) -> None:
+        """Hot-reload configuration and rebuild strategy engines without resetting portfolio state."""
+        self.config = config
+        self.momentum_strategy = MomentumStrategy(config)
+        self.mean_reversion_strategy = MeanReversionStrategy(config)
+        self._symbol_engines.clear()
+        self.llm_screener.enabled = bool(config.get("enable_local_llm_preflight", self.llm_screener.enabled))
+        self.llm_screener.model = config.get("local_llm_model", self.llm_screener.model)
+
+        if self.risk_engine is not None:
+            self.risk_engine.risk_pct = self.risk_engine.enforce_risk_bounds(
+                config.get("account_risk_pct", self.risk_engine.risk_pct)
+            )
+            self.risk_engine.max_open_positions = int(
+                config.get("max_concurrent_positions", self.risk_engine.max_open_positions)
+            )
+            self.risk_engine.max_strategy_allocation_pct = float(
+                config.get("max_strategy_allocation_pct", self.risk_engine.max_strategy_allocation_pct)
+            )
+            self.risk_engine.max_crypto_positions = int(
+                config.get("max_crypto_positions", self.risk_engine.max_crypto_positions)
+            )
+            if "symbol_risk_weights" in config and config["symbol_risk_weights"]:
+                self.risk_engine.symbol_risk_weights = {
+                    k: self.risk_engine.enforce_risk_bounds(v)
+                    for k, v in config["symbol_risk_weights"].items()
+                }
+            if "symbol_exposure_caps" in config and config["symbol_exposure_caps"]:
+                self.risk_engine.symbol_exposure_caps = dict(config["symbol_exposure_caps"])
+
     def _engines_for(self, symbol: str) -> Tuple[Dict[str, Any], MomentumStrategy, MeanReversionStrategy]:
         if symbol not in self._symbol_engines:
             cfg = resolve_symbol_config(self.config, symbol)

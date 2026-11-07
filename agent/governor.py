@@ -86,6 +86,14 @@ def audit_invariants(proposed_config: Dict[str, Any]) -> Tuple[bool, List[str]]:
                     f"Violation: Profile '{p_name}' risk {p_risk*100:.1f}% exceeds hard bounds [{MIN_ALLOWED_RISK_PCT*100:.0f}%, {MAX_ALLOWED_RISK_PCT*100:.0f}%]."
                 )
 
+    # Check per-symbol risk weights
+    for sym, w_risk in proposed_config.get("symbol_risk_weights", {}).items():
+        w_val = float(w_risk)
+        if w_val < MIN_ALLOWED_RISK_PCT or w_val > MAX_ALLOWED_RISK_PCT:
+            violations.append(
+                f"Violation: Symbol '{sym}' risk weight {w_val*100:.1f}% exceeds hard bounds [{MIN_ALLOWED_RISK_PCT*100:.0f}%, {MAX_ALLOWED_RISK_PCT*100:.0f}%]."
+            )
+
     # Check crypto concentration guard (concurrent open crypto cap)
     max_crypto_open = int(proposed_config.get("max_crypto_positions", 2))
     if max_crypto_open > 3:
@@ -176,6 +184,18 @@ def run_pytest_regression_gate() -> Tuple[bool, str]:
     return passed, log_tail
 
 
+def commit_and_push_config(message: str) -> bool:
+    """Commit updated config/active_config.json and push to origin/main."""
+    try:
+        subprocess.run(["git", "-C", str(PROJECT_ROOT), "add", "config/active_config.json"], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(PROJECT_ROOT), "commit", "-m", message], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(PROJECT_ROOT), "push", "origin", "main"], check=True, capture_output=True)
+        return True
+    except Exception as e:
+        logger.warning(f"[Governor] Git commit/push notice: {e}")
+        return False
+
+
 def append_governance_audit_log(entry: GovernorApprovalResult, log_path: Optional[Path] = None):
     """Append immutable audit log entry."""
     out = log_path or AUDIT_LOG_FILE
@@ -199,6 +219,7 @@ def review_and_deploy_proposal(
     verify_tests: bool = True,
     use_llm: bool = True,
     model: str = "phi4-mini:latest",
+    auto_commit: Optional[bool] = None,
 ) -> GovernorApprovalResult:
     """
     End-to-end governance review and deployment pipeline:
@@ -319,6 +340,11 @@ def review_and_deploy_proposal(
             return res
 
     # Step 4: Approved & Deployed!
+    should_commit = (config_path is None) if auto_commit is None else auto_commit
+    if should_commit:
+        commit_msg = f"feat(governance): autonomous config deployment — {rationale or 'verified improvement'}"
+        commit_and_push_config(commit_msg)
+
     res = GovernorApprovalResult(
         approved=True,
         status="DEPLOYED",

@@ -419,3 +419,50 @@ def test_asset_pruning_blacklist_defense(tmp_path):
     exit_decision = coordinator.process_symbol("ETH/USDT", df, {})
     assert exit_decision.action == "EXIT"
     assert not account.has_position("ETH/USDT")
+
+
+def test_coordinator_reload_config_hot_reloads_and_enforces_risk_bounds(tmp_path):
+    """Verify reload_config refreshes strategy engines, clears symbol cache, and clamps risk bounds."""
+    account = PaperAccount(10000.0, portfolio_file=tmp_path / "reload_port.json")
+    risk_engine = RiskEngine(default_risk_pct=0.02, max_open_positions=3)
+    initial_cfg = {
+        "breakout_lookback": 20,
+        "account_risk_pct": 0.02,
+        "max_concurrent_positions": 3,
+        "asset_profiles": {
+            "crypto_fast": {
+                "symbols": ["SOL/USDT"],
+                "breakout_lookback": 16,
+            }
+        },
+    }
+    coordinator = PortfolioCoordinator(account, risk_engine, initial_cfg)
+    assert coordinator._engines_for("SOL/USDT")[1].breakout_lookback == 16
+    assert coordinator._engines_for("NVDA")[1].breakout_lookback == 20
+
+    # Hot-reload with updated lookbacks and out-of-bounds risk weight (0.10 -> clamped to 0.05)
+    updated_cfg = {
+        "breakout_lookback": 32,
+        "account_risk_pct": 0.03,
+        "max_concurrent_positions": 5,
+        "symbol_risk_weights": {"SOL/USDT": 0.10, "NVDA": 0.005},
+        "symbol_exposure_caps": {"SOL/USDT": 0.40},
+        "asset_profiles": {
+            "crypto_fast": {
+                "symbols": ["SOL/USDT"],
+                "breakout_lookback": 24,
+            }
+        },
+    }
+    coordinator.reload_config(updated_cfg)
+
+    assert coordinator.config["breakout_lookback"] == 32
+    assert coordinator._engines_for("SOL/USDT")[1].breakout_lookback == 24
+    assert coordinator._engines_for("NVDA")[1].breakout_lookback == 32
+    assert risk_engine.risk_pct == 0.03
+    assert risk_engine.max_open_positions == 5
+    # Must strictly clamp symbol risk weights to [0.01, 0.05]
+    assert risk_engine.symbol_risk_weights["SOL/USDT"] == 0.05
+    assert risk_engine.symbol_risk_weights["NVDA"] == 0.01
+    assert risk_engine.symbol_exposure_caps["SOL/USDT"] == 0.40
+

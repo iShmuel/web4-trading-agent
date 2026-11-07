@@ -8,6 +8,8 @@ Implements Web4 self-improvement:
 """
 
 import json
+import os
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -26,8 +28,16 @@ def load_active_config() -> Dict[str, Any]:
 
 
 def save_active_config(config: Dict[str, Any]):
-    with open(CONFIG_PATH, "w") as f:
+    """Atomically write updated configuration with backup protection."""
+    bak_path = CONFIG_PATH.with_suffix(".json.bak")
+    if CONFIG_PATH.exists():
+        shutil.copyfile(CONFIG_PATH, bak_path)
+    tmp_path = CONFIG_PATH.with_suffix(".json.tmp")
+    with open(tmp_path, "w") as f:
         json.dump(config, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp_path, CONFIG_PATH)
 
 
 def run_unit_tests() -> bool:

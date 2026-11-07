@@ -326,6 +326,8 @@ def _run(args):
                     log("=" * 68)
                     try:
                         res = run_optimization_cycle(auto_commit=True)
+                        if res.get("status") == "deployed":
+                            coordinator.reload_config(load_config())
                         log(f"[Auto-Optimize Result] Status: {res.get('status')}")
                     except Exception as e:
                         log(f"[Auto-Optimize Error] {e}")
