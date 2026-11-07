@@ -48,6 +48,10 @@ from core.coordinator import resolve_symbol_config
 from core.risk_engine import MIN_ALLOWED_RISK_PCT, MAX_ALLOWED_RISK_PCT
 from core.preflight import fetch_ticker_headlines
 from agent.llm_client import query_local_llm
+from core.institutional_stress_tester import (
+    run_slippage_multiplier_stress,
+    calculate_underwater_and_streak_metrics,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +89,8 @@ class AssetEvaluation:
     recommendation: str  # "ADD_TO_WATCHLIST", "HOLD_IN_RESERVE", "BLACKLIST_OR_PRUNE"
     rationale: str
     llm_thesis: str = ""
+    break_even_cost_multiplier: float = 1.0
+    max_underwater_days: float = 0.0
 
 
 def load_active_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
@@ -181,10 +187,13 @@ def calculate_composite_alpha_score(
     sharpe_ratio: float,
     is_return_pct: float,
     oos_return_pct: float,
+    break_even_multiplier: float = 2.5,
+    max_underwater_days: float = 7.0,
 ) -> float:
     """
     Calculate risk-adjusted Composite Alpha Score (CAS).
-    Penalizes overfitting, high drawdowns, and negative net expectancy.
+    Penalizes overfitting, high drawdowns, negative net expectancy, fragile friction margins,
+    and prolonged underwater drawdowns.
     """
     dd_pen = max(max_drawdown_pct, 0.5)
     pf_clamped = min(max(profit_factor, 0.1), 5.0)
@@ -197,8 +206,22 @@ def calculate_composite_alpha_score(
     elif is_return_pct > 0 and oos_return_pct <= 0:
         stability = 0.4  # Severe penalty for out-of-sample breakdown
 
+    # Friction tolerance adjustment (stress buffer against exchange fees/slippage)
+    friction_adj = 1.0
+    if break_even_multiplier >= 3.0:
+        friction_adj = 1.15
+    elif break_even_multiplier < 1.8:
+        friction_adj = 0.70
+
+    # Drawdown duration penalty (penalize capital stagnation)
+    duration_adj = 1.0
+    if max_underwater_days > 21.0:
+        duration_adj = 0.75
+    elif max_underwater_days <= 7.0:
+        duration_adj = 1.10
+
     if net_return_pct > 0 and win_rate_pct >= 50.0 and profit_factor >= 1.0:
-        raw = (net_return_pct * (win_rate_pct / 50.0) * pf_clamped / dd_pen) * 5.0 * stability + (sharpe_ratio * 2.0)
+        raw = (net_return_pct * (win_rate_pct / 50.0) * pf_clamped / dd_pen) * 5.0 * stability * friction_adj * duration_adj + (sharpe_ratio * 2.0)
         return round(float(raw), 2)
     else:
         # Penalize drag assets
@@ -380,6 +403,32 @@ def evaluate_candidate_asset(
     avg_loss = float(np.mean(losses)) if losses else 0.0
     payoff_ratio = round(avg_win / avg_loss, 2) if avg_loss > 0 else (1.0 if avg_win > 0 else 0.0)
 
+    # Compute Institutional Robustness Metrics (Friction Tolerance & Underwater Duration)
+    break_even_mult = 3.0
+    max_underwater_days = 7.0
+    if chosen_full.trades and len(chosen_full.trades) >= 3:
+        try:
+            trade_dicts = [
+                {
+                    "pnl": t.pnl,
+                    "fees": getattr(t, "fees", 0.0),
+                    "units": t.units,
+                    "entry_price": t.entry_price,
+                }
+                for t in chosen_full.trades
+            ]
+            stress_res = run_slippage_multiplier_stress(trade_dicts, initial_capital=10_000.0)
+            break_even_mult = float(stress_res.get("break_even_multiplier", 3.0))
+        except Exception:
+            pass
+
+    if chosen_full.equity_curve and len(chosen_full.equity_curve) >= 5:
+        try:
+            u_res = calculate_underwater_and_streak_metrics(chosen_full.equity_curve, pnls)
+            max_underwater_days = float(u_res.get("max_underwater_days", 7.0))
+        except Exception:
+            pass
+
     # Compute Composite Alpha Score
     cas = calculate_composite_alpha_score(
         net_return_pct=net_return_pct,
@@ -389,14 +438,16 @@ def evaluate_candidate_asset(
         sharpe_ratio=sharpe,
         is_return_pct=is_return,
         oos_return_pct=oos_return,
+        break_even_multiplier=break_even_mult,
+        max_underwater_days=max_underwater_days,
     )
 
-    # Tier Classification & Recommendation
-    if cas >= 5.0 and net_return_pct > 0 and win_rate_pct >= 55.0 and max_dd_pct <= 12.0:
+    # Tier Classification & Recommendation (with Institutional Quality Gate)
+    if cas >= 5.0 and net_return_pct > 0 and win_rate_pct >= 55.0 and max_dd_pct <= 12.0 and break_even_mult >= 2.0:
         tier = "ELITE_ALPHA"
         recommendation = "ADD_TO_WATCHLIST"
-        rationale = f"High-conviction {primary_strat} winner: +{net_return_pct}% return, {win_rate_pct}% WR, Sharpe {sharpe}"
-    elif (cas >= 0.1 or net_return_pct > 0) and win_rate_pct >= 50.0 and max_dd_pct <= 16.0:
+        rationale = f"High-conviction {primary_strat} winner: +{net_return_pct}% return, {win_rate_pct}% WR, Sharpe {sharpe}, {break_even_mult:.1f}x fee buffer"
+    elif (cas >= 0.1 or net_return_pct > 0) and win_rate_pct >= 50.0 and max_dd_pct <= 16.0 and break_even_mult >= 1.5:
         tier = "VIABLE_ALPHA"
         recommendation = "ADD_TO_WATCHLIST"
         rationale = f"Viable {primary_strat} candidate: +{net_return_pct}% return, {win_rate_pct}% WR, Sharpe {sharpe}"
@@ -455,6 +506,8 @@ def evaluate_candidate_asset(
         recommendation=recommendation,
         rationale=rationale,
         llm_thesis=llm_thesis,
+        break_even_cost_multiplier=round(break_even_mult, 2),
+        max_underwater_days=round(max_underwater_days, 1),
     )
 
 
