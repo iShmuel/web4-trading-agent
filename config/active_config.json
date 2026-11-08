@@ -2,20 +2,19 @@
   "watchlist": [
     "BNB/USDT",
     "LINK/USDT",
-    "ENA/USDT",
+    "BMT/USDT",
     "SOL/USDT",
-    "XRP/USDT",
+    "ENA/USDT",
     "MU",
     "NOK",
+    "MCHP",
     "AAPL",
     "WULF",
     "IREN",
     "SOFI",
     "NU",
     "XLE",
-    "CIFR",
-    "GRAB",
-    "NVDA"
+    "CIFR"
   ],
   "timeframe": "1h",
   "max_concurrent_positions": 5,
@@ -59,7 +58,9 @@
     "GRAB": 0.02,
     "WULF": 0.02,
     "TRX/USDT": 0.02,
-    "PLUG": 0.02
+    "PLUG": 0.02,
+    "BMT/USDT": 0.02,
+    "MCHP": 0.02
   },
   "symbol_exposure_caps": {
     "SOL/USDT": 0.4,
@@ -97,7 +98,9 @@
     "GRAB": 0.35,
     "WULF": 0.35,
     "TRX/USDT": 0.35,
-    "PLUG": 0.35
+    "PLUG": 0.35,
+    "BMT/USDT": 0.35,
+    "MCHP": 0.35
   },
   "fee_pct": 0.0006,
   "slippage_pct": 0.0004,
@@ -284,9 +287,11 @@
     "DOGE/USDT",
     "ETH/USDT",
     "GLD",
+    "GRAB",
     "HYPE/USDT",
     "INTC",
     "KVUE",
+    "NEAR/USDT",
     "ONE/USDT",
     "PEPE/USDT",
     "PFE",
