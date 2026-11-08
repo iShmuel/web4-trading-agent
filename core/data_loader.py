@@ -215,6 +215,10 @@ def fetch_stock_ohlcv(
     df.index.name = "timestamp"
     df.index = pd.to_datetime(df.index, utc=True)
     df.sort_index(inplace=True)
+    if timeframe == "4h" and not df.empty:
+        df = df.resample("4h").agg(
+            {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
+        ).dropna()
     return df
 
 

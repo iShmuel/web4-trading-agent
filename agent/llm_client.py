@@ -21,6 +21,7 @@ DEFAULT_MODEL = "phi4-mini:latest"
 # Key: SHA256(model + system_prompt + prompt), Value: (timestamp, response_text)
 _LLM_CACHE: Dict[str, Tuple[float, str]] = {}
 CACHE_TTL_SECONDS = 3600.0  # 1 hour cache TTL for identical queries
+MAX_CACHE_ENTRIES = 256  # Bounded LRU capacity to prevent unbounded memory growth
 
 
 def _compute_cache_key(model: str, prompt: str, system_prompt: Optional[str]) -> str:
@@ -73,8 +74,15 @@ def query_local_llm(
         with urllib.request.urlopen(req, timeout=timeout_seconds) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             result = data.get("response", "").strip()
-            if result:
-                _LLM_CACHE[cache_key] = (time.time(), result)
+            if result and use_cache:
+                now_ts = time.time()
+                expired = [k for k, (t_val, _) in _LLM_CACHE.items() if (now_ts - t_val) >= CACHE_TTL_SECONDS]
+                for k in expired:
+                    _LLM_CACHE.pop(k, None)
+                while len(_LLM_CACHE) >= MAX_CACHE_ENTRIES:
+                    oldest_key = min(_LLM_CACHE, key=lambda k: _LLM_CACHE[k][0])
+                    _LLM_CACHE.pop(oldest_key, None)
+                _LLM_CACHE[cache_key] = (now_ts, result)
             return result
     except (urllib.error.URLError, TimeoutError, Exception) as e:
         logger.debug(f"[LLMClient] Local Ollama call notice ({e}). Using deterministic fallback.")

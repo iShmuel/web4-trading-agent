@@ -138,6 +138,15 @@ class PortfolioCoordinator:
         )
         self.pairs_strategy = StatArbPairsStrategy(config)
         self.last_basis_accrual_time: Optional[datetime] = None
+        saved_basis_ts = self.account.state.get("last_basis_accrual_time") if hasattr(self.account, "state") else None
+        if saved_basis_ts:
+            try:
+                parsed_ts = datetime.fromisoformat(str(saved_basis_ts))
+                self.last_basis_accrual_time = (
+                    parsed_ts.replace(tzinfo=timezone.utc) if parsed_ts.tzinfo is None else parsed_ts
+                )
+            except Exception:
+                self.last_basis_accrual_time = None
 
         # 5 Institutional AGY Skill Gates (trader-alerts, trader-news, trader-analyst, trader-copycat/pelosi, trader-tax/rebalance)
         self.nyse_clock = NyseMarketClock(
@@ -353,12 +362,35 @@ class PortfolioCoordinator:
         if existing_pos is not None:
             pos_strategy = existing_pos.get("strategy_id", "momentum")
             if pos_strategy == "stat_arb_pairs":
+                pair_stop = float(existing_pos.get("trailing_stop", 0.0))
+                pos_side = existing_pos.get("side", "LONG")
+                if pair_stop > 0.0 and (
+                    (pos_side == "LONG" and cur_price <= pair_stop)
+                    or (pos_side == "SHORT" and cur_price >= pair_stop)
+                ):
+                    trade = self.account.close_position(
+                        symbol=symbol,
+                        exit_price=cur_price * (0.9996 if pos_side == "LONG" else 1.0004),
+                        exit_reason=f"Pair Leg Catastrophe Stop Hit (${cur_price:.2f} vs ${pair_stop:.2f})",
+                        fee_pct=sym_cfg.get("fee_pct", 0.0006),
+                    )
+                    return CoordinatorDecision(
+                        symbol=symbol,
+                        action="EXIT",
+                        strategy_id="stat_arb_pairs",
+                        units=trade["units"],
+                        price=trade["exit_price"],
+                        stop_loss=pair_stop,
+                        reason=trade["exit_reason"],
+                    )
                 # Pairs positions are managed by dynamic pairs pass; hold during single-asset evaluation
                 return CoordinatorDecision(
                     symbol=symbol,
                     action="HOLD",
                     strategy_id="stat_arb_pairs",
+                    units=existing_pos.get("units", 0.0),
                     price=cur_price,
+                    stop_loss=pair_stop,
                     reason=f"Holding pair position {existing_pos.get('pair_id', 'dynamic_pair')}",
                 )
             elif pos_strategy == MeanReversionStrategy.STRATEGY_ID:
@@ -805,15 +837,39 @@ class PortfolioCoordinator:
 
         # Institutional Pre-Flight Execution Safety Guard
         hourly_vol = float(df["volume"].iloc[-1]) if "volume" in df.columns and len(df) > 0 else None
-        quote_time = getattr(chosen_sig, "timestamp", last_ts)
+        if "quote_time" in df.columns and len(df) > 0:
+            raw_qt = df["quote_time"].iloc[-1]
+            quote_time = raw_qt.to_pydatetime() if hasattr(raw_qt, "to_pydatetime") else raw_qt
+        elif hasattr(df, "attrs") and df.attrs.get("quote_time") is not None:
+            raw_qt = df.attrs["quote_time"]
+            quote_time = raw_qt.to_pydatetime() if hasattr(raw_qt, "to_pydatetime") else raw_qt
+        elif self.config.get("enforce_bar_staleness", False) and last_ts is not None:
+            quote_time = last_ts.to_pydatetime() if hasattr(last_ts, "to_pydatetime") else last_ts
+        else:
+            quote_time = getattr(chosen_sig, "timestamp", last_ts)
+
+        last_row = df.iloc[-1]
+        est_half_spread = float(
+            sym_cfg.get("estimated_half_spread_pct", sym_cfg.get("slippage_pct", 0.0003))
+        )
+        bid_px = (
+            float(last_row["bid"])
+            if "bid" in df.columns
+            else float(df.attrs.get("bid", cur_price * (1.0 - est_half_spread)))
+        )
+        ask_px = (
+            float(last_row["ask"])
+            if "ask" in df.columns
+            else float(df.attrs.get("ask", cur_price * (1.0 + est_half_spread)))
+        )
         order_notional = risk_verdict.suggested_units * cur_price
 
         preflight = self.preflight_checker.check(
             symbol=symbol,
             side="BUY" if chosen_sig.direction == SignalDirection.LONG else "SELL",
             price=cur_price,
-            bid=cur_price * 0.9997,
-            ask=cur_price * 1.0003,
+            bid=bid_px,
+            ask=ask_px,
             last_quote_time=quote_time,
             hourly_volume=hourly_vol,
             proposed_units=risk_verdict.suggested_units,
@@ -940,18 +996,30 @@ class PortfolioCoordinator:
             decision.indicators["rs_score"] = symbol_priority(symbol)
             decisions.append(decision)
 
-            # Persist decision into persistent audit journal
-            try:
-                log_decision(
-                    symbol=symbol,
-                    action=decision.action,
-                    strategy_id=decision.strategy_id,
-                    reason=decision.reason,
-                    reference_price=decision.price,
-                    indicators=decision.indicators,
+            # Persist actionable decisions and active defense-gate blocks into audit journal
+            should_journal = (
+                self.config.get("journal_log_all_scans", False)
+                or decision.action in ("ENTER_LONG", "ENTER_SHORT", "EXIT", "PARTIAL_EXIT", "CONFLICT")
+                or (
+                    decision.action == "REJECTED"
+                    and any(
+                        kw in decision.reason
+                        for kw in ("Blocked by", "Suppressed", "Risk check", "Cooldown", "Veto", "Guard")
+                    )
                 )
-            except Exception:
-                pass
+            )
+            if should_journal:
+                try:
+                    log_decision(
+                        symbol=symbol,
+                        action=decision.action,
+                        strategy_id=decision.strategy_id,
+                        reason=decision.reason,
+                        reference_price=decision.price,
+                        indicators=decision.indicators,
+                    )
+                except Exception:
+                    pass
 
             if decision.action == "CONFLICT":
                 conflicts += 1
@@ -1006,9 +1074,27 @@ class PortfolioCoordinator:
                             total_eq = self.account.get_total_equity(current_prices)
                             dollar_risk = total_eq * (clamped_risk * 0.5)
 
-                            units_a = dollar_risk / pa if pa > 0 else 0
-                            units_b = dollar_risk / pb if pb > 0 else 0
-                            total_cost = (units_a * pa) + (units_b * pb)
+                            stop_pct = float(self.config.get("stat_arb_leg_stop_pct", 0.05))
+                            stop_a = round(pa * (1.0 - stop_pct) if side_a == "LONG" else pa * (1.0 + stop_pct), 6)
+                            stop_b = round(pb * (1.0 - stop_pct) if side_b == "LONG" else pb * (1.0 + stop_pct), 6)
+
+                            base_leg_notional = min(dollar_risk / max(0.01, stop_pct), total_eq * 0.15)
+                            norm_beta = (
+                                max(0.5, min(2.0, float(psig.hedge_ratio) * (pb / pa)))
+                                if (pa > 0 and pb > 0 and psig.hedge_ratio > 0)
+                                else 1.0
+                            )
+                            notional_a = base_leg_notional
+                            notional_b = min(base_leg_notional * norm_beta, total_eq * 0.15)
+                            total_cost = notional_a + notional_b
+                            if total_cost > (self.account.cash * 0.90) and total_cost > 0:
+                                scale = (self.account.cash * 0.90) / total_cost
+                                notional_a *= scale
+                                notional_b *= scale
+                                total_cost = notional_a + notional_b
+
+                            units_a = notional_a / pa if pa > 0 else 0.0
+                            units_b = notional_b / pb if pb > 0 else 0.0
 
                             if total_cost > 0 and self.account.cash >= (total_cost * 1.002):
                                 try:
@@ -1016,7 +1102,7 @@ class PortfolioCoordinator:
                                         symbol=psig.asset_a,
                                         entry_price=pa,
                                         units=units_a,
-                                        stop_loss=0.0,
+                                        stop_loss=stop_a,
                                         dollar_risk=dollar_risk,
                                         max_concurrent_positions=self.risk_engine.max_open_positions,
                                         side=side_a,
@@ -1028,7 +1114,7 @@ class PortfolioCoordinator:
                                         symbol=psig.asset_b,
                                         entry_price=pb,
                                         units=units_b,
-                                        stop_loss=0.0,
+                                        stop_loss=stop_b,
                                         dollar_risk=dollar_risk,
                                         max_concurrent_positions=self.risk_engine.max_open_positions,
                                         side=side_b,
@@ -1077,6 +1163,10 @@ class PortfolioCoordinator:
                             hours_elapsed=elapsed_hours,
                         )
                         self.last_basis_accrual_time = now
+                        if hasattr(self.account, "state") and isinstance(self.account.state, dict):
+                            self.account.state["last_basis_accrual_time"] = now.isoformat()
+                            if hasattr(self.account, "_save"):
+                                self.account._save()
                         if receipt.get("status") == "ACCRUED":
                             decisions.append(CoordinatorDecision(
                                 symbol=best_opp.symbol,

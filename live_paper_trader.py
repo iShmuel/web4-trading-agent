@@ -124,6 +124,7 @@ def run_portfolio_tick(
             if not valid:
                 log(f"   ⚠️ Data quality warning on {symbol}: {reason}")
                 continue
+            df.attrs["quote_time"] = datetime.now(timezone.utc)
             market_data[symbol] = df
             current_prices[symbol] = float(df.iloc[-1]["close"])
         except Exception as e:
@@ -349,7 +350,11 @@ def _run(args):
                     log("   🌐 PERIODIC DYNAMIC MARKET DISCOVERY TRIGGERED (Agent 9)")
                     log("=" * 68)
                     try:
-                        from agent.asset_selector import scan_candidate_universe, build_selection_summary
+                        from agent.asset_selector import (
+                            scan_candidate_universe,
+                            build_selection_summary,
+                            audit_and_rehabilitate_blacklist,
+                        )
                         evals = scan_candidate_universe(
                             days=90,
                             dynamic_discovery=True,
@@ -359,19 +364,29 @@ def _run(args):
                             use_llm=True,
                         )
                         summary = build_selection_summary(evals, max_crypto=8, max_stocks=16)
-                        if summary.get("recommended_watchlist"):
+                        rehab_report = audit_and_rehabilitate_blacklist(days=60, use_llm=True)
+                        rehab_syms = rehab_report.get("rehabilitated_symbols", [])
+                        if summary.get("recommended_watchlist") or rehab_syms:
                             from agent.governor import review_and_deploy_proposal
+                            merged_wl = list(
+                                dict.fromkeys(list(summary.get("recommended_watchlist", [])) + list(rehab_syms))
+                            )
                             prop = {
-                                "watchlist": summary["recommended_watchlist"],
-                                "blacklisted_symbols": summary["recommended_blacklist"],
+                                "watchlist": merged_wl,
+                                "blacklisted_symbols": [
+                                    s for s in summary.get("recommended_blacklist", []) if s not in set(rehab_syms)
+                                ],
+                                "rehabilitated_symbols": rehab_syms,
                             }
                             res = review_and_deploy_proposal(
                                 proposed_changes=prop,
-                                rationale="Periodic market discovery scan merged active portfolio with vetted discoveries and pruned non-profitable drags.",
+                                rationale="Periodic market discovery scan merged active portfolio with vetted discoveries, audited blacklist for parole, and pruned non-profitable drags.",
                                 empirical_proof={
                                     "scanned": summary["total_assets_scanned"],
                                     "proven_profitable": summary.get("proven_profitable_count", 0),
                                     "pruned_drags": summary.get("proven_non_profitable_count", 0),
+                                    "rehabilitated_count": len(rehab_syms),
+                                    "rehabilitated_symbols": rehab_syms,
                                     "elite_assets": summary["tier_counts"]["ELITE_ALPHA"],
                                     "viable_assets": summary["tier_counts"]["VIABLE_ALPHA"],
                                 },
@@ -380,7 +395,10 @@ def _run(args):
                             )
                             if res.approved:
                                 coordinator.reload_config(load_config())
-                                log(f"[Market Discovery] Approved & deployed {len(summary['recommended_watchlist'])} proven assets to active watchlist (Pruned: {len(summary['recommended_blacklist'])}).")
+                                log(
+                                    f"[Market Discovery] Approved & deployed {len(merged_wl)} proven assets "
+                                    f"(Rehabilitated: {len(rehab_syms)}, Pruned: {len(prop['blacklisted_symbols'])})."
+                                )
                     except Exception as e:
                         log(f"[Market Discovery Notice] {e}")
                     last_scan_time = time.time()

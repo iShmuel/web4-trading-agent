@@ -1,6 +1,6 @@
 # Web4 Autonomous Quantitative Trading Desk
 
-[![Tests: 104/104 Passing](https://img.shields.io/badge/pytest-104%2F104%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
+[![Tests: 125/125 Passing](https://img.shields.io/badge/pytest-125%2F125%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
 [![Execution Mode](https://img.shields.io/badge/execution-strictly%20simulated%20paper-38bdf8?style=for-the-badge)](core/paper_account.py)
 [![Architecture](https://img.shields.io/badge/architecture-12--Agent%20Heterogeneous%20MAS-8b5cf6?style=for-the-badge)](agent/)
 [![Local LLM](https://img.shields.io/badge/local%20gpu%20llm-phi4--mini%20(0.70s)-f59e0b?style=for-the-badge)](core/preflight.py)
@@ -12,8 +12,8 @@ An institutional-grade, multi-asset quantitative trading desk inspired by the **
 
 ## Executive Presentation & Architectural Docs
 
-* 📊 **Interactive Pitch Deck (Browser Slides)**: [`docs/presentation.html`](docs/presentation.html)
-* 📄 **Executive Presentation Source**: [`PRESENTATION.md`](PRESENTATION.md)
+* 📽️ **Executive Slide Deck (PowerPoint 16:9)**: [`web4_trading_agent_presentation.pptx`](web4_trading_agent_presentation.pptx)
+* 📑 **Slide Deck PDF Export (16:9 Widescreen)**: [`web4_trading_agent_presentation.pdf`](web4_trading_agent_presentation.pdf)
 * 🧠 **The 3 Levels of Web4 Autonomy**: [`docs/web4-autonomous-levels.md`](docs/web4-autonomous-levels.md)
 * 📈 **180-Day Empirical Research Audit**: [`data/profitability_research.json`](data/profitability_research.json)
 
@@ -169,7 +169,7 @@ pip install -r requirements.txt
 
 ### 2. Run Test Suite
 ```bash
-# Run all 104 unit tests
+# Run all unit & integration tests
 .venv/bin/pytest -v
 ```
 

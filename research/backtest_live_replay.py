@@ -292,9 +292,27 @@ def run_single_replay(
                             total_eq = account.get_total_equity(current_prices)
                             dollar_risk = total_eq * (clamped_risk * 0.5)
 
-                            units_a = dollar_risk / pa if pa > 0 else 0
-                            units_b = dollar_risk / pb if pb > 0 else 0
-                            total_cost = (units_a * pa) + (units_b * pb)
+                            stop_pct = float(coord.config.get("stat_arb_leg_stop_pct", 0.05))
+                            stop_a = round(pa * (1.0 - stop_pct) if side_a == "LONG" else pa * (1.0 + stop_pct), 6)
+                            stop_b = round(pb * (1.0 - stop_pct) if side_b == "LONG" else pb * (1.0 + stop_pct), 6)
+
+                            base_leg_notional = min(dollar_risk / max(0.01, stop_pct), total_eq * 0.15)
+                            norm_beta = (
+                                max(0.5, min(2.0, float(psig.hedge_ratio) * (pb / pa)))
+                                if (pa > 0 and pb > 0 and psig.hedge_ratio > 0)
+                                else 1.0
+                            )
+                            notional_a = base_leg_notional
+                            notional_b = min(base_leg_notional * norm_beta, total_eq * 0.15)
+                            total_cost = notional_a + notional_b
+                            if total_cost > (account.cash * 0.90) and total_cost > 0:
+                                scale = (account.cash * 0.90) / total_cost
+                                notional_a *= scale
+                                notional_b *= scale
+                                total_cost = notional_a + notional_b
+
+                            units_a = notional_a / pa if pa > 0 else 0.0
+                            units_b = notional_b / pb if pb > 0 else 0.0
                             fee_rate = 0.0002 if execution_mode == "maker" else 0.0006
 
                             if total_cost > 0 and account.cash >= (total_cost * 1.002):
@@ -303,7 +321,7 @@ def run_single_replay(
                                         symbol=psig.asset_a,
                                         entry_price=pa,
                                         units=units_a,
-                                        stop_loss=0.0,
+                                        stop_loss=stop_a,
                                         dollar_risk=dollar_risk,
                                         max_concurrent_positions=coord.risk_engine.max_open_positions,
                                         side=side_a,
@@ -316,7 +334,7 @@ def run_single_replay(
                                         symbol=psig.asset_b,
                                         entry_price=pb,
                                         units=units_b,
-                                        stop_loss=0.0,
+                                        stop_loss=stop_b,
                                         dollar_risk=dollar_risk,
                                         max_concurrent_positions=coord.risk_engine.max_open_positions,
                                         side=side_b,

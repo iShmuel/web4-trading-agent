@@ -186,7 +186,19 @@ class MomentumStrategy:
         macro_bear_ok = (not self.short_requires_macro_bear) or (price < macro_ema)
         if self.allow_short and in_downtrend and macro_bear_ok and breakdown_low > 0 and price < breakdown_low:
             stop = price + (atr * self.atr_multiplier)
-            tp = price - (atr * self.take_profit_atr_mult) if self.take_profit_atr_mult > 0 else 0.0
+            tp = max(0.01, price - (atr * self.take_profit_atr_mult)) if self.take_profit_atr_mult > 0 else 0.0
+
+            risk_per_unit = stop - price
+            reward_per_unit = (price - tp) if tp > 0 else risk_per_unit * 2
+            cost_per_unit = price * self.estimated_cost_pct
+            net_reward = reward_per_unit - cost_per_unit
+
+            if net_reward <= 0:
+                return create_no_trade_signal(
+                    self.STRATEGY_ID, symbol, price,
+                    f"Costs eliminate edge: net reward {net_reward:.2f} <= 0",
+                    indicators=indicators,
+                )
 
             signal_strength = min(1.0, (ema - price) / atr) if atr > 0 else 0.5
 

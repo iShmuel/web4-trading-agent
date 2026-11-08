@@ -174,42 +174,50 @@ def run_optimization_cycle(
         print("\n[Safety Gate] Candidate rejected to protect against overfitting. Retaining current config.")
         return {"status": "rejected", "report": report}
 
-    # Candidate passed! Update active_config.json
-    print("\n[Deployment] Candidate passed all safety gates! Updating active_config.json...")
-    updated_config = dict(base_config)
-    if target_profile and target_profile in updated_config.get("asset_profiles", {}):
-        prof = dict(updated_config["asset_profiles"][target_profile])
+    # Candidate passed! Submit to Agent 12 (Governor) for invariant audit, regression gate, and deployment
+    print("\n[Deployment] Candidate passed walk-forward validation! Submitting to Agent 12 (Governor)...")
+    if target_profile and target_profile in base_config.get("asset_profiles", {}):
+        prof = dict(base_config["asset_profiles"][target_profile])
         prof["breakout_lookback"] = best_candidate["breakout_lookback"]
         prof["ema_trend_filter"] = best_candidate["ema_trend_filter"]
         prof["atr_multiplier"] = best_candidate["atr_multiplier"]
-        updated_config["asset_profiles"][target_profile] = prof
+        proposed_changes = {"asset_profiles": {target_profile: prof}}
     else:
-        updated_config["breakout_lookback"] = best_candidate["breakout_lookback"]
-        updated_config["ema_trend_filter"] = best_candidate["ema_trend_filter"]
-        updated_config["atr_multiplier"] = best_candidate["atr_multiplier"]
+        proposed_changes = {
+            "breakout_lookback": best_candidate["breakout_lookback"],
+            "ema_trend_filter": best_candidate["ema_trend_filter"],
+            "atr_multiplier": best_candidate["atr_multiplier"],
+        }
 
-    save_active_config(updated_config)
-
-    # Run unit tests to verify system integrity
-    if not run_unit_tests():
-        print("[Rollback] Unit tests failed! Rolling back to baseline config.")
-        save_active_config(base_config)
-        return {"status": "rolled_back", "reason": "Unit tests failed"}
-
-    commit_msg = (
-        f"feat(self-improvement): optimize {target_profile or symbol} parameters\n\n"
-        f"In-Sample Sharpe: {report.train_sharpe:.2f} (Delta: {report.train_return_delta:+.2f}%)\n"
-        f"Out-of-Sample Sharpe: {report.test_sharpe:.2f} (Delta: {report.test_return_delta:+.2f}%)"
+    from agent.governor import review_and_deploy_proposal
+    gov_res = review_and_deploy_proposal(
+        proposed_changes=proposed_changes,
+        rationale=(
+            f"Walk-forward tournament winner for {target_profile or symbol}: "
+            f"IS Sharpe {report.train_sharpe:.2f} ({report.train_return_delta:+.2f}%), "
+            f"OOS Sharpe {report.test_sharpe:.2f} ({report.test_return_delta:+.2f}%)"
+        ),
+        empirical_proof={
+            "target": target_profile or symbol,
+            "train_sharpe": report.train_sharpe,
+            "test_sharpe": report.test_sharpe,
+            "train_return_delta": report.train_return_delta,
+            "test_return_delta": report.test_return_delta,
+            "test_max_dd": report.test_max_dd,
+        },
+        verify_tests=True,
+        use_llm=False,
+        auto_commit=auto_commit,
     )
 
-    if auto_commit:
-        committed = commit_and_push_patch(commit_msg)
-        print(f"[Deployment] Git commit and push status: {'SUCCESS' if committed else 'LOCAL ONLY'}")
+    if not gov_res.approved:
+        print(f"[Rollback] Governor rejected deployment ({gov_res.status}): {gov_res.llm_rationale}")
+        return {"status": "rolled_back", "reason": gov_res.llm_rationale}
 
     print("=" * 65)
     print("   SELF-IMPROVEMENT CYCLE COMPLETED SUCCESSFULLY")
     print("=" * 65)
-    return {"status": "deployed", "candidate": best_candidate, "report": report}
+    return {"status": "deployed", "candidate": best_candidate, "report": report, "governance": gov_res}
 
 
 if __name__ == "__main__":

@@ -763,12 +763,16 @@ class PortfolioDriftRebalancer:
             if pos.get("pair_id") or pos.get("strategy_id") == "stat_arb_pairs":
                 continue
 
-            cur_price = float(current_prices.get(sym, pos.get("entry_price", 0.0)))
+            entry_price = float(pos.get("entry_price", 0.0))
+            cur_price = float(current_prices.get(sym, entry_price))
             units = float(pos.get("units", 0.0))
             if cur_price <= 0 or units <= 0:
                 continue
 
-            pos_value = units * cur_price
+            if pos.get("side", "LONG") == "SHORT":
+                pos_value = max(0.0, (units * entry_price) + (entry_price - cur_price) * units)
+            else:
+                pos_value = units * cur_price
             weight_pct = (pos_value / total_equity) * 100.0
 
             if weight_pct > trigger_pct:

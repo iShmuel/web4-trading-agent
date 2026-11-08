@@ -317,6 +317,9 @@ def generate_journal_report(journal_path: Optional[Path] = None) -> str:
     return "\n".join(lines)
 
 
+_GATE_FEEDBACK_CACHE: Dict[Tuple[str, int], Tuple[float, Dict[str, Any]]] = {}
+
+
 def get_gate_alpha_feedback(
     journal_path: Optional[Path] = None,
     lookback_entries: int = 50,
@@ -328,15 +331,29 @@ def get_gate_alpha_feedback(
       it indicates high-risk market chop where tightening confluence is prudent.
     - Returns a recommended delta to min_confluence_score (between -0.05 and +0.05).
     """
+    target_path = journal_path or JOURNAL_FILE
+    cache_key = (str(target_path), lookback_entries)
+    mtime = 0.0
+    if target_path.exists():
+        try:
+            mtime = target_path.stat().st_mtime
+            if cache_key in _GATE_FEEDBACK_CACHE and _GATE_FEEDBACK_CACHE[cache_key][0] == mtime:
+                return _GATE_FEEDBACK_CACHE[cache_key][1]
+        except OSError:
+            pass
+
     entries = load_journal_entries(journal_path)
     settled = [e for e in entries if e.get("settled", False)]
     if not settled:
-        return {
+        res = {
             "has_feedback": False,
             "sample_size": 0,
             "recommended_confluence_delta": 0.0,
             "mean_alpha": 0.0,
         }
+        if mtime > 0:
+            _GATE_FEEDBACK_CACHE[cache_key] = (mtime, res)
+        return res
 
     recent = settled[-lookback_entries:]
     alphas = [e.get("alpha_pct", 0.0) for e in recent if e.get("alpha_pct") is not None]
@@ -353,7 +370,7 @@ def get_gate_alpha_feedback(
         elif eff_ratio <= 0.35:
             rec_delta = -0.02
 
-    return {
+    res = {
         "has_feedback": True,
         "sample_size": len(recent),
         "blocked_count": len(blocked),
@@ -361,4 +378,7 @@ def get_gate_alpha_feedback(
         "mean_alpha": round(mean_alpha, 3),
         "recommended_confluence_delta": rec_delta,
     }
+    if mtime > 0:
+        _GATE_FEEDBACK_CACHE[cache_key] = (mtime, res)
+    return res
 

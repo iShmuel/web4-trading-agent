@@ -326,8 +326,16 @@ class RiskEngine:
             total_order_cost = order_cost * (1.0 + fee_pct)
             dollar_risk = units * abs(entry_price - initial_stop)
 
-        # 6. Total portfolio exposure cap
-        current_committed = sum(p["units"] * p["entry_price"] for p in active_positions.values())
+        # 6. Total portfolio exposure cap (use mark-to-market price when provided in position state)
+        def _pos_exposure(p: Dict) -> float:
+            u = float(p.get("units", 0.0))
+            ep = float(p.get("entry_price", 0.0))
+            cp = float(p.get("current_price", ep))
+            if p.get("side", "LONG") == "SHORT":
+                return max(0.0, (u * ep) + (ep - cp) * u)
+            return u * cp
+
+        current_committed = sum(_pos_exposure(p) for p in active_positions.values())
         if (current_committed + order_cost) > (equity * self.max_total_exposure_pct):
             remaining_cap = max(0.0, (equity * self.max_total_exposure_pct) - current_committed)
             if remaining_cap <= 0:
@@ -343,7 +351,7 @@ class RiskEngine:
 
         # 7. Per-strategy allocation cap (with dynamic scaling if enabled)
         strategy_committed = sum(
-            p["units"] * p["entry_price"]
+            _pos_exposure(p)
             for p in active_positions.values()
             if p.get("strategy_id") == strategy_id
         )
