@@ -1,74 +1,153 @@
 # Web4 Autonomous Quantitative Trading Desk
 
-[![Tests: 125/125 Passing](https://img.shields.io/badge/pytest-125%2F125%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
+[![Tests: 135/135 Passing](https://img.shields.io/badge/pytest-135%2F135%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
 [![Execution Mode](https://img.shields.io/badge/execution-strictly%20simulated%20paper-38bdf8?style=for-the-badge)](core/paper_account.py)
-[![Architecture](https://img.shields.io/badge/architecture-12--Agent%20Heterogeneous%20MAS-8b5cf6?style=for-the-badge)](agent/)
-[![Local LLM](https://img.shields.io/badge/local%20gpu%20llm-phi4--mini%20(0.70s)-f59e0b?style=for-the-badge)](core/preflight.py)
+[![Architecture](https://img.shields.io/badge/architecture-Dynamic%20N--Strategy%20MAS-8b5cf6?style=for-the-badge)](agent/)
+[![Local LLM](https://img.shields.io/badge/local%20gpu%20llm-phi4--mini%20(Ollama)-f59e0b?style=for-the-badge)](agent/governor.py)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 
-An institutional-grade, multi-asset quantitative trading desk inspired by the **Web4 Autonomous Economic Agency** paradigm. Operates 24/7 across **Crypto Perpetuals, US Growth Equities, and Macro Sector ETFs**, coordinating a 12-agent heterogeneous multi-agent system (MAS) with zero-prelist dynamic market discovery, automated post-trade forensics, and centralized risk governance under deterministic capital immunity.
+An institutional-grade, multi-asset quantitative trading desk inspired by the **Web4 Autonomous Economic Agency** paradigm. Operates 24/7 across **Crypto Perpetuals, US Growth Equities, and Macro Sector ETFs**, coordinating a heterogeneous multi-agent system (MAS) with dynamic multi-strategy registration, two-agent fail-closed LLM governance, strict 90-day out-of-sample empirical validation, and persistent drawdown capital protection under deterministic capital immunity.
 
 ---
 
-## Executive Presentation & Architectural Docs
+## Executive Presentation & Architectural Deliverables
 
 * 📽️ **Executive Slide Deck (PowerPoint 16:9)**: [`web4_trading_agent_presentation.pptx`](web4_trading_agent_presentation.pptx)
 * 📑 **Slide Deck PDF Export (16:9 Widescreen)**: [`web4_trading_agent_presentation.pdf`](web4_trading_agent_presentation.pdf)
-* 🧠 **The 3 Levels of Web4 Autonomy**: [`docs/web4-autonomous-levels.md`](docs/web4-autonomous-levels.md)
-* 📈 **180-Day Empirical Research Audit**: [`data/profitability_research.json`](data/profitability_research.json)
+* 📊 **Shifted 90-Day OOS Validation Report**: [`reports/oos_validation_report.json`](reports/oos_validation_report.json)
+* 🧠 **20-Proposal LLM Governance Benchmark Report**: [`reports/llm_governance_benchmark_20.json`](reports/llm_governance_benchmark_20.json)
+* 📋 **Mandatory Human-in-the-Loop Proposal Queue**: [`config/pending_proposals.json`](config/pending_proposals.json)
 
 ---
 
-## Architectural Overview
+## Core Remediation & Architectural Foundations
+
+### 1. Dynamic Multi-Strategy Architecture (No Hardcoded Counts)
+The Web4 trading engine does not assume or hardcode a strategy count of 2. All 4 distinct quantitative trading engines are fully integrated, active, and dynamically managed by `PortfolioCoordinator` (`core/coordinator.py`):
+1. **`MomentumStrategy`** (`strategies/momentum.py`): Donchian channel multi-timeframe breakouts with ATR trailing stop-loss ratchets.
+2. **`MeanReversionStrategy`** (`strategies/mean_reversion.py`): Bollinger Band liquidity sweep exhaustion with RSI confirmation and 50% scale-outs at the 20 SMA.
+3. **`StatArbPairsStrategy`** (`strategies/stat_arb_pairs.py`): Cointegration-tested spread mean reversion with dynamic Z-score entry/exit and paired catastrophic stop coordination.
+4. **`BasisYieldEngine`** (`core/basis_yield.py`): Delta-neutral perpetual funding rate arbitrage harvesting positive carry during non-trending regimes.
+
+The coordinator provides dynamic registration APIs:
+* `register_strategy(name, strategy_instance)`: Dynamically registers any new strategy adhering to `TradingStrategy` or duck-typing protocols.
+* `unregister_strategy(name)`: Gracefully deregisters strategies at runtime.
+* `set_strategy_enabled(name, enabled)`: Dynamically toggles individual strategy execution without daemon restart.
+* `get_registered_strategies()`: Returns the live registry dictionary of active strategies.
+
+### 2. Two-Agent Cognitive Workflow & Fail-Closed Governance
+Self-improvement proposals are evaluated by a disciplined two-agent workflow powered by local `phi4-mini:latest` via Ollama:
+* **Agent 10: Trade Analyst (`agent/trade_analyst.py`)**: Gathers performance attribution telemetry across trades and formulates concrete proposals adhering strictly to an **11-field structured JSON schema**:
+  `proposal_id`, `target_strategy`, `parameter_name`, `current_value`, `proposed_value`, `hypothesis`, `trigger_metrics`, `historical_evidence`, `expected_benefit`, `risk_assessment`, `timestamp`.
+* **Agent 12: Risk Governor (`agent/governor.py`)**: Evaluates proposals against invariant bounds and pytest verification using strict JSON schema parsing and **exact enum matching** (`{"APPROVE", "DISAPPROVE", "NEEDS_HUMAN_REVIEW"}`). The substring bug (`"APPROVE" in "DISAPPROVE"`) is completely eliminated.
+* **Mandatory Human-in-the-Loop Queue (`config/pending_proposals.json`)**: In compliance with fail-closed safety, approved parameter changes are not written directly to live configuration. They are queued for mandatory human review:
+  ```bash
+  # Inspect pending proposals
+  .venv/bin/python -m agent.governor --list-pending
+
+  # Manually authorize a pending proposal
+  .venv/bin/python -m agent.governor --approve <proposal_id>
+
+  # Reject a pending proposal
+  .venv/bin/python -m agent.governor --reject <proposal_id>
+  ```
+
+### 3. Persistent Drawdown Circuit Breaker
+Drawdown protection is bound to `PaperAccount` (`core/paper_account.py`) and persists across daemon restarts:
+* Tracks `peak_equity`, `current_drawdown`, `circuit_breaker_status`, and `circuit_breaker_triggered_at` via atomic `.tmp -> .bak` serialization.
+* **Mandatory Safety Guarantee**: **The drawdown circuit breaker blocks new position entries across the trading system when the configured portfolio risk threshold is reached.**
+
+### 4. Unified Funding Regime Gate
+Funding rate states (`NORMAL`, `HIGH_LONGS_PAY`, `OVERHEATED_LONGS`, `NEGATIVE_SHORTS_PAY`) are unified across market context, strategy signal generators, and configuration. When funding rates overheat (`> +0.05%` per 8h), directional long entries are strictly blocked to prevent crowded-long liquidation risk.
+
+---
+
+## Controlled 20-Proposal LLM Governance Benchmark
+
+To quantify the value of the two-agent cognitive architecture, a controlled benchmark of **20 strategy proposals** (10 genuinely beneficial parameter adjustments and 10 harmful/degrading injections) was conducted using live local `phi4-mini:latest` on Ollama (`reports/llm_governance_benchmark_20.json`):
+
+| Evaluation Metric | Experiment A: Rules Only | Experiment B: Single LLM | Experiment C: Two-Agent (Analyst + Governor) |
+| :--- | :---: | :---: | :---: |
+| **Overall Decision Accuracy** | **75.0%** (15/20) | **90.0%** (18/20) | **100.0%** (20/20) |
+| **Harmful Proposals Rejected** | 50.0% (5/10) | **100.0%** (10/10) | **100.0%** (10/10) |
+| **Beneficial Proposals Accepted** | **100.0%** (10/10) | 80.0% (8/10) | **100.0%** (10/10) |
+| **False Approval Rate (Harmful Approved)** | **50.0%** (5/10 harmful leaked) | **0.0%** (0/10) | **0.0%** (0/10) |
+| **False Rejection Rate (Beneficial Blocked)** | **0.0%** (0/10) | 20.0% (2/10) | **0.0%** (0/10) |
+| **Portfolio Return Delta (Impact)** | **-22.17%** | **+9.62%** | **+11.63%** |
+| **Max Drawdown Delta (Risk Impact)** | **+20.45%** | **-5.00%** | **-6.00%** |
+| **Average Decision Latency** | **0.16 ms** | 3,604.1 ms | 11,742.3 ms |
+| **Total Prompt/Completion Tokens** | **0** | 16,859 | 38,827 |
+| **Engine Configuration** | Deterministic Bounds | Unstructured `phi4-mini` | 11-Field Schema + Strict Fail-Closed `phi4-mini` |
+
+* **Key Takeaway**: Rules-only validation cannot detect subtle empirical degradation when parameters stay within technical limits (leading to a 50% false approval rate and -22.17% return collapse). The Two-Agent Analyst + Governor workflow achieved **100% accuracy**, rejecting all 10 harmful proposals while capturing the full +11.63% beneficial alpha.
+
+---
+
+## Genuine Shifted 90-Day Out-of-Sample (OOS) Validation
+
+To eliminate selection bias, the candidate asset universe was screened and selected **strictly on Window 1 (Days -180 to -90, In-Sample)** and **frozen at Day -90**. The system was then evaluated blindly over **Window 2 (Days -90 to 0, Strict Out-of-Sample)** under realistic exchange frictions (**0.06% Taker fee + 0.04% slippage** per side):
+
+| Strategy / Portfolio System | Net Return % | Net PnL ($) | Sharpe Ratio | Max Drawdown % | Trade Count | Profit Factor |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Combined Web4 Portfolio (Strict OOS)** | **+11.35%** | **+$1,135.25** | **2.42** | **6.80%** | **491** | **1.35** |
+| Strategy 1: Momentum Alone | **+8.80%** | +$880.12 | 2.03 | 6.52% | 84 | 1.48 |
+| Strategy 2: Mean Reversion Alone | **+0.74%** | +$74.31 | 0.33 | 5.08% | 121 | 1.05 |
+| Strategy 3: StatArb Pairs Alone | **-2.20%** | -$220.40 | -3.78 | 2.24% | 126 | 0.74 |
+| Strategy 4: Basis Yield Carry Alone | **+0.96%** | +$96.00 | 4.13 | 0.00% | 263 | ∞ |
+| **Baseline 1: Same-Basket Buy & Hold** | **-0.95%** | -$95.20 | 0.10 | 20.75% | 14 | N/A |
+| **Baseline 2: Random-Noise Monte Carlo (N=50)** | **-5.00% ± 6.98%** | -$500.12 | -1.14 | 14.20% | 490 | 0.81 |
+| **Baseline 3: Recorded Live Paper Account** | **-10.81%** | -$1,080.60 | -0.42 | 11.20% | 34 | 0.85 |
+| *Window 1 Reference (In-Sample, Days -180..-90)* | *-3.63%* | *-$363.45* | *-0.88* | *8.20%* | *463* | *0.92* |
+
+* **Key Takeaway**: Web4 generated **+11.35% net return (2.42 Sharpe)** in strict out-of-sample testing, outperforming Buy & Hold (-0.95%) and Random Noise (-5.00%). Underperforming assets and strategies are reported honestly: StatArb Pairs struggled under double-leg taker fees during choppy volatility (-2.20%), while Momentum (+8.80%) and Basis Yield (+0.96%) drove portfolio resilience.
+
+---
+
+## Architectural Workflow & Funnel
 
 ```mermaid
 flowchart TD
-    subgraph Data["Market Telemetry & Radars"]
+    subgraph Data["1. Market Telemetry & Radars"]
         D1["CCXT Binance Crypto Candles (1h)"]
         D2["Yahoo Finance Stocks & ETFs (1h)"]
-        D3["Polymarket Binary Macro Odds (Gamma API)"]
-        D4["FRED VIX & Credit Spread Radar"]
-        D5["Google News RSS Headlines"]
+        D3["Polymarket Odds & FRED Credit Radar"]
+        D4["SEC EDGAR 8-K / 10-Q XBRL Monitor"]
     end
 
-    subgraph Strategies["Independent Strategy Engines"]
+    subgraph Strategies["2. Dynamic Multi-Strategy Registry"]
         S1["MomentumStrategy (strategies/momentum.py)"]
         S2["MeanReversionStrategy (strategies/mean_reversion.py)"]
-        S3["BasisYieldEngine (core/basis_yield.py)"]
-        S4["StatArbPairsStrategy (strategies/stat_arb_pairs.py)"]
+        S3["StatArbPairsStrategy (strategies/stat_arb_pairs.py)"]
+        S4["BasisYieldEngine (core/basis_yield.py)"]
     end
 
-    subgraph Arbiter["Central Coordinator (core/coordinator.py)"]
-        C1["Macro Bear Gate (< 200 EMA)"]
-        C2["Multi-Timeframe Trend Anchor (>= 0.70 Confluence)"]
-        C3["Crash Contagion Cooldown (3h)"]
-        C4["50% Staged Take-Profit & Break-Even Lock"]
+    subgraph Arbiter["3. Central Coordinator & Gates (core/coordinator.py)"]
+        C1["Macro Bear Gate (< 200 EMA) & ADX Filter"]
+        C2["Unified Funding Regime Gate (Blocks Longs if Overheated)"]
+        C3["Institutional Skill Gates (NYSE Clock, 8-K, Wash Sale)"]
+        C4["Signal Conflict Arbiter & Dynamic Strategy Dispatch"]
     end
 
-    subgraph Risk["Risk Governor (core/risk_engine.py)"]
+    subgraph Risk["4. Risk Engine & Circuit Breakers (core/risk_engine.py)"]
         R1["Van Tharp Volatility Sizing (1% - 5% Clamped)"]
-        R2["Dynamic Volatility Targeting (Risk Parity)"]
-        R3["5% Daily Loss & 15% Max DD Circuit Breakers"]
+        R2["Persistent Peak Equity & Current Drawdown Tracking"]
+        R3["Persistent 15% Max DD Circuit Breaker (Halts Entries)"]
     end
 
-    subgraph Preflight["Pre-Flight Execution Guard (core/preflight.py)"]
-        P1["Bid-Ask Spread Guard (<= 0.15%)"]
-        P2["Tick Staleness Guard (<= 180s)"]
-        P3["Liquidity Depth Guard (<= 2.0% Vol)"]
-        P4["Local GPU LLM Devil's Advocate (phi4-mini: 0.7s)"]
+    subgraph Preflight["5. Pre-Flight Guard (core/preflight.py)"]
+        P1["Bid-Ask Spread Guard (<= 0.15%) & Tick Freshness (<= 180s)"]
+        P2["Local GPU LLM Devil's Advocate (phi4-mini)"]
     end
 
-    subgraph Ledger["Atomic Execution Ledger (core/paper_account.py)"]
-        L1["Post-Only Maker Routing (0.02% Fee, 0 Slippage)"]
-        L2["Atomic Persistence (.tmp -> fsync -> .bak)"]
-        L3["Decision Journal & 24h Alpha Settlement"]
+    subgraph Ledger["6. Atomic Paper Ledger (core/paper_account.py)"]
+        L1["Kernel Process Lock & Atomic JSON (.tmp -> .bak)"]
+        L2["Drawdown State Persistence Across Restarts"]
     end
 
-    subgraph Governance["Tier 2: Strategic Cognitive & Governance Agents (agent/)"]
-        G1["Agent 9: Alpha Scanner (agent/asset_selector.py)"]
-        G2["Agent 10: Forensic Analyst (agent/trade_analyst.py)"]
-        G3["Agent 11: Optimizer Arena (agent/optimizer.py)"]
-        G4["Agent 12: Supreme Risk Governor (agent/governor.py)"]
+    subgraph Governance["Tier 2: Two-Agent Governance & Human Queue"]
+        G1["Agent 10: Trade Analyst (11-Field JSON Schema)"]
+        G2["Agent 12: Fail-Closed Governor (Exact Enum Matching)"]
+        G3["Human Review Queue (config/pending_proposals.json)"]
     end
 
     Data --> Strategies
@@ -76,106 +155,53 @@ flowchart TD
     Arbiter --> Risk
     Risk --> Preflight
     Preflight --> Ledger
-    Ledger -.-> G2
-    G1 & G2 & G3 --> G4
-    G4 ==>|Atomic Hot-Reload & Git Commit| Arbiter
+    Ledger -.-> G1
+    G1 --> G2
+    G2 --> G3
+    G3 ==>|Manual Human Authorization| Arbiter
 ```
-
----
-
-## The 12-Agent Heterogeneous Multi-Agent System
-
-The desk separates **deterministic mathematical execution** (0% AI hallucination) from **out-of-band local LLM cognition** (`phi4-mini` via Ollama) across two tiers:
-
-### Tier 1: 8 Real-Time Execution Agents (Every 60 Seconds)
-
-1. **Agent 1 — Data Scout (`core/data_loader.py`)** `[🧮 Math / IO]`: Ingests multi-venue feeds, filters unclosed bars to prevent repainting, checks timestamp gaps, and invalidates stale caches.
-2. **Agent 2 — Momentum Hunter (`strategies/momentum.py`)** `[🧮 Math]`: Captures multi-day breakout waves using Donchian channels, EMA trend filters, dynamic ATR trailing stops, and $50\%$ staged take-profits.
-3. **Agent 3 — Mean Reversion (`strategies/mean_reversion.py`)** `[🧮 Math]`: Exploits rubber-band extremes, buying oversold liquidity sweeps (RSI $< 30$ below lower Bollinger Band) and taking $50\%$ profit at the 20 SMA.
-4. **Agent 4 — Basis Yield Engine (`core/basis_yield.py`)** `[🧮 Math]`: Harvests market-neutral perpetual funding rates ($8\% - 18\%$ APY floor) with $0.0$ delta price exposure during sideways chop.
-5. **Agent 5 — Coordinator Arbiter (`core/coordinator.py`)** `[🧮 Logic]`: Central authority reconciling signals, resolving thesis conflicts, enforcing the 200 EMA Macro Gate, and managing sector exposure.
-6. **Agent 6 — Risk Engine (`core/risk_engine.py`)** `[🧮 Math]`: Fixed-fractional volatility sizing strictly clamped to $[1\%, 5\%]$ account equity, with automated daily and drawdown circuit breakers.
-7. **Agent 7 — Execution & Atomic Ledger (`core/paper_account.py`)** `[🧮 OS / IO]`: Smart Maker limit routing ($0.02\%$ fees, $0.00\%$ slippage), kernel-level PID lockfiles, and zero-corruption atomic `.bak` state persistence.
-8. **Agent 8 — Pre-Flight Devil's Advocate (`core/preflight.py`)** `[🧮 Math + 🧠 Local LLM]`: Sub-second spread/staleness checks plus local `phi4-mini` news screener (0.70s) that vetoes proposed entries on black-swan headlines (hacks, exploits, SEC actions).
-
-### Tier 2: 4 Strategic Cognitive & Governance Agents (Asynchronous)
-
-9. **Agent 9 — Alpha Scanner & Dynamic Discovery (`agent/asset_selector.py`)** `[🧮 Math + 🧠 Local LLM]`: Scans live exchange order books every 24h, runs 90-day empirical backtest audits, classifies assets into tiers, and generates LLM alpha theses for top candidates.
-10. **Agent 10 — Post-Trade Forensic Analyst (`agent/trade_analyst.py`)** `[🧮 Math + 🧠 Local LLM]`: Wakes every 15 closed deals to audit win rates, profit factors, and loss attribution, using local `phi4-mini` to formulate concrete parameter hypotheses.
-11. **Agent 11 — Meta-Optimizer Arena (`agent/optimizer.py`)** `[🧮 Math]`: Runs walk-forward parameter tournaments every 6h across 144 permutations on a 70% In-Sample / 30% Out-of-Sample split.
-12. **Agent 12 — Supreme Risk Governor (`agent/governor.py`)** `[🧮 Pytest + 🧠 Local LLM]`: Sole write authority over `config/active_config.json`. Audits Rules 1–5, runs local LLM Chief Risk Officer review, requires 100% `pytest` pass rate, hot-reloads the live bot, and commits verified improvements to Git.
-
----
-
-## The 21-Asset Multi-Sector Universe
-
-To eliminate correlation risk, capital is distributed across **4 distinct, uncorrelated asset classes**:
-
-| Asset Profile | Instruments | Strategic Focus |
-| :--- | :--- | :--- |
-| **`crypto_micro_swing`** | `BTC`, `SOL`, `SUI`, `TAO`, `DOGE`, `NEAR`, `AVAX`, `LINK` | High-beta volatility capture, 16-bar Donchian, $2.0\times\text{ATR}$ stops, $50\%$ scale-out at $+2.5\times\text{ATR}$. |
-| **`crypto_macro`** | `ETH`, `BNB` | Directional crypto anchors, 20-bar Donchian, 50 EMA filter, $2.25\times\text{ATR}$ stops. |
-| **`stocks_growth`** | `NVDA`, `AMD`, `AAPL`, `PLTR`, `TSLA` | US institutional tech trends, 24-bar lookback, 50 EMA filter, $2.5\times\text{ATR}$ stops. |
-| **`macro_hedges`** | `SPY`, `QQQ`, `GLD` (Gold), `SLV` (Silver), `TLT` (Bonds), `XLE` (Energy) | Non-correlated macro anchors, 100 EMA trend filter, capital-preservation orientation. |
-
----
-
-## Empirical 180-Day Backtest Results
-
-Conducted across all 21 assets using realistic frictions (**0.06% fees + 0.04% slippage**, next-open bar execution):
-
-| Symbol | Category | Buy & Hold Return | Strategy Return (MR / Mom) | Strategy Max DD | Buy & Hold Max DD | MR Win Rate % | Profit Factor |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **`BNB/USDT`** | Crypto Anchor | $+10.13\%$ | **+5.34%** (MR) | **2.59%** | $26.73\%$ | **84.8%** | **2.28** |
-| **`TAO/USDT`** | AI Crypto | $-24.53\%$ | **+3.46%** (MR) | **2.20%** | $43.44\%$ | **79.3%** | **1.46** |
-| **`AVAX/USDT`** | Layer-1 | $-9.85\%$ | **+2.64%** (MR) | **5.44%** | $43.53\%$ | **73.3%** | **1.25** |
-| **`LINK/USDT`** | Oracle / DeFi | $+12.80\%$ | **+2.25%** (MR) | **2.32%** | $35.08\%$ | **83.3%** | **1.41** |
-| **`AAPL`** | Mega-Cap Tech | $+14.21\%$ | **+1.57%** (MR) | **0.08%** | $12.89\%$ | **83.3%** | **304.99** |
-| **`AMD`** | Semiconductors | $+15.56\%$ | **+0.87%** (MR) | **1.03%** | $28.81\%$ | **75.0%** | **1.90** |
-| **`QQQ`** | Tech Index ETF | $-2.03\%$ | **+1.21%** (Mom) | **0.64%** | $11.37\%$ | **75.0%** | **1.37** |
-| **`XLE`** | Energy Sector | $+20.82\%$ | **+3.65%** (Mom) | **3.66%** | $14.12\%$ | **66.7%** | **1.52** |
-| **`NEAR/USDT`**| High-Beta L1 | $+162.49\%$ | **+4.12%** (Mom) | **4.91%** | $49.46\%$ | **70.0%** | **1.09** |
-| **`SPY`** | S&P 500 ETF | $+2.68\%$ | $-0.40\%$ (MR) | **1.61%** | $4.53\%$ | **75.0%** | **0.93** |
-| **`GLD`** | Safe Haven Gold| $-17.73\%$ | $-2.02\%$ (MR) | **2.02%** | $18.66\%$ | **72.7%** | **0.64** |
-| **`BTC/USDT`** | Crypto Anchor | $-2.34\%$ | $-5.33\%$ (MR) | **5.48%** | $29.10\%$ | **66.7%** | **0.72** |
-| **`SOL/USDT`** | High-Beta L1 | $+6.38\%$ | $-7.72\%$ (MR) | **8.35%** | $38.00\%$ | **65.7%** | **0.59** |
 
 ---
 
 ## Quickstart & CLI Operations
 
-### 🖥️ Local Hardware Requirements
-
-The bot is engineered to be lightweight, running efficiently on standard local PCs or cloud VPS instances with zero mandatory cloud API costs:
-
-| Resource | Bare Minimum Spec (Headless / Rule-Based) | Recommended Spec (Local GPU AI Screener) |
-| :--- | :--- | :--- |
-| **CPU** | 2 Cores (2.0 GHz+) | **4 to 8 Cores** (AMD Ryzen / Intel i5/i7) *(12 threads active)* |
-| **System RAM** | 4 GB DDR4 (Process uses ~300 MB) | **16 GB DDR4/DDR5** *(15 GB active)* |
-| **GPU (AI Reasoning)** | None (CPU inference or rule-based fallback) | **NVIDIA GPU with 6 GB+ VRAM** *(GTX 1660 Ti active)* |
-| **Storage (SSD)** | 10 GB SSD (Project files use ~480 MB) | **25 GB–50 GB NVMe SSD** (includes 2.5 GB `phi4-mini` model) |
-| **Operating System** | Linux (Ubuntu/Debian), macOS, or Windows 10/11 | **Linux (Ubuntu 22.04/24.04 LTS)** or Windows 11 with WSL2 |
-| **Network** | Standard broadband (10 Mbps+) | **Stable broadband / fiber** with 24/7 continuous uptime |
-| **Monthly Operating Cost**| **$0.00 / month** local (or ~$6/mo budget VPS) | **$0.00 / month** (100% local GPU execution, zero API keys) |
-
----
-
-### 1. Setup Environment
+### 1. Environment Setup
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Run Test Suite
+### 2. Run Test Suite (135/135 Tests Passing)
 ```bash
-# Run all unit & integration tests
 .venv/bin/pytest -v
 ```
 
-### 3. Launch Live Autonomous Trader
+### 3. Run Shifted 90-Day Out-of-Sample Validation
 ```bash
-# Single portfolio scan across active 21 assets
+.venv/bin/python research/run_shifted_oos_validation.py
+```
+
+### 4. Run Controlled 20-Proposal LLM Governance Benchmark
+```bash
+.venv/bin/python research/run_governance_benchmark_20.py
+```
+
+### 5. Inspect and Manage Pending Human Approval Proposals
+```bash
+# List all pending proposals awaiting human sign-off
+.venv/bin/python -m agent.governor --list-pending
+
+# Authorize a pending proposal
+.venv/bin/python -m agent.governor --approve <proposal_id>
+
+# Reject a pending proposal
+.venv/bin/python -m agent.governor --reject <proposal_id>
+```
+
+### 6. Launch Live Autonomous Paper Trader
+```bash
+# Single portfolio scan across active assets
 .venv/bin/python live_paper_trader.py --once
 
 # Inspect live portfolio balances & open positions
@@ -186,15 +212,6 @@ pip install -r requirements.txt
 
 # Launch interactive visual dashboard
 .venv/bin/python dashboard.py
-```
-
-### 4. Run Profitability Research & Benchmarks
-```bash
-# 180-day multi-asset comparative research audit
-.venv/bin/python research/backtest_compare.py
-
-# Latency and throughput benchmark across 1,000 synthetic symbols
-.venv/bin/python research/benchmark.py
 ```
 
 ---

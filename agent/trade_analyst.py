@@ -16,15 +16,18 @@ Key capabilities:
 import argparse
 import json
 import logging
-from dataclasses import dataclass, asdict
+import math
+import re
+import uuid
+from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 
-from agent.llm_client import query_local_llm
+from agent.llm_client import query_local_llm, query_local_llm_with_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +35,28 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PORTFOLIO_FILE = PROJECT_ROOT / "data" / "paper_portfolio.json"
 DECISION_JOURNAL_FILE = PROJECT_ROOT / "data" / "decision_journal.jsonl"
 FORENSIC_REPORT_FILE = PROJECT_ROOT / "data" / "trade_forensic_report.json"
+
+ANALYST_PROPOSAL_REQUIRED_FIELDS = {
+    "proposal_id",
+    "strategy_id",
+    "strategy_name",
+    "hypothesis",
+    "proposed_changes",
+    "supporting_evidence",
+    "expected_benefit",
+    "identified_risks",
+    "evaluation_metrics",
+    "confidence",
+    "reasoning",
+}
+
+STRATEGY_NAMES = {
+    "momentum": "Donchian Momentum Breakout",
+    "mean_reversion": "Bollinger/RSI Mean Reversion",
+    "stat_arb_pairs": "Cointegrated Statistical Arbitrage Pairs",
+    "basis_yield": "Delta-Neutral Perpetual Basis Yield",
+    "portfolio_coordinator": "Multi-Strategy Portfolio Coordinator",
+}
 
 
 @dataclass
@@ -57,6 +82,90 @@ class TradeForensicSummary:
     losses_by_exit_reason: Dict[str, int]
     llm_forensic_diagnosis: str
     recommended_hypotheses: List[Dict[str, Any]]
+    by_strategy: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    llm_metrics: Dict[str, Any] = field(default_factory=dict)
+    fallback_used: bool = False
+
+
+def validate_analyst_proposal_schema(
+    proposal: Any,
+) -> Tuple[bool, List[str], Optional[Dict[str, Any]]]:
+    """Validate an Analyst hypothesis proposal against the strict Web4 JSON schema.
+
+    Required JSON schema:
+    {
+      "proposal_id": "...",
+      "strategy_id": "...",
+      "strategy_name": "...",
+      "hypothesis": "...",
+      "proposed_changes": {},
+      "supporting_evidence": {},
+      "expected_benefit": "...",
+      "identified_risks": [],
+      "evaluation_metrics": {},
+      "confidence": 0.0,
+      "reasoning": "..."
+    }
+    """
+    if not isinstance(proposal, dict):
+        return False, ["Proposal must be a JSON object (dict)."], None
+
+    errors: List[str] = []
+    missing = sorted(list(ANALYST_PROPOSAL_REQUIRED_FIELDS - set(proposal.keys())))
+    if missing:
+        errors.append(f"Missing required schema fields: {', '.join(missing)}")
+        return False, errors, None
+
+    str_fields = (
+        "proposal_id",
+        "strategy_id",
+        "strategy_name",
+        "hypothesis",
+        "expected_benefit",
+        "reasoning",
+    )
+    for sf in str_fields:
+        val = proposal.get(sf)
+        if not isinstance(val, str) or not val.strip():
+            errors.append(f"Field '{sf}' must be a non-empty string.")
+
+    dict_fields = ("proposed_changes", "supporting_evidence", "evaluation_metrics")
+    for df_key in dict_fields:
+        val = proposal.get(df_key)
+        if not isinstance(val, dict):
+            errors.append(f"Field '{df_key}' must be a JSON object (dict).")
+        elif df_key == "proposed_changes" and len(val) == 0:
+            errors.append("Field 'proposed_changes' cannot be empty.")
+
+    risks = proposal.get("identified_risks")
+    if not isinstance(risks, list) or len(risks) == 0 or not all(isinstance(r, str) and r.strip() for r in risks):
+        errors.append("Field 'identified_risks' must be a non-empty list of strings.")
+
+    try:
+        conf = float(proposal.get("confidence"))
+        if math.isnan(conf) or math.isinf(conf) or conf < 0.0 or conf > 1.0:
+            errors.append("Field 'confidence' must be a finite float between 0.0 and 1.0.")
+    except (TypeError, ValueError):
+        errors.append("Field 'confidence' must be a numeric float.")
+        conf = 0.0
+
+    if errors:
+        return False, errors, None
+
+    normalized = {
+        "proposal_id": str(proposal["proposal_id"]).strip(),
+        "strategy_id": str(proposal["strategy_id"]).strip(),
+        "strategy_name": str(proposal["strategy_name"]).strip(),
+        "hypothesis": str(proposal["hypothesis"]).strip(),
+        "proposed_changes": dict(proposal["proposed_changes"]),
+        "supporting_evidence": dict(proposal["supporting_evidence"]),
+        "expected_benefit": str(proposal["expected_benefit"]).strip(),
+        "identified_risks": [str(r).strip() for r in proposal["identified_risks"]],
+        "evaluation_metrics": dict(proposal["evaluation_metrics"]),
+        "confidence": round(float(conf), 4),
+        "reasoning": str(proposal["reasoning"]).strip(),
+    }
+    return True, [], normalized
 
 
 def load_closed_trades(portfolio_path: Optional[Path] = None, limit: Optional[int] = None) -> List[Dict[str, Any]]:
@@ -137,11 +246,45 @@ def perform_statistical_audit(trades: List[Dict[str, Any]]) -> Dict[str, Any]:
     expectancy = round(float(np.mean(pnls)), 2) if pnls else 0.0
     total_fees = round(sum(float(t.get("fees", t.get("fees_paid", 0.0))) for t in trades), 2)
 
-    # Strategy breakdown
+    # Strategy breakdown across all registered Web4 strategies
     mom_trades = [t for t in trades if t.get("strategy_id") == "momentum"]
     mr_trades = [t for t in trades if t.get("strategy_id") == "mean_reversion"]
     mom_pnl = round(sum(float(t.get("pnl", 0.0)) for t in mom_trades), 2)
     mr_pnl = round(sum(float(t.get("pnl", 0.0)) for t in mr_trades), 2)
+
+    by_strategy: Dict[str, Dict[str, Any]] = {}
+    for sid in ("momentum", "mean_reversion", "stat_arb_pairs", "basis_yield"):
+        s_trades = [t for t in trades if t.get("strategy_id") == sid]
+        s_pnls = [float(t.get("pnl", 0.0)) for t in s_trades]
+        s_wins = [p for p in s_pnls if p > 0]
+        s_losses = [abs(p) for p in s_pnls if p <= 0]
+        s_gw, s_gl = sum(s_wins), sum(s_losses)
+        by_strategy[sid] = {
+            "strategy_name": STRATEGY_NAMES.get(sid, sid),
+            "trades": len(s_trades),
+            "wins": len(s_wins),
+            "losses": len(s_losses),
+            "win_rate_pct": round((len(s_wins) / len(s_trades)) * 100.0, 1) if s_trades else 0.0,
+            "pnl": round(sum(s_pnls), 2),
+            "profit_factor": round(s_gw / s_gl, 2) if s_gl > 0 else (99.0 if s_gw > 0 else 0.0),
+            "expectancy": round(float(np.mean(s_pnls)), 2) if s_pnls else 0.0,
+        }
+    # Include any custom registered strategies present in trade records
+    for t in trades:
+        sid = str(t.get("strategy_id", "default"))
+        if sid not in by_strategy:
+            s_trades = [x for x in trades if x.get("strategy_id") == sid]
+            s_pnls = [float(x.get("pnl", 0.0)) for x in s_trades]
+            s_wins = [p for p in s_pnls if p > 0]
+            by_strategy[sid] = {
+                "strategy_name": STRATEGY_NAMES.get(sid, sid),
+                "trades": len(s_trades),
+                "wins": len(s_wins),
+                "losses": len(s_trades) - len(s_wins),
+                "win_rate_pct": round((len(s_wins) / len(s_trades)) * 100.0, 1) if s_trades else 0.0,
+                "pnl": round(sum(s_pnls), 2),
+                "expectancy": round(float(np.mean(s_pnls)), 2) if s_pnls else 0.0,
+            }
 
     # Symbol breakdown
     by_symbol: Dict[str, Dict[str, Any]] = {}
@@ -182,8 +325,231 @@ def perform_statistical_audit(trades: List[Dict[str, Any]]) -> Dict[str, Any]:
         "momentum_pnl": mom_pnl,
         "mr_trades": len(mr_trades),
         "mr_pnl": mr_pnl,
+        "by_strategy": by_strategy,
         "by_symbol": by_symbol,
         "exit_reasons": exit_reasons,
+    }
+
+
+def build_deterministic_analyst_proposals(stats: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Build schema-compliant deterministic fallback proposals when LLM is disabled or unreachable."""
+    proposals: List[Dict[str, Any]] = []
+    by_strat = stats.get("by_strategy", {})
+    mom_info = by_strat.get("momentum", {})
+
+    if stats.get("win_rate_pct", 0.0) < 55.0 or float(mom_info.get("pnl", 0.0)) < 0.0:
+        proposals.append({
+            "proposal_id": f"PROP-RULE-{uuid.uuid4().hex[:6].upper()}",
+            "strategy_id": "momentum",
+            "strategy_name": STRATEGY_NAMES["momentum"],
+            "hypothesis": "Elevating ADX chop threshold from 20.0 to 22.0 will filter low-momentum range whipsaws.",
+            "proposed_changes": {"adx_chop_threshold": 22.0},
+            "supporting_evidence": {
+                "overall_win_rate_pct": stats.get("win_rate_pct", 0.0),
+                "momentum_pnl": stats.get("momentum_pnl", 0.0),
+                "momentum_trades": stats.get("momentum_trades", 0),
+            },
+            "expected_benefit": "Reduce false breakout entries in sideways consolidation and improve profit factor.",
+            "identified_risks": [
+                "Slightly delayed entry on early trend transitions when ADX is between 20 and 22."
+            ],
+            "evaluation_metrics": {
+                "target_win_rate_pct": 55.0,
+                "target_profit_factor": 1.15,
+            },
+            "confidence": 0.72,
+            "reasoning": "Deterministic rule fallback: Momentum losses cluster during low-ADX range chop.",
+            "target": "global_regime",
+            "parameter": "adx_chop_threshold",
+            "suggested_value": 22.0,
+            "rationale": "Elevate ADX chop threshold from 20 to 22 to block low-volatility whipsaw entries.",
+        })
+
+    sym_items = sorted(list(stats.get("by_symbol", {}).items()), key=lambda x: x[1]["pnl"], reverse=True)
+    if sym_items and sym_items[-1][1]["pnl"] < -50.0:
+        worst_sym, worst_data = sym_items[-1]
+        proposals.append({
+            "proposal_id": f"PROP-RULE-{uuid.uuid4().hex[:6].upper()}",
+            "strategy_id": "portfolio_coordinator",
+            "strategy_name": STRATEGY_NAMES["portfolio_coordinator"],
+            "hypothesis": f"Blacklisting persistent underperformer {worst_sym} will eliminate tail drag.",
+            "proposed_changes": {"blacklisted_symbols": [worst_sym]},
+            "supporting_evidence": {
+                "symbol": worst_sym,
+                "realized_pnl_usd": worst_data["pnl"],
+                "win_rate_pct": worst_data["win_rate"],
+                "trades": worst_data["trades"],
+            },
+            "expected_benefit": f"Eliminate ${abs(worst_data['pnl']):.2f} realized loss drag from active rotation.",
+            "identified_risks": [
+                f"Opportunity cost if {worst_sym} enters a clean breakout regime before rehabilitation."
+            ],
+            "evaluation_metrics": {
+                "symbol_pnl_threshold_usd": -50.0,
+                "observed_pnl_usd": worst_data["pnl"],
+            },
+            "confidence": 0.80,
+            "reasoning": f"Deterministic rule fallback: {worst_sym} breached the -$50.00 cumulative loss threshold.",
+            "target": "asset_pruning",
+            "parameter": "blacklist_symbol",
+            "suggested_value": worst_sym,
+            "rationale": f"Prune {worst_sym} due to net loss drag of ${worst_data['pnl']:.2f}.",
+        })
+
+    return proposals
+
+
+def generate_llm_analyst_proposals(
+    stats: Dict[str, Any],
+    sample_losses: List[Dict[str, Any]],
+    model: str = "phi4-mini:latest",
+    use_cache: bool = True,
+) -> Dict[str, Any]:
+    """Use the local LLM to analyze multi-strategy trade forensics and generate schema-validated JSON proposals."""
+    loss_summary = [
+        {
+            "symbol": t.get("symbol"),
+            "strategy_id": t.get("strategy_id"),
+            "pnl": t.get("pnl"),
+            "return_pct": t.get("return_pct", 0.0),
+            "exit_reason": t.get("exit_reason"),
+        }
+        for t in sample_losses[:6]
+    ]
+
+    prompt = f"""You are Agent 10, the Quantitative Trade Forensic Analyst for the Web4 Multi-Strategy Trading System.
+Inspect the following empirical performance telemetry across our registered strategies (momentum, mean_reversion, stat_arb_pairs, basis_yield) and generate structured, testable parameter improvement hypotheses.
+
+[PORTFOLIO & STRATEGY TELEMETRY]
+{json.dumps({
+    "total_trades": stats.get("total_trades", 0),
+    "win_rate_pct": stats.get("win_rate_pct", 0.0),
+    "total_pnl": stats.get("total_pnl", 0.0),
+    "profit_factor": stats.get("profit_factor", 0.0),
+    "payoff_ratio": stats.get("payoff_ratio", 0.0),
+    "total_fees": stats.get("total_fees", 0.0),
+    "by_strategy": stats.get("by_strategy", {}),
+    "by_symbol": stats.get("by_symbol", {}),
+    "exit_reasons": stats.get("exit_reasons", {}),
+    "sample_losses": loss_summary,
+}, indent=2)}
+
+[SAFE PARAMETER BOUNDS]
+- account_risk_pct: [0.01, 0.05] (1%-5% hard invariant)
+- adx_chop_threshold: [12.0, 32.0], adx_trend_threshold: [18.0, 45.0]
+- breakout_lookback: [6, 168], atr_multiplier: [1.0, 5.0]
+- rsi_oversold: [15.0, 45.0], rsi_overbought: [55.0, 85.0]
+- stat_arb_z_entry: [1.2, 4.0], basis_hurdle_apr: [2.0, 40.0]
+
+Output ONLY a valid JSON object matching this exact structure:
+{{
+  "diagnosis": "2-3 sentence root-cause forensic diagnosis across strategies and regimes.",
+  "proposals": [
+    {{
+      "proposal_id": "PROP-LLM-001",
+      "strategy_id": "momentum | mean_reversion | stat_arb_pairs | basis_yield | portfolio_coordinator",
+      "strategy_name": "Human-readable strategy name",
+      "hypothesis": "Clear, falsifiable quantitative hypothesis",
+      "proposed_changes": {{"adx_chop_threshold": 22.0}},
+      "supporting_evidence": {{"win_rate_pct": {stats.get('win_rate_pct', 0.0)}, "profit_factor": {stats.get('profit_factor', 0.0)}}},
+      "expected_benefit": "Expected improvement in expectancy, win rate, or drawdown control",
+      "identified_risks": ["Specific trade-off or regime risk of applying this change"],
+      "evaluation_metrics": {{"target_profit_factor": 1.2, "max_drawdown_cap_pct": 12.0}},
+      "confidence": 0.78,
+      "reasoning": "Step-by-step quantitative reasoning connecting trade losses to the proposed parameter change"
+    }}
+  ]
+}}"""
+
+    system_prompt = (
+        "You are an institutional quantitative trade analyst. Respond ONLY with valid JSON containing "
+        "'diagnosis' (string) and 'proposals' (array of structured proposal objects with all 11 required fields: "
+        "proposal_id, strategy_id, strategy_name, hypothesis, proposed_changes, supporting_evidence, "
+        "expected_benefit, identified_risks, evaluation_metrics, confidence, reasoning)."
+    )
+
+    llm_call = query_local_llm_with_metrics(
+        prompt=prompt,
+        system_prompt=system_prompt,
+        model=model,
+        temperature=0.2,
+        max_tokens=500,
+        timeout_seconds=18.0,
+        use_cache=use_cache,
+        json_mode=True,
+    )
+
+    raw_text = llm_call.get("response")
+    if not llm_call.get("success") or not raw_text:
+        return {
+            "diagnosis": "",
+            "proposals": [],
+            "schema_valid": False,
+            "schema_errors": [llm_call.get("error") or "Empty LLM response"],
+            "llm_metrics": llm_call,
+            "fallback_used": True,
+        }
+
+    text = raw_text.strip()
+    if text.startswith("```"):
+        m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, flags=re.DOTALL)
+        if m:
+            text = m.group(1).strip()
+
+    try:
+        parsed = json.loads(text)
+    except Exception as e:
+        return {
+            "diagnosis": "",
+            "proposals": [],
+            "schema_valid": False,
+            "schema_errors": [f"Malformed JSON from Analyst LLM: {e}"],
+            "llm_metrics": llm_call,
+            "fallback_used": True,
+        }
+
+    if not isinstance(parsed, dict):
+        return {
+            "diagnosis": "",
+            "proposals": [],
+            "schema_valid": False,
+            "schema_errors": ["Root JSON from Analyst LLM must be an object."],
+            "llm_metrics": llm_call,
+            "fallback_used": True,
+        }
+
+    diagnosis_str = str(parsed.get("diagnosis", "")).strip()
+    raw_proposals = parsed.get("proposals", [])
+    if isinstance(parsed, dict) and "proposal_id" in parsed and not raw_proposals:
+        raw_proposals = [parsed]
+
+    validated_proposals: List[Dict[str, Any]] = []
+    schema_errors: List[str] = []
+
+    if not isinstance(raw_proposals, list):
+        schema_errors.append("'proposals' field must be a list.")
+    else:
+        for idx, item in enumerate(raw_proposals):
+            ok, errs, norm = validate_analyst_proposal_schema(item)
+            if ok and norm is not None:
+                # Populate legacy display keys for backward CLI compatibility
+                first_k = next(iter(norm["proposed_changes"].keys()), "parameter")
+                first_v = norm["proposed_changes"][first_k]
+                norm.setdefault("target", norm["strategy_id"])
+                norm.setdefault("parameter", first_k)
+                norm.setdefault("suggested_value", first_v)
+                norm.setdefault("rationale", norm["hypothesis"])
+                validated_proposals.append(norm)
+            else:
+                schema_errors.extend([f"proposals[{idx}]: {err}" for err in errs])
+
+    return {
+        "diagnosis": diagnosis_str,
+        "proposals": validated_proposals,
+        "schema_valid": len(validated_proposals) > 0 and len(schema_errors) == 0,
+        "schema_errors": schema_errors,
+        "llm_metrics": llm_call,
+        "fallback_used": len(validated_proposals) == 0,
     }
 
 
@@ -192,48 +558,153 @@ def query_llm_trade_forensics(
     sample_losses: List[Dict[str, Any]],
     model: str = "phi4-mini:latest",
 ) -> Optional[str]:
+    """Invoke local Ollama LLM to synthesize forensic diagnosis and structured hypotheses."""
+    res = generate_llm_analyst_proposals(stats, sample_losses, model=model)
+    if res.get("diagnosis"):
+        return res["diagnosis"]
+    return None
+
+
+def analyze_candidate_proposal_with_llm(
+    candidate_proposal: Dict[str, Any],
+    base_config: Dict[str, Any],
+    model: str = "phi4-mini:latest",
+    use_cache: bool = True,
+) -> Tuple[bool, Optional[Dict[str, Any]], Dict[str, Any], str]:
+    """Analyst Stage 1 evaluation in the Two-Agent (Analyst -> Governor) workflow.
+
+    The Analyst inspects a raw or candidate strategy proposal, evaluates its supporting
+    evidence, expected benefit, and risks across the Web4 strategies, and outputs:
+    - analyst_recommend_submit: bool (True if Analyst endorses forwarding to Governor, False if Analyst filters it out)
+    - structured_proposal: Dict[str, Any] conforming to the 11-field Analyst JSON schema
+    - llm_metrics: Dict[str, Any] (latency, tokens, success)
+    - reason: str
     """
-    Invoke local Ollama LLM to synthesize forensic insights and formulate
-    actionable parameter hypotheses based on recent trades.
-    """
-    loss_summary = []
-    for t in sample_losses[:5]:
-        loss_summary.append(
-            f"- Symbol: {t.get('symbol')}, PnL: ${t.get('pnl'):.2f} ({t.get('return_pct', 0):.1f}%), "
-            f"Strategy: {t.get('strategy_id')}, Exit: {t.get('exit_reason')}"
-        )
-    losses_txt = "\n".join(loss_summary) if loss_summary else "No severe losses recorded."
+    ev = candidate_proposal.get("supporting_evidence", {}) or {}
+    eval_m = candidate_proposal.get("evaluation_metrics", {}) or {}
+    ret_delta = float(ev.get("replay_return_delta_pct", eval_m.get("net_return_delta_pct", 0.0)))
+    dd_delta = float(ev.get("replay_max_dd_delta_pct", eval_m.get("max_dd_delta_pct", 0.0)))
+    sharpe_delta = float(ev.get("replay_sharpe_delta", 0.0))
+    pf_after = float(ev.get("profit_factor_after", 1.1))
 
-    by_sym_txt = ", ".join([f"{s}: ${d['pnl']} ({d['win_rate']}% WR)" for s, d in stats.get("by_symbol", {}).items()])
+    telemetry_digest = {
+        "return_change_interpretation": (
+            f"POSITIVE (+{ret_delta:.2f}% net return improvement)"
+            if ret_delta > 0
+            else f"NEGATIVE ({ret_delta:.2f}% net return degradation)"
+        ),
+        "drawdown_change_interpretation": (
+            f"IMPROVED (Max drawdown reduced by {abs(dd_delta):.2f}%)"
+            if dd_delta <= 0
+            else f"WORSENED (Max drawdown increased by +{dd_delta:.2f}%)"
+        ),
+        "sharpe_change": f"{sharpe_delta:+.2f}",
+        "profit_factor_after": pf_after,
+    }
 
-    prompt = f"""You are the Chief Quantitative Trade Forensic Analyst for an autonomous trading desk.
-Analyze the following statistical audit of our most recent {stats['total_trades']} closed trades:
+    prompt = f"""You are Agent 10, the Quantitative Strategy Analyst in a two-agent (Analyst -> Governor) workflow.
+Your job is to formulate a rigorous structured hypothesis object and decide whether this candidate configuration change should be submitted to the Chief Risk Governor or filtered out immediately as harmful/unjustified.
 
-[DESK STATS]
-- Win Rate: {stats['win_rate_pct']}% ({stats['winning_trades']} Wins / {stats['losing_trades']} Losses)
-- Total Realized PnL: ${stats['total_pnl']}
-- Profit Factor: {stats['profit_factor']}
-- Payoff Ratio (Avg Win / Avg Loss): {stats['payoff_ratio']}x (${stats['avg_win']} / ${stats['avg_loss']})
-- Momentum Engine PnL: ${stats['momentum_pnl']} ({stats['momentum_trades']} trades)
-- Mean Reversion Engine PnL: ${stats['mr_pnl']} ({stats['mr_trades']} trades)
-- Total Fees: ${stats['total_fees']}
-- Symbol Breakdown: {by_sym_txt}
+[CANDIDATE PROPOSAL INPUT]
+{json.dumps(candidate_proposal, indent=2)}
 
-[SAMPLE LOSSES]
-{losses_txt}
+[QUANTITATIVE TELEMETRY INTERPRETATION (SIGN CONVENTION VERIFIED)]
+{json.dumps(telemetry_digest, indent=2)}
 
-Provide:
-1. DIAGNOSIS: 2-3 sentences explaining the primary structural reason for losses (e.g., chop whipsaws, stop placement, or underperforming symbols).
-2. HYPOTHESES: Provide 2 concrete parameter hypotheses to improve win rate and net profit (e.g., adjust adx_chop_threshold, breakout_lookback, atr_multiplier, or prune symbols).
-Format your response cleanly.
-"""
+[ACTIVE SYSTEM CONFIGURATION SUMMARY]
+{json.dumps({
+    "execution_mode": base_config.get("execution_mode", "maker"),
+    "account_risk_pct": base_config.get("account_risk_pct", 0.02),
+    "max_drawdown_limit_pct": base_config.get("max_drawdown_limit_pct", 15.0),
+    "adx_chop_threshold": base_config.get("adx_chop_threshold", 20.0),
+    "adx_trend_threshold": base_config.get("adx_trend_threshold", 25.0),
+    "breakout_lookback": base_config.get("breakout_lookback", 24),
+    "atr_multiplier": base_config.get("atr_multiplier", 2.5),
+}, indent=2)}
+
+[ANALYST SCREENING RULES]
+- Recommend "SUBMIT_TO_GOVERNOR" when the proposed_changes are within safe parameter bounds AND the Quantitative Telemetry Interpretation shows POSITIVE net return improvement and IMPROVED (reduced) maximum drawdown. Note: every real trading parameter adjustment has normal trade-offs (which you should list in 'identified_risks'), so do NOT reject a proposal merely because trade-offs exist when its net return and drawdown telemetry are positive!
+- Recommend "REJECT_AT_ANALYST" when the proposal violates risk bounds, disables safety gates (e.g. enable_regime_filter=False), uses extreme/noisy parameters (e.g. breakout_lookback <= 8, stat_arb_z_entry <= 1.3, basis_hurdle_apr <= 3.0, bb_std <= 1.3), OR has NEGATIVE return degradation / WORSENED drawdown.
+
+Output ONLY a valid JSON object with this exact schema:
+{{
+  "analyst_decision": "SUBMIT_TO_GOVERNOR" | "REJECT_AT_ANALYST",
+  "proposal": {{
+    "proposal_id": "{candidate_proposal.get('proposal_id', 'PROP-001')}",
+    "strategy_id": "{candidate_proposal.get('strategy_id', 'momentum')}",
+    "strategy_name": "{candidate_proposal.get('strategy_name', STRATEGY_NAMES.get(candidate_proposal.get('strategy_id', 'momentum'), 'Web4 Strategy'))}",
+    "hypothesis": "Falsifiable quantitative hypothesis statement",
+    "proposed_changes": {json.dumps(candidate_proposal.get('proposed_changes', {}))},
+    "supporting_evidence": {json.dumps(candidate_proposal.get('supporting_evidence', {}))},
+    "expected_benefit": "Expected impact on strategy and portfolio metrics",
+    "identified_risks": ["Risk 1", "Risk 2"],
+    "evaluation_metrics": {json.dumps(candidate_proposal.get('evaluation_metrics', {}))},
+    "confidence": 0.82,
+    "reasoning": "Detailed analytical reasoning for submitting or rejecting this hypothesis"
+  }}
+}}"""
+
     system_prompt = (
-        "You are an elite institutional quantitative researcher specialized in algorithmic trade forensics, "
-        "regime attribution, and risk governance. Keep answers analytical, mathematically precise, and grounded in empirical data."
+        "You are a quantitative strategy analyst. Output ONLY valid JSON containing 'analyst_decision' "
+        "('SUBMIT_TO_GOVERNOR' or 'REJECT_AT_ANALYST') and 'proposal' (containing all 11 required schema fields)."
     )
 
-    resp = query_local_llm(prompt, system_prompt=system_prompt, model=model, temperature=0.2, max_tokens=350)
-    return resp
+    llm_call = query_local_llm_with_metrics(
+        prompt=prompt,
+        system_prompt=system_prompt,
+        model=model,
+        temperature=0.1,
+        max_tokens=450,
+        timeout_seconds=18.0,
+        use_cache=use_cache,
+        json_mode=True,
+    )
+
+    if not llm_call.get("success") or not llm_call.get("response"):
+        return False, None, llm_call, f"Fail-closed at Analyst: {llm_call.get('error') or 'Empty LLM response'}"
+
+    text = llm_call["response"].strip()
+    if text.startswith("```"):
+        m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, flags=re.DOTALL)
+        if m:
+            text = m.group(1).strip()
+
+    try:
+        parsed = json.loads(text)
+    except Exception as e:
+        return False, None, llm_call, f"Fail-closed at Analyst: Malformed JSON ({e})"
+
+    if not isinstance(parsed, dict):
+        return False, None, llm_call, "Fail-closed at Analyst: Root JSON must be an object"
+
+    decision_str = str(parsed.get("analyst_decision", "")).strip().upper()
+    prop_obj = parsed.get("proposal")
+    if not isinstance(prop_obj, dict):
+        return False, None, llm_call, "Fail-closed at Analyst: Missing 'proposal' object"
+
+    # Ensure immutable fields from candidate input are preserved accurately in the structured proposal
+    prop_obj["proposal_id"] = str(candidate_proposal.get("proposal_id", prop_obj.get("proposal_id", "PROP-001")))
+    prop_obj["strategy_id"] = str(candidate_proposal.get("strategy_id", prop_obj.get("strategy_id", "momentum")))
+    prop_obj["strategy_name"] = str(
+        candidate_proposal.get(
+            "strategy_name",
+            prop_obj.get("strategy_name", STRATEGY_NAMES.get(prop_obj["strategy_id"], prop_obj["strategy_id"])),
+        )
+    )
+    prop_obj["proposed_changes"] = dict(candidate_proposal.get("proposed_changes", prop_obj.get("proposed_changes", {})))
+    if not prop_obj.get("supporting_evidence") and candidate_proposal.get("supporting_evidence"):
+        prop_obj["supporting_evidence"] = dict(candidate_proposal["supporting_evidence"])
+    if not prop_obj.get("evaluation_metrics") and candidate_proposal.get("evaluation_metrics"):
+        prop_obj["evaluation_metrics"] = dict(candidate_proposal["evaluation_metrics"])
+
+    schema_ok, schema_errs, norm_prop = validate_analyst_proposal_schema(prop_obj)
+    if not schema_ok or norm_prop is None:
+        return False, None, llm_call, f"Fail-closed at Analyst: Schema validation failed ({'; '.join(schema_errs)})"
+
+    if decision_str != "SUBMIT_TO_GOVERNOR":
+        return False, norm_prop, llm_call, f"Rejected by Analyst ({decision_str}): {norm_prop['reasoning']}"
+
+    return True, norm_prop, llm_call, norm_prop["reasoning"]
 
 
 def run_trade_forensic_analysis(
@@ -256,16 +727,21 @@ def run_trade_forensic_analysis(
 
     sample_losses = [t for t in trades if float(t.get("pnl", 0.0)) < 0]
 
-    # LLM Forensic Reasoning
+    # LLM Forensic Reasoning & Structured Hypothesis Generation
     llm_diagnosis = ""
-    hypotheses = []
+    hypotheses: List[Dict[str, Any]] = []
+    llm_metrics: Dict[str, Any] = {}
+    fallback_used = False
+
     if use_llm and trades:
-        llm_resp = query_llm_trade_forensics(stats, sample_losses, model=model)
-        if llm_resp:
-            llm_diagnosis = llm_resp
+        llm_res = generate_llm_analyst_proposals(stats, sample_losses, model=model)
+        llm_diagnosis = llm_res.get("diagnosis", "")
+        hypotheses = llm_res.get("proposals", [])
+        llm_metrics = llm_res.get("llm_metrics", {})
+        fallback_used = bool(llm_res.get("fallback_used", False))
 
     if not llm_diagnosis:
-        # Deterministic mathematical fallback diagnosis
+        fallback_used = True
         if stats["win_rate_pct"] >= 60.0:
             llm_diagnosis = f"Desk is performing with strong statistical edge ({stats['win_rate_pct']}% Win Rate, PF {stats['profit_factor']}). Primary drag stems from trailing stop slippage."
         elif stats["win_rate_pct"] >= 50.0:
@@ -273,23 +749,9 @@ def run_trade_forensic_analysis(
         else:
             llm_diagnosis = f"Desk experiencing negative expectancy ({stats['win_rate_pct']}% Win Rate). Pruning underperforming drag symbols is recommended."
 
-    # Generate structured parameter hypotheses
-    if stats["win_rate_pct"] < 55.0:
-        hypotheses.append({
-            "target": "global_regime",
-            "parameter": "adx_chop_threshold",
-            "suggested_value": 22.0,
-            "rationale": "Elevate ADX chop threshold from 20 to 22 to block low-volatility whipsaw entries.",
-        })
-    if any(d["pnl"] < -50.0 for s, d in stats.get("by_symbol", {}).items()):
-        worst_sym = sorted_syms[-1][0] if sorted_syms else None
-        if worst_sym:
-            hypotheses.append({
-                "target": "asset_pruning",
-                "parameter": "blacklist_symbol",
-                "suggested_value": worst_sym,
-                "rationale": f"Prune {worst_sym} due to net loss drag of ${sorted_syms[-1][1]['pnl']:.2f}.",
-            })
+    if not hypotheses:
+        fallback_used = True
+        hypotheses = build_deterministic_analyst_proposals(stats)
 
     summary = TradeForensicSummary(
         total_trades=stats["total_trades"],
@@ -312,6 +774,9 @@ def run_trade_forensic_analysis(
         losses_by_exit_reason=stats.get("exit_reasons", {}),
         llm_forensic_diagnosis=llm_diagnosis,
         recommended_hypotheses=hypotheses,
+        by_strategy=stats.get("by_strategy", {}),
+        llm_metrics=llm_metrics,
+        fallback_used=fallback_used,
     )
 
     out = output_path or FORENSIC_REPORT_FILE
@@ -319,29 +784,30 @@ def run_trade_forensic_analysis(
     with open(out, "w") as f:
         json.dump(asdict(summary), f, indent=2)
 
-    # Automated governance submission if requested
+    # Automated governance submission if requested (saves to Pending Human Approval queue)
     if auto_submit_to_governor and hypotheses:
         try:
             from agent.governor import review_and_deploy_proposal
-            prop_diff = {}
             for h in hypotheses:
-                if h["parameter"] == "blacklist_symbol":
-                    prop_diff.setdefault("blacklisted_symbols", []).append(h["suggested_value"])
-                elif h["parameter"] == "adx_chop_threshold":
-                    prop_diff["adx_chop_threshold"] = float(h["suggested_value"])
-
-            if prop_diff:
-                print(f"[TradeAnalyst] Automatically submitting proposal to Agent 12 Governor: {prop_diff}")
+                ok_schema, _, norm_prop = validate_analyst_proposal_schema(h)
+                if not ok_schema or norm_prop is None:
+                    continue
+                prop_diff = norm_prop["proposed_changes"]
+                print(
+                    f"[TradeAnalyst] Submitting structured hypothesis {norm_prop['proposal_id']} "
+                    f"({norm_prop['strategy_id']}) to Agent 12 Governor: {prop_diff}"
+                )
                 review_and_deploy_proposal(
                     proposed_changes=prop_diff,
-                    rationale=f"Automated post-trade forensic analysis of last {trade_window} trades detected drag.",
-                    empirical_proof={
-                        "recent_win_rate": f"{summary.win_rate_pct}%",
-                        "recent_pnl": f"${summary.total_realized_pnl:+,.2f}",
-                        "profit_factor": summary.profit_factor,
-                    },
+                    rationale=norm_prop["hypothesis"],
+                    empirical_proof=norm_prop["supporting_evidence"],
                     verify_tests=True,
                     use_llm=use_llm,
+                    model=model,
+                    require_human_approval=True,
+                    human_approved=False,
+                    analyst_proposal=norm_prop,
+                    proposal_id=norm_prop["proposal_id"],
                 )
         except Exception as e:
             logger.error(f"[TradeAnalyst] Governance submission notice: {e}")

@@ -210,6 +210,16 @@ def run_optimization_cycle(
         auto_commit=auto_commit,
     )
 
+    if gov_res.status == "PENDING_HUMAN_APPROVAL":
+        print(f"[Pending Approval] Proposal {gov_res.proposal_id} validated by Governor and queued for human authorization.")
+        return {
+            "status": "pending_human_approval",
+            "proposal_id": gov_res.proposal_id,
+            "candidate": best_candidate,
+            "report": report,
+            "governance": gov_res,
+        }
+
     if not gov_res.approved:
         print(f"[Rollback] Governor rejected deployment ({gov_res.status}): {gov_res.llm_rationale}")
         return {"status": "rolled_back", "reason": gov_res.llm_rationale}

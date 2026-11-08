@@ -46,6 +46,15 @@ class PaperAccount:
                     if "positions" not in state:
                         state["positions"] = {}
 
+                    init_cap = float(state.get("initial_capital", self.initial_capital))
+                    state.setdefault("peak_equity", init_cap)
+                    state.setdefault("current_drawdown", 0.0)
+                    state.setdefault("current_drawdown_pct", 0.0)
+                    state.setdefault("circuit_breaker_status", "OK")
+                    state.setdefault("circuit_breaker_tripped", False)
+                    state.setdefault("circuit_breaker_reason", "")
+                    state.setdefault("circuit_breaker_triggered_at", None)
+
                     return state
                 except Exception as e:
                     print(f"[PaperAccount] Warning: Could not load state from {file_path.name} ({e}).")
@@ -64,6 +73,13 @@ class PaperAccount:
                     "positions_value": 0.0,
                 }
             ],
+            "peak_equity": self.initial_capital,
+            "current_drawdown": 0.0,
+            "current_drawdown_pct": 0.0,
+            "circuit_breaker_status": "OK",
+            "circuit_breaker_tripped": False,
+            "circuit_breaker_reason": "",
+            "circuit_breaker_triggered_at": None,
         }
         self._save(initial_state)
         return initial_state
@@ -112,9 +128,54 @@ class PaperAccount:
                     "positions_value": 0.0,
                 }
             ],
+            "peak_equity": capital,
+            "current_drawdown": 0.0,
+            "current_drawdown_pct": 0.0,
+            "circuit_breaker_status": "OK",
+            "circuit_breaker_tripped": False,
+            "circuit_breaker_reason": "",
+            "circuit_breaker_triggered_at": None,
         }
         self._save()
         print(f"[PaperAccount] Reset portfolio to ${capital:,.2f} cash.")
+
+    def sync_risk_state(
+        self,
+        peak_equity: float,
+        current_drawdown: float,
+        circuit_breaker_status: str = "OK",
+        circuit_breaker_reason: str = "",
+        circuit_breaker_triggered_at: Optional[str] = None,
+        force_save: bool = False,
+    ) -> None:
+        """Persist drawdown high-water mark and circuit breaker status atomically."""
+        prev_peak = float(self.state.get("peak_equity", self.initial_capital))
+        prev_status = str(self.state.get("circuit_breaker_status", "OK"))
+        prev_dd = float(self.state.get("current_drawdown", 0.0))
+        prev_ts = self.state.get("circuit_breaker_triggered_at")
+
+        new_peak = max(prev_peak, float(peak_equity))
+        new_dd = max(0.0, float(current_drawdown))
+        new_status = str(circuit_breaker_status).upper()
+        tripped = new_status in ("TRIPPED", "HALTED", "ACTIVE")
+
+        self.state["peak_equity"] = round(new_peak, 4)
+        self.state["current_drawdown"] = round(new_dd, 6)
+        self.state["current_drawdown_pct"] = round(new_dd * 100.0, 4)
+        self.state["circuit_breaker_status"] = "TRIPPED" if tripped else "OK"
+        self.state["circuit_breaker_tripped"] = tripped
+        self.state["circuit_breaker_reason"] = circuit_breaker_reason if tripped else ""
+        self.state["circuit_breaker_triggered_at"] = circuit_breaker_triggered_at if tripped else None
+
+        changed = (
+            force_save
+            or abs(new_peak - prev_peak) > 1e-4
+            or self.state["circuit_breaker_status"] != prev_status
+            or abs(new_dd - prev_dd) > 1e-4
+            or self.state["circuit_breaker_triggered_at"] != prev_ts
+        )
+        if changed:
+            self._save()
 
     @property
     def cash(self) -> float:

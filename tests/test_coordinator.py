@@ -466,3 +466,209 @@ def test_coordinator_reload_config_hot_reloads_and_enforces_risk_bounds(tmp_path
     assert risk_engine.symbol_risk_weights["NVDA"] == 0.01
     assert risk_engine.symbol_exposure_caps["SOL/USDT"] == 0.40
 
+
+def test_funding_regime_gate_blocks_longs_from_config_and_process_symbol(tmp_path, monkeypatch):
+    """Verify funding regime gate blocks LONG entries across all strategies via config and full process_symbol."""
+    account = PaperAccount(10000.0, portfolio_file=tmp_path / "fund_port.json")
+    risk = RiskEngine()
+    # 1. Direct config funding_regime == "OVERHEATED_LONGS"
+    coordinator = PortfolioCoordinator(
+        account,
+        risk,
+        {"enable_regime_filter": True, "funding_regime": "OVERHEATED_LONGS", "funding_rate_pct": 0.085},
+    )
+    now = datetime.now(timezone.utc)
+    mom_sig = TradingSignal(
+        strategy_id="momentum",
+        symbol="BTC/USDT",
+        timestamp=now,
+        direction=SignalDirection.LONG,
+        status=SignalStatus.ENTRY,
+        reference_price=70000.0,
+        indicators={"macro_ema": 65000.0, "adx": 28.0},
+    )
+    mr_sig = TradingSignal(
+        strategy_id="mean_reversion",
+        symbol="BTC/USDT",
+        timestamp=now,
+        direction=SignalDirection.LONG,
+        status=SignalStatus.ENTRY,
+        reference_price=70000.0,
+        indicators={"adx": 22.0},
+    )
+    chosen, reason = coordinator.reconcile_signals("BTC/USDT", mom_sig, mr_sig)
+    assert chosen is None
+    assert "Overheated Funding Rate" in reason
+
+    # 2. Full process_symbol execution with live funding radar returning overheated funding (> 0.0005)
+    monkeypatch.setattr("core.coordinator.fetch_funding_rate", lambda sym: 0.0009)
+    coord_live = PortfolioCoordinator(
+        account,
+        risk,
+        {"enable_regime_filter": True, "enable_funding_radar": True},
+    )
+    _, mom_eng, mr_eng = coord_live._engines_for("BTC/USDT")
+    mom_eng.evaluate = lambda sym, d, existing_position=None: TradingSignal(
+        strategy_id="momentum",
+        symbol=sym,
+        timestamp=now,
+        direction=SignalDirection.LONG,
+        status=SignalStatus.ENTRY,
+        reference_price=70000.0,
+        atr=500.0,
+        suggested_stop=68500.0,
+        indicators={"macro_ema": 65000.0, "adx": 28.0},
+    )
+    mr_eng.evaluate = lambda sym, d, existing_position=None: create_no_trade_signal("mean_reversion", sym, 70000.0, "no")
+
+    df = make_trending_df(n=60, start=68000.0, step=35.0)
+    dec = coord_live.process_symbol("BTC/USDT", df, {})
+    assert dec.action == "REJECTED"
+    assert "Overheated Funding Rate" in dec.reason
+    assert dec.indicators.get("funding_regime") == "OVERHEATED_LONGS"
+    assert account.get_position("BTC/USDT") is None
+
+
+def test_funding_regime_missing_or_invalid_data_fails_safely(tmp_path):
+    """Verify missing (when required) or malformed/NaN funding data fails closed and blocks entries."""
+    account = PaperAccount(10000.0, portfolio_file=tmp_path / "fund_fail_port.json")
+    risk = RiskEngine()
+    now = datetime.now(timezone.utc)
+    entry_sig = TradingSignal(
+        strategy_id="momentum",
+        symbol="SOL/USDT",
+        timestamp=now,
+        direction=SignalDirection.LONG,
+        status=SignalStatus.ENTRY,
+        reference_price=150.0,
+    )
+    no_sig = create_no_trade_signal("mean_reversion", "SOL/USDT", 150.0, "none")
+
+    # Case A: Invalid funding_regime string -> fail closed
+    coord_bad_regime = PortfolioCoordinator(account, risk, {"funding_regime": "CORRUPTED_REGIME"})
+    chosen_a, reason_a = coord_bad_regime.reconcile_signals("SOL/USDT", entry_sig, no_sig)
+    assert chosen_a is None
+    assert "Blocked by Funding Gate" in reason_a
+
+    # Case B: NaN funding_rate_pct -> fail closed
+    coord_nan_rate = PortfolioCoordinator(account, risk, {"funding_rate_pct": float("nan")})
+    chosen_b, reason_b = coord_nan_rate.reconcile_signals("SOL/USDT", entry_sig, no_sig)
+    assert chosen_b is None
+    assert "Blocked by Funding Gate" in reason_b
+
+    # Case C: Missing funding data when require_funding_data=True -> fail closed
+    coord_req = PortfolioCoordinator(account, risk, {"require_funding_data": True})
+    chosen_c, reason_c = coord_req.reconcile_signals("SOL/USDT", entry_sig, no_sig)
+    assert chosen_c is None
+    assert "Missing required funding data" in reason_c
+
+
+def test_persistent_drawdown_circuit_breaker_survives_restart(tmp_path):
+    """Verify peak_equity and tripped max-drawdown circuit breaker persist across PaperAccount & RiskEngine restarts."""
+    port_file = tmp_path / "persistent_dd_portfolio.json"
+    account1 = PaperAccount(10000.0, portfolio_file=port_file)
+    risk1 = RiskEngine(max_drawdown_limit_pct=0.15, account=account1)
+
+    # 1. Portfolio grows to $12,000 high-water mark
+    healthy_peak, _ = risk1.check_circuit_breakers(12000.0)
+    assert healthy_peak is True
+    assert risk1.peak_equity == 12000.0
+
+    # Simulate process restart #1: reload PaperAccount and fresh RiskEngine from disk
+    account2 = PaperAccount(10000.0, portfolio_file=port_file)
+    risk2 = RiskEngine(max_drawdown_limit_pct=0.15, account=account2)
+    assert account2.state["peak_equity"] == 12000.0
+    assert risk2.peak_equity == 12000.0
+    assert risk2.is_halted is False
+
+    # 2. Equity drops to $10,000 (16.67% drawdown from $12,000 peak, even though equal to initial $10,000!)
+    healthy_drop, drop_reason = risk2.check_circuit_breakers(10000.0)
+    assert healthy_drop is False
+    assert "Max drawdown circuit breaker triggered" in drop_reason
+    assert risk2.is_halted is True
+    assert account2.state["circuit_breaker_status"] == "TRIPPED"
+    assert account2.state["circuit_breaker_tripped"] is True
+    assert account2.state["circuit_breaker_triggered_at"] is not None
+
+    # 3. Simulate process restart #2 after crash/reboot: breaker MUST remain tripped!
+    account3 = PaperAccount(10000.0, portfolio_file=port_file)
+    risk3 = RiskEngine(max_drawdown_limit_pct=0.15)
+    coord3 = PortfolioCoordinator(account3, risk3, {"enable_funding_radar": False})
+    assert risk3.is_halted is True
+    assert risk3.peak_equity == 12000.0
+
+    # Verify new entries are blocked while breaker is active
+    verdict = risk3.validate_proposed_entry(
+        symbol="BTC/USDT",
+        side="LONG",
+        strategy_id="momentum",
+        entry_price=70000.0,
+        suggested_stop=68000.0,
+        atr=800.0,
+        atr_multiplier=2.5,
+        equity=10000.0,
+        cash=10000.0,
+        active_positions={},
+    )
+    assert verdict.approved is False
+    assert "Trading halted" in verdict.reason
+
+    # Unauthorized reset attempt must be rejected
+    assert risk3.reset_kill_switch(authorized=False) is False
+    assert risk3.is_halted is True
+
+    # Authorized reset clears breaker and persists to disk
+    assert risk3.reset_kill_switch(authorized=True, reset_peak_to_current=10000.0) is True
+    assert risk3.is_halted is False
+    account4 = PaperAccount(10000.0, portfolio_file=port_file)
+    assert account4.state["circuit_breaker_status"] == "OK"
+    assert account4.state["circuit_breaker_tripped"] is False
+
+
+def test_dynamic_multi_strategy_registration_beyond_two_strategies(tmp_path):
+    """Verify coordinator supports >2 registered strategies and reconciles N custom strategy plugins."""
+    account = PaperAccount(10000.0, portfolio_file=tmp_path / "multistrat_port.json")
+    risk = RiskEngine()
+    coordinator = PortfolioCoordinator(account, risk, {"enable_funding_radar": False})
+
+    # Verify all 4 built-in strategies are registered by default
+    reg = coordinator.get_registered_strategies()
+    assert set(reg.keys()) >= {"momentum", "mean_reversion", "stat_arb_pairs", "basis_yield"}
+
+    # Register a 5th custom strategy plugin dynamically
+    now = datetime.now(timezone.utc)
+
+    class VolatilityBreakoutPlugin:
+        STRATEGY_ID = "vol_breakout_v1"
+        STRATEGY_NAME = "Volatility Compression Breakout"
+
+        def evaluate(self, symbol: str, df: pd.DataFrame, existing_position=None) -> TradingSignal:
+            return TradingSignal(
+                strategy_id=self.STRATEGY_ID,
+                symbol=symbol,
+                timestamp=now,
+                direction=SignalDirection.LONG,
+                status=SignalStatus.ENTRY,
+                reference_price=float(df.iloc[-1]["close"]),
+                signal_strength=0.95,
+                atr=2.0,
+                suggested_stop=float(df.iloc[-1]["close"]) - 4.0,
+                suggested_take_profit=float(df.iloc[-1]["close"]) + 8.0,
+                indicators={"adx": 23.0},
+            )
+
+    coordinator.register_strategy("vol_breakout_v1", VolatilityBreakoutPlugin(), enabled=True)
+    reg_after = coordinator.get_registered_strategies()
+    assert len(reg_after) == 5
+    assert "vol_breakout_v1" in reg_after
+
+    # Disable momentum and mean_reversion, leaving only the 5th custom strategy active for directional signals
+    coordinator.set_strategy_enabled("momentum", False)
+    coordinator.set_strategy_enabled("mean_reversion", False)
+
+    df = make_trending_df(n=60, start=100.0, step=0.5)
+    dec = coordinator.process_symbol("AAPL", df, {})
+    assert dec.strategy_id == "vol_breakout_v1"
+    assert dec.action in ("ENTER_LONG", "REJECTED")  # Evaluated through the 5th strategy
+
+

@@ -7,8 +7,10 @@ and coordinates paper execution and portfolio accounting.
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+import math
 import time
 from typing import Dict, Any, List, Optional, Tuple
+import numpy as np
 import pandas as pd
 
 from core.signals import TradingSignal, SignalDirection, SignalStatus, create_no_trade_signal
@@ -110,11 +112,31 @@ class PortfolioCoordinator:
         self.risk_engine = risk_engine
         self.config = config
 
+        if self.risk_engine is not None and self.account is not None:
+            if "max_drawdown_limit_pct" in config:
+                dd_cfg = float(config["max_drawdown_limit_pct"])
+                self.risk_engine.max_drawdown_limit_pct = dd_cfg / 100.0 if dd_cfg > 1.0 else dd_cfg
+            self.risk_engine.bind_account(self.account)
+
         # Default strategy engines (top-level config)
         self.momentum_strategy = MomentumStrategy(config)
         self.mean_reversion_strategy = MeanReversionStrategy(config)
         # Per-symbol engines built from asset profiles (lazily cached)
         self._symbol_engines: Dict[str, Tuple[Dict[str, Any], MomentumStrategy, MeanReversionStrategy]] = {}
+        # Dynamic multi-strategy registry supporting N independent strategies
+        self._custom_strategies: Dict[str, Any] = {}
+        self._strategy_enabled: Dict[str, bool] = {
+            MomentumStrategy.STRATEGY_ID: bool(config.get("enable_momentum", True)),
+            MeanReversionStrategy.STRATEGY_ID: bool(config.get("enable_mean_reversion", True)),
+            StatArbPairsStrategy.STRATEGY_ID: bool(
+                config.get("enable_pairs_trading", config.get("enable_stat_arb_pairs", True))
+            ),
+            "basis_yield": bool(config.get("enable_basis_yield", True)),
+        }
+        if "enabled_strategies" in config and isinstance(config["enabled_strategies"], (list, set, tuple)):
+            enabled_set = set(config["enabled_strategies"])
+            for sid in list(self._strategy_enabled.keys()):
+                self._strategy_enabled[sid] = sid in enabled_set
         # Derivatives funding rate cache: symbol -> (timestamp, funding_rate)
         self._funding_cache: Dict[str, Tuple[float, Optional[float]]] = {}
         # Timestamp of most recent crypto stop-loss exit for contagion cooldown protection
@@ -176,6 +198,81 @@ class PortfolioCoordinator:
     def symbol_config(self, symbol: str) -> Dict[str, Any]:
         return self._engines_for(symbol)[0]
 
+    def register_strategy(self, strategy_id: str, strategy: Any, enabled: bool = True) -> None:
+        """Dynamically register an independent strategy plugin with the coordinator."""
+        if not strategy_id or not isinstance(strategy_id, str):
+            raise ValueError("strategy_id must be a non-empty string")
+        self._custom_strategies[strategy_id] = strategy
+        self._strategy_enabled[strategy_id] = bool(enabled)
+
+    def unregister_strategy(self, strategy_id: str) -> None:
+        """Remove a dynamically registered strategy plugin."""
+        self._custom_strategies.pop(strategy_id, None)
+        self._strategy_enabled.pop(strategy_id, None)
+
+    def set_strategy_enabled(self, strategy_id: str, enabled: bool) -> None:
+        """Enable or disable any registered strategy independently at runtime."""
+        self._strategy_enabled[strategy_id] = bool(enabled)
+
+    def is_strategy_enabled(self, strategy_id: str) -> bool:
+        """Return whether a strategy is currently active."""
+        if "enabled_strategies" in self.config and isinstance(self.config["enabled_strategies"], (list, set, tuple)):
+            return strategy_id in set(self.config["enabled_strategies"])
+        if strategy_id == MomentumStrategy.STRATEGY_ID and "enable_momentum" in self.config:
+            return bool(self.config["enable_momentum"])
+        if strategy_id == MeanReversionStrategy.STRATEGY_ID and "enable_mean_reversion" in self.config:
+            return bool(self.config["enable_mean_reversion"])
+        if strategy_id == StatArbPairsStrategy.STRATEGY_ID:
+            if "enable_pairs_trading" in self.config:
+                return bool(self.config["enable_pairs_trading"])
+            if "enable_stat_arb_pairs" in self.config:
+                return bool(self.config["enable_stat_arb_pairs"])
+        if strategy_id == "basis_yield" and "enable_basis_yield" in self.config:
+            return bool(self.config["enable_basis_yield"])
+        return bool(self._strategy_enabled.get(strategy_id, True))
+
+    def get_registered_strategies(self) -> Dict[str, Dict[str, Any]]:
+        """Return metadata and active state for all registered strategies in the Web4 system."""
+        registry: Dict[str, Dict[str, Any]] = {
+            MomentumStrategy.STRATEGY_ID: {
+                "strategy_id": MomentumStrategy.STRATEGY_ID,
+                "name": "Donchian Momentum Breakout",
+                "type": "single_asset_directional",
+                "enabled": self.is_strategy_enabled(MomentumStrategy.STRATEGY_ID),
+                "instance": self.momentum_strategy,
+            },
+            MeanReversionStrategy.STRATEGY_ID: {
+                "strategy_id": MeanReversionStrategy.STRATEGY_ID,
+                "name": "Bollinger/RSI Mean Reversion",
+                "type": "single_asset_directional",
+                "enabled": self.is_strategy_enabled(MeanReversionStrategy.STRATEGY_ID),
+                "instance": self.mean_reversion_strategy,
+            },
+            StatArbPairsStrategy.STRATEGY_ID: {
+                "strategy_id": StatArbPairsStrategy.STRATEGY_ID,
+                "name": "Cointegrated Statistical Arbitrage Pairs",
+                "type": "multi_asset_relative_value",
+                "enabled": self.is_strategy_enabled(StatArbPairsStrategy.STRATEGY_ID),
+                "instance": self.pairs_strategy,
+            },
+            "basis_yield": {
+                "strategy_id": "basis_yield",
+                "name": "Delta-Neutral Perpetual Basis Yield",
+                "type": "delta_neutral_carry",
+                "enabled": self.is_strategy_enabled("basis_yield"),
+                "instance": self.basis_yield_engine,
+            },
+        }
+        for sid, strat in self._custom_strategies.items():
+            registry[sid] = {
+                "strategy_id": sid,
+                "name": getattr(strat, "STRATEGY_NAME", sid),
+                "type": "custom_plugin",
+                "enabled": self.is_strategy_enabled(sid),
+                "instance": strat,
+            }
+        return registry
+
     def reload_config(self, config: Dict[str, Any]) -> None:
         """Hot-reload configuration and rebuild strategy engines without resetting portfolio state."""
         self.config = config
@@ -217,13 +314,86 @@ class PortfolioCoordinator:
             self._symbol_engines[symbol] = (cfg, MomentumStrategy(cfg), MeanReversionStrategy(cfg))
         return self._symbol_engines[symbol]
 
+    def _resolve_funding_state(
+        self,
+        symbol: str,
+        signals: List[TradingSignal],
+        context: Optional[Dict[str, Any]] = None,
+    ) -> Tuple[Optional[str], Optional[float], bool, str]:
+        """Resolve and validate unified funding regime and funding rate across context, signals, and config.
+
+        Returns:
+            (funding_regime, funding_rate_pct, is_valid, error_reason)
+        """
+        sym_cfg = self.symbol_config(symbol) if symbol else {}
+        ctx = context or {}
+        valid_regimes = {"NEUTRAL", "OVERHEATED_LONGS", "SHORT_SQUEEZE_PRONE", "OVERHEATED_SHORTS"}
+
+        # 1. Extract raw funding_rate_pct and funding_regime in priority order: context -> signals -> sym_cfg -> config
+        raw_rate = ctx.get("funding_rate_pct")
+        raw_regime = ctx.get("funding_regime")
+
+        for sig in signals:
+            ind = sig.indicators or {}
+            if raw_rate is None and "funding_rate_pct" in ind:
+                raw_rate = ind.get("funding_rate_pct")
+            if raw_regime is None and "funding_regime" in ind:
+                raw_regime = ind.get("funding_regime")
+
+        if raw_rate is None and "funding_rate_pct" in sym_cfg:
+            raw_rate = sym_cfg.get("funding_rate_pct")
+        if raw_rate is None and "funding_rate_pct" in self.config:
+            raw_rate = self.config.get("funding_rate_pct")
+
+        if raw_regime is None and "funding_regime" in sym_cfg:
+            raw_regime = sym_cfg.get("funding_regime")
+        if raw_regime is None and "funding_regime" in self.config:
+            raw_regime = self.config.get("funding_regime")
+
+        # 2. Validate raw_rate if provided
+        parsed_rate: Optional[float] = None
+        if raw_rate is not None:
+            try:
+                parsed_rate = float(raw_rate)
+                if pd.isna(parsed_rate) or np.isinf(parsed_rate):
+                    return None, None, False, "Blocked by Funding Gate: Invalid NaN/Inf funding rate data"
+            except (TypeError, ValueError):
+                return None, None, False, f"Blocked by Funding Gate: Malformed funding rate '{raw_rate}'"
+
+        # 3. Validate raw_regime if provided
+        parsed_regime: Optional[str] = None
+        if raw_regime is not None:
+            if not isinstance(raw_regime, str) or raw_regime.strip().upper() not in valid_regimes:
+                return None, parsed_rate, False, f"Blocked by Funding Gate: Invalid funding regime '{raw_regime}'"
+            parsed_regime = raw_regime.strip().upper()
+
+        # 4. Derive regime from rate if regime was not explicitly provided
+        max_fr_pct = float(sym_cfg.get("max_funding_rate_pct", self.config.get("max_funding_rate_pct", 0.05)))
+        min_fr_pct = float(sym_cfg.get("min_funding_rate_pct", self.config.get("min_funding_rate_pct", -0.02)))
+        if parsed_regime is None and parsed_rate is not None:
+            if parsed_rate > max_fr_pct:
+                parsed_regime = "OVERHEATED_LONGS"
+            elif parsed_rate < min_fr_pct:
+                parsed_regime = "SHORT_SQUEEZE_PRONE"
+            else:
+                parsed_regime = "NEUTRAL"
+
+        # 5. If require_funding_data is set for crypto symbols, fail closed if funding data is missing
+        require_funding = bool(sym_cfg.get("require_funding_data", self.config.get("require_funding_data", False)))
+        if require_funding and parsed_regime is None and parsed_rate is None:
+            return None, None, False, "Blocked by Funding Gate: Missing required funding data"
+
+        return parsed_regime, parsed_rate, True, ""
+
     def reconcile_signals(
         self,
         symbol: str,
         momentum_sig: TradingSignal,
         mr_sig: TradingSignal,
+        extra_signals: Optional[List[TradingSignal]] = None,
+        context: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Optional[TradingSignal], str]:
-        """Reconcile signals from both strategies with Automated Regime Awareness.
+        """Reconcile signals across all registered directional strategies with Automated Regime Awareness.
 
         Rules:
         1. Macro Bear Gate: If price < macro_ema (200 EMA), block Long breakout entries
@@ -232,8 +402,16 @@ class PortfolioCoordinator:
            entries and prioritize Mean Reversion.
         3. Strong Trend Gate: If ADX >= adx_trend_threshold (default 25.0), suppress
            counter-trend Mean Reversion.
-        4. Standard Conflict / Tiebreak resolution.
+        4. Funding Rate Overheat & Squeeze Gate: Reads unified funding regime from context,
+           signals, and coordinator config; blocks Long entries across all strategies when
+           OVERHEATED_LONGS, blocks Short entries when SHORT_SQUEEZE_PRONE / OVERHEATED_SHORTS,
+           and fails safely when funding data is malformed or missing when required.
+        5. Multi-Strategy Conflict / Tiebreak resolution across N registered strategies.
         """
+        all_signals: List[TradingSignal] = [momentum_sig, mr_sig]
+        if extra_signals:
+            all_signals.extend([s for s in extra_signals if s is not None])
+
         mom_entry = (momentum_sig.status == SignalStatus.ENTRY)
         mr_entry = (mr_sig.status == SignalStatus.ENTRY)
 
@@ -241,12 +419,34 @@ class PortfolioCoordinator:
         adx_chop_threshold = self.config.get("adx_chop_threshold", 20.0)
         adx_trend_threshold = self.config.get("adx_trend_threshold", 25.0)
 
+        mom_ind = dict(momentum_sig.indicators or {})
+        mr_ind = dict(mr_sig.indicators or {})
+        cur_price = momentum_sig.reference_price or mr_sig.reference_price or (
+            extra_signals[0].reference_price if extra_signals else 0.0
+        )
+
+        # Authoritative Funding Gate (applies whenever funding regime/data is present or required)
+        funding_regime, funding_rate_pct, funding_valid, funding_err = self._resolve_funding_state(
+            symbol, all_signals, context=context
+        )
+        if not funding_valid:
+            return None, funding_err
+
+        if funding_regime is not None:
+            mom_ind["funding_regime"] = funding_regime
+            mr_ind["funding_regime"] = funding_regime
+            if context is not None:
+                context["funding_regime"] = funding_regime
+        if funding_rate_pct is not None:
+            mom_ind["funding_rate_pct"] = funding_rate_pct
+            mr_ind["funding_rate_pct"] = funding_rate_pct
+            if context is not None:
+                context["funding_rate_pct"] = funding_rate_pct
+
         if enable_regime_filter:
-            mom_ind = momentum_sig.indicators or {}
-            mr_ind = mr_sig.indicators or {}
-            cur_price = momentum_sig.reference_price or mr_sig.reference_price
-            macro_ema = mom_ind.get("macro_ema") or mr_ind.get("macro_ema")
-            adx = mr_ind.get("adx") if "adx" in mr_ind else mom_ind.get("adx")
+            ctx = context or {}
+            macro_ema = mom_ind.get("macro_ema") or mr_ind.get("macro_ema") or ctx.get("macro_ema")
+            adx = mr_ind.get("adx") if "adx" in mr_ind else mom_ind.get("adx", ctx.get("adx"))
 
             # Rule 1: Macro Bear Gate (Block long breakouts when below 200 EMA)
             if (
@@ -260,7 +460,7 @@ class PortfolioCoordinator:
                     momentum_sig = create_no_trade_signal(
                         "momentum", symbol, cur_price,
                         f"Blocked by Macro Bear Gate (${cur_price:.2f} < EMA200 ${macro_ema:.2f})",
-                        indicators=momentum_sig.indicators,
+                        indicators=mom_ind,
                     )
 
             # Rule 2: Range Chop Gate (Suppress breakouts when ADX < chop threshold)
@@ -269,7 +469,7 @@ class PortfolioCoordinator:
                 momentum_sig = create_no_trade_signal(
                     "momentum", symbol, cur_price,
                     f"Blocked by Chop Gate (ADX {adx:.1f} < {adx_chop_threshold:.1f})",
-                    indicators=momentum_sig.indicators,
+                    indicators=mom_ind,
                 )
 
             # Rule 3: Strong Trend Gate (Suppress counter-trend MR when ADX >= trend threshold)
@@ -278,18 +478,41 @@ class PortfolioCoordinator:
                 mr_sig = create_no_trade_signal(
                     "mean_reversion", symbol, cur_price,
                     f"Suppressed counter-trend MR in strong trend (ADX {adx:.1f} >= {adx_trend_threshold:.1f})",
-                    indicators=mr_sig.indicators,
+                    indicators=mr_ind,
                 )
 
-            # Rule 4: Funding Rate Overheat Filter (Crypto Derivatives Radar)
-            funding_regime = mom_ind.get("funding_regime") or mr_ind.get("funding_regime")
-            if funding_regime == "OVERHEATED_LONGS" and mom_entry and momentum_sig.direction == SignalDirection.LONG:
-                mom_entry = False
-                momentum_sig = create_no_trade_signal(
-                    "momentum", symbol, cur_price,
-                    f"Blocked by Overheated Funding Rate ({mom_ind.get('funding_rate_pct', 0.0):+.3f}% per 8h)",
-                    indicators=momentum_sig.indicators,
-                )
+            # Rule 4: Funding Rate Overheat & Squeeze Filter (propagated across all strategies)
+            fr_display = funding_rate_pct if funding_rate_pct is not None else 0.0
+            if funding_regime == "OVERHEATED_LONGS":
+                if mom_entry and momentum_sig.direction == SignalDirection.LONG:
+                    mom_entry = False
+                    momentum_sig = create_no_trade_signal(
+                        "momentum", symbol, cur_price,
+                        f"Blocked by Overheated Funding Rate ({fr_display:+.3f}% per 8h)",
+                        indicators=mom_ind,
+                    )
+                if mr_entry and mr_sig.direction == SignalDirection.LONG:
+                    mr_entry = False
+                    mr_sig = create_no_trade_signal(
+                        "mean_reversion", symbol, cur_price,
+                        f"Blocked by Overheated Funding Rate ({fr_display:+.3f}% per 8h)",
+                        indicators=mr_ind,
+                    )
+            elif funding_regime in ("SHORT_SQUEEZE_PRONE", "OVERHEATED_SHORTS"):
+                if mom_entry and momentum_sig.direction == SignalDirection.SHORT:
+                    mom_entry = False
+                    momentum_sig = create_no_trade_signal(
+                        "momentum", symbol, cur_price,
+                        f"Blocked by Negative Funding Squeeze Risk ({fr_display:+.3f}% per 8h)",
+                        indicators=mom_ind,
+                    )
+                if mr_entry and mr_sig.direction == SignalDirection.SHORT:
+                    mr_entry = False
+                    mr_sig = create_no_trade_signal(
+                        "mean_reversion", symbol, cur_price,
+                        f"Blocked by Negative Funding Squeeze Risk ({fr_display:+.3f}% per 8h)",
+                        indicators=mr_ind,
+                    )
 
             # Rule 5: Macro Crash Defense Gate (VIX Panic & Credit Spread Radar)
             macro_report = self.fred_radar.evaluate()
@@ -298,10 +521,58 @@ class PortfolioCoordinator:
                 momentum_sig = create_no_trade_signal(
                     "momentum", symbol, cur_price,
                     f"Blocked by Macro Crash Defense ({macro_report.reason})",
-                    indicators=momentum_sig.indicators,
+                    indicators=mom_ind,
                 )
 
-        # Case 1: Both propose entries
+        # Also apply funding gate to any extra registered strategy signals
+        filtered_extra: List[TradingSignal] = []
+        for esig in (extra_signals or []):
+            if esig is None:
+                continue
+            e_ind = dict(esig.indicators or {})
+            if funding_regime is not None:
+                e_ind["funding_regime"] = funding_regime
+            if funding_rate_pct is not None:
+                e_ind["funding_rate_pct"] = funding_rate_pct
+            if enable_regime_filter and esig.status == SignalStatus.ENTRY:
+                fr_display = funding_rate_pct if funding_rate_pct is not None else 0.0
+                if funding_regime == "OVERHEATED_LONGS" and esig.direction == SignalDirection.LONG:
+                    esig = create_no_trade_signal(
+                        esig.strategy_id, symbol, cur_price,
+                        f"Blocked by Overheated Funding Rate ({fr_display:+.3f}% per 8h)",
+                        indicators=e_ind,
+                    )
+                elif funding_regime in ("SHORT_SQUEEZE_PRONE", "OVERHEATED_SHORTS") and esig.direction == SignalDirection.SHORT:
+                    esig = create_no_trade_signal(
+                        esig.strategy_id, symbol, cur_price,
+                        f"Blocked by Negative Funding Squeeze Risk ({fr_display:+.3f}% per 8h)",
+                        indicators=e_ind,
+                    )
+            filtered_extra.append(esig)
+
+        # If extra custom strategies are present and proposing entries, reconcile across all N strategies
+        extra_entries = [s for s in filtered_extra if s.status == SignalStatus.ENTRY]
+        if extra_entries:
+            active_entries: List[TradingSignal] = []
+            if mom_entry:
+                active_entries.append(momentum_sig)
+            if mr_entry:
+                active_entries.append(mr_sig)
+            active_entries.extend(extra_entries)
+
+            directions = {s.direction for s in active_entries}
+            if len(directions) > 1:
+                strat_desc = ", ".join(f"{s.strategy_id}={s.direction.value}" for s in active_entries)
+                return None, f"Conflict: Opposing multi-strategy signals ({strat_desc})"
+            best_sig = max(active_entries, key=lambda s: float(s.signal_strength))
+            if len(active_entries) == 1:
+                return best_sig, f"{best_sig.strategy_id} entry proposed"
+            return best_sig, (
+                f"Multi-strategy agreement on {best_sig.direction.value}; "
+                f"selected {best_sig.strategy_id} (strength {best_sig.signal_strength:.2f})"
+            )
+
+        # Case 1: Both Momentum and Mean Reversion propose entries
         if mom_entry and mr_entry:
             if momentum_sig.direction != mr_sig.direction:
                 # Opposite directions: CONFLICT
@@ -326,6 +597,9 @@ class PortfolioCoordinator:
             return None, momentum_sig.no_trade_reason
         if mr_sig.no_trade_reason:
             return None, mr_sig.no_trade_reason
+        for esig in filtered_extra:
+            if esig.no_trade_reason:
+                return None, esig.no_trade_reason
         return None, "No entry signal proposed"
 
     def process_symbol(
@@ -368,12 +642,23 @@ class PortfolioCoordinator:
                     (pos_side == "LONG" and cur_price <= pair_stop)
                     or (pos_side == "SHORT" and cur_price >= pair_stop)
                 ):
+                    pair_id_val = existing_pos.get("pair_id")
                     trade = self.account.close_position(
                         symbol=symbol,
                         exit_price=cur_price * (0.9996 if pos_side == "LONG" else 1.0004),
                         exit_reason=f"Pair Leg Catastrophe Stop Hit (${cur_price:.2f} vs ${pair_stop:.2f})",
                         fee_pct=sym_cfg.get("fee_pct", 0.0006),
                     )
+                    if pair_id_val:
+                        for other_sym, other_pos in list(self.account.positions.items()):
+                            if other_pos.get("pair_id") == pair_id_val:
+                                other_px = current_prices.get(other_sym, float(other_pos.get("entry_price", 0.0)))
+                                self.account.close_position(
+                                    symbol=other_sym,
+                                    exit_price=other_px,
+                                    exit_reason=f"Partner Leg Catastrophe Stop ({pair_id_val})",
+                                    fee_pct=sym_cfg.get("fee_pct", 0.0006),
+                                )
                     return CoordinatorDecision(
                         symbol=symbol,
                         action="EXIT",
@@ -395,6 +680,8 @@ class PortfolioCoordinator:
                 )
             elif pos_strategy == MeanReversionStrategy.STRATEGY_ID:
                 sig = mean_reversion_strategy.evaluate(symbol, df, existing_position=existing_pos)
+            elif pos_strategy in self._custom_strategies:
+                sig = self._custom_strategies[pos_strategy].evaluate(symbol, df, existing_position=existing_pos)
             else:
                 sig = momentum_strategy.evaluate(symbol, df, existing_position=existing_pos)
 
@@ -515,14 +802,29 @@ class PortfolioCoordinator:
                     signal=sig,
                 )
 
-        # 2. No open position: generate signals from both strategies
-        mom_sig = momentum_strategy.evaluate(symbol, df, existing_position=None)
+        # 2. No open position: generate signals from all enabled directional strategies
+        if self.is_strategy_enabled(MomentumStrategy.STRATEGY_ID):
+            mom_sig = momentum_strategy.evaluate(symbol, df, existing_position=None)
+        else:
+            mom_sig = create_no_trade_signal(
+                strategy_id=MomentumStrategy.STRATEGY_ID,
+                symbol=symbol,
+                price=cur_price,
+                reason="Momentum strategy disabled",
+            )
 
         # Altcoin Strategy Specialization: Restrict high-beta crypto altcoins to Momentum only
         is_altcoin = is_crypto_symbol(symbol) and symbol.upper() not in ("BTC/USDT", "ETH/USDT")
         suppress_mr = is_altcoin and self.config.get("crypto_altcoin_momentum_only", False)
 
-        if suppress_mr:
+        if not self.is_strategy_enabled(MeanReversionStrategy.STRATEGY_ID):
+            mr_sig = create_no_trade_signal(
+                strategy_id=MeanReversionStrategy.STRATEGY_ID,
+                symbol=symbol,
+                price=cur_price,
+                reason="Mean-Reversion strategy disabled",
+            )
+        elif suppress_mr:
             mr_sig = create_no_trade_signal(
                 strategy_id=MeanReversionStrategy.STRATEGY_ID,
                 symbol=symbol,
@@ -532,7 +834,14 @@ class PortfolioCoordinator:
         else:
             mr_sig = mean_reversion_strategy.evaluate(symbol, df, existing_position=None)
 
-        # Merge indicator snapshot from both strategies for full transparency
+        extra_signals: List[TradingSignal] = []
+        for custom_id, custom_strat in self._custom_strategies.items():
+            if self.is_strategy_enabled(custom_id) and hasattr(custom_strat, "evaluate"):
+                csig = custom_strat.evaluate(symbol, df, existing_position=None)
+                if csig is not None:
+                    extra_signals.append(csig)
+
+        # Merge indicator snapshot from all strategies for full transparency
         merged_ind = {}
         if mom_sig and mom_sig.indicators:
             merged_ind.update(mom_sig.indicators)
@@ -540,6 +849,11 @@ class PortfolioCoordinator:
             for k, v in mr_sig.indicators.items():
                 if k not in merged_ind:
                     merged_ind[k] = v
+        for csig in extra_signals:
+            if csig.indicators:
+                for k, v in csig.indicators.items():
+                    if k not in merged_ind:
+                        merged_ind[k] = v
 
         # Multi-timeframe confluence evaluation
         has_confluence, conf_score, conf_desc = calculate_multi_timeframe_confluence(df, indicators=merged_ind)
@@ -596,7 +910,9 @@ class PortfolioCoordinator:
             regime = "TRANSITION"
         merged_ind["regime"] = regime
 
-        chosen_sig, reason = self.reconcile_signals(symbol, mom_sig, mr_sig)
+        chosen_sig, reason = self.reconcile_signals(
+            symbol, mom_sig, mr_sig, extra_signals=extra_signals, context=merged_ind
+        )
 
         if chosen_sig is None:
             action = "CONFLICT" if "Conflict" in reason else "REJECTED"
@@ -967,9 +1283,10 @@ class PortfolioCoordinator:
     def run_cycle(
         self,
         market_data: Dict[str, pd.DataFrame],
+        now: Optional[datetime] = None,
     ) -> CycleReport:
         """Run a coordinated portfolio evaluation cycle across all symbols."""
-        now = datetime.now(timezone.utc)
+        now = now or datetime.now(timezone.utc)
         current_prices: Dict[str, float] = {}
         decisions: List[CoordinatorDecision] = []
 
@@ -1029,14 +1346,26 @@ class PortfolioCoordinator:
                 signals_count += 1
 
         # Dynamic Pairs Trading Multi-Asset Evaluation Pass
-        if self.config.get("enable_pairs_trading", True):
+        if self.is_strategy_enabled(StatArbPairsStrategy.STRATEGY_ID):
             active_pairs: Dict[str, str] = {}
             for sym, pos in self.account.positions.items():
                 pid = pos.get("pair_id")
                 if pid:
                     active_pairs[pid] = pos.get("side", "LONG")
 
-            candidate_pairs = self.config.get("pairs_universe")
+            raw_candidate_pairs = self.config.get("pairs_universe") or self.config.get("stat_arb_pairs")
+            candidate_pairs = None
+            if raw_candidate_pairs:
+                cfg_pair_syms = {s for p in raw_candidate_pairs if len(p) == 2 for s in p}
+                valid_cfg_pairs = [
+                    tuple(p) for p in raw_candidate_pairs
+                    if len(p) == 2 and p[0] in market_data and p[1] in market_data
+                ]
+                if valid_cfg_pairs:
+                    candidate_pairs = valid_cfg_pairs
+                elif any(s in cfg_pair_syms for s in market_data):
+                    candidate_pairs = []
+
             pair_signals = self.pairs_strategy.scan_dynamic_pairs(
                 market_data=market_data,
                 candidate_universe=candidate_pairs,
@@ -1062,6 +1391,17 @@ class PortfolioCoordinator:
                         indicators={"z_score": psig.z_score, "beta": psig.hedge_ratio, "half_life": psig.half_life, "correlation": psig.correlation},
                     ))
                 elif psig.action in ("LONG_A_SHORT_B", "SHORT_A_LONG_B"):
+                    total_eq = self.account.get_total_equity(current_prices)
+                    breaker_ok, breaker_reason = self.risk_engine.check_circuit_breakers(total_eq, current_time=now)
+                    if not breaker_ok:
+                        decisions.append(CoordinatorDecision(
+                            symbol=psig.pair_id,
+                            action="REJECTED",
+                            strategy_id="stat_arb_pairs",
+                            price=current_prices.get(psig.asset_a, 0.0),
+                            reason=breaker_reason,
+                        ))
+                        continue
                     if not self.account.has_position(psig.asset_a) and not self.account.has_position(psig.asset_b):
                         if len(self.account.positions) + 2 <= self.risk_engine.max_open_positions:
                             pa = current_prices.get(psig.asset_a, float(market_data[psig.asset_a]["close"].iloc[-1]))
@@ -1071,7 +1411,6 @@ class PortfolioCoordinator:
 
                             raw_risk = float(self.config.get("stat_arb_risk_pct", 0.02))
                             clamped_risk = self.risk_engine.enforce_risk_bounds(raw_risk)
-                            total_eq = self.account.get_total_equity(current_prices)
                             dollar_risk = total_eq * (clamped_risk * 0.5)
 
                             stop_pct = float(self.config.get("stat_arb_leg_stop_pct", 0.05))
@@ -1136,12 +1475,14 @@ class PortfolioCoordinator:
                                     pass
 
         # Delta-Neutral Basis Funding Rate Yield Accrual Pass
-        if self.config.get("enable_basis_yield", True):
+        if self.is_strategy_enabled("basis_yield"):
             elapsed_hours = 8.0
             if self.last_basis_accrual_time is not None:
                 elapsed_hours = (now - self.last_basis_accrual_time).total_seconds() / 3600.0
 
-            if elapsed_hours >= 8.0:
+            total_eq_now = self.account.get_total_equity(current_prices)
+            breaker_ok, _ = self.risk_engine.check_circuit_breakers(total_eq_now, current_time=now)
+            if elapsed_hours >= 8.0 and breaker_ok:
                 max_basis_pct = float(self.config.get("max_basis_allocation_pct", 0.30))
                 total_eq = self.account.get_total_equity(current_prices)
                 basis_alloc = min(self.account.cash * 0.80, total_eq * max_basis_pct)
@@ -1202,6 +1543,8 @@ class PortfolioCoordinator:
                 ))
 
         total_equity = self.account.get_total_equity(current_prices)
+        if self.risk_engine is not None:
+            self.risk_engine.check_circuit_breakers(total_equity, current_time=now)
 
         return CycleReport(
             timestamp=now,

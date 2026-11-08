@@ -1,0 +1,781 @@
+{
+  "generated_at": "2026-11-08T21:33:04.658847+00:00",
+  "methodology": {
+    "design": "Shifted Non-Overlapping 90-Day Out-of-Sample Validation",
+    "window_1_selection": {
+      "start_utc": "2026-05-11T22:00:00+00:00",
+      "end_utc": "2026-08-10T20:00:00+00:00",
+      "duration_days": 90,
+      "role": "Asset universe selection & parameter freeze window (Days -180 to -90)"
+    },
+    "window_2_out_of_sample": {
+      "start_utc": "2026-08-10T20:00:00+00:00",
+      "end_utc": "2026-11-08T20:00:00+00:00",
+      "duration_days": 90,
+      "role": "Strict non-overlapping Out-of-Sample evaluation window (Days -90 to 0)"
+    },
+    "execution_cost_model": {
+      "mode": "taker",
+      "fee_pct_per_side": 0.0006,
+      "slippage_pct_per_side": 0.0004,
+      "round_trip_cost_pct": 0.2
+    },
+    "frozen_selected_universe": [
+      "XRP/USDT",
+      "BNB/USDT",
+      "BTC/USDT",
+      "ETH/USDT",
+      "SOL/USDT",
+      "AAPL",
+      "MCHP",
+      "XLE",
+      "NU",
+      "IREN",
+      "AMD",
+      "NVDA"
+    ],
+    "window_1_asset_rankings": [
+      {
+        "symbol": "XRP/USDT",
+        "is_crypto": true,
+        "win1_momentum_return_pct": -13.86,
+        "win1_mr_return_pct": 3.06,
+        "win1_best_return_pct": 3.06,
+        "win1_combined_return_pct": -5.4,
+        "win1_best_profit_factor": 1.83
+      },
+      {
+        "symbol": "AAPL",
+        "is_crypto": false,
+        "win1_momentum_return_pct": 2.8,
+        "win1_mr_return_pct": -1.03,
+        "win1_best_return_pct": 2.8,
+        "win1_combined_return_pct": 0.88,
+        "win1_best_profit_factor": 2.1
+      },
+      {
+        "symbol": "BNB/USDT",
+        "is_crypto": true,
+        "win1_momentum_return_pct": -3.84,
+        "win1_mr_return_pct": 2.68,
+        "win1_best_return_pct": 2.68,
+        "win1_combined_return_pct": -0.58,
+        "win1_best_profit_factor": 2.1
+      },
+      {
+        "symbol": "MCHP",
+        "is_crypto": false,
+        "win1_momentum_return_pct": -19.11,
+        "win1_mr_return_pct": 2.44,
+        "win1_best_return_pct": 2.44,
+        "win1_combined_return_pct": -8.33,
+        "win1_best_profit_factor": 99.0
+      },
+      {
+        "symbol": "XLE",
+        "is_crypto": false,
+        "win1_momentum_return_pct": 2.13,
+        "win1_mr_return_pct": -3.16,
+        "win1_best_return_pct": 2.13,
+        "win1_combined_return_pct": -0.52,
+        "win1_best_profit_factor": 1.86
+      },
+      {
+        "symbol": "NU",
+        "is_crypto": false,
+        "win1_momentum_return_pct": -2.44,
+        "win1_mr_return_pct": 1.58,
+        "win1_best_return_pct": 1.58,
+        "win1_combined_return_pct": -0.43,
+        "win1_best_profit_factor": 99.0
+      },
+      {
+        "symbol": "IREN",
+        "is_crypto": false,
+        "win1_momentum_return_pct": -6.27,
+        "win1_mr_return_pct": 1.46,
+        "win1_best_return_pct": 1.46,
+        "win1_combined_return_pct": -2.4,
+        "win1_best_profit_factor": 99.0
+      },
+      {
+        "symbol": "AMD",
+        "is_crypto": false,
+        "win1_momentum_return_pct": -7.49,
+        "win1_mr_return_pct": 1.35,
+        "win1_best_return_pct": 1.35,
+        "win1_combined_return_pct": -3.07,
+        "win1_best_profit_factor": 99.0
+      },
+      {
+        "symbol": "MU",
+        "is_crypto": false,
+        "win1_momentum_return_pct": 1.23,
+        "win1_mr_return_pct": -0.41,
+        "win1_best_return_pct": 1.23,
+        "win1_combined_return_pct": 0.41,
+        "win1_best_profit_factor": 1.22
+      },
+      {
+        "symbol": "SPY",
+        "is_crypto": false,
+        "win1_momentum_return_pct": -4.33,
+        "win1_mr_return_pct": 0.69,
+        "win1_best_return_pct": 0.69,
+        "win1_combined_return_pct": -1.82,
+        "win1_best_profit_factor": 99.0
+      },
+      {
+        "symbol": "CIFR",
+        "is_crypto": false,
+        "win1_momentum_return_pct": -10.41,
+        "win1_mr_return_pct": 0.0,
+        "win1_best_return_pct": 0.0,
+        "win1_combined_return_pct": -5.2,
+        "win1_best_profit_factor": 0.28
+      },
+      {
+        "symbol": "QQQ",
+        "is_crypto": false,
+        "win1_momentum_return_pct": -5.83,
+        "win1_mr_return_pct": -0.24,
+        "win1_best_return_pct": -0.24,
+        "win1_combined_return_pct": -3.03,
+        "win1_best_profit_factor": 0.82
+      },
+      {
+        "symbol": "GLD",
+        "is_crypto": false,
+        "win1_momentum_return_pct": -7.24,
+        "win1_mr_return_pct": -0.47,
+        "win1_best_return_pct": -0.47,
+        "win1_combined_return_pct": -3.86,
+        "win1_best_profit_factor": 0.71
+      },
+      {
+        "symbol": "BTC/USDT",
+        "is_crypto": true,
+        "win1_momentum_return_pct": -7.07,
+        "win1_mr_return_pct": -0.51,
+        "win1_best_return_pct": -0.51,
+        "win1_combined_return_pct": -3.79,
+        "win1_best_profit_factor": 1.08
+      },
+      {
+        "symbol": "WULF",
+        "is_crypto": false,
+        "win1_momentum_return_pct": -3.07,
+        "win1_mr_return_pct": -0.87,
+        "win1_best_return_pct": -0.87,
+        "win1_combined_return_pct": -1.97,
+        "win1_best_profit_factor": 0.59
+      },
+      {
+        "symbol": "NVDA",
+        "is_crypto": false,
+        "win1_momentum_return_pct": -2.03,
+        "win1_mr_return_pct": -4.87,
+        "win1_best_return_pct": -2.03,
+        "win1_combined_return_pct": -3.45,
+        "win1_best_profit_factor": 0.76
+      },
+      {
+        "symbol": "LINK/USDT",
+        "is_crypto": true,
+        "win1_momentum_return_pct": -16.82,
+        "win1_mr_return_pct": -2.32,
+        "win1_best_return_pct": -2.32,
+        "win1_combined_return_pct": -9.57,
+        "win1_best_profit_factor": 0.75
+      },
+      {
+        "symbol": "SOL/USDT",
+        "is_crypto": true,
+        "win1_momentum_return_pct": -9.9,
+        "win1_mr_return_pct": -4.26,
+        "win1_best_return_pct": -4.26,
+        "win1_combined_return_pct": -7.08,
+        "win1_best_profit_factor": 0.79
+      },
+      {
+        "symbol": "ETH/USDT",
+        "is_crypto": true,
+        "win1_momentum_return_pct": -23.49,
+        "win1_mr_return_pct": -5.07,
+        "win1_best_return_pct": -5.07,
+        "win1_combined_return_pct": -14.28,
+        "win1_best_profit_factor": 0.64
+      },
+      {
+        "symbol": "NOK",
+        "is_crypto": false,
+        "win1_momentum_return_pct": -9.16,
+        "win1_mr_return_pct": -5.24,
+        "win1_best_return_pct": -5.24,
+        "win1_combined_return_pct": -7.2,
+        "win1_best_profit_factor": 0.42
+      }
+    ]
+  },
+  "previous_in_sample_reference": {
+    "historical_directional_in_sample_return_pct": 5.34,
+    "full_replay_taker_in_sample_return_pct": 10.01,
+    "full_replay_maker_in_sample_return_pct": 13.65,
+    "note": "Previous 90-day replay (+5.34% directional / +10.01% total taker) suffered from universe selection bias because the 15-asset watchlist was selected using the same 90-day window."
+  },
+  "window_1_in_sample_results": {
+    "combined_portfolio": {
+      "initial_capital": 10000.0,
+      "final_equity": 9637.29,
+      "net_pnl": -362.71,
+      "net_return_pct": -3.63,
+      "directional_only_return_pct": -4.5,
+      "basis_yield_return_pct": 0.87,
+      "max_drawdown_pct": 8.2,
+      "sharpe_ratio": -0.88,
+      "sortino_ratio": -1.13,
+      "total_trades": 463,
+      "directional_trades": 197,
+      "basis_accruals": 266,
+      "win_rate_pct": 80.1,
+      "directional_win_rate_pct": 53.3,
+      "profit_factor": 0.87,
+      "directional_profit_factor": 0.84,
+      "expectancy_per_trade": -0.78,
+      "directional_expectancy_per_trade": -2.28,
+      "total_fees_paid": 352.82,
+      "conflicts_resolved": 4,
+      "risk_rejections": 66,
+      "signals_by_strategy": {
+        "momentum": 44,
+        "mean_reversion": 42,
+        "stat_arb_pairs": 35,
+        "basis_yield": 266
+      },
+      "by_strategy": {
+        "momentum": {
+          "trades": 55,
+          "wins": 23,
+          "losses": 32,
+          "win_rate_pct": 41.8,
+          "net_pnl": -592.57,
+          "return_contribution_pct": -5.93,
+          "profit_factor": 0.59,
+          "expectancy_per_trade": -10.77,
+          "fees_paid": 137.76
+        },
+        "mean_reversion": {
+          "trades": 72,
+          "wins": 48,
+          "losses": 24,
+          "win_rate_pct": 66.7,
+          "net_pnl": 401.03,
+          "return_contribution_pct": 4.01,
+          "profit_factor": 1.61,
+          "expectancy_per_trade": 5.57,
+          "fees_paid": 120.58
+        },
+        "stat_arb_pairs": {
+          "trades": 70,
+          "wins": 34,
+          "losses": 36,
+          "win_rate_pct": 48.6,
+          "net_pnl": -258.25,
+          "return_contribution_pct": -2.58,
+          "profit_factor": 0.64,
+          "expectancy_per_trade": -3.69,
+          "fees_paid": 94.48
+        },
+        "basis_yield": {
+          "trades": 266,
+          "wins": 266,
+          "losses": 0,
+          "win_rate_pct": 100.0,
+          "net_pnl": 87.14,
+          "return_contribution_pct": 0.87,
+          "profit_factor": 99.0,
+          "expectancy_per_trade": 0.33,
+          "fees_paid": 0.0
+        }
+      }
+    },
+    "same_basket_buy_and_hold": {
+      "initial_capital": 10000.0,
+      "final_equity": 8962.25,
+      "return_pct": -10.38,
+      "max_drawdown_pct": 15.11,
+      "sharpe_ratio": -1.32,
+      "sortino_ratio": -1.84,
+      "per_asset_return_pct": {
+        "XRP/USDT": -29.12,
+        "BNB/USDT": -9.84,
+        "BTC/USDT": -21.74,
+        "ETH/USDT": -17.69,
+        "SOL/USDT": -19.52,
+        "AAPL": 4.85,
+        "MCHP": -15.39,
+        "XLE": 4.94,
+        "NU": 3.05,
+        "IREN": -28.55,
+        "AMD": 5.1,
+        "NVDA": -0.62
+      }
+    }
+  },
+  "window_2_out_of_sample_results": {
+    "combined_web4_portfolio": {
+      "initial_capital": 10000.0,
+      "final_equity": 11135.3,
+      "net_pnl": 1135.3,
+      "net_return_pct": 11.35,
+      "directional_only_return_pct": 10.38,
+      "basis_yield_return_pct": 0.97,
+      "max_drawdown_pct": 6.8,
+      "sharpe_ratio": 2.42,
+      "sortino_ratio": 3.89,
+      "total_trades": 491,
+      "directional_trades": 228,
+      "basis_accruals": 263,
+      "win_rate_pct": 81.3,
+      "directional_win_rate_pct": 59.6,
+      "profit_factor": 1.4,
+      "directional_profit_factor": 1.37,
+      "expectancy_per_trade": 2.31,
+      "directional_expectancy_per_trade": 4.55,
+      "total_fees_paid": 427.04,
+      "conflicts_resolved": 3,
+      "risk_rejections": 87,
+      "signals_by_strategy": {
+        "momentum": 46,
+        "mean_reversion": 33,
+        "stat_arb_pairs": 51,
+        "basis_yield": 263
+      },
+      "by_strategy": {
+        "momentum": {
+          "trades": 71,
+          "wins": 49,
+          "losses": 22,
+          "win_rate_pct": 69.0,
+          "net_pnl": 1389.3,
+          "return_contribution_pct": 13.89,
+          "profit_factor": 2.14,
+          "expectancy_per_trade": 19.57,
+          "fees_paid": 167.79
+        },
+        "mean_reversion": {
+          "trades": 55,
+          "wins": 36,
+          "losses": 19,
+          "win_rate_pct": 65.5,
+          "net_pnl": -140.02,
+          "return_contribution_pct": -1.4,
+          "profit_factor": 0.83,
+          "expectancy_per_trade": -2.55,
+          "fees_paid": 105.83
+        },
+        "stat_arb_pairs": {
+          "trades": 102,
+          "wins": 51,
+          "losses": 51,
+          "win_rate_pct": 50.0,
+          "net_pnl": -211.11,
+          "return_contribution_pct": -2.11,
+          "profit_factor": 0.73,
+          "expectancy_per_trade": -2.07,
+          "fees_paid": 153.42
+        },
+        "basis_yield": {
+          "trades": 263,
+          "wins": 263,
+          "losses": 0,
+          "win_rate_pct": 100.0,
+          "net_pnl": 97.11,
+          "return_contribution_pct": 0.97,
+          "profit_factor": 99.0,
+          "expectancy_per_trade": 0.37,
+          "fees_paid": 0.0
+        }
+      }
+    },
+    "independent_strategies": {
+      "momentum": {
+        "initial_capital": 10000.0,
+        "final_equity": 10880.21,
+        "net_pnl": 880.21,
+        "net_return_pct": 8.8,
+        "directional_only_return_pct": 8.8,
+        "basis_yield_return_pct": 0.0,
+        "max_drawdown_pct": 6.52,
+        "sharpe_ratio": 2.03,
+        "sortino_ratio": 2.75,
+        "total_trades": 84,
+        "directional_trades": 84,
+        "basis_accruals": 0,
+        "win_rate_pct": 60.7,
+        "directional_win_rate_pct": 60.7,
+        "profit_factor": 1.48,
+        "directional_profit_factor": 1.48,
+        "expectancy_per_trade": 10.48,
+        "directional_expectancy_per_trade": 10.48,
+        "total_fees_paid": 222.15,
+        "conflicts_resolved": 0,
+        "risk_rejections": 74,
+        "signals_by_strategy": {
+          "momentum": 57,
+          "mean_reversion": 0,
+          "stat_arb_pairs": 0,
+          "basis_yield": 0
+        },
+        "by_strategy": {
+          "momentum": {
+            "trades": 84,
+            "wins": 51,
+            "losses": 33,
+            "win_rate_pct": 60.7,
+            "net_pnl": 880.16,
+            "return_contribution_pct": 8.8,
+            "profit_factor": 1.48,
+            "expectancy_per_trade": 10.48,
+            "fees_paid": 222.15
+          },
+          "mean_reversion": {
+            "trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate_pct": 0.0,
+            "net_pnl": 0,
+            "return_contribution_pct": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_per_trade": 0.0,
+            "fees_paid": 0
+          },
+          "stat_arb_pairs": {
+            "trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate_pct": 0.0,
+            "net_pnl": 0,
+            "return_contribution_pct": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_per_trade": 0.0,
+            "fees_paid": 0
+          },
+          "basis_yield": {
+            "trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate_pct": 0.0,
+            "net_pnl": 0,
+            "return_contribution_pct": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_per_trade": 0.0,
+            "fees_paid": 0
+          }
+        }
+      },
+      "mean_reversion": {
+        "initial_capital": 10000.0,
+        "final_equity": 10073.98,
+        "net_pnl": 73.98,
+        "net_return_pct": 0.74,
+        "directional_only_return_pct": 0.74,
+        "basis_yield_return_pct": 0.0,
+        "max_drawdown_pct": 5.08,
+        "sharpe_ratio": 0.33,
+        "sortino_ratio": 0.45,
+        "total_trades": 121,
+        "directional_trades": 121,
+        "basis_accruals": 0,
+        "win_rate_pct": 66.9,
+        "directional_win_rate_pct": 66.9,
+        "profit_factor": 1.05,
+        "directional_profit_factor": 1.05,
+        "expectancy_per_trade": 0.61,
+        "directional_expectancy_per_trade": 0.61,
+        "total_fees_paid": 257.04,
+        "conflicts_resolved": 0,
+        "risk_rejections": 41,
+        "signals_by_strategy": {
+          "momentum": 0,
+          "mean_reversion": 70,
+          "stat_arb_pairs": 0,
+          "basis_yield": 0
+        },
+        "by_strategy": {
+          "momentum": {
+            "trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate_pct": 0.0,
+            "net_pnl": 0,
+            "return_contribution_pct": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_per_trade": 0.0,
+            "fees_paid": 0
+          },
+          "mean_reversion": {
+            "trades": 121,
+            "wins": 81,
+            "losses": 40,
+            "win_rate_pct": 66.9,
+            "net_pnl": 74.0,
+            "return_contribution_pct": 0.74,
+            "profit_factor": 1.05,
+            "expectancy_per_trade": 0.61,
+            "fees_paid": 257.04
+          },
+          "stat_arb_pairs": {
+            "trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate_pct": 0.0,
+            "net_pnl": 0,
+            "return_contribution_pct": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_per_trade": 0.0,
+            "fees_paid": 0
+          },
+          "basis_yield": {
+            "trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate_pct": 0.0,
+            "net_pnl": 0,
+            "return_contribution_pct": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_per_trade": 0.0,
+            "fees_paid": 0
+          }
+        }
+      },
+      "stat_arb_pairs": {
+        "initial_capital": 10000.0,
+        "final_equity": 9779.71,
+        "net_pnl": -220.29,
+        "net_return_pct": -2.2,
+        "directional_only_return_pct": -2.2,
+        "basis_yield_return_pct": 0.0,
+        "max_drawdown_pct": 2.24,
+        "sharpe_ratio": -3.78,
+        "sortino_ratio": -3.72,
+        "total_trades": 126,
+        "directional_trades": 126,
+        "basis_accruals": 0,
+        "win_rate_pct": 50.0,
+        "directional_win_rate_pct": 50.0,
+        "profit_factor": 0.74,
+        "directional_profit_factor": 0.74,
+        "expectancy_per_trade": -1.75,
+        "directional_expectancy_per_trade": -1.75,
+        "total_fees_paid": 168.74,
+        "conflicts_resolved": 0,
+        "risk_rejections": 0,
+        "signals_by_strategy": {
+          "momentum": 0,
+          "mean_reversion": 0,
+          "stat_arb_pairs": 63,
+          "basis_yield": 0
+        },
+        "by_strategy": {
+          "momentum": {
+            "trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate_pct": 0.0,
+            "net_pnl": 0,
+            "return_contribution_pct": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_per_trade": 0.0,
+            "fees_paid": 0
+          },
+          "mean_reversion": {
+            "trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate_pct": 0.0,
+            "net_pnl": 0,
+            "return_contribution_pct": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_per_trade": 0.0,
+            "fees_paid": 0
+          },
+          "stat_arb_pairs": {
+            "trades": 126,
+            "wins": 63,
+            "losses": 63,
+            "win_rate_pct": 50.0,
+            "net_pnl": -220.32,
+            "return_contribution_pct": -2.2,
+            "profit_factor": 0.74,
+            "expectancy_per_trade": -1.75,
+            "fees_paid": 168.74
+          },
+          "basis_yield": {
+            "trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate_pct": 0.0,
+            "net_pnl": 0,
+            "return_contribution_pct": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_per_trade": 0.0,
+            "fees_paid": 0
+          }
+        }
+      },
+      "basis_yield": {
+        "initial_capital": 10000.0,
+        "final_equity": 10095.72,
+        "net_pnl": 95.72,
+        "net_return_pct": 0.96,
+        "directional_only_return_pct": 0.0,
+        "basis_yield_return_pct": 0.96,
+        "max_drawdown_pct": 0.0,
+        "sharpe_ratio": 4.13,
+        "sortino_ratio": 4.13,
+        "total_trades": 263,
+        "directional_trades": 0,
+        "basis_accruals": 263,
+        "win_rate_pct": 100.0,
+        "directional_win_rate_pct": 0.0,
+        "profit_factor": 99.0,
+        "directional_profit_factor": 0.0,
+        "expectancy_per_trade": 0.36,
+        "directional_expectancy_per_trade": 0.0,
+        "total_fees_paid": 0.0,
+        "conflicts_resolved": 0,
+        "risk_rejections": 0,
+        "signals_by_strategy": {
+          "momentum": 0,
+          "mean_reversion": 0,
+          "stat_arb_pairs": 0,
+          "basis_yield": 263
+        },
+        "by_strategy": {
+          "momentum": {
+            "trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate_pct": 0.0,
+            "net_pnl": 0,
+            "return_contribution_pct": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_per_trade": 0.0,
+            "fees_paid": 0
+          },
+          "mean_reversion": {
+            "trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate_pct": 0.0,
+            "net_pnl": 0,
+            "return_contribution_pct": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_per_trade": 0.0,
+            "fees_paid": 0
+          },
+          "stat_arb_pairs": {
+            "trades": 0,
+            "wins": 0,
+            "losses": 0,
+            "win_rate_pct": 0.0,
+            "net_pnl": 0,
+            "return_contribution_pct": 0.0,
+            "profit_factor": 0.0,
+            "expectancy_per_trade": 0.0,
+            "fees_paid": 0
+          },
+          "basis_yield": {
+            "trades": 263,
+            "wins": 263,
+            "losses": 0,
+            "win_rate_pct": 100.0,
+            "net_pnl": 95.72,
+            "return_contribution_pct": 0.96,
+            "profit_factor": 99.0,
+            "expectancy_per_trade": 0.36,
+            "fees_paid": 0.0
+          }
+        }
+      }
+    },
+    "same_basket_buy_and_hold": {
+      "initial_capital": 10000.0,
+      "final_equity": 9904.67,
+      "return_pct": -0.95,
+      "max_drawdown_pct": 20.75,
+      "sharpe_ratio": 0.1,
+      "sortino_ratio": 0.12,
+      "per_asset_return_pct": {
+        "XRP/USDT": 13.11,
+        "BNB/USDT": 16.04,
+        "BTC/USDT": 17.9,
+        "ETH/USDT": 18.46,
+        "SOL/USDT": 16.59,
+        "AAPL": 11.81,
+        "MCHP": -29.67,
+        "XLE": 1.63,
+        "NU": -12.19,
+        "IREN": -45.89,
+        "AMD": -4.25,
+        "NVDA": -14.98
+      }
+    },
+    "random_noise_baseline": {
+      "sample_count": 50,
+      "trades_per_trial": 120,
+      "seed": 42,
+      "mean_return_pct": -5.0,
+      "std_dev_return_pct": 6.98,
+      "median_return_pct": -4.54,
+      "p5_return_pct": -15.88,
+      "p95_return_pct": 5.61,
+      "mean_max_drawdown_pct": 11.23,
+      "mean_sharpe_ratio": -0.69,
+      "historical_reference_noise_baseline_pct": -9.39
+    }
+  },
+  "recorded_paper_trading": {
+    "initial_capital": 10000.0,
+    "current_cash": 8919.4,
+    "net_return_pct": -10.81,
+    "total_closed_trades": 34,
+    "winning_trades": 11,
+    "losing_trades": 23,
+    "win_rate_pct": 32.4,
+    "realized_pnl_usd": -1080.59,
+    "profit_factor": 0.06,
+    "total_fees_paid_usd": 61.32,
+    "by_strategy": {
+      "momentum": {
+        "trades": 11,
+        "wins": 0,
+        "losses": 11,
+        "win_rate_pct": 0.0,
+        "realized_pnl": -562.79
+      },
+      "mean_reversion": {
+        "trades": 19,
+        "wins": 7,
+        "losses": 12,
+        "win_rate_pct": 36.8,
+        "realized_pnl": -518.89
+      },
+      "stat_arb_pairs": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate_pct": 0.0,
+        "realized_pnl": 0
+      },
+      "basis_yield": {
+        "trades": 4,
+        "wins": 4,
+        "losses": 0,
+        "win_rate_pct": 100.0,
+        "realized_pnl": 1.09
+      }
+    }
+  }
+}

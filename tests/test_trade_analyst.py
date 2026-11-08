@@ -2,7 +2,12 @@
 
 import pytest
 from pathlib import Path
-from agent.trade_analyst import perform_statistical_audit, run_trade_forensic_analysis
+from agent.trade_analyst import (
+    perform_statistical_audit,
+    run_trade_forensic_analysis,
+    validate_analyst_proposal_schema,
+    generate_llm_analyst_proposals,
+)
 
 
 def test_statistical_audit_metrics():
@@ -53,3 +58,60 @@ def test_trade_forensic_analysis_report(tmp_path):
     assert summary.losing_trades == 1
     assert summary.total_realized_pnl == 20.0
     assert rep_file.exists()
+
+
+def test_analyst_proposal_schema_validation_and_llm_generation(monkeypatch):
+    """Verify strict 11-field Analyst proposal schema validation and LLM hypothesis generation."""
+    valid_proposal = {
+        "proposal_id": "PROP-LLM-001",
+        "strategy_id": "momentum",
+        "strategy_name": "Donchian Momentum Breakout",
+        "hypothesis": "Raise breakout_lookback from 24 to 30 to reduce chop false breakouts.",
+        "proposed_changes": {"breakout_lookback": 30},
+        "supporting_evidence": {"win_rate_pct": 46.5, "profit_factor": 0.94},
+        "expected_benefit": "Higher profit factor and lower fee churn.",
+        "identified_risks": ["Slightly later entry on sharp V-reversals."],
+        "evaluation_metrics": {"target_profit_factor": 1.15},
+        "confidence": 0.84,
+        "reasoning": "Losses concentrated in 18-24h false range expansions.",
+    }
+    ok, errs, norm = validate_analyst_proposal_schema(valid_proposal)
+    assert ok is True
+    assert errs == []
+    assert norm["proposal_id"] == "PROP-LLM-001"
+
+    # Missing required fields must fail validation
+    bad_proposal = {"proposal_id": "PROP-BAD", "strategy_id": "momentum"}
+    ok_bad, errs_bad, norm_bad = validate_analyst_proposal_schema(bad_proposal)
+    assert ok_bad is False
+    assert len(errs_bad) > 0
+    assert norm_bad is None
+
+    # Mock LLM output with valid JSON schema
+    monkeypatch.setattr(
+        "agent.trade_analyst.query_local_llm_with_metrics",
+        lambda **kwargs: {
+            "response": __import__("json").dumps({
+                "diagnosis": "Momentum suffered range whipsaws while Mean Reversion captured positive expectancy.",
+                "proposals": [valid_proposal],
+            }),
+            "latency_ms": 412.5,
+            "prompt_tokens": 220,
+            "completion_tokens": 145,
+            "total_tokens": 365,
+            "success": True,
+            "error": None,
+        },
+    )
+    stats = perform_statistical_audit([
+        {"symbol": "BTC/USDT", "strategy_id": "momentum", "pnl": -45.0, "fees": 1.2, "exit_reason": "ATR Trailing Stop Hit"},
+        {"symbol": "BNB/USDT", "strategy_id": "mean_reversion", "pnl": 65.0, "fees": 1.0, "exit_reason": "Mean Reversion Target"},
+    ])
+    res = generate_llm_analyst_proposals(stats, [
+        {"symbol": "BTC/USDT", "strategy_id": "momentum", "pnl": -45.0, "exit_reason": "ATR Trailing Stop Hit"}
+    ])
+    assert res["schema_valid"] is True
+    assert res["fallback_used"] is False
+    assert len(res["proposals"]) == 1
+    assert res["proposals"][0]["proposal_id"] == "PROP-LLM-001"
+

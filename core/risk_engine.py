@@ -51,6 +51,7 @@ class RiskEngine:
         max_drawdown_limit_pct: float = 0.15,
         symbol_risk_weights: Optional[Dict[str, float]] = None,
         symbol_exposure_caps: Optional[Dict[str, float]] = None,
+        account: Optional[Any] = None,
     ):
         self.risk_pct = self.enforce_risk_bounds(default_risk_pct)
         self.max_total_exposure_pct = max_total_exposure_pct
@@ -60,7 +61,10 @@ class RiskEngine:
         self.max_crypto_positions = max_crypto_positions
         self.dynamic_scaling = dynamic_scaling
         self.daily_loss_limit_pct = daily_loss_limit_pct
-        self.max_drawdown_limit_pct = max_drawdown_limit_pct
+        # Support both fraction (0.15) and percentage (15.0) inputs transparently
+        self.max_drawdown_limit_pct = (
+            max_drawdown_limit_pct / 100.0 if max_drawdown_limit_pct > 1.0 else max_drawdown_limit_pct
+        )
         # Per-symbol dynamic capital weighting (strictly bounded between 1% and 5%)
         self.symbol_risk_weights: Dict[str, float] = {
             k: self.enforce_risk_bounds(v) for k, v in (symbol_risk_weights or {}).items()
@@ -70,11 +74,54 @@ class RiskEngine:
         # Kill switch state
         self._is_halted: bool = False
         self._halt_reason: str = ""
+        self.circuit_breaker_triggered_at: Optional[str] = None
 
         # Tracking for circuit breakers
         self.peak_equity: float = 0.0
+        self.current_drawdown: float = 0.0
         self.daily_start_date: Optional[date] = None
         self.daily_start_equity: float = 0.0
+        self._bound_account: Optional[Any] = None
+
+        if account is not None:
+            self.bind_account(account)
+
+    def bind_account(self, account: Any) -> None:
+        """Bind a PaperAccount to restore and atomically persist drawdown circuit breaker state."""
+        self._bound_account = account
+        if account is None or not hasattr(account, "state"):
+            return
+
+        st = account.state
+        persisted_peak = float(st.get("peak_equity", getattr(account, "initial_capital", 0.0)))
+        if persisted_peak > self.peak_equity:
+            self.peak_equity = persisted_peak
+
+        self.current_drawdown = float(st.get("current_drawdown", 0.0))
+        status = str(st.get("circuit_breaker_status", "OK")).upper()
+        tripped = bool(st.get("circuit_breaker_tripped", False)) or status in ("TRIPPED", "HALTED", "ACTIVE")
+
+        if tripped:
+            self._is_halted = True
+            self._halt_reason = str(
+                st.get("circuit_breaker_reason")
+                or "Max drawdown circuit breaker persisted across restart"
+            )
+            self.circuit_breaker_triggered_at = st.get("circuit_breaker_triggered_at") or datetime.now(timezone.utc).isoformat()
+
+        self._persist_risk_state()
+
+    def _persist_risk_state(self, force_save: bool = False) -> None:
+        """Synchronize current peak equity, drawdown, and breaker status to bound PaperAccount."""
+        if self._bound_account is not None and hasattr(self._bound_account, "sync_risk_state"):
+            self._bound_account.sync_risk_state(
+                peak_equity=self.peak_equity,
+                current_drawdown=self.current_drawdown,
+                circuit_breaker_status="TRIPPED" if self._is_halted else "OK",
+                circuit_breaker_reason=self._halt_reason,
+                circuit_breaker_triggered_at=self.circuit_breaker_triggered_at,
+                force_save=force_save,
+            )
 
     @property
     def is_halted(self) -> bool:
@@ -84,17 +131,37 @@ class RiskEngine:
     def halt_reason(self) -> str:
         return self._halt_reason
 
-    def trigger_kill_switch(self, reason: str):
-        """Manually or automatically trigger the emergency trading halt."""
+    def trigger_kill_switch(self, reason: str, current_time: Optional[datetime] = None):
+        """Manually or automatically trigger the emergency trading halt and persist it."""
         self._is_halted = True
         self._halt_reason = reason
+        if not self.circuit_breaker_triggered_at:
+            ts = current_time if current_time is not None else datetime.now(timezone.utc)
+            self.circuit_breaker_triggered_at = ts.isoformat()
+        self._persist_risk_state(force_save=True)
         print(f"[RiskEngine] 🚨 KILL SWITCH TRIGGERED: {reason}")
 
-    def reset_kill_switch(self):
-        """Reset emergency halt state."""
+    def reset_kill_switch(self, authorized: bool = True, reset_peak_to_current: Optional[float] = None) -> bool:
+        """Reset emergency halt state.
+
+        Requires explicit authorization (`authorized=True`). If `authorized=False` is passed,
+        the reset is rejected and the circuit breaker remains active.
+        """
+        if not authorized:
+            print("[RiskEngine] ❌ Unauthorized kill switch reset attempt rejected.")
+            return False
+
         self._is_halted = False
         self._halt_reason = ""
+        self.circuit_breaker_triggered_at = None
+        if reset_peak_to_current is not None and reset_peak_to_current > 0:
+            self.peak_equity = float(reset_peak_to_current)
+            self.current_drawdown = 0.0
+            if self._bound_account is not None and hasattr(self._bound_account, "state"):
+                self._bound_account.state["peak_equity"] = self.peak_equity
+        self._persist_risk_state(force_save=True)
         print("[RiskEngine] Kill switch cleared. Normal operation resumed.")
+        return True
 
     @staticmethod
     def enforce_risk_bounds(risk_pct: float) -> float:
@@ -120,21 +187,28 @@ class RiskEngine:
         else:
             today = datetime.now(timezone.utc).date()
 
+        # Track high-water mark for drawdown (even while halted)
+        if current_equity > self.peak_equity:
+            self.peak_equity = current_equity
+
+        if self.peak_equity > 0:
+            self.current_drawdown = max(0.0, (self.peak_equity - current_equity) / self.peak_equity)
+        else:
+            self.current_drawdown = 0.0
+
         # Initialize or update daily baseline
         if self.daily_start_date != today or self.daily_start_equity <= 0:
             self.daily_start_date = today
             self.daily_start_equity = current_equity
-            # If halted strictly due to DAILY loss on a previous day, lift the halt on the new day
-            if self._is_halted and "Daily loss" in self._halt_reason:
+            # If halted strictly due to DAILY loss on a previous day (and NOT max drawdown), lift the halt on the new day
+            if self._is_halted and "Daily loss" in self._halt_reason and "Max drawdown" not in self._halt_reason:
                 self._is_halted = False
                 self._halt_reason = ""
+                self.circuit_breaker_triggered_at = None
 
         if self._is_halted:
+            self._persist_risk_state()
             return False, f"Trading halted: {self._halt_reason}"
-
-        # Track high-water mark for drawdown
-        if current_equity > self.peak_equity:
-            self.peak_equity = current_equity
 
         # 1. Daily loss circuit breaker
         if self.daily_start_equity > 0:
@@ -145,20 +219,21 @@ class RiskEngine:
                     f"Daily loss circuit breaker triggered: {daily_loss_pct*100:.2f}% loss "
                     f"exceeds {self.daily_loss_limit_pct*100:.1f}% limit"
                 )
-                self.trigger_kill_switch(reason)
+                self.trigger_kill_switch(reason, current_time=current_time)
                 return False, reason
 
         # 2. Max drawdown circuit breaker
         if self.peak_equity > 0:
-            drawdown = (self.peak_equity - current_equity) / self.peak_equity
+            drawdown = self.current_drawdown
             if drawdown >= self.max_drawdown_limit_pct:
                 reason = (
                     f"Max drawdown circuit breaker triggered: {drawdown*100:.2f}% drawdown "
                     f"exceeds {self.max_drawdown_limit_pct*100:.1f}% limit"
                 )
-                self.trigger_kill_switch(reason)
+                self.trigger_kill_switch(reason, current_time=current_time)
                 return False, reason
 
+        self._persist_risk_state()
         return True, "Circuit breakers healthy"
 
     def compute_volatility_adjusted_risk(

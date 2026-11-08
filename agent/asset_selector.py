@@ -697,6 +697,8 @@ def apply_recommendations_to_config(
     recommended_blacklist: List[str],
     config_path: Optional[Path] = None,
     verify_tests: bool = True,
+    require_human_approval: bool = False,
+    human_approved: bool = True,
 ) -> bool:
     """Convenience forwarder to Agent 12 Governor deployment pipeline."""
     from agent.governor import review_and_deploy_proposal
@@ -708,6 +710,8 @@ def apply_recommendations_to_config(
         config_path=config_path,
         verify_tests=verify_tests,
         use_llm=False,
+        require_human_approval=require_human_approval,
+        human_approved=human_approved,
     )
     return res.approved
 

@@ -18,12 +18,15 @@ import os
 import shutil
 import subprocess
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
+import math
+import re
+import uuid
 
-from agent.llm_client import query_local_llm
+from agent.llm_client import query_local_llm, query_local_llm_with_metrics
 from core.risk_engine import MIN_ALLOWED_RISK_PCT, MAX_ALLOWED_RISK_PCT
 from core.data_loader import is_crypto_symbol
 
@@ -31,14 +34,44 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = PROJECT_ROOT / "config" / "active_config.json"
+PENDING_PROPOSALS_PATH = PROJECT_ROOT / "config" / "pending_proposals.json"
 AUDIT_LOG_FILE = PROJECT_ROOT / "data" / "agent_governance_audit.log"
+
+VALID_GOVERNOR_VERDICTS = {"APPROVE", "DISAPPROVE", "NEEDS_HUMAN_REVIEW"}
+
+# Safe parameter bounds for all Web4 strategies and coordinator controls
+PARAMETER_BOUNDS: Dict[str, Tuple[float, float]] = {
+    "account_risk_pct": (MIN_ALLOWED_RISK_PCT, MAX_ALLOWED_RISK_PCT),
+    "max_drawdown_limit_pct": (5.0, 15.0),
+    "max_concurrent_positions": (1.0, 10.0),
+    "max_crypto_positions": (1.0, 3.0),
+    "max_strategy_allocation_pct": (0.15, 0.90),
+    "breakout_lookback": (6.0, 168.0),
+    "ema_trend_filter": (10.0, 400.0),
+    "atr_period": (5.0, 60.0),
+    "atr_multiplier": (1.0, 5.0),
+    "take_profit_atr_mult": (1.0, 8.0),
+    "take_profit_ratio": (0.10, 0.90),
+    "bb_period": (10.0, 60.0),
+    "bb_std": (1.2, 3.5),
+    "rsi_period": (5.0, 30.0),
+    "rsi_oversold": (15.0, 45.0),
+    "rsi_overbought": (55.0, 85.0),
+    "adx_threshold": (12.0, 40.0),
+    "adx_chop_threshold": (12.0, 32.0),
+    "adx_trend_threshold": (18.0, 45.0),
+    "stat_arb_z_entry": (1.2, 4.0),
+    "stat_arb_z_exit": (0.0, 1.5),
+    "basis_hurdle_apr": (2.0, 40.0),
+    "max_basis_allocation_pct": (0.05, 0.45),
+}
 
 
 @dataclass
 class GovernorApprovalResult:
     """Audit result of a governance review cycle."""
     approved: bool
-    status: str  # "DEPLOYED", "REJECTED_INVARIANT", "REJECTED_TESTS", "REJECTED_LLM_RISK"
+    status: str  # "DEPLOYED", "PENDING_HUMAN_APPROVAL", "REJECTED_INVARIANT", "REJECTED_TESTS", "REJECTED_LLM_RISK"
     invariants_passed: bool
     tests_passed: bool
     llm_risk_approved: bool
@@ -46,6 +79,12 @@ class GovernorApprovalResult:
     rejection_reasons: List[str]
     applied_changes: Dict[str, Any]
     timestamp: str
+    verdict: str = "DISAPPROVE"
+    confidence: float = 0.0
+    risk_assessment: str = ""
+    pending_human_approval: bool = False
+    proposal_id: str = ""
+    llm_metrics: Dict[str, Any] = field(default_factory=dict)
 
 
 def load_config(path: Optional[Path] = None) -> Dict[str, Any]:
@@ -111,12 +150,261 @@ def audit_invariants(proposed_config: Dict[str, Any]) -> Tuple[bool, List[str]]:
 
     # Check max drawdown threshold
     max_dd = float(proposed_config.get("max_drawdown_limit_pct", 15.0))
-    if max_dd > 15.0:
+    if max_dd > 15.0 or max_dd <= 0.0:
         violations.append(
-            f"Violation: Max drawdown circuit breaker limit {max_dd:.1f}% loosened above mandatory 15.0% threshold."
+            f"Violation: Max drawdown circuit breaker limit {max_dd:.1f}% outside mandatory (0%, 15.0%] threshold."
         )
 
+    # Check strategy and coordinator parameter bounds (top-level and inside asset_profiles)
+    for param_key, (low_b, high_b) in PARAMETER_BOUNDS.items():
+        if param_key in ("account_risk_pct", "max_drawdown_limit_pct", "max_crypto_positions"):
+            continue
+        if param_key in proposed_config and proposed_config[param_key] is not None:
+            try:
+                val = float(proposed_config[param_key])
+                if math.isnan(val) or math.isinf(val) or val < low_b or val > high_b:
+                    violations.append(
+                        f"Violation: Parameter '{param_key}' value {val} outside safe bounds [{low_b}, {high_b}]."
+                    )
+            except (TypeError, ValueError):
+                violations.append(f"Violation: Parameter '{param_key}' must be numeric.")
+
+    for p_name, p_data in profiles.items():
+        if not isinstance(p_data, dict):
+            continue
+        for param_key, (low_b, high_b) in PARAMETER_BOUNDS.items():
+            if param_key == "account_risk_pct":
+                continue
+            if param_key in p_data and p_data[param_key] is not None:
+                try:
+                    val = float(p_data[param_key])
+                    if math.isnan(val) or math.isinf(val) or val < low_b or val > high_b:
+                        violations.append(
+                            f"Violation: Profile '{p_name}' parameter '{param_key}' value {val} outside safe bounds [{low_b}, {high_b}]."
+                        )
+                except (TypeError, ValueError):
+                    violations.append(f"Violation: Profile '{p_name}' parameter '{param_key}' must be numeric.")
+
     return (len(violations) == 0), violations
+
+
+def parse_governor_verdict_json(raw_response: Optional[str]) -> Tuple[bool, str, Dict[str, Any]]:
+    """Strictly parse and validate the Governor LLM JSON verdict.
+
+    Required JSON schema:
+    {
+      "verdict": "APPROVE | DISAPPROVE | NEEDS_HUMAN_REVIEW",
+      "reason": "...",
+      "risk_assessment": "...",
+      "confidence": 0.0
+    }
+
+    Fail-closed rules:
+    - Empty/None response -> DISAPPROVE
+    - Non-JSON or malformed JSON -> DISAPPROVE
+    - Missing required fields -> DISAPPROVE
+    - Verdict not an exact match in {"APPROVE", "DISAPPROVE", "NEEDS_HUMAN_REVIEW"} -> DISAPPROVE
+    - Confidence not a finite float in [0.0, 1.0] -> DISAPPROVE
+    """
+    if raw_response is None or not isinstance(raw_response, str) or not raw_response.strip():
+        return False, "DISAPPROVE", {
+            "verdict": "DISAPPROVE",
+            "reason": "Fail-closed: Empty or missing LLM response.",
+            "risk_assessment": "LLM unavailable or returned empty output.",
+            "confidence": 0.0,
+            "parse_error": "empty_response",
+        }
+
+    text = raw_response.strip()
+    # Strip optional markdown code fences if present, but require valid JSON content inside
+    if text.startswith("```"):
+        fence_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, flags=re.DOTALL)
+        if fence_match:
+            text = fence_match.group(1).strip()
+
+    try:
+        parsed = json.loads(text)
+    except Exception as e:
+        return False, "DISAPPROVE", {
+            "verdict": "DISAPPROVE",
+            "reason": f"Fail-closed: Malformed JSON response ({e}).",
+            "risk_assessment": "Unparseable LLM output blocked by strict schema gate.",
+            "confidence": 0.0,
+            "parse_error": "malformed_json",
+        }
+
+    if not isinstance(parsed, dict):
+        return False, "DISAPPROVE", {
+            "verdict": "DISAPPROVE",
+            "reason": "Fail-closed: Root JSON element must be an object.",
+            "risk_assessment": "Invalid JSON root type.",
+            "confidence": 0.0,
+            "parse_error": "invalid_root_type",
+        }
+
+    required_fields = {"verdict", "reason", "risk_assessment", "confidence"}
+    missing = sorted(list(required_fields - set(parsed.keys())))
+    if missing:
+        return False, "DISAPPROVE", {
+            "verdict": "DISAPPROVE",
+            "reason": f"Fail-closed: Missing required JSON fields: {', '.join(missing)}.",
+            "risk_assessment": "Incomplete governance schema.",
+            "confidence": 0.0,
+            "parse_error": "missing_fields",
+        }
+
+    raw_verdict = parsed.get("verdict")
+    if not isinstance(raw_verdict, str):
+        return False, "DISAPPROVE", {
+            "verdict": "DISAPPROVE",
+            "reason": "Fail-closed: 'verdict' field must be a string.",
+            "risk_assessment": "Invalid verdict type.",
+            "confidence": 0.0,
+            "parse_error": "invalid_verdict_type",
+        }
+
+    clean_verdict = raw_verdict.strip().upper()
+    # Exact enum match only — "DISAPPROVE", "NOT APPROVED", "DO NOT APPROVE" never match "APPROVE"
+    if clean_verdict not in VALID_GOVERNOR_VERDICTS:
+        return False, "DISAPPROVE", {
+            "verdict": "DISAPPROVE",
+            "reason": f"Fail-closed: Invalid verdict enum '{raw_verdict}'. Allowed: {sorted(VALID_GOVERNOR_VERDICTS)}.",
+            "risk_assessment": str(parsed.get("risk_assessment", "")),
+            "confidence": 0.0,
+            "parse_error": "invalid_verdict_enum",
+        }
+
+    reason_str = parsed.get("reason")
+    risk_str = parsed.get("risk_assessment")
+    if not isinstance(reason_str, str) or not reason_str.strip() or not isinstance(risk_str, str) or not risk_str.strip():
+        return False, "DISAPPROVE", {
+            "verdict": "DISAPPROVE",
+            "reason": "Fail-closed: 'reason' and 'risk_assessment' must be non-empty strings.",
+            "risk_assessment": "Empty reason or risk assessment.",
+            "confidence": 0.0,
+            "parse_error": "empty_required_string",
+        }
+
+    try:
+        conf_val = float(parsed.get("confidence"))
+        if math.isnan(conf_val) or math.isinf(conf_val) or conf_val < 0.0 or conf_val > 1.0:
+            raise ValueError("confidence out of [0.0, 1.0]")
+    except (TypeError, ValueError) as e:
+        return False, "DISAPPROVE", {
+            "verdict": "DISAPPROVE",
+            "reason": f"Fail-closed: Invalid confidence value ({e}).",
+            "risk_assessment": risk_str,
+            "confidence": 0.0,
+            "parse_error": "invalid_confidence",
+        }
+
+    approved = (clean_verdict == "APPROVE")
+    normalized = {
+        "verdict": clean_verdict,
+        "reason": reason_str.strip(),
+        "risk_assessment": risk_str.strip(),
+        "confidence": round(conf_val, 4),
+        "parse_error": None,
+    }
+    return approved, clean_verdict, normalized
+
+
+def query_llm_risk_review_structured(
+    proposed_diff: Dict[str, Any],
+    base_config: Dict[str, Any],
+    rationale: Optional[str] = None,
+    empirical_proof: Optional[Dict[str, Any]] = None,
+    analyst_proposal: Optional[Dict[str, Any]] = None,
+    model: str = "phi4-mini:latest",
+    use_cache: bool = True,
+) -> Tuple[bool, str, Dict[str, Any], Dict[str, Any]]:
+    """Invoke local Ollama LLM as Chief Risk Governor with strict JSON schema validation and fail-closed safety.
+
+    Returns:
+        (approved, verdict_enum, parsed_verdict_dict, llm_telemetry)
+    """
+    proof_str = json.dumps(empirical_proof, indent=2) if empirical_proof else "Not provided"
+    analyst_str = json.dumps(analyst_proposal, indent=2) if analyst_proposal else "Direct configuration proposal (No Stage-1 Analyst structured synthesis)"
+
+    # Build deterministic sign-convention note if replay deltas are present in empirical_proof
+    sign_note = (
+        "Note on metric sign conventions: replay_return_delta_pct > 0 means net return INCREASED (beneficial); "
+        "replay_max_dd_delta_pct < 0 means maximum drawdown DECREASED/IMPROVED (beneficial); "
+        "replay_sharpe_delta > 0 means Sharpe ratio INCREASED (beneficial)."
+    )
+
+    prompt = f"""You are the Chief Risk Governor of the Web4 Multi-Strategy Quantitative Trading Desk.
+Evaluate the following configuration proposal across strategy-level performance, combined portfolio interaction, and risk limits.
+
+[ANALYST STRUCTURED PROPOSAL]
+{analyst_str}
+
+[PROPOSED CONFIGURATION DIFF]
+{json.dumps(proposed_diff, indent=2)}
+
+[EMPIRICAL PROOF & JUSTIFICATION]
+Rationale: {rationale or 'Automated quantitative proposal.'}
+{sign_note}
+Empirical Evidence:
+{proof_str}
+
+[PORTFOLIO RISK POLICY & SAFE PARAMETER BOUNDS]
+- Execution Mode: Paper Trading Only ('maker' or 'taker')
+- Account Risk Per Trade: [0.01, 0.05] (1% to 5% of equity; current={base_config.get('account_risk_pct', 0.02)})
+- Max Drawdown Circuit Breaker: <= 15.0% (current={base_config.get('max_drawdown_limit_pct', 15.0)}%)
+- Max Concurrent Crypto Positions: <= 3 (current={base_config.get('max_crypto_positions', 2)})
+- Strategy Parameter Bounds:
+  * breakout_lookback: [6, 168], atr_multiplier: [1.0, 5.0]
+  * rsi_oversold: [15, 45], rsi_overbought: [55, 85]
+  * adx_chop_threshold: [12, 32], adx_trend_threshold: [18, 45]
+  * stat_arb_z_entry: [1.2, 4.0], basis_hurdle_apr: [2.0, 40.0]
+
+[DECISION CRITERIA]
+1. Return "APPROVE" when:
+   - All proposed parameters are within the safe parameter bounds listed above, AND
+   - Empirical evidence shows positive return improvement (replay_return_delta_pct > 0), drawdown reduction (replay_max_dd_delta_pct < 0), improved profit factor (> 1.0), or pruning of losing drags.
+2. Return "DISAPPROVE" when:
+   - The proposal violates risk bounds, disables safety gates (e.g., enable_regime_filter=False), degrades out-of-sample expectancy (replay_return_delta_pct < 0 or replay_max_dd_delta_pct > 0), or lacks supporting evidence.
+3. Return "NEEDS_HUMAN_REVIEW" if the evidence is ambiguous or borderline.
+
+Respond ONLY with a valid JSON object matching this exact schema:
+{{
+  "verdict": "APPROVE" | "DISAPPROVE" | "NEEDS_HUMAN_REVIEW",
+  "reason": "Concise explanation of the decision",
+  "risk_assessment": "Assessment of strategy and combined portfolio risk impact",
+  "confidence": 0.85
+}}"""
+
+    system_prompt = (
+        "You are an institutional Chief Risk Governor. You must output ONLY valid JSON containing the keys "
+        "'verdict', 'reason', 'risk_assessment', and 'confidence'. "
+        "Your 'verdict' MUST be one of 'APPROVE', 'DISAPPROVE', or 'NEEDS_HUMAN_REVIEW'."
+    )
+
+    llm_call = query_local_llm_with_metrics(
+        prompt=prompt,
+        system_prompt=system_prompt,
+        model=model,
+        temperature=0.1,
+        max_tokens=300,
+        timeout_seconds=15.0,
+        use_cache=use_cache,
+        json_mode=True,
+    )
+
+    if not llm_call.get("success") or not llm_call.get("response"):
+        err_msg = llm_call.get("error") or "LLM unavailable or empty response"
+        fallback_dict = {
+            "verdict": "DISAPPROVE",
+            "reason": f"Fail-closed: LLM governance check failed ({err_msg}).",
+            "risk_assessment": "Cannot certify proposal safety when LLM Risk Governor is unreachable.",
+            "confidence": 0.0,
+            "parse_error": "llm_unavailable",
+        }
+        return False, "DISAPPROVE", fallback_dict, llm_call
+
+    approved, verdict_enum, parsed_dict = parse_governor_verdict_json(llm_call["response"])
+    return approved, verdict_enum, parsed_dict, llm_call
 
 
 def query_llm_risk_review(
@@ -126,48 +414,16 @@ def query_llm_risk_review(
     empirical_proof: Optional[Dict[str, Any]] = None,
     model: str = "phi4-mini:latest",
 ) -> Tuple[bool, str]:
-    """
-    Invoke local Ollama LLM as Chief Risk Governor to scrutinize proposed changes.
-    """
-    proof_str = json.dumps(empirical_proof, indent=2) if empirical_proof else "Not provided"
-    prompt = f"""You are the Chief Risk Governor of an institutional algorithmic desk.
-Scrutinize the following proposed system modifications and empirical proof:
-
-[PROPOSED MODIFICATIONS]
-{json.dumps(proposed_diff, indent=2)}
-
-[EMPIRICAL PROOF & JUSTIFICATION]
-Rationale: {rationale or 'Automated quantitative improvement proposal.'}
-Proof Data:
-{proof_str}
-
-[PORTFOLIO RISK POLICY & BOUNDS]
-- Max Account Risk Per Trade: {base_config.get('account_risk_pct', 0.02)*100:.1f}% equity (hard bound [1%, 5%])
-- Max Portfolio Drawdown Circuit Breaker: {base_config.get('max_drawdown_limit_pct', 15.0)}%
-- Permitted Active Watchlist Universe: Up to 30 diversified assets across crypto and equities/ETFs
-- Active Crypto Exposure Limit: Max 12 watchlist cryptos (strictly max 2 concurrent open positions)
-
-Determine whether this change is prudent, safe, verified by data, and aligned with capital preservation.
-Format your reply as:
-VERDICT: [APPROVE or REJECT]
-RATIONALE: [2 sentences explaining your risk assessment]
-"""
-    system_prompt = (
-        "You are an institutional Chief Risk Officer at a quantitative trading firm. "
-        "Your duty is to ensure capital preservation while certifying verified alpha improvements. "
-        "Guideline: A diversified watchlist of 15-25 high-alpha assets across stocks and crypto is fully permitted and encouraged. "
-        "If the proposal provides valid empirical proof (positive net return, high win rate, profit factor >= 1.0, "
-        "pruning of toxic drags) and complies with risk invariants, APPROVE the proposal. "
-        "Only REJECT if the proposal introduces excessive leverage, unhedged tail risk, or lacks empirical validation."
+    """Invoke local Ollama LLM as Chief Risk Governor (fail-closed wrapper)."""
+    approved, verdict_enum, parsed_dict, _ = query_llm_risk_review_structured(
+        proposed_diff=proposed_diff,
+        base_config=base_config,
+        rationale=rationale,
+        empirical_proof=empirical_proof,
+        model=model,
     )
-
-    resp = query_local_llm(prompt, system_prompt=system_prompt, model=model, temperature=0.1, max_tokens=250)
-    if not resp:
-        # Deterministic fallback: approve if diff does not increase risk
-        return True, "Automated rule verification passed. Ollama review bypassed."
-
-    verdict_approved = "VERDICT: APPROVE" in resp.upper() or "APPROVE" in resp.upper()[:25]
-    return verdict_approved, resp.strip()
+    formatted = f"VERDICT: {verdict_enum} (confidence={parsed_dict.get('confidence', 0.0):.2f}) | {parsed_dict.get('reason', '')} | Risk: {parsed_dict.get('risk_assessment', '')}"
+    return approved, formatted
 
 
 def run_pytest_regression_gate() -> Tuple[bool, str]:
@@ -211,29 +467,13 @@ def append_governance_audit_log(entry: GovernorApprovalResult, log_path: Optiona
         f.write("-" * 65 + "\n")
 
 
-def review_and_deploy_proposal(
+def _merge_proposed_changes_into_config(
+    base_cfg: Dict[str, Any],
     proposed_changes: Dict[str, Any],
-    rationale: Optional[str] = None,
-    empirical_proof: Optional[Dict[str, Any]] = None,
-    config_path: Optional[Path] = None,
-    verify_tests: bool = True,
-    use_llm: bool = True,
-    model: str = "phi4-mini:latest",
-    auto_commit: Optional[bool] = None,
-) -> GovernorApprovalResult:
-    """
-    End-to-end governance review and deployment pipeline:
-    1. Merge proposal into candidate configuration.
-    2. Audit invariants.
-    3. Query LLM Risk Review.
-    4. Run automated Pytest regression gate.
-    5. If all pass: atomically write config, backup previous, and log audit.
-    """
-    cfg_file = config_path or CONFIG_PATH
-    base_cfg = load_config(cfg_file)
+) -> Dict[str, Any]:
+    """Return a new candidate configuration dict with proposed_changes merged in."""
     candidate_cfg = json.loads(json.dumps(base_cfg))
 
-    # Apply proposed modifications
     for k, v in proposed_changes.items():
         if k == "watchlist":
             candidate_cfg["watchlist"] = list(v)
@@ -252,26 +492,211 @@ def review_and_deploy_proposal(
         else:
             candidate_cfg[k] = v
 
-    # Cleanse watchlist: purge any symbol present in blacklisted_symbols
     bl_set = set(candidate_cfg.get("blacklisted_symbols", []))
     if "watchlist" in candidate_cfg:
         candidate_cfg["watchlist"] = [s for s in candidate_cfg["watchlist"] if s not in bl_set]
 
-    # Ensure all approved watchlist symbols have safe default risk weights & exposure caps
     rehab_set = set(proposed_changes.get("rehabilitated_symbols", []))
     for s in candidate_cfg.get("watchlist", []):
         if s in rehab_set:
-            candidate_cfg.setdefault("symbol_risk_weights", {})[s] = 0.01  # Probationary risk weight
-            candidate_cfg.setdefault("symbol_exposure_caps", {})[s] = 0.20  # Probationary exposure cap
+            candidate_cfg.setdefault("symbol_risk_weights", {})[s] = 0.01
+            candidate_cfg.setdefault("symbol_exposure_caps", {})[s] = 0.20
         elif s not in candidate_cfg.setdefault("symbol_risk_weights", {}):
             candidate_cfg["symbol_risk_weights"][s] = 0.02
         if s not in candidate_cfg.setdefault("symbol_exposure_caps", {}):
             candidate_cfg["symbol_exposure_caps"][s] = 0.35
 
-    now_iso = datetime.now(timezone.utc).isoformat()
-    rejections = []
+    return candidate_cfg
 
-    # Step 1: Invariant Check
+
+def list_pending_proposals(pending_path: Optional[Path] = None) -> List[Dict[str, Any]]:
+    """Load all pending proposals awaiting human approval."""
+    path = pending_path or PENDING_PROPOSALS_PATH
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text())
+        if isinstance(data, list):
+            return data
+        return data.get("proposals", [])
+    except Exception:
+        return []
+
+
+def save_pending_proposal(
+    record: Dict[str, Any],
+    pending_path: Optional[Path] = None,
+) -> Path:
+    """Atomically persist a validated proposal to the pending human approval queue."""
+    path = pending_path or PENDING_PROPOSALS_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    existing = list_pending_proposals(path)
+    existing = [p for p in existing if p.get("proposal_id") != record.get("proposal_id")]
+    existing.append(record)
+    tmp = path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(existing, indent=2))
+    os.replace(tmp, path)
+    return path
+
+
+def approve_pending_proposal(
+    proposal_id: str,
+    approved_by: str = "human_operator",
+    config_path: Optional[Path] = None,
+    pending_path: Optional[Path] = None,
+    verify_tests: bool = False,
+    auto_commit: bool = False,
+) -> GovernorApprovalResult:
+    """Explicit human authorization step to apply a pending proposal to active_config.json."""
+    if not approved_by or not str(approved_by).strip():
+        raise ValueError("Human approver identity ('approved_by') is required to authorize deployment.")
+
+    path = pending_path or (config_path.parent / "pending_proposals.json" if config_path else PENDING_PROPOSALS_PATH)
+    proposals = list_pending_proposals(path)
+    target = next((p for p in proposals if p.get("proposal_id") == proposal_id), None)
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    if target is None:
+        return GovernorApprovalResult(
+            approved=False,
+            status="REJECTED_NOT_FOUND",
+            invariants_passed=False,
+            tests_passed=False,
+            llm_risk_approved=False,
+            llm_rationale=f"Pending proposal '{proposal_id}' not found.",
+            rejection_reasons=[f"Proposal '{proposal_id}' not found in pending queue."],
+            applied_changes={},
+            timestamp=now_iso,
+            verdict="DISAPPROVE",
+            proposal_id=proposal_id,
+        )
+
+    if target.get("status") != "PENDING_HUMAN_APPROVAL":
+        return GovernorApprovalResult(
+            approved=False,
+            status=f"REJECTED_INVALID_STATE_{target.get('status')}",
+            invariants_passed=False,
+            tests_passed=False,
+            llm_risk_approved=False,
+            llm_rationale=f"Proposal '{proposal_id}' is in state '{target.get('status')}', not PENDING_HUMAN_APPROVAL.",
+            rejection_reasons=[f"Proposal '{proposal_id}' is not pending human approval."],
+            applied_changes={},
+            timestamp=now_iso,
+            verdict="DISAPPROVE",
+            proposal_id=proposal_id,
+        )
+
+    res = review_and_deploy_proposal(
+        proposed_changes=target["proposed_changes"],
+        rationale=target.get("rationale"),
+        empirical_proof=target.get("empirical_proof"),
+        config_path=config_path or Path(target.get("target_config_path", str(CONFIG_PATH))),
+        verify_tests=verify_tests,
+        use_llm=False,  # Already validated by Governor prior to entering pending queue
+        auto_commit=auto_commit,
+        require_human_approval=True,
+        human_approved=True,
+        pending_proposals_path=path,
+        proposal_id=proposal_id,
+    )
+
+    if res.approved:
+        target["status"] = "DEPLOYED"
+        target["human_approved"] = True
+        target["approved_by"] = approved_by
+        target["approved_at"] = now_iso
+        save_pending_proposal(target, path)
+
+    return res
+
+
+def reject_pending_proposal(
+    proposal_id: str,
+    rejected_by: str = "human_operator",
+    reason: str = "Rejected by human reviewer",
+    pending_path: Optional[Path] = None,
+) -> bool:
+    """Explicit human rejection of a pending proposal."""
+    path = pending_path or PENDING_PROPOSALS_PATH
+    proposals = list_pending_proposals(path)
+    target = next((p for p in proposals if p.get("proposal_id") == proposal_id), None)
+    if target is None:
+        return False
+    target["status"] = "REJECTED_BY_HUMAN"
+    target["human_approved"] = False
+    target["rejected_by"] = rejected_by
+    target["rejection_reason"] = reason
+    target["rejected_at"] = datetime.now(timezone.utc).isoformat()
+    save_pending_proposal(target, path)
+    return True
+
+
+def review_and_deploy_proposal(
+    proposed_changes: Dict[str, Any],
+    rationale: Optional[str] = None,
+    empirical_proof: Optional[Dict[str, Any]] = None,
+    config_path: Optional[Path] = None,
+    verify_tests: bool = True,
+    use_llm: bool = True,
+    model: str = "phi4-mini:latest",
+    auto_commit: Optional[bool] = None,
+    require_human_approval: bool = True,
+    human_approved: bool = False,
+    pending_proposals_path: Optional[Path] = None,
+    analyst_proposal: Optional[Dict[str, Any]] = None,
+    proposal_id: Optional[str] = None,
+) -> GovernorApprovalResult:
+    """
+    End-to-end governance review and human-gated deployment pipeline:
+    Analyst -> Proposal -> Governor -> Validation -> Pending Approval -> Human Decision -> Application
+
+    1. Validate Analyst structured proposal schema (if analyst_proposal provided).
+    2. Merge proposal into candidate configuration.
+    3. Audit hard safety invariants and parameter bounds.
+    4. Query LLM Risk Review using strict JSON schema and fail-closed validation.
+    5. Run automated Pytest regression gate.
+    6. If require_human_approval=True and human_approved=False:
+       Save proposal to pending_proposals.json as PENDING_HUMAN_APPROVAL without modifying active_config.json.
+    7. Only when human_approved=True (or require_human_approval=False in isolated tests):
+       Atomically write active_config.json with backup and log audit.
+    """
+    cfg_file = config_path or CONFIG_PATH
+    pend_file = pending_proposals_path or (
+        cfg_file.parent / "pending_proposals.json" if config_path is not None else PENDING_PROPOSALS_PATH
+    )
+    prop_id = proposal_id or (
+        analyst_proposal.get("proposal_id") if isinstance(analyst_proposal, dict) and analyst_proposal.get("proposal_id")
+        else f"PROP-{uuid.uuid4().hex[:8].upper()}"
+    )
+    now_iso = datetime.now(timezone.utc).isoformat()
+    rejections: List[str] = []
+
+    # Step 0: Optional Analyst Proposal Schema Validation
+    if analyst_proposal is not None:
+        from agent.trade_analyst import validate_analyst_proposal_schema
+        schema_ok, schema_errs, _ = validate_analyst_proposal_schema(analyst_proposal)
+        if not schema_ok:
+            rejections.extend(schema_errs)
+            res = GovernorApprovalResult(
+                approved=False,
+                status="REJECTED_SCHEMA",
+                invariants_passed=False,
+                tests_passed=False,
+                llm_risk_approved=False,
+                llm_rationale="Analyst proposal schema validation failed: " + "; ".join(schema_errs),
+                rejection_reasons=rejections,
+                applied_changes={},
+                timestamp=now_iso,
+                verdict="DISAPPROVE",
+                proposal_id=prop_id,
+            )
+            append_governance_audit_log(res)
+            return res
+
+    base_cfg = load_config(cfg_file)
+    candidate_cfg = _merge_proposed_changes_into_config(base_cfg, proposed_changes)
+
+    # Step 1: Invariant & Parameter Bounds Check
     invariants_ok, inv_errors = audit_invariants(candidate_cfg)
     if not invariants_ok:
         rejections.extend(inv_errors)
@@ -285,23 +710,38 @@ def review_and_deploy_proposal(
             rejection_reasons=rejections,
             applied_changes={},
             timestamp=now_iso,
+            verdict="DISAPPROVE",
+            proposal_id=prop_id,
         )
         append_governance_audit_log(res)
         return res
 
-    # Step 2: LLM Risk Review
+    # Step 2: LLM Risk Review (Strict JSON & Fail-Closed)
     llm_approved = True
-    llm_rationale = "Ollama review bypassed."
+    verdict_enum = "APPROVE"
+    llm_rationale = "Rule-only governance verification passed."
+    verdict_confidence = 1.0
+    risk_assessment_str = "Deterministic invariant and parameter bounds check passed."
+    llm_telemetry: Dict[str, Any] = {}
+
     if use_llm:
-        llm_approved, llm_rationale = query_llm_risk_review(
+        llm_approved, verdict_enum, parsed_verdict, llm_telemetry = query_llm_risk_review_structured(
             proposed_diff=proposed_changes,
             base_config=base_cfg,
             rationale=rationale,
             empirical_proof=empirical_proof,
+            analyst_proposal=analyst_proposal,
             model=model,
         )
-        if not llm_approved:
-            rejections.append("LLM Risk Governor rejected proposal due to unhedged risk exposure.")
+        verdict_confidence = float(parsed_verdict.get("confidence", 0.0))
+        risk_assessment_str = str(parsed_verdict.get("risk_assessment", ""))
+        llm_rationale = (
+            f"VERDICT: {verdict_enum} (confidence={verdict_confidence:.2f}) | "
+            f"{parsed_verdict.get('reason', '')} | Risk: {risk_assessment_str}"
+        )
+
+        if verdict_enum == "DISAPPROVE":
+            rejections.append(parsed_verdict.get("reason", "LLM Risk Governor disapproved proposal."))
             res = GovernorApprovalResult(
                 approved=False,
                 status="REJECTED_LLM_RISK",
@@ -312,26 +752,22 @@ def review_and_deploy_proposal(
                 rejection_reasons=rejections,
                 applied_changes={},
                 timestamp=now_iso,
+                verdict="DISAPPROVE",
+                confidence=verdict_confidence,
+                risk_assessment=risk_assessment_str,
+                proposal_id=prop_id,
+                llm_metrics=llm_telemetry,
             )
             append_governance_audit_log(res)
             return res
 
-    # Step 3: Atomic Deployment with Automated Backup
-    bak_file = cfg_file.with_suffix(".json.bak")
-    shutil.copyfile(cfg_file, bak_file)
-
-    tmp_target = cfg_file.with_suffix(".json.tmp")
-    with open(tmp_target, "w") as f:
-        json.dump(candidate_cfg, f, indent=2)
-    os.replace(tmp_target, cfg_file)
-
+    # Step 3: Pytest Regression Verification (before queuing or applying)
     tests_ok = True
+    test_log = ""
     if verify_tests:
         tests_ok, test_log = run_pytest_regression_gate()
         if not tests_ok:
-            # Rollback immediately!
-            shutil.copyfile(bak_file, cfg_file)
-            rejections.append("Pytest regression detected. State rolled back to backup.")
+            rejections.append("Pytest regression suite failed.")
             res = GovernorApprovalResult(
                 approved=False,
                 status="REJECTED_TESTS",
@@ -342,26 +778,88 @@ def review_and_deploy_proposal(
                 rejection_reasons=rejections,
                 applied_changes={},
                 timestamp=now_iso,
+                verdict="DISAPPROVE",
+                confidence=verdict_confidence,
+                risk_assessment=risk_assessment_str,
+                proposal_id=prop_id,
+                llm_metrics=llm_telemetry,
             )
             append_governance_audit_log(res)
             return res
 
-    # Step 4: Approved & Deployed!
-    should_commit = (config_path is None) if auto_commit is None else auto_commit
+    # Step 4: Mandatory Human-in-the-Loop Gate
+    # If human approval is required and not yet granted (or LLM returned NEEDS_HUMAN_REVIEW),
+    # save to pending queue and do NOT overwrite active_config.json!
+    if (require_human_approval and not human_approved) or (verdict_enum == "NEEDS_HUMAN_REVIEW" and not human_approved):
+        pending_record = {
+            "proposal_id": prop_id,
+            "status": "PENDING_HUMAN_APPROVAL",
+            "governor_verdict": verdict_enum,
+            "governor_confidence": verdict_confidence,
+            "governor_rationale": llm_rationale,
+            "risk_assessment": risk_assessment_str,
+            "invariants_passed": True,
+            "tests_passed": tests_ok,
+            "human_approved": False,
+            "proposed_changes": proposed_changes,
+            "rationale": rationale or "Validated governance proposal awaiting human authorization.",
+            "empirical_proof": empirical_proof or {},
+            "analyst_proposal": analyst_proposal,
+            "target_config_path": str(cfg_file),
+            "created_at": now_iso,
+        }
+        save_pending_proposal(pending_record, pend_file)
+        res = GovernorApprovalResult(
+            approved=False,
+            status="PENDING_HUMAN_APPROVAL",
+            invariants_passed=True,
+            tests_passed=tests_ok,
+            llm_risk_approved=(verdict_enum == "APPROVE"),
+            llm_rationale=llm_rationale,
+            rejection_reasons=["Awaiting mandatory human approval before applying to live configuration."],
+            applied_changes={},
+            timestamp=now_iso,
+            verdict=verdict_enum,
+            confidence=verdict_confidence,
+            risk_assessment=risk_assessment_str,
+            pending_human_approval=True,
+            proposal_id=prop_id,
+            llm_metrics=llm_telemetry,
+        )
+        append_governance_audit_log(res)
+        return res
+
+    # Step 5: Human-Authorized Atomic Application with Backup
+    bak_file = cfg_file.with_suffix(".json.bak")
+    if cfg_file.exists():
+        shutil.copyfile(cfg_file, bak_file)
+
+    tmp_target = cfg_file.with_suffix(".json.tmp")
+    with open(tmp_target, "w") as f:
+        json.dump(candidate_cfg, f, indent=2)
+    os.replace(tmp_target, cfg_file)
+
+    should_commit = False if auto_commit is None else bool(auto_commit)
     if should_commit:
-        commit_msg = f"feat(governance): autonomous config deployment — {rationale or 'verified improvement'}"
+        commit_msg = f"feat(governance): human-approved config deployment ({prop_id}) — {rationale or 'verified improvement'}"
         commit_and_push_config(commit_msg)
 
     res = GovernorApprovalResult(
         approved=True,
         status="DEPLOYED",
         invariants_passed=True,
-        tests_passed=True,
-        llm_risk_approved=llm_approved,
+        tests_passed=tests_ok,
+        llm_risk_approved=True,
         llm_rationale=llm_rationale,
         rejection_reasons=[],
         applied_changes=proposed_changes,
         timestamp=now_iso,
+        verdict="APPROVE",
+        confidence=verdict_confidence,
+        risk_assessment=risk_assessment_str,
+        pending_human_approval=False,
+        proposal_id=prop_id,
+        llm_metrics=llm_telemetry,
     )
     append_governance_audit_log(res)
     return res
@@ -371,6 +869,10 @@ def main():
     parser = argparse.ArgumentParser(description="Agent 12: Chief Risk Governor & Deployment Gatekeeper")
     parser.add_argument("--audit", action="store_true", help="Audit active_config.json against safety invariants")
     parser.add_argument("--proposal", type=str, default=None, help="JSON file containing candidate modifications to review")
+    parser.add_argument("--pending", "--list-pending", dest="pending", action="store_true", help="List all proposals awaiting human approval")
+    parser.add_argument("--approve", type=str, default=None, help="Approve and deploy a pending proposal ID (e.g. PROP-XXXXXXXX)")
+    parser.add_argument("--reject", type=str, default=None, help="Reject a pending proposal ID")
+    parser.add_argument("--approver", type=str, default="human_cli_operator", help="Human approver identifier")
     parser.add_argument("--no-llm", action="store_true", help="Bypass LLM Risk review")
     parser.add_argument("--no-tests", action="store_true", help="Skip running pytest suite")
     parser.add_argument("--model", type=str, default="phi4-mini:latest", help="Local Ollama model (default: phi4-mini:latest)")
@@ -382,6 +884,29 @@ def main():
     print("  AGENT 12: CHIEF RISK GOVERNOR & DEPLOYMENT GATEKEEPER")
     print(f"  Target Config: {CONFIG_PATH.name} | Risk Limits: [1%, 5%]")
     print("=" * 80)
+
+    if args.pending:
+        pending = list_pending_proposals()
+        print(f"\n[Pending Human Approval Queue: {len(pending)} proposal(s)]")
+        for p in pending:
+            print(f"  - ID: {p.get('proposal_id')} | Status: {p.get('status')} | Verdict: {p.get('governor_verdict')} | Created: {p.get('created_at')}")
+            print(f"    Rationale: {p.get('rationale')}")
+            print(f"    Changes:   {json.dumps(p.get('proposed_changes', {}))}")
+        return
+
+    if args.approve:
+        res = approve_pending_proposal(
+            proposal_id=args.approve,
+            approved_by=args.approver,
+            verify_tests=not args.no_tests,
+        )
+        print(f"\n[Human Approval Result for {args.approve}]: {res.status} (Approved={res.approved})")
+        return
+
+    if args.reject:
+        ok = reject_pending_proposal(proposal_id=args.reject, rejected_by=args.approver)
+        print(f"\n[Human Rejection Result for {args.reject}]: {'REJECTED_BY_HUMAN' if ok else 'NOT_FOUND'}")
+        return
 
     if args.audit or not args.proposal:
         print("\n[Invariant Audit on Active Configuration]")
@@ -413,15 +938,16 @@ def main():
     )
 
     print("\n" + "=" * 80)
-    print(f"  GOVERNOR VERDICT: {'APPROVED & DEPLOYED' if res.approved else 'REJECTED'}")
-    print(f"  Status: {res.status}")
+    print(f"  GOVERNOR VERDICT: {res.verdict} | STATUS: {res.status}")
+    print(f"  Proposal ID:        {res.proposal_id}")
     print(f"  Invariants Passed:  {res.invariants_passed}")
     print(f"  Pytest Regression:  {res.tests_passed}")
     print(f"  LLM Risk Approved:  {res.llm_risk_approved}")
+    print(f"  Pending Human Gate: {res.pending_human_approval}")
     print(f"\n[Governor Rationale]")
     print(res.llm_rationale)
     if res.rejection_reasons:
-        print(f"\n[Rejection Details]")
+        print(f"\n[Notes / Rejection Details]")
         for r in res.rejection_reasons:
             print(f"  - {r}")
     print("=" * 80)

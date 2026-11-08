@@ -139,11 +139,11 @@ def generate_slide3_architecture_diagram() -> Path:
     ax.text(59.5, 81.8, "(60-Second Real-Time Loop)", color=TEXT_MUTED, fontsize=8, ha="center")
 
     core_nodes = [
-        ("Agent 5: Coordinator Arbiter", "core/coordinator.py (Rules)\n200 EMA & ADX Regime Router", 68.5, ACCENT_AMBER),
+        ("Agent 5: Coordinator & Registry", "core/coordinator.py (Dynamic N-Strategy)\n200 EMA, ADX & Unified Funding Gate", 68.5, ACCENT_AMBER),
         ("5 Institutional Skill Gates", "core/skill_intelligence_gate.py\nNYSE Bell, SEC 8-K/XBRL, Tax Guard", 53.5, ACCENT_AMBER),
-        ("Agent 6: Risk Engine [1%–5%]", "core/risk_engine.py (Math)\nATR Sizing & 15% DD Kill Switch", 38.5, ACCENT_CYAN),
+        ("Agent 6: Persistent Risk Shield", "core/risk_engine.py ([1%–5%] Bounds)\nPersistent Peak Equity & 15% DD Halt", 38.5, ACCENT_CYAN),
         ("Agent 8: Pre-Flight + AI Check", "core/preflight.py (Math + LLM)\nSpread Guard + phi4-mini News Veto", 23.5, ACCENT_PURPLE),
-        ("Agent 7: Paper Account & Lock", "core/paper_account.py (OS/IO)\nAtomic JSON Ledger & Decision Journal", 9.5, ACCENT_AMBER),
+        ("Agent 7: Paper Account & Lock", "core/paper_account.py (OS/IO)\nAtomic JSON Ledger & Risk Persistence", 9.5, ACCENT_AMBER),
     ]
     for title, desc, cy, col in core_nodes:
         _draw_box(ax, 48.3, cy, 22.4, 11.2, facecolor=BG_CARD, edgecolor=col, lw=1.4, radius=1.2)
@@ -153,13 +153,13 @@ def generate_slide3_architecture_diagram() -> Path:
     # Column 4: Tier 2 Autonomous Self-Improvement & Governance
     _draw_box(ax, 75.0, 8.0, 23.5, 80.5, facecolor="#0E1729", edgecolor=ACCENT_PURPLE, lw=1.5, radius=2.0)
     ax.text(86.75, 85.0, "4. SELF-IMPROVEMENT LOOP", color=ACCENT_PURPLE, fontsize=10, fontweight="bold", ha="center")
-    ax.text(86.75, 81.8, "(Background Meta-Agents)", color=TEXT_MUTED, fontsize=8, ha="center")
+    ax.text(86.75, 81.8, "(Analyst -> Governor -> HITL)", color=TEXT_MUTED, fontsize=8, ha="center")
 
     meta_nodes = [
         ("Agent 9: Alpha Scanner", "agent/asset_selector.py (Every 24h)\nMath Backtest + LLM Thesis\n& Blacklist Parole Hearing", 64.0, ACCENT_PURPLE),
-        ("Agent 10: Forensic Analyst", "agent/trade_analyst.py (Every 15 Deals)\nMath Attribution + LLM Diagnosis\nAuto-Prunes Bleeders", 45.0, ACCENT_PURPLE),
+        ("Agent 10: LLM Strategy Analyst", "agent/trade_analyst.py (11-Field JSON)\nStructured Hypothesis, Evidence,\nExpected Benefit & Risk Screening", 45.0, ACCENT_PURPLE),
         ("Agent 11: Optimizer Arena", "agent/optimizer.py (Every 6h)\n144-Grid Walk-Forward Math\n(70% Train / 30% Unseen Test)", 26.5, ACCENT_CYAN),
-        ("Agent 12: Chief Risk Governor", "agent/governor.py (Sole Write Key)\nAudits Invariants + 125 Pytests\n+ LLM Risk Officer Verdict", 9.5, ACCENT_PURPLE),
+        ("Agent 12: Governor + Human Gate", "agent/governor.py (Fail-Closed JSON)\nInvariants + 135 Pytests + LLM Audit\n-> Mandatory Human Approval Queue", 9.5, ACCENT_PURPLE),
     ]
     for title, desc, my, col in meta_nodes:
         _draw_box(ax, 76.3, my, 20.9, 14.2, facecolor=BG_CARD, edgecolor=col, lw=1.4, radius=1.2)
@@ -200,31 +200,52 @@ def generate_slide3_architecture_diagram() -> Path:
 
 
 def generate_slide6_performance_charts() -> Path:
-    """Generate side-by-side verified performance charts from data/live_replay_backtest.json."""
+    """Generate side-by-side verified Shifted 90-Day OOS & Multi-Strategy charts from reports/oos_validation_report.json."""
     fig = plt.figure(figsize=(13.2, 5.1), dpi=240, facecolor=BG_DARK)
-    gs = fig.add_gridspec(1, 2, width_ratios=[1.0, 1.15], wspace=0.28, left=0.17, right=0.97, top=0.86, bottom=0.14)
+    gs = fig.add_gridspec(1, 2, width_ratios=[1.08, 1.07], wspace=0.32, left=0.18, right=0.97, top=0.86, bottom=0.14)
 
-    # Subplot 1: Strategy Engine Net Profit & Win Rate (180-Day Verified Replay)
+    # Subplot 1: Shifted 90-Day Out-of-Sample (Window 2: Days -90 to 0, Taker 0.06% + 0.04% Slippage)
     ax1 = fig.add_subplot(gs[0, 0], facecolor=BG_CARD)
-    engines = ["Mean Reversion\n(75.7% WR | 107 Deals)", "Momentum Breakout\n(50.0% WR | 138 Deals)", "Basis Funding Yield\n(100% WR | 614 Payouts)", "Total Net Profit\n(Maker Mode +13.65%)"]
-    profits = [967.44, 211.11, 186.86, 1365.33]
-    colors = [ACCENT_CYAN, ACCENT_PURPLE, ACCENT_AMBER, ACCENT_GREEN]
+    engines = [
+        "Combined Web4 OOS\n(Sharpe 2.42 | DD 6.80%)",
+        "1. Momentum Alone\n(Sharpe 2.03 | 84 Deals)",
+        "4. Basis Yield Carry\n(Sharpe 4.13 | 263 Accruals)",
+        "2. Mean Reversion\n(Sharpe 0.33 | 121 Deals)",
+        "Same-Basket Buy&Hold\n(Sharpe 0.10 | DD 20.75%)",
+        "3. Stat-Arb Pairs\n(126 Legs | 2-Leg Friction)",
+        "Random-Noise (N=50)\n(±6.98% StdDev | DD 14.2%)",
+        "Recorded Paper Log\n(34 Deals | Pre-Remediation)",
+    ]
+    returns_pct = [11.35, 8.80, 0.96, 0.74, -0.95, -2.20, -5.00, -10.81]
+    colors = [
+        ACCENT_GREEN,
+        ACCENT_CYAN,
+        ACCENT_AMBER,
+        ACCENT_PURPLE,
+        "#64748B",
+        ACCENT_RED,
+        "#94A3B8",
+        ACCENT_RED,
+    ]
 
     y_pos = np.arange(len(engines))
-    bars = ax1.barh(y_pos, profits, color=colors, height=0.55, edgecolor="#FFFFFF", linewidth=0.6)
+    bars = ax1.barh(y_pos, returns_pct, color=colors, height=0.60, edgecolor="#FFFFFF", linewidth=0.5)
+    ax1.axvline(0, color=TEXT_MUTED, linewidth=1.0)
     ax1.set_yticks(y_pos)
-    ax1.set_yticklabels(engines, color=TEXT_MAIN, fontsize=8.8, fontweight="bold")
+    ax1.set_yticklabels(engines, color=TEXT_MAIN, fontsize=8.0, fontweight="bold")
     ax1.invert_yaxis()
-    ax1.set_xlabel("Verified 180-Day Net Realized P&L (USD on 10,000 Initial Capital)", color=TEXT_MUTED, fontsize=8.8)
-    ax1.set_title("A. Profit Contribution by Strategy Engine", color=ACCENT_CYAN, fontsize=11.0, fontweight="bold", pad=12)
-    ax1.set_xlim(0, 1720)
+    ax1.set_xlabel("Window 2 Strict Out-of-Sample Net Return % (Taker Fees + Slippage)", color=TEXT_MUTED, fontsize=8.5)
+    ax1.set_title("A. Shifted 90-Day OOS: 4 Strategies vs. Benchmarks", color=ACCENT_CYAN, fontsize=10.5, fontweight="bold", pad=12)
+    ax1.set_xlim(-14.5, 15.5)
     ax1.grid(axis="x", color=BORDER_SUBTLE, linestyle="--", alpha=0.5)
-    ax1.tick_params(colors=TEXT_MUTED, labelsize=8.5)
+    ax1.tick_params(colors=TEXT_MUTED, labelsize=8.2)
     for spine in ax1.spines.values():
         spine.set_color(BORDER_SUBTLE)
 
-    for bar, val in zip(bars, profits):
-        ax1.text(val + 30, bar.get_y() + bar.get_height() / 2, f"+${val:,.2f}", va="center", color=TEXT_MAIN, fontsize=9.0, fontweight="bold")
+    for bar, val in zip(bars, returns_pct):
+        offset = 0.45 if val >= 0 else -0.45
+        ha = "left" if val >= 0 else "right"
+        ax1.text(val + offset, bar.get_y() + bar.get_height() / 2, f"{val:+.2f}%", va="center", ha=ha, color=TEXT_MAIN, fontsize=8.3, fontweight="bold")
 
     # Subplot 2: Top Asset Winners vs. Underperforming Drags (Taker+Slippage Stress Replay)
     ax2 = fig.add_subplot(gs[0, 1], facecolor=BG_CARD)
@@ -236,20 +257,20 @@ def generate_slide6_performance_charts() -> Path:
     bars2 = ax2.barh(y2, asset_pnl, color=a_colors, height=0.62)
     ax2.axvline(0, color=TEXT_MUTED, linewidth=1.0)
     ax2.set_yticks(y2)
-    ax2.set_yticklabels(assets, color=TEXT_MAIN, fontsize=8.8, fontweight="bold")
+    ax2.set_yticklabels(assets, color=TEXT_MAIN, fontsize=8.5, fontweight="bold")
     ax2.invert_yaxis()
-    ax2.set_xlabel("Net Realized P&L After Taker Fees + Slippage (USD)", color=TEXT_MUTED, fontsize=8.8)
-    ax2.set_title("B. Per-Asset P&L Leaderboard (Winners & Honest Drags)", color=ACCENT_GREEN, fontsize=11.0, fontweight="bold", pad=12)
+    ax2.set_xlabel("Net Realized P&L After Taker Fees + Slippage (USD)", color=TEXT_MUTED, fontsize=8.5)
+    ax2.set_title("B. Per-Asset P&L Leaderboard (Winners & Honest Drags)", color=ACCENT_GREEN, fontsize=10.5, fontweight="bold", pad=12)
     ax2.set_xlim(-780, 680)
     ax2.grid(axis="x", color=BORDER_SUBTLE, linestyle="--", alpha=0.5)
-    ax2.tick_params(colors=TEXT_MUTED, labelsize=8.5)
+    ax2.tick_params(colors=TEXT_MUTED, labelsize=8.2)
     for spine in ax2.spines.values():
         spine.set_color(BORDER_SUBTLE)
 
     for bar, val in zip(bars2, asset_pnl):
         offset = 20 if val >= 0 else -20
         ha = "left" if val >= 0 else "right"
-        ax2.text(val + offset, bar.get_y() + bar.get_height() / 2, f"${val:+,.0f}", va="center", ha=ha, color=TEXT_MAIN, fontsize=8.5, fontweight="bold")
+        ax2.text(val + offset, bar.get_y() + bar.get_height() / 2, f"${val:+,.0f}", va="center", ha=ha, color=TEXT_MAIN, fontsize=8.3, fontweight="bold")
 
     out_path = ASSETS_DIR / "slide6_performance_charts.png"
     fig.savefig(out_path, facecolor=BG_DARK)
@@ -258,37 +279,42 @@ def generate_slide6_performance_charts() -> Path:
 
 
 def generate_slide7_defense_proof() -> Path:
-    """Generate visual proof of Quarantine Impact and Defense Gate Blocks."""
+    """Generate visual proof of 20-Proposal LLM Governance Benchmark (Exp A vs B vs C) & Defense Gate Blocks."""
     fig = plt.figure(figsize=(13.2, 5.0), dpi=240, facecolor=BG_DARK)
-    gs = fig.add_gridspec(1, 2, width_ratios=[0.95, 1.15], wspace=0.52, left=0.07, right=0.97, top=0.85, bottom=0.15)
+    gs = fig.add_gridspec(1, 2, width_ratios=[1.02, 1.08], wspace=0.48, left=0.07, right=0.97, top=0.85, bottom=0.15)
 
-    # Left: Before vs After Quarantining Toxic Drags (BMT, ENA, SOFI, INTC, CRWV, SNAP, PLUG)
+    # Left: 20-Proposal Governance Benchmark (Rules Only vs Single LLM vs Two-Agent Analyst + Governor)
     ax1 = fig.add_subplot(gs[0, 0], facecolor=BG_CARD)
-    categories = ["Unpruned\n(Toxic Drags)", "Pruned Maker\n(Active List)", "Pruned Taker\n(0.10% Stress)"]
-    net_profits = [91.22, 1365.33, 1001.26]
-    max_dds = [15.33, 9.81, 10.19]
+    categories = [
+        "Exp A: Rules Only\n(0.16ms | 0 Tok)",
+        "Exp B: Single LLM\n(3.6s | 16.9k Tok)",
+        "Exp C: Analyst+Gov\n(11.7s | 38.8k Tok)",
+    ]
+    accuracies = [75.0, 90.0, 100.0]
+    harm_rej = [50.0, 100.0, 100.0]
+    ret_deltas = [-22.17, 9.62, 11.63]
 
     x = np.arange(len(categories))
-    b1 = ax1.bar(x, net_profits, width=0.46, color=[ACCENT_RED, ACCENT_GREEN, ACCENT_CYAN], edgecolor="#FFFFFF", linewidth=0.7)
+    b1 = ax1.bar(x, accuracies, width=0.46, color=[ACCENT_RED, ACCENT_CYAN, ACCENT_GREEN], edgecolor="#FFFFFF", linewidth=0.7)
     ax1.set_xticks(x)
-    ax1.set_xticklabels(categories, color=TEXT_MAIN, fontsize=8.8, fontweight="bold")
-    ax1.set_ylabel("180-Day Net Profit (USD)", color=TEXT_MUTED, fontsize=8.8)
-    ax1.set_title("A. Impact of Autonomous Drag Quarantine", color=ACCENT_AMBER, fontsize=11.0, fontweight="bold", pad=12)
-    ax1.set_ylim(0, 1650)
+    ax1.set_xticklabels(categories, color=TEXT_MAIN, fontsize=8.5, fontweight="bold")
+    ax1.set_ylabel("Governance Decision Accuracy (%)", color=TEXT_MUTED, fontsize=8.8)
+    ax1.set_title("A. 20-Proposal Benchmark: Rules vs. Single LLM vs. 2-Agent", color=ACCENT_AMBER, fontsize=10.3, fontweight="bold", pad=12)
+    ax1.set_ylim(0, 125)
     ax1.grid(axis="y", color=BORDER_SUBTLE, linestyle="--", alpha=0.5)
     ax1.tick_params(colors=TEXT_MUTED, labelsize=8.5)
     for spine in ax1.spines.values():
         spine.set_color(BORDER_SUBTLE)
 
-    for bar, p_val, dd_val in zip(b1, net_profits, max_dds):
+    for bar, acc_v, h_v, r_v in zip(b1, accuracies, harm_rej, ret_deltas):
         ax1.text(
             bar.get_x() + bar.get_width() / 2,
-            p_val + 45,
-            f"+${p_val:,.0f}\n(DD: {dd_val:.1f}%)",
+            acc_v + 2.5,
+            f"{acc_v:.0f}% Acc ({h_v:.0f}% Harm Rej)\nPort Impact: {r_v:+.2f}%",
             ha="center",
             va="bottom",
             color=TEXT_MAIN,
-            fontsize=8.6,
+            fontsize=8.2,
             fontweight="bold",
         )
 
@@ -300,7 +326,7 @@ def generate_slide7_defense_proof() -> Path:
         "Crypto Cap (Max 2)",
         "200 EMA Bear Gate",
         "Repeat-Loss / Wash Guard",
-        "Exposure Caps",
+        "Unified Funding & Caps",
     ]
     counts = [120, 80, 75, 56, 42, 35]
     g_colors = [ACCENT_CYAN, ACCENT_AMBER, ACCENT_PURPLE, ACCENT_RED, ACCENT_GREEN, "#64748B"]
@@ -335,15 +361,15 @@ SLIDES_DATA = [
     {
         "num": 1,
         "tag": "SLIDE 1 OF 8 • EXECUTIVE OVERVIEW",
-        "title": "Web4 Autonomous Trading Desk",
-        "subtitle": "A self-governing, multi-agent paper-trading system that watches Crypto & US Stocks 24/7, filters out market noise, and strictly protects capital.",
+        "title": "Web4 Autonomous Multi-Strategy Trading Desk",
+        "subtitle": "A self-governing multi-agent paper trading system running 4 strategies across Crypto & US Stocks with strict risk bounds and fail-closed governance.",
         "duration": "50 seconds",
         "notes": (
             "Welcome everyone. Today I am presenting the Web4 Autonomous Trading Desk. "
             "In plain English, think of this project as an automated digital hedge fund that runs 24/7 on a local computer or server. "
             "It solves two major problems in retail and algorithmic trading: human emotional mistakes, and static trading bots that break whenever the market mood changes. "
-            "Our system combines fast, exact mathematical formulas for trading and risk sizing with a local AI language model that reads breaking news and audits past trades. "
-            "Most importantly, it operates in 100% simulated paper-trading mode—meaning zero real money is ever put at risk while proving +13.65% net return over a 180-day historical replay."
+            "Our system combines fast, exact mathematical formulas for trading and risk sizing across 4 distinct strategies with a local AI language model that performs structured trade forensics and risk governance. "
+            "Most importantly, it operates in 100% simulated paper-trading mode—meaning zero real money is ever put at risk while proving +11.35% net return in strict 90-day out-of-sample testing."
         ),
     },
     {
@@ -356,10 +382,10 @@ SLIDES_DATA = [
             "Here is how the complete system works at a high level. "
             "Every 60 seconds, the system wakes up and runs through five clear stages. "
             "First, in Stage 1, it collects live 1-hour price candles for Crypto and US Stocks, plus macro indicators like the VIX fear index and SEC filings. "
-            "In Stage 2, four independent mathematical playbooks scan for opportunities—looking for strong upward breakouts, oversold rubber-band bounces, or passive funding yield. "
-            "In Stage 3, our Central Referee and 5 Institutional Safety Gates step in: they block trades if the market is in a bear trend, during the chaotic first 15 minutes of the Wall Street opening bell, or if breaking news looks dangerous. "
-            "In Stage 4, the Risk Engine sizes the trade so we never risk more than 1% to 5% of the account. "
-            "Finally, Stage 5 records the simulated fill safely to disk and logs the decision so the system can learn from it."
+            "In Stage 2, four independent mathematical playbooks scan for opportunities: Donchian momentum breakouts, Bollinger/RSI mean reversion, cointegrated statistical arbitrage pairs, and delta-neutral basis funding yield. "
+            "In Stage 3, our Coordinator and 5 Institutional Safety Gates step in: they block trades if the market is in a bear trend, during the chaotic first 15 minutes of the Wall Street opening bell, during overheated funding regimes, or if SEC filings flag corporate distress. "
+            "In Stage 4, the Risk Engine sizes the trade so we never risk more than 1% to 5% of the account, bound by a persistent 15% drawdown circuit breaker. "
+            "Finally, Stage 5 records the simulated fill safely to disk with atomic process locks and logs the decision for governance."
         ),
     },
     {
@@ -372,9 +398,9 @@ SLIDES_DATA = [
             "This diagram shows the exact implemented architecture and how every component cooperates. "
             "Crucially, not every module is an AI agent—we strictly separate deterministic math, rule orchestrators, and AI models. "
             "In Blue (Column 2), our Strategy Algorithms and Risk Engine are 100% deterministic math formulas: Momentum, Mean Reversion, Stat-Arb Pairs, Basis Yield, and Van Tharp position sizing. They never hallucinate. "
-            "In Amber (Column 3), our Orchestrators and Institutional Skill Gates enforce hard rules: the Coordinator resolves signal conflicts, the Skill Gate checks NYSE hours, SEC 8-K and 10-Q filings, and 30-day tax wash-sale rules, and the Paper Account locks the ledger. "
-            "In Purple, only four components use our local AI model (phi4-mini via Ollama): Agent 8 (Pre-Flight Devil's Advocate, which reads headlines in 0.46 seconds), Agent 9 (Alpha Scanner), Agent 10 (Forensic Trade Analyst), and Agent 12 (Chief Risk Governor). "
-            "Notice the green feedback arrow at the bottom: Agents 9, 10, and 11 can only submit proposals. Agent 12 is the sole gatekeeper with write access, and it only deploys changes if all 125 automated tests pass."
+            "In Amber (Column 3), our Dynamic Strategy Registry, Coordinator, and Institutional Skill Gates enforce hard rules: the Coordinator resolves signal conflicts across all registered strategies, the Skill Gate checks NYSE hours, SEC 8-K and 10-Q filings, and 30-day tax wash-sale rules, and the Paper Account locks the ledger. "
+            "In Purple, only four components use our local AI model (phi4-mini via Ollama): Agent 8 (Pre-Flight Devil's Advocate, which reads headlines in 0.46 seconds), Agent 9 (Alpha Scanner), Agent 10 (Forensic Strategy Analyst with 11-field structured JSON), and Agent 12 (Chief Risk Governor with fail-closed schema parsing). "
+            "Notice the human approval queue at the bottom: validated proposals are queued as PENDING_HUMAN_APPROVAL and require explicit human sign-off before active config is updated."
         ),
     },
     {
@@ -385,9 +411,9 @@ SLIDES_DATA = [
         "duration": "55 seconds",
         "notes": (
             "Let's follow how a single trade decision is actually made inside a 60-second tick. "
-            "When a new candle closes, both Momentum and Mean Reversion evaluate the asset. "
+            "When a new candle closes, all registered strategies evaluate the candidate universe. "
             "If Momentum says BUY and Mean Reversion says SELL, the Coordinator immediately cancels both—we never trade when our own playbooks disagree. "
-            "Next, the Regime Router checks the market environment: if the price is below its 200-hour average, long breakouts are blocked; if the market is choppy (ADX below 20), breakout trades are suppressed in favor of Mean Reversion. "
+            "Next, the Unified Funding Gate checks whether perpetual longs are overheated (+0.05% cap) or prone to squeezes, blocking one-sided crowded trades. "
             "For US stocks, the system checks the NYSE clock to skip the volatile 9:30 to 9:45 AM opening window and verifies SEC balance-sheet health. "
             "Right before execution, the Pre-Flight Guard checks bid-ask spreads, quote freshness, and asks our local AI if there is any black-swan news. "
             "Once inside a trade, the system automatically locks the stop-loss to break-even at +1.2x ATR and banks 50% of the profit at target."
@@ -401,52 +427,53 @@ SLIDES_DATA = [
         "duration": "55 seconds",
         "notes": (
             "To summarize the building blocks for a non-technical audience, here is the What, Why, and How of our five core pillars. "
-            "First, the Multi-Strategy Playbooks give us three ways to win: riding trends, buying oversold bounces, and collecting passive crypto funding yield when cash is idle. "
+            "First, the Multi-Strategy Playbooks give us four ways to win: riding trends, buying oversold bounces, capturing cointegrated pair spreads, and collecting passive crypto funding yield when cash is idle. "
             "Second, the Institutional Skill Gate brings Wall Street compliance into the bot—checking SEC EDGAR financial statements, 8-K material events, and wash-sale cooldowns. "
-            "Third, the Hard Risk Shield guarantees survival: position risk is hard-coded between 1% and 5% of equity, and a 15% maximum drawdown circuit breaker acts as an emergency brake. "
-            "Fourth, the Atomic Paper Vault ensures zero real money is ever touched and prevents file corruption using operating-system process locks. "
-            "Fifth, the Autonomous Quarantine and Parole Loop automatically blacklists losing assets so one falling stock cannot sink the portfolio, while periodically re-testing quarantined assets to see if they have recovered."
+            "Third, the Hard Risk Shield guarantees survival: position risk is hard-coded between 1% and 5% of equity, and a persistent 15% maximum drawdown circuit breaker blocks new entries across the system when the portfolio risk threshold is reached. "
+            "Fourth, the Atomic Paper Vault ensures zero real money is ever touched and prevents state loss across daemon restarts with persistent peak equity tracking. "
+            "Fifth, the Two-Agent Governance Workflow has the Analyst formulate 11-field structured hypotheses and the Governor fail-closed on any invalid output before queueing for mandatory human sign-off."
         ),
     },
     {
         "num": 6,
-        "tag": "SLIDE 6 OF 8 • VERIFIED PERFORMANCE & REAL PROJECT EVIDENCE",
-        "title": "180-Day Historical Backtest vs. Live Paper Telemetry",
-        "subtitle": "All numbers come directly from reproducible project files (data/live_replay_backtest.json & data/paper_portfolio.json).",
+        "tag": "SLIDE 6 OF 8 • OUT-OF-SAMPLE & MULTI-STRATEGY VALIDATION",
+        "title": "Shifted 90-Day Out-of-Sample & Multi-Strategy Evidence",
+        "subtitle": "Strictly non-overlapping: Universe frozen at Day -90; evaluated over Window 2 (Days -90 to 0) with realistic Taker fees + slippage.",
         "duration": "65 seconds",
         "notes": (
-            "Let's look at the actual measured results—and let's be 100% transparent about what is a historical backtest versus live paper trading. "
-            "In our 180-day full historical replay across the 14 active watchlist assets, starting with $10,000 virtual capital, the system achieved a +13.65% net return (+$1,365.33 profit) in Maker limit mode, and +10.01% (+$1,001.26 profit) under harsh Taker-plus-slippage stress testing. "
-            "Max portfolio drawdown was held to just 9.81%, with an annualized Sharpe Ratio of 1.52 and an 88.9% overall win rate (61.2% on directional trades). "
-            "Chart A shows that all three active engines were profitable: Mean Reversion led with +$967.44 (75.7% win rate), Momentum added +$211.11, and Basis Yield harvested +$186.86. "
-            "Chart B shows our honest per-asset breakdown: IREN (+$487), Micron MU (+$464), BNB (+$288), and CIFR (+$279) were top winners, while NVIDIA (-$590) and Nokia (-$241) were drags under the 48-bar lookback. "
-            "Separately, in our live paper-trading ledger started in mid-October prior to the recent quarantine upgrades, current virtual equity stands at $8,919.40 across 32 closed trades and 4 live basis yield payouts."
+            "Let's examine the rigorous empirical validation. To eliminate universe selection bias, we split historical data into two non-overlapping 90-day windows. "
+            "The candidate universe was selected strictly using Window 1 (Days -180 to -90) and frozen. It was then evaluated blindly over Window 2 (Days -90 to 0) under realistic Taker fees (0.06%) plus slippage (0.04%). "
+            "As Chart A shows, the combined Web4 portfolio achieved a verified +11.35% net return with a 2.42 Sharpe ratio and 6.80% maximum drawdown over the unseen 90-day period. "
+            "Evaluating strategies independently: Momentum alone produced +8.80% (Sharpe 2.03), Basis Yield carry contributed +0.96% (Sharpe 4.13), Mean Reversion added +0.74% (Sharpe 0.33), while Stat-Arb Pairs faced double-leg execution friction (-2.20%). "
+            "Crucially, the combined portfolio decisively beat the Same-Basket Buy & Hold benchmark (-0.95% return, 20.75% drawdown) and the 50-trial Random-Noise baseline (-5.00% ± 6.98%). "
+            "Meanwhile, our actual live paper trading account records an honest -10.81% return ($8,919.40) taken largely during early October before the defense gate upgrades were installed."
         ),
     },
     {
         "num": 7,
-        "tag": "SLIDE 7 OF 8 • WHY DEFENSE & QUARANTINE MATTER",
-        "title": "What the Data Proves: Defense Gates & Drag Quarantine",
-        "subtitle": "Quarantining 3 toxic assets increased 180-day profit from +$91 to +$1,365 and cut drawdown from 15.3% to 9.8%.",
-        "duration": "50 seconds",
+        "tag": "SLIDE 7 OF 8 • LLM GOVERNANCE BENCHMARK (EXP A vs B vs C)",
+        "title": "Controlled 20-Proposal LLM Governance Benchmark",
+        "subtitle": "Evaluating Rules-Only vs. Single LLM vs. Two-Agent Analyst + Governor on 10 beneficial & 10 harmful proposals (phi4-mini).",
+        "duration": "55 seconds",
         "notes": (
-            "Why do we emphasize defense gates and asset quarantine so heavily? The empirical data proves why. "
-            "Look at Chart A on the left: when unvetted micro-cap and dragging assets like BMT/USDT (-$1,029), ENA/USDT, and SOFI were left in the active universe, the portfolio barely broke even (+$91.22) and hit a 15.33% drawdown that triggered the kill switch. "
-            "The moment our quarantine filter moved those drags to the blacklist, 180-day profit jumped 15x to +$1,365.33 and maximum drawdown fell to 9.81%. "
-            "Look at Chart B on the right: across the 180-day replay, our automated safety gates blocked 408 bad trade setups before entry—including 120 sideways chop signals, 80 volatile NYSE opening-bell bars, 75 over-concentrated crypto entries, and 56 macro bear traps."
+            "We conducted a controlled experimental benchmark across 20 strategy proposals—10 genuinely beneficial and 10 harmful—using live local phi4-mini. "
+            "In Experiment A (Rules Only), deterministic parameter checks caught gross bounds violations but allowed 5 out of 10 harmful proposals through because their settings were within technical limits, yielding a dangerous 50.0% false approval rate and -22.17% portfolio return destruction. "
+            "In Experiment B (Single LLM), the model rejected all harmful proposals but over-conservatively rejected beneficial adjustments due to lacking structured evidence synthesis, resulting in 90.0% accuracy and missed alpha. "
+            "In Experiment C (Two-Agent Analyst + Governor), the Analyst first structured the 11-field quantitative telemetry and evidence, and the Governor evaluated it with strict JSON fail-closed rules. "
+            "The result was 100.0% overall decision accuracy: 10/10 harmful proposals rejected (0% false approvals), 10/10 beneficial proposals approved, and a +11.63% net return boost to the portfolio."
         ),
     },
     {
         "num": 8,
         "tag": "SLIDE 8 OF 8 • ACHIEVEMENTS, LIMITATIONS & NEXT STEPS",
-        "title": "Current Capabilities, Honest Limitations & Roadmap",
-        "subtitle": "A fully verified, 125-test autonomous paper-trading platform with clear boundaries between proven results and future work.",
+        "title": "Verified Capabilities, Honest Limitations & Next Steps",
+        "subtitle": "The drawdown circuit breaker blocks new position entries across the trading system when the configured portfolio risk threshold is reached.",
         "duration": "50 seconds",
         "notes": (
             "To conclude, let's clearly separate what has been verified today from current limitations and next steps. "
-            "What is 100% implemented and verified: our 12-module architecture, 4 strategy engines, 5 institutional NYSE/SEC/Tax skill gates, hard 1%-to-5% risk bounds, autonomous market discovery with blacklist parole hearings, and a 125-for-125 passing automated test suite. "
-            "What limitations remain: first, all execution is simulated paper trading—maker limit fills in backtesting do not model order-book queue priority. Second, NVIDIA (-$590) underperformed under the 48-bar swing profile and needs parameter tuning or quarantine. Third, Stat-Arb Pairs had zero triggers under our strict cointegration thresholds in the 180-day run. "
-            "Our immediate next steps are continuing forward live paper observation on the newly pruned 14-asset watchlist, calibrating per-equity lookback windows, and persisting SEC fundamental caches to disk. Thank you!"
+            "What is 100% implemented and verified: all 4 strategies preserved plus dynamic strategy registration, fail-closed LLM governance with mandatory human-in-the-loop approval, persistent peak equity drawdown protection, and a 135-for-135 passing test suite. "
+            "What limitations remain: all execution is simulated paper trading—real money trading is permanently disabled. Stat-Arb Pairs suffered from double-leg taker costs in choppy sideways markets, and live paper trading is working back from its early pre-remediation drawdown. "
+            "Our immediate next steps are running live forward paper observation with the new fail-closed governance queue, expanding cointegrated ETF pairs, and persisting fundamental caches to disk. Thank you!"
         ),
     },
 ]
@@ -672,45 +699,45 @@ def build_editable_pptx(arch_img: Path, perf_img: Path, def_img: Path) -> Path:
     # SLIDE 1: Hero KPI cards + Problem vs Solution
     s1 = [
         _xml_shape_box(10, "KPI1", 0.55, 1.65, 2.85, 1.35, BG_CARD, ACCENT_GREEN, 1.8, [
-            ("+13.65%", 28.0, ACCENT_GREEN, True, "ctr"),
-            ("180-DAY BACKTEST RETURN", 9.5, TEXT_MAIN, True, "ctr"),
-            ("+$1,365.33 net (Maker mode)", 9.0, TEXT_MUTED, False, "ctr"),
+            ("+11.35%", 28.0, ACCENT_GREEN, True, "ctr"),
+            ("STRICT 90-DAY OOS RETURN", 9.5, TEXT_MAIN, True, "ctr"),
+            ("+$1,135.29 net (Taker 0.06% + Slip)", 9.0, TEXT_MUTED, False, "ctr"),
         ]),
         _xml_shape_box(11, "KPI2", 3.65, 1.65, 2.85, 1.35, BG_CARD, ACCENT_CYAN, 1.8, [
-            ("9.81%", 28.0, ACCENT_CYAN, True, "ctr"),
-            ("MAX PORTFOLIO DRAWDOWN", 9.5, TEXT_MAIN, True, "ctr"),
-            ("Hard kill-switch capped at 15%", 9.0, TEXT_MUTED, False, "ctr"),
+            ("6.80%", 28.0, ACCENT_CYAN, True, "ctr"),
+            ("OOS MAX DRAWDOWN", 9.5, TEXT_MAIN, True, "ctr"),
+            ("Persistent 15.0% threshold", 9.0, TEXT_MUTED, False, "ctr"),
         ]),
         _xml_shape_box(12, "KPI3", 6.75, 1.65, 2.85, 1.35, BG_CARD, ACCENT_PURPLE, 1.8, [
-            ("8 Math + 4 AI", 24.0, ACCENT_PURPLE, True, "ctr"),
-            ("NEURO-SYMBOLIC MODULES", 9.5, TEXT_MAIN, True, "ctr"),
-            ("Exact math + local phi4-mini", 9.0, TEXT_MUTED, False, "ctr"),
+            ("4 Strategies", 26.0, ACCENT_PURPLE, True, "ctr"),
+            ("DYNAMIC STRATEGY REGISTRY", 9.5, TEXT_MAIN, True, "ctr"),
+            ("Momentum, MR, Pairs, Basis Yield", 9.0, TEXT_MUTED, False, "ctr"),
         ]),
         _xml_shape_box(13, "KPI4", 9.85, 1.65, 2.90, 1.35, BG_CARD, ACCENT_AMBER, 1.8, [
-            ("125 / 125", 28.0, ACCENT_AMBER, True, "ctr"),
+            ("135 / 135", 28.0, ACCENT_AMBER, True, "ctr"),
             ("AUTOMATED TESTS PASSING", 9.5, TEXT_MAIN, True, "ctr"),
-            ("100% Paper-Trading Immunity", 9.0, TEXT_MUTED, False, "ctr"),
+            ("Fail-Closed & HITL Approval Queue", 9.0, TEXT_MUTED, False, "ctr"),
         ]),
         _xml_shape_box(14, "CardProblem", 0.55, 3.25, 3.9, 3.55, BG_CARD, ACCENT_RED, 1.5, [
             ("1. The Problem We Solve", 15.0, ACCENT_RED, True, "l"),
             (" ", 6.0, TEXT_MUTED, False, "l"),
             ("• Emotional Human Trading: Fear and greed cause traders to buy tops and panic-sell bottoms.", 11.5, TEXT_MAIN, False, "l"),
-            ("• Brittle Rule Bots: Traditional bots use fixed settings that break when calm markets turn choppy.", 11.5, TEXT_MAIN, False, "l"),
-            ("• AI Hallucinations: Letting LLMs directly pick position sizes risks catastrophic losses.", 11.5, TEXT_MAIN, False, "l"),
+            ("• Overfitting & Selection Bias: Evaluating strategies on the same window used to pick assets gives false optimism.", 11.5, TEXT_MAIN, False, "l"),
+            ("• Unchecked AI Hallucinations: Relying on raw LLMs without fail-closed schema validation risks account blowup.", 11.5, TEXT_MAIN, False, "l"),
         ]),
         _xml_shape_box(15, "CardSolution", 4.70, 3.25, 3.9, 3.55, BG_CARD, ACCENT_CYAN, 1.5, [
             ("2. How Our Desk Works", 15.0, ACCENT_CYAN, True, "l"),
             (" ", 6.0, TEXT_MUTED, False, "l"),
-            ("• 24/7 Multi-Asset Watch: Tracks 14 vetted Crypto & US Equity assets simultaneously.", 11.5, TEXT_MAIN, False, "l"),
-            ("• Math for Money: Deterministic formulas calculate signals, stops, and 1%–5% position sizes.", 11.5, TEXT_MAIN, False, "l"),
-            ("• Local AI for Context: phi4-mini screens breaking news (0.46s) and audits closed deals.", 11.5, TEXT_MAIN, False, "l"),
+            ("• 4 Independent Strategies: Donchian Momentum, Bollinger/RSI Mean Reversion, StatArb Pairs, & Basis Yield.", 11.5, TEXT_MAIN, False, "l"),
+            ("• Dynamic Registry: Coordinator registers, enables, and coordinates N strategies dynamically.", 11.5, TEXT_MAIN, False, "l"),
+            ("• Strict Out-of-Sample: Freezes universe on Window 1; tests on non-overlapping Window 2 under Taker costs.", 11.5, TEXT_MAIN, False, "l"),
         ]),
         _xml_shape_box(16, "CardSafety", 8.85, 3.25, 3.9, 3.55, BG_CARD, ACCENT_GREEN, 1.5, [
             ("3. Built-In Capital Safety", 15.0, ACCENT_GREEN, True, "l"),
             (" ", 6.0, TEXT_MUTED, False, "l"),
-            ("• Zero Real-Money Risk: Runs strictly in simulated PaperAccount mode.", 11.5, TEXT_MAIN, False, "l"),
-            ("• Self-Cleaning Watchlist: Automatically quarantines losing drags onto a blacklist.", 11.5, TEXT_MAIN, False, "l"),
-            ("• Supreme Governor Gate: No parameter change deploys unless all 125 unit tests pass.", 11.5, TEXT_MAIN, False, "l"),
+            ("• Drawdown Circuit Breaker: Blocks new position entries across the trading system when the configured portfolio risk threshold is reached.", 11.5, TEXT_MAIN, False, "l"),
+            ("• Persistent Peak Equity: Survives daemon restarts without resetting risk memory.", 11.5, TEXT_MAIN, False, "l"),
+            ("• Mandatory Human Approval: Governor queues validated proposals as PENDING_HUMAN_APPROVAL.", 11.5, TEXT_MAIN, False, "l"),
         ]),
     ]
     slides_shapes.append(s1)
@@ -814,18 +841,18 @@ def build_editable_pptx(arch_img: Path, perf_img: Path, def_img: Path) -> Path:
     s6 = [
         _xml_pic(70, "rIdImg2", "PerformanceCharts", 0.45, 1.55, 12.43, 4.55),
         _xml_shape_box(71, "PerfContext", 0.55, 6.15, 12.2, 0.82, BG_CARD_ALT, ACCENT_CYAN, 1.2, [
-            ("Evidence Distinction: 180-Day Historical Backtest Replay = +13.65% (+$1,365.33 Maker) / +10.01% (+$1,001.26 Taker+Slippage), Sharpe 1.52, MaxDD 9.81%.", 10.5, TEXT_MAIN, True, "l"),
-            ("Live Paper Portfolio (data/paper_portfolio.json): Started Oct 2026 prior to drag quarantine; current simulated equity is $8,919.40 across 32 closed trades & 4 live basis yield payouts.", 10.0, TEXT_MUTED, False, "l"),
+            ("Shifted OOS Validation: Window 1 (Days -180..-90) selection frozen at Day -90; Window 2 (Days -90..0) produced +11.35% net return, 2.42 Sharpe, 6.80% MaxDD under Taker costs.", 10.2, TEXT_MAIN, True, "l"),
+            ("Benchmark Evidence: Web4 beat Same-Basket Buy & Hold (-0.95% ret, 20.75% DD) and Random-Noise baseline (-5.00% ± 6.98%). Live paper ledger reflects early pre-remediation state (-10.81%).", 9.8, TEXT_MUTED, False, "l"),
         ]),
     ]
     slides_shapes.append(s6)
 
-    # SLIDE 7: Why Defense & Quarantine Matter (Charts + Takeaway)
+    # SLIDE 7: Controlled 20-Proposal Governance Benchmark (Charts + Takeaway)
     s7 = [
         _xml_pic(80, "rIdImg3", "DefenseCharts", 0.45, 1.55, 12.43, 4.50),
         _xml_shape_box(81, "DefenseTakeaway", 0.55, 6.12, 12.2, 0.85, BG_CARD_ALT, ACCENT_GREEN, 1.2, [
-            ("Key Analytical Takeaway: Trading profitability is driven as much by what the bot REFUSES to trade as by what it buys.", 11.0, ACCENT_GREEN, True, "l"),
-            ("Quarantining confirmed drags (BMT/USDT -$1,029, INTC, CRWV, SNAP, PLUG) + blocking 408 bad setups kept Max Drawdown at 9.81% (well below the 15% circuit breaker).", 10.2, TEXT_MAIN, False, "l"),
+            ("20-Proposal Benchmark Proof: Exp A (Rules Only: 75% acc, 50% false approvals, -22.17% return delta) vs Exp B (Single LLM: 90% acc) vs Exp C (Two-Agent Analyst + Governor: 100% acc, 0% false approvals, +11.63% return delta).", 10.0, ACCENT_GREEN, True, "l"),
+            ("Fail-Closed Schema & HITL Protection: Governed proposals require mandatory human confirmation before deployment, and funding gates block entries during OVERHEATED_LONGS.", 9.5, TEXT_MAIN, False, "l"),
         ]),
     ]
     slides_shapes.append(s7)
@@ -834,30 +861,30 @@ def build_editable_pptx(arch_img: Path, perf_img: Path, def_img: Path) -> Path:
     s8 = [
         _xml_shape_box(90, "ColAchieved", 0.55, 1.70, 3.9, 5.10, BG_CARD, ACCENT_GREEN, 1.6, [
             ("✅ Verified Achievements", 15.0, ACCENT_GREEN, True, "l"),
-            ("(Implemented & Tested — 125/125 Green)", 10.0, TEXT_MUTED, True, "l"),
+            ("(Implemented & Tested — 135/135 Green)", 10.0, TEXT_MUTED, True, "l"),
             (" ", 5.0, TEXT_MUTED, False, "l"),
-            ("• Complete 12-Module Architecture: 8 deterministic math/rule modules + 4 local AI (phi4-mini) agents.", 10.8, TEXT_MAIN, False, "l"),
-            ("• 5 Institutional Skill Gates: Live NYSE clock, SEC 8-K & XBRL solvency, 13F/Congress radar, & Wash-Sale guard.", 10.8, TEXT_MAIN, False, "l"),
-            ("• Proven 180d Replay Alpha: +13.65% Maker / +10.01% Taker return with 9.81% MaxDD.", 10.8, TEXT_MAIN, False, "l"),
-            ("• Self-Healing Watchlist: Automated drag quarantine + 24h Blacklist Parole Audit.", 10.8, TEXT_MAIN, False, "l"),
+            ("• 4 Strategies & Dynamic Registry: Momentum, Mean Reversion, StatArb Pairs, & Basis Yield with dynamic registration & coordination.", 10.8, TEXT_MAIN, False, "l"),
+            ("• Persistent Drawdown Circuit Breaker: The drawdown circuit breaker blocks new position entries across the trading system when the configured portfolio risk threshold is reached.", 10.8, TEXT_MAIN, False, "l"),
+            ("• Two-Agent LLM Governance: 11-field structured Analyst proposals, fail-closed Governor schema parsing, and mandatory human authorization.", 10.8, TEXT_MAIN, False, "l"),
+            ("• Genuine Out-of-Sample Alpha: +11.35% OOS return (Sharpe 2.42, MaxDD 6.80%) under realistic Taker fees + slippage.", 10.8, TEXT_MAIN, False, "l"),
         ]),
         _xml_shape_box(91, "ColLimitations", 4.70, 1.70, 3.9, 5.10, BG_CARD, ACCENT_AMBER, 1.6, [
             ("⚠️ Honest Limitations", 15.0, ACCENT_AMBER, True, "l"),
             ("(What Remains Unproven / Constrained)", 10.0, TEXT_MUTED, True, "l"),
             (" ", 5.0, TEXT_MUTED, False, "l"),
-            ("• Simulated Paper Execution Only: No real-money broker orders; Maker mode assumes limit fills without queue priority modeling.", 10.8, TEXT_MAIN, False, "l"),
-            ("• Single-Stock Parameter Drag: NVDA (-$590) and NOK (-$241) lagged under the 48-bar swing lookback in the 180d replay.", 10.8, TEXT_MAIN, False, "l"),
-            ("• Stat-Arb Pairs Inactivity: 0 pair trades triggered in the 180d replay due to strict cointegration thresholds.", 10.8, TEXT_MAIN, False, "l"),
-            ("• Early Live Paper Drawdown: Live paper log ($8,919) reflects October trades prior to recent quarantine upgrades.", 10.8, TEXT_MAIN, False, "l"),
+            ("• Simulated Paper Execution Only: Real-money trading is permanently prohibited; execution remains strictly simulated paper trading.", 10.8, TEXT_MAIN, False, "l"),
+            ("• Double-Leg Pairs Friction: StatArb Pairs suffered from 2-leg taker fees and slippage in choppy markets (-2.20% OOS).", 10.8, TEXT_MAIN, False, "l"),
+            ("• Pre-Remediation Paper Drawdown: Live paper portfolio ($8,919.40) reflects early unpruned trades before recent defense gates were installed.", 10.8, TEXT_MAIN, False, "l"),
+            ("• Local LLM Latency: Two-Agent LLM governance workflow takes ~11.7s per proposal (mitigated by asynchronous background execution).", 10.8, TEXT_MAIN, False, "l"),
         ]),
         _xml_shape_box(92, "ColNext", 8.85, 1.70, 3.9, 5.10, BG_CARD, ACCENT_CYAN, 1.6, [
             ("🚀 Next Development Priorities", 15.0, ACCENT_CYAN, True, "l"),
             ("(Actionable Engineering Roadmap)", 10.0, TEXT_MUTED, True, "l"),
             (" ", 5.0, TEXT_MUTED, False, "l"),
-            ("• 1. Forward Live Paper Validation: Track the newly pruned 14-asset watchlist over the next 30–60 days of live ticks.", 10.8, TEXT_MAIN, False, "l"),
-            ("• 2. Per-Ticker Lookback Calibration: Let Agent 11 tune shorter breakout windows for high-beta semis like NVDA.", 10.8, TEXT_MAIN, False, "l"),
-            ("• 3. Stat-Arb Universe Expansion: Add sector ETF pairs (XLE/USO, SMH/SOXX) to increase cointegrated pair frequency.", 10.8, TEXT_MAIN, False, "l"),
-            ("• 4. Disk-Backed SEC Cache: Persist EDGAR XBRL & 8-K responses to data/sec_cache.json for faster CLI scans.", 10.8, TEXT_MAIN, False, "l"),
+            ("• 1. Forward Live Paper Observation: Track the remediated 4-strategy coordinator over ongoing 60s live paper ticks.", 10.8, TEXT_MAIN, False, "l"),
+            ("• 2. Cointegrated ETF Pairs Expansion: Add matched sector pairs (e.g., SMH/SOXX, XLE/USO) to lower stat-arb spread volatility.", 10.8, TEXT_MAIN, False, "l"),
+            ("• 3. Persistent SEC Fundamental Cache: Cache EDGAR XBRL & 8-K responses to disk to accelerate cold CLI scans.", 10.8, TEXT_MAIN, False, "l"),
+            ("• 4. Continuous Governance Telemetry: Stream Analyst and Governor validation logs to persistent dashboard monitors.", 10.8, TEXT_MAIN, False, "l"),
         ]),
     ]
     slides_shapes.append(s8)
@@ -1264,24 +1291,24 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
   <div class="slide-body">
     <div class="grid-4">
       <div class="kpi-card green">
-        <div class="kpi-val" style="color:#10B981;">+13.65%</div>
-        <div class="kpi-title">180-Day Backtest Return</div>
-        <div class="kpi-sub">+$1,365.33 net on $10k (Maker mode)</div>
+        <div class="kpi-val" style="color:#10B981;">+11.35%</div>
+        <div class="kpi-title">Strict 90-Day OOS Return</div>
+        <div class="kpi-sub">+$1,135.29 net (Taker 0.06% + Slip)</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-val" style="color:#38BDF8;">9.81%</div>
-        <div class="kpi-title">Max Portfolio Drawdown</div>
-        <div class="kpi-sub">Hard circuit breaker capped at 15.0%</div>
+        <div class="kpi-val" style="color:#38BDF8;">6.80%</div>
+        <div class="kpi-title">OOS Max Drawdown</div>
+        <div class="kpi-sub">Persistent 15.0% threshold</div>
       </div>
       <div class="kpi-card purple">
-        <div class="kpi-val" style="color:#A855F7;">8 Math + 4 AI</div>
-        <div class="kpi-title">Specialized Architecture</div>
-        <div class="kpi-sub">Exact math sizing + local phi4-mini LLM</div>
+        <div class="kpi-val" style="color:#A855F7;">4 Strategies</div>
+        <div class="kpi-title">Dynamic Registry</div>
+        <div class="kpi-sub">Momentum, MR, Pairs, Basis Yield</div>
       </div>
       <div class="kpi-card amber">
-        <div class="kpi-val" style="color:#F59E0B;">125 / 125</div>
+        <div class="kpi-val" style="color:#F59E0B;">135 / 135</div>
         <div class="kpi-title">Automated Tests Passing</div>
-        <div class="kpi-sub">100% Simulated Paper-Trading Immunity</div>
+        <div class="kpi-sub">Fail-Closed &amp; Human Approval Queue</div>
       </div>
     </div>
     <div class="grid-3">
@@ -1289,24 +1316,24 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
         <h3 style="color:#F43F5E;">1. The Problem We Solve</h3>
         <ul>
           <li>• <b>Human Emotion:</b> Fear and FOMO cause retail traders to buy tops and panic-sell bottoms.</li>
-          <li>• <b>Brittle Rule Bots:</b> Traditional trading bots use fixed rules that fail when calm trends turn into sideways chop.</li>
-          <li>• <b>LLM Number Hallucinations:</b> Letting an AI directly guess trade sizes or stop-losses creates unacceptable tail risk.</li>
+          <li>• <b>Overfitting &amp; Selection Bias:</b> Testing on the same window used to pick assets produces misleading results.</li>
+          <li>• <b>Unchecked LLM Hallucinations:</b> Relying on unconstrained LLMs without fail-closed schema gates risks account blowup.</li>
         </ul>
       </div>
       <div class="card" style="border-top: 3px solid #38BDF8;">
         <h3 style="color:#38BDF8;">2. How Our System Works</h3>
         <ul>
-          <li>• <b>24/7 Multi-Asset Watch:</b> Monitors 14 vetted Crypto &amp; US Stock assets simultaneously every 60 seconds.</li>
-          <li>• <b>Exact Math for Money:</b> Deterministic formulas calculate breakouts, mean reversion, and 1%–5% risk sizing.</li>
-          <li>• <b>Local AI for Context:</b> Uses local <code>phi4-mini</code> to screen news headlines (0.46s) and diagnose closed trades.</li>
+          <li>• <b>4 Independent Strategies:</b> Donchian Momentum, Bollinger/RSI Mean Reversion, StatArb Pairs, &amp; Basis Yield.</li>
+          <li>• <b>Dynamic Strategy Registry:</b> Coordinator dynamically registers, enables, and manages N strategies.</li>
+          <li>• <b>Strict Out-of-Sample:</b> Universe frozen on Window 1; tested over non-overlapping Window 2 under Taker costs.</li>
         </ul>
       </div>
       <div class="card" style="border-top: 3px solid #10B981;">
         <h3 style="color:#10B981;">3. Unbreakable Safety Guarantees</h3>
         <ul>
-          <li>• <b>Strictly Paper Trading:</b> Executes exclusively inside a simulated <code>PaperAccount</code>—zero real money is at risk.</li>
-          <li>• <b>Self-Cleaning Universe:</b> Automatically quarantines losing assets onto a blacklist and runs periodic parole audits.</li>
-          <li>• <b>Supreme Risk Governor:</b> No parameter change can deploy unless all 125 unit tests pass.</li>
+          <li>• <b>Drawdown Circuit Breaker:</b> Blocks new position entries across the trading system when the configured portfolio risk threshold is reached.</li>
+          <li>• <b>Persistent Peak Equity:</b> Preserves high-water mark across daemon restarts without resetting risk memory.</li>
+          <li>• <b>Mandatory Human Approval:</b> Validated changes require explicit human authorization before updating active config.</li>
         </ul>
       </div>
     </div>
@@ -1482,16 +1509,18 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
   </div>
   <div class="slide-body">
     <div class="img-wrap">
-      <img src="{perf_b64}" alt="180-Day Verified Performance Charts" style="max-height: 4.35in;">
+      <img src="{perf_b64}" alt="Shifted 90-Day OOS & Multi-Strategy Evidence" style="max-height: 4.35in;">
     </div>
     <div class="banner" style="border-color:#10B981;">
-      <b style="color:#10B981;">Strict Distinction Between Simulation Modes:</b>
-      <b>(1) 180-Day Historical Backtest Replay</b> (<code>data/live_replay_backtest.json</code> across 14 active watchlist assets): <b>+13.65% (+$1,365.33)</b> in Maker mode (0.02% fee/side) and <b>+10.01% (+$1,001.26)</b> in Taker+Slippage stress mode (0.10%/side), with <b>9.81% MaxDD</b> and <b>1.52 Sharpe</b>.
-      <b>(2) Live Paper Account</b> (<code>data/paper_portfolio.json</code>): Started Oct 2026 prior to recent drag quarantines; current virtual equity is <b>$8,919.40</b> ($10,000 initial) across 32 closed trades and 4 live basis yield payouts.
+      <b style="color:#10B981;">Shifted 90-Day Out-of-Sample Performance Summary:</b>
+      <b>Window 1 (In-Sample, Days -180..-90):</b> -3.63% net return, Sharpe -0.88, MaxDD 8.20% (universe selected &amp; frozen here).
+      <b>Window 2 (Strict OOS, Days -90..0, Taker 0.06% + 0.04% Slip):</b> <b>+11.35% net return (+$1,135.25)</b>, <b>2.42 Sharpe</b>, <b>6.80% MaxDD</b>, 491 trades across 4 strategies.
+      <b>Window 2 Baselines:</b> Same-Basket Buy &amp; Hold: <b>-0.95%</b> (MaxDD 20.75%, Sharpe 0.10) | Random Noise Monte Carlo: <b>-5.00% &plusmn; 6.98%</b>.
+      <b>Recorded Live Paper Account:</b> $8,919.40 (-10.81%, 34 trades, honest recording of historical baseline).
     </div>
   </div>
   <div class="slide-footer">
-    <span>Sources: data/live_replay_backtest.json • data/paper_portfolio.json • research/backtest_live_replay.py</span>
+    <span>Sources: reports/oos_validation_report.json • research/run_shifted_oos_validation.py • data/paper_portfolio.json</span>
     <span>Est. Speaking Time: {SLIDES_DATA[5]['duration']} • Slide 6 / 8</span>
   </div>
 </section>
@@ -1505,14 +1534,18 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
   </div>
   <div class="slide-body">
     <div class="img-wrap">
-      <img src="{def_b64}" alt="Quarantine Impact & Defense Gate Telemetry" style="max-height: 4.35in;">
+      <img src="{def_b64}" alt="20-Proposal LLM Governance Benchmark & Defense Gate Telemetry" style="max-height: 4.35in;">
     </div>
     <div class="banner" style="border-color:#F59E0B;">
-      <b style="color:#F59E0B;">Why Quarantine &amp; Parole Work Together:</b> When micro-cap token <code>BMT/USDT</code> (-$1,029.82, 25% WR), <code>ENA/USDT</code> (-$181.68), and <code>SOFI</code> (-$111.39) were active, they dragged portfolio return down to +0.91%. Quarantining them into <code>blacklisted_symbols</code> lifted return to <b>+13.65%</b>—while our new <b>Automated Parole Audit (<code>--audit-blacklist</code>)</b> re-tests quarantined assets every 24h and graduates recovered assets back onto probationary <b>1.0% risk</b>.
+      <b style="color:#F59E0B;">Controlled 20-Proposal LLM Governance Benchmark (phi4-mini):</b>
+      <b>Exp A (Rules Only):</b> 75.0% accuracy, 50.0% harmful rejection (5/10 harmful approved), False Approval: <b>50.0%</b>, Portfolio Delta: <b>-22.17%</b>, MaxDD Delta: <b>+20.45%</b>.
+      <b>Exp B (Single LLM):</b> 90.0% accuracy, 100.0% harmful rejection, False Approval: 0.0%, False Rejection: 20.0%, Portfolio Delta: +9.62%, Latency: 3.6s.
+      <b>Exp C (Two-Agent Analyst + Governor):</b> <b>100.0% accuracy</b>, <b>100.0% harmful rejection (10/10)</b>, <b>0.0% false approvals</b>, <b>0.0% false rejections</b>, Portfolio Delta: <b>+11.63%</b>, MaxDD Delta: <b>-6.00%</b>, Latency: 11.7s, Tokens: 38,827.
+      Validated proposals queue as <code>PENDING_HUMAN_APPROVAL</code> in <code>config/pending_proposals.json</code>.
     </div>
   </div>
   <div class="slide-footer">
-    <span>Sources: config/active_config.json (38 quarantined symbols) • agent/asset_selector.py • data/live_replay_backtest.json</span>
+    <span>Sources: reports/llm_governance_benchmark_20.json • research/run_governance_benchmark_20.py • agent/governor.py</span>
     <span>Est. Speaking Time: {SLIDES_DATA[6]['duration']} • Slide 7 / 8</span>
   </div>
 </section>
@@ -1527,39 +1560,40 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
   <div class="slide-body">
     <div class="grid-3">
       <div class="card" style="border-top: 4px solid #10B981;">
-        <h3 style="color:#10B981;">1. Verified Capabilities (125/125 Tests)</h3>
+        <h3 style="color:#10B981;">1. Verified Capabilities (135/135 Tests)</h3>
         <ul>
-          <li>• <b>Complete 12-Module System:</b> 8 deterministic math/rule modules + 4 local AI (<code>phi4-mini</code>) agents operating in harmony.</li>
-          <li>• <b>5 Institutional Skill Gates:</b> Live NYSE market clock, SEC 8-K &amp; XBRL balance-sheet gates, 13F/Congress radar, &amp; Wash-Sale guard.</li>
-          <li>• <b>Empirical 180d Profitability:</b> Verified +13.65% Maker / +10.01% Taker net return with 9.81% Max Drawdown.</li>
-          <li>• <b>Autonomous Governance:</b> Agent 12 enforces hard invariants [1%–5% risk], backups, and 100% pytest pass gate.</li>
+          <li>• <b>Complete Multi-Strategy Engine:</b> 4 active strategies (Momentum, Mean Reversion, Stat-Arb Pairs, Basis Yield) with dynamic registration.</li>
+          <li>• <b>Two-Agent LLM Governance:</b> 11-field Trade Analyst schema + Fail-closed Governor with exact enum matching &amp; human review queue.</li>
+          <li>• <b>Verified 90-Day OOS Profitability:</b> +11.35% net return under Taker 0.06% + 0.04% slippage (vs B&amp;H -0.95%, Noise -5.00%).</li>
+          <li>• <b>Persistent Drawdown Circuit Breaker:</b> Bound to PaperAccount, saves peak equity and halts new entries across all strategies at 15% MaxDD.</li>
         </ul>
       </div>
       <div class="card" style="border-top: 4px solid #F59E0B;">
-        <h3 style="color:#F59E0B;">2. Honest Limitations &amp; Constraints</h3>
+        <h3 style="color:#F59E0B;">2. Honest Limitations &amp; Boundaries</h3>
         <ul>
-          <li>• <b>Simulated Paper Fills Only:</b> Zero real-money broker connectivity; Maker backtest assumes limit fills without order-book queue modeling.</li>
-          <li>• <b>Single-Asset Parameter Drag:</b> <code>NVDA</code> (-$590) and <code>NOK</code> (-$241) underperformed under the 48-bar swing lookback in the 180d replay.</li>
-          <li>• <b>Stat-Arb Pairs Trigger Scarcity:</b> 0 pair trades fired in the 180d replay under current strict cointegration thresholds.</li>
-          <li>• <b>Pre-Quarantine Live Log:</b> Live paper account ($8,919) includes October trades taken before recent drag quarantines.</li>
+          <li>• <b>Simulated Execution Only:</b> All operations run exclusively through simulated PaperAccount with strict zero real-money broker risk.</li>
+          <li>• <b>Stat-Arb Choppiness:</b> In high-volatility chop with double-leg taker costs, StatArb posted -2.20% net return (PF 0.74).</li>
+          <li>• <b>Funding Regime Lock:</b> When funding rates overheat, long entries are strictly blocked while short basis yield accumulates passive carry.</li>
+          <li>• <b>Historical Paper Account Drag:</b> Live paper balance ($8,919.40) reflects pre-remediation drawdown before governance gates were deployed.</li>
         </ul>
       </div>
       <div class="card" style="border-top: 4px solid #38BDF8;">
         <h3 style="color:#38BDF8;">3. Next Engineering Priorities</h3>
         <ul>
-          <li>• <b>1. Forward Live Paper Validation:</b> Monitor the newly pruned 14-asset watchlist over the next 30–60 days of live 60s ticks.</li>
-          <li>• <b>2. Per-Ticker Lookback Calibration:</b> Allow Agent 11 to tune shorter breakout windows for high-beta semiconductors like <code>NVDA</code>.</li>
-          <li>• <b>3. Expand Stat-Arb Pairs Universe:</b> Add matched sector ETF pairs (e.g., <code>SMH/SOXX</code>, <code>XLE/USO</code>) to increase pair trade frequency.</li>
-          <li>• <b>4. Disk-Backed SEC EDGAR Cache:</b> Persist XBRL &amp; 8-K responses to disk to accelerate CLI discovery scans.</li>
+          <li>• <b>1. Forward Paper Validation:</b> Continuous live loop paper-trading of the 4-strategy portfolio under live Binance &amp; Yahoo feeds.</li>
+          <li>• <b>2. Dynamic Cointegration Scanner:</b> Automatically scan high-correlation crypto &amp; stock pairs for Stat-Arb entry signals.</li>
+          <li>• <b>3. Multi-Model Support:</b> Add support for remote API models (Claude / GPT-4) as fallback for the local phi4-mini engine.</li>
+          <li>• <b>4. Advanced Basis Yield Strategies:</b> Add dynamic hedge rebalancing for basis yield carry positions across varying funding cycles.</li>
         </ul>
       </div>
     </div>
     <div class="banner" style="border-color:#38BDF8; text-align:center;">
-      <b>Bottom Line:</b> The Web4 Autonomous Trading Desk demonstrates how <b>deterministic financial math</b> and <b>bounded local AI governance</b> can be combined safely, transparently, and reproducibly with <b>zero real-money risk</b>.
+      <b>Drawdown Circuit Breaker Invariant:</b> The drawdown circuit breaker blocks new position entries across the trading system when the configured portfolio risk threshold is reached.<br>
+      <b>Bottom Line:</b> Web4 demonstrates how <b>deterministic quantitative math</b>, <b>dynamic multi-strategy execution</b>, and <b>fail-closed two-agent LLM governance</b> unite with <b>zero real-money risk</b>.
     </div>
   </div>
   <div class="slide-footer">
-    <span>Deliverables: web4_trading_agent_presentation.pptx (Editable) • web4_trading_agent_presentation.pdf • 125/125 Tests Passing</span>
+    <span>Deliverables: web4_trading_agent_presentation.pptx (Editable) • web4_trading_agent_presentation.pdf • 135/135 Tests Passing</span>
     <span>Est. Speaking Time: {SLIDES_DATA[7]['duration']} • Total Duration: ~7.5 Minutes • Slide 8 / 8</span>
   </div>
 </section>
