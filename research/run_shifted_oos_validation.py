@@ -248,9 +248,9 @@ def run_coordinator_window_replay(
     cfg = json.loads(json.dumps(base_cfg))
     cfg["watchlist"] = list(universe)
     cfg["blacklisted_symbols"] = [s for s in cfg.get("blacklisted_symbols", []) if s not in set(universe)]
-    cfg["execution_mode"] = "taker"
-    cfg["fee_pct"] = TAKER_FEE
-    cfg["slippage_pct"] = TAKER_SLIP
+    cfg["execution_mode"] = str(base_cfg.get("execution_mode", "taker"))
+    cfg["fee_pct"] = float(base_cfg.get("fee_pct", TAKER_FEE))
+    cfg["slippage_pct"] = float(base_cfg.get("slippage_pct", TAKER_SLIP))
     cfg["max_stale_minutes"] = 0
     cfg["preflight_max_staleness_seconds"] = 10**9
     for s_cfg in cfg.get("symbol_configs", {}).values():
@@ -347,7 +347,7 @@ def run_coordinator_window_replay(
         # Mark-to-market open positions at end of window so all PnL is realized for clean comparison
         for sym in list(account.positions.keys()):
             px = last_prices.get(sym, account.positions[sym]["entry_price"])
-            account.close_position(sym, px * 0.9996, exit_reason="End of OOS Window Mark-to-Market", fee_pct=TAKER_FEE)
+            account.close_position(sym, px * (1.0 - cfg["slippage_pct"]), exit_reason="End of OOS Window Mark-to-Market", fee_pct=cfg["fee_pct"])
 
         final_eq = account.get_total_equity(last_prices)
         closed = account.state.get("closed_trades", [])
@@ -461,6 +461,7 @@ def _summarize_replay_metrics(
         "risk_rejections": risk_rejections,
         "signals_by_strategy": signals_by_strategy,
         "by_strategy": by_strategy,
+        "equity_curve": equity_curve,
     }
 
 

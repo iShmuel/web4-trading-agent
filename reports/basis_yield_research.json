@@ -1,0 +1,462 @@
+{
+  "hurdle_apr_pct": 8.0,
+  "leg_cost_per_side_pct": 0.1,
+  "symbols": {
+    "BTC/USDT": {
+      "prints": 1095,
+      "span_days": 365.0,
+      "mean_apr_pct": 3.53,
+      "median_apr_pct": 4.05,
+      "pct_prints_ge_hurdle": 19.9,
+      "pct_prints_negative": 22.6,
+      "persistence_3d_signal_7d_forward": {
+        "signal_observations": 101,
+        "p_next_7d_mean_apr_ge_hurdle": 0.337,
+        "mean_next_7d_apr_pct": 6.65
+      },
+      "current_engine_style_no_cost": {
+        "net_return_pct_on_notional": 1.379,
+        "annualized_net_pct_on_notional": 1.38,
+        "gross_funding_earned_pct": 1.379,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 110,
+        "pct_time_in_position": 19.8,
+        "negative_prints_while_in_position": 5,
+        "max_drawdown_pct_on_notional": 0.005
+      },
+      "costed_instantaneous": {
+        "net_return_pct_on_notional": -42.621,
+        "annualized_net_pct_on_notional": -42.66,
+        "gross_funding_earned_pct": 1.379,
+        "hedge_costs_paid_pct": 44.0,
+        "entries": 110,
+        "pct_time_in_position": 19.8,
+        "negative_prints_while_in_position": 5,
+        "max_drawdown_pct_on_notional": 42.621
+      },
+      "costed_persistent_3d_enter15_exit5": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "costed_persistent_7d_enter12_exit4": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "always_on_costed_once": {
+        "annualized_net_pct_on_notional": 3.33
+      },
+      "first_half_persistent_3d_costed": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "second_half_persistent_3d_costed": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      }
+    },
+    "ETH/USDT": {
+      "prints": 1095,
+      "span_days": 365.0,
+      "mean_apr_pct": 2.49,
+      "median_apr_pct": 3.34,
+      "pct_prints_ge_hurdle": 15.3,
+      "pct_prints_negative": 26.9,
+      "persistence_3d_signal_7d_forward": {
+        "signal_observations": 42,
+        "p_next_7d_mean_apr_ge_hurdle": 0.048,
+        "mean_next_7d_apr_pct": 4.77
+      },
+      "current_engine_style_no_cost": {
+        "net_return_pct_on_notional": 0.91,
+        "annualized_net_pct_on_notional": 0.91,
+        "gross_funding_earned_pct": 0.91,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 103,
+        "pct_time_in_position": 15.4,
+        "negative_prints_while_in_position": 13,
+        "max_drawdown_pct_on_notional": 0.008
+      },
+      "costed_instantaneous": {
+        "net_return_pct_on_notional": -40.29,
+        "annualized_net_pct_on_notional": -40.33,
+        "gross_funding_earned_pct": 0.91,
+        "hedge_costs_paid_pct": 41.2,
+        "entries": 103,
+        "pct_time_in_position": 15.4,
+        "negative_prints_while_in_position": 13,
+        "max_drawdown_pct_on_notional": 40.29
+      },
+      "costed_persistent_3d_enter15_exit5": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "costed_persistent_7d_enter12_exit4": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "always_on_costed_once": {
+        "annualized_net_pct_on_notional": 2.29
+      },
+      "first_half_persistent_3d_costed": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "second_half_persistent_3d_costed": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      }
+    },
+    "BNB/USDT": {
+      "prints": 1095,
+      "span_days": 365.0,
+      "mean_apr_pct": 2.68,
+      "median_apr_pct": 0.0,
+      "pct_prints_ge_hurdle": 12.9,
+      "pct_prints_negative": 1.0,
+      "persistence_3d_signal_7d_forward": {
+        "signal_observations": 60,
+        "p_next_7d_mean_apr_ge_hurdle": 0.0,
+        "mean_next_7d_apr_pct": 3.93
+      },
+      "current_engine_style_no_cost": {
+        "net_return_pct_on_notional": 0.753,
+        "annualized_net_pct_on_notional": 0.75,
+        "gross_funding_earned_pct": 0.753,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 90,
+        "pct_time_in_position": 12.9,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "costed_instantaneous": {
+        "net_return_pct_on_notional": -35.247,
+        "annualized_net_pct_on_notional": -35.28,
+        "gross_funding_earned_pct": 0.753,
+        "hedge_costs_paid_pct": 36.0,
+        "entries": 90,
+        "pct_time_in_position": 12.9,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 35.247
+      },
+      "costed_persistent_3d_enter15_exit5": {
+        "net_return_pct_on_notional": -0.344,
+        "annualized_net_pct_on_notional": -0.35,
+        "gross_funding_earned_pct": 0.056,
+        "hedge_costs_paid_pct": 0.4,
+        "entries": 1,
+        "pct_time_in_position": 1.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.344
+      },
+      "costed_persistent_7d_enter12_exit4": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "always_on_costed_once": {
+        "annualized_net_pct_on_notional": 2.48
+      },
+      "first_half_persistent_3d_costed": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "second_half_persistent_3d_costed": {
+        "net_return_pct_on_notional": -0.344,
+        "annualized_net_pct_on_notional": -0.7,
+        "gross_funding_earned_pct": 0.056,
+        "hedge_costs_paid_pct": 0.4,
+        "entries": 1,
+        "pct_time_in_position": 2.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.344
+      }
+    },
+    "SOL/USDT": {
+      "prints": 1095,
+      "span_days": 365.0,
+      "mean_apr_pct": -0.06,
+      "median_apr_pct": 1.59,
+      "pct_prints_ge_hurdle": 22.6,
+      "pct_prints_negative": 43.6,
+      "persistence_3d_signal_7d_forward": {
+        "signal_observations": 66,
+        "p_next_7d_mean_apr_ge_hurdle": 0.182,
+        "mean_next_7d_apr_pct": 4.03
+      },
+      "current_engine_style_no_cost": {
+        "net_return_pct_on_notional": 1.063,
+        "annualized_net_pct_on_notional": 1.06,
+        "gross_funding_earned_pct": 1.063,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 118,
+        "pct_time_in_position": 22.7,
+        "negative_prints_while_in_position": 61,
+        "max_drawdown_pct_on_notional": 0.065
+      },
+      "costed_instantaneous": {
+        "net_return_pct_on_notional": -46.137,
+        "annualized_net_pct_on_notional": -46.18,
+        "gross_funding_earned_pct": 1.063,
+        "hedge_costs_paid_pct": 47.2,
+        "entries": 118,
+        "pct_time_in_position": 22.7,
+        "negative_prints_while_in_position": 61,
+        "max_drawdown_pct_on_notional": 46.137
+      },
+      "costed_persistent_3d_enter15_exit5": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "costed_persistent_7d_enter12_exit4": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "always_on_costed_once": {
+        "annualized_net_pct_on_notional": -0.26
+      },
+      "first_half_persistent_3d_costed": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "second_half_persistent_3d_costed": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      }
+    },
+    "XRP/USDT": {
+      "prints": 1095,
+      "span_days": 365.0,
+      "mean_apr_pct": 0.34,
+      "median_apr_pct": 0.96,
+      "pct_prints_ge_hurdle": 21.2,
+      "pct_prints_negative": 45.1,
+      "persistence_3d_signal_7d_forward": {
+        "signal_observations": 59,
+        "p_next_7d_mean_apr_ge_hurdle": 0.373,
+        "mean_next_7d_apr_pct": 6.45
+      },
+      "current_engine_style_no_cost": {
+        "net_return_pct_on_notional": 0.949,
+        "annualized_net_pct_on_notional": 0.95,
+        "gross_funding_earned_pct": 0.949,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 100,
+        "pct_time_in_position": 21.1,
+        "negative_prints_while_in_position": 51,
+        "max_drawdown_pct_on_notional": 0.049
+      },
+      "costed_instantaneous": {
+        "net_return_pct_on_notional": -39.051,
+        "annualized_net_pct_on_notional": -39.09,
+        "gross_funding_earned_pct": 0.949,
+        "hedge_costs_paid_pct": 40.0,
+        "entries": 100,
+        "pct_time_in_position": 21.1,
+        "negative_prints_while_in_position": 51,
+        "max_drawdown_pct_on_notional": 39.051
+      },
+      "costed_persistent_3d_enter15_exit5": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "costed_persistent_7d_enter12_exit4": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "always_on_costed_once": {
+        "annualized_net_pct_on_notional": 0.14
+      },
+      "first_half_persistent_3d_costed": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "second_half_persistent_3d_costed": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      }
+    },
+    "LINK/USDT": {
+      "prints": 1095,
+      "span_days": 365.0,
+      "mean_apr_pct": 4.69,
+      "median_apr_pct": 5.64,
+      "pct_prints_ge_hurdle": 37.8,
+      "pct_prints_negative": 20.8,
+      "persistence_3d_signal_7d_forward": {
+        "signal_observations": 155,
+        "p_next_7d_mean_apr_ge_hurdle": 0.135,
+        "mean_next_7d_apr_pct": 6.16
+      },
+      "current_engine_style_no_cost": {
+        "net_return_pct_on_notional": 2.146,
+        "annualized_net_pct_on_notional": 2.15,
+        "gross_funding_earned_pct": 2.146,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 185,
+        "pct_time_in_position": 37.8,
+        "negative_prints_while_in_position": 75,
+        "max_drawdown_pct_on_notional": 0.024
+      },
+      "costed_instantaneous": {
+        "net_return_pct_on_notional": -71.854,
+        "annualized_net_pct_on_notional": -71.92,
+        "gross_funding_earned_pct": 2.146,
+        "hedge_costs_paid_pct": 74.0,
+        "entries": 185,
+        "pct_time_in_position": 37.8,
+        "negative_prints_while_in_position": 75,
+        "max_drawdown_pct_on_notional": 71.854
+      },
+      "costed_persistent_3d_enter15_exit5": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "costed_persistent_7d_enter12_exit4": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "always_on_costed_once": {
+        "annualized_net_pct_on_notional": 4.49
+      },
+      "first_half_persistent_3d_costed": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      },
+      "second_half_persistent_3d_costed": {
+        "net_return_pct_on_notional": 0.0,
+        "annualized_net_pct_on_notional": 0.0,
+        "gross_funding_earned_pct": 0.0,
+        "hedge_costs_paid_pct": 0.0,
+        "entries": 0,
+        "pct_time_in_position": 0.0,
+        "negative_prints_while_in_position": 0,
+        "max_drawdown_pct_on_notional": 0.0
+      }
+    }
+  }
+}

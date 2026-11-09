@@ -16,7 +16,7 @@ from typing import Dict, Any, List
 from core.paper_account import PaperAccount
 from core.risk_engine import RiskEngine
 from core.coordinator import PortfolioCoordinator
-from core.data_loader import fetch_ohlcv, check_data_quality, is_crypto_symbol
+from core.data_loader import fetch_ohlcv, fetch_ohlcv_batch, check_data_quality, is_crypto_symbol
 from core.process_lock import SingleInstanceLock, AlreadyRunningError
 from agent.optimizer import run_optimization_cycle
 
@@ -113,11 +113,24 @@ def run_portfolio_tick(
     market_data: Dict[str, Any] = {}
     current_prices: Dict[str, float] = {}
 
+    symbol_params = {}
     for symbol in watchlist:
+        timeframe = coordinator.symbol_config(symbol).get("timeframe", config.get("timeframe", "1h"))
+        fetch_days = 30 if is_crypto_symbol(symbol) else 90
+        symbol_params[symbol] = {
+            "timeframe": timeframe,
+            "days": fetch_days,
+            "force_refresh": True,
+            "closed_only": True,
+        }
+
+    raw_data = fetch_ohlcv_batch(watchlist, symbol_params=symbol_params)
+    for symbol in watchlist:
+        df = raw_data.get(symbol)
+        if df is None or df.empty:
+            log(f"   ⚠️ Warning: failed to fetch market data for {symbol}")
+            continue
         try:
-            timeframe = coordinator.symbol_config(symbol).get("timeframe", config.get("timeframe", "1h"))
-            fetch_days = 30 if is_crypto_symbol(symbol) else 90
-            df = fetch_ohlcv(symbol=symbol, timeframe=timeframe, days=fetch_days, force_refresh=True, closed_only=True)
             # Stocks close overnight/weekends, so allow 0 (skip age check) for equities; allow 180m for 1h crypto closed bars
             stale_limit = 180 if is_crypto_symbol(symbol) else 0
             valid, reason = check_data_quality(df, max_stale_minutes=stale_limit)
@@ -128,7 +141,7 @@ def run_portfolio_tick(
             market_data[symbol] = df
             current_prices[symbol] = float(df.iloc[-1]["close"])
         except Exception as e:
-            log(f"   ⚠️ Warning fetching {symbol}: {e}")
+            log(f"   ⚠️ Warning validating {symbol}: {e}")
 
     # Run cycle through the authoritative Coordinator
     cycle_report = coordinator.run_cycle(market_data)
@@ -261,13 +274,20 @@ def _run(args):
 
     if args.status:
         prices = {}
-        for sym in watchlist:
-            try:
-                fetch_days = 2 if is_crypto_symbol(sym) else 7
-                df = fetch_ohlcv(symbol=sym, timeframe=config.get("timeframe", "1h"), days=fetch_days, force_refresh=True, closed_only=True)
+        tf = config.get("timeframe", "1h")
+        sym_params = {
+            sym: {
+                "timeframe": tf,
+                "days": 2 if is_crypto_symbol(sym) else 7,
+                "force_refresh": True,
+                "closed_only": True,
+            }
+            for sym in watchlist
+        }
+        raw_data = fetch_ohlcv_batch(watchlist, symbol_params=sym_params)
+        for sym, df in raw_data.items():
+            if df is not None and not df.empty:
                 prices[sym] = float(df.iloc[-1]["close"])
-            except Exception:
-                pass
         print_status(account, prices)
         return
 

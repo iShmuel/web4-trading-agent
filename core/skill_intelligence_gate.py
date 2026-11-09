@@ -29,6 +29,7 @@ import gzip
 import json
 import logging
 import os
+from pathlib import Path
 import re
 import time
 import urllib.error
@@ -39,6 +40,39 @@ from typing import Dict, Any, List, Optional, Set, Tuple
 from core.data_loader import is_crypto_symbol
 
 logger = logging.getLogger(__name__)
+
+SEC_CACHE_DIR = Path(__file__).resolve().parent.parent / "data" / "cache_sec"
+
+
+def _load_sec_disk_cache(filename: str, max_age_seconds: float) -> Optional[Any]:
+    """Load JSON data from disk cache if fresh within max_age_seconds."""
+    try:
+        path = SEC_CACHE_DIR / filename
+        if not path.exists():
+            return None
+        mtime = path.stat().st_mtime
+        if (time.time() - mtime) > max_age_seconds:
+            return None
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as exc:
+        logger.debug(f"[SecDiskCache] Error loading {filename}: {exc}")
+        return None
+
+
+def _save_sec_disk_cache(filename: str, data: Any) -> None:
+    """Safely persist JSON data to disk cache with atomic rename."""
+    try:
+        SEC_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        path = SEC_CACHE_DIR / filename
+        tmp_path = path.with_suffix(".tmp")
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        tmp_path.replace(path)
+    except Exception as exc:
+        logger.debug(f"[SecDiskCache] Error saving {filename}: {exc}")
 
 
 # =====================================================================
@@ -285,8 +319,16 @@ class SecEdgar8KMonitor:
         if sym in self._cache and (now_ts - self._cache[sym][0]) < 900:
             return self._cache[sym][1]
 
+        # Check persistent disk cache (15-minute TTL)
+        disk_data = _load_sec_disk_cache(f"8k_{sym}.json", max_age_seconds=900)
+        if disk_data is not None:
+            self._cache[sym] = (now_ts, disk_data)
+            return disk_data
+
         if not self.sec_user_agent or "@" not in self.sec_user_agent:
-            return []
+            # Fallback to older disk cache if offline or unconfigured
+            fallback = _load_sec_disk_cache(f"8k_{sym}.json", max_age_seconds=86400 * 7)
+            return fallback if fallback is not None else []
 
         cik = KNOWN_EQUITY_CIKS.get(sym)
         if not cik:
@@ -321,8 +363,13 @@ class SecEdgar8KMonitor:
                     "title": title,
                 })
             self._cache[sym] = (now_ts, filings)
+            _save_sec_disk_cache(f"8k_{sym}.json", filings)
         except Exception as e:
             logger.debug(f"[SecEdgar8KMonitor] Notice fetching 8-K for {sym}: {e}")
+            # Resilient fallback: return stale disk cache if available rather than empty
+            fallback = _load_sec_disk_cache(f"8k_{sym}.json", max_age_seconds=86400 * 7)
+            if fallback is not None:
+                return fallback
         return filings
 
     def evaluate_symbol(
@@ -444,7 +491,8 @@ class SecFundamentalGate:
                 reason="Crypto or Macro ETF (Exempt from single-company XBRL rules)",
             )
 
-        metrics = metrics_override if metrics_override is not None else BASELINE_XBRL_FUNDAMENTALS.get(sym)
+        disk_metrics = _load_sec_disk_cache(f"xbrl_{sym}.json", max_age_seconds=86400 * 30)
+        metrics = metrics_override if metrics_override is not None else (disk_metrics or BASELINE_XBRL_FUNDAMENTALS.get(sym))
         if not metrics:
             return FundamentalVerdict(
                 symbol=sym,
