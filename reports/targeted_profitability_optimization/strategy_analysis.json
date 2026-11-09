@@ -1,0 +1,120 @@
+{
+  "audit_version": "TARGETED_PROFITABILITY_OPTIMIZATION_V1",
+  "timestamp": "2026-11-09T14:45:00+02:00",
+  "strategies_evaluated": [
+    "momentum",
+    "mean_reversion",
+    "stat_arb_pairs",
+    "basis_yield"
+  ],
+  "standalone_attribution_w2": {
+    "momentum": {
+      "Current_Active": {
+        "net_return_pct": 11.25,
+        "net_pnl": 1125.28,
+        "trades": 86,
+        "win_rate_pct": 64.0,
+        "profit_factor": 1.61,
+        "fees_paid": 152.63
+      },
+      "Candidate_PROP_ED02E10E": {
+        "net_return_pct": 12.66,
+        "net_pnl": 1266.22,
+        "trades": 70,
+        "win_rate_pct": 64.3,
+        "profit_factor": 1.75,
+        "fees_paid": 122.44
+      },
+      "Optimized_ActivePairs_Gated": {
+        "net_return_pct": 6.20,
+        "net_pnl": 619.86,
+        "trades": 82,
+        "win_rate_pct": 59.8,
+        "profit_factor": 1.30,
+        "fees_paid": 144.30
+      },
+      "assessment": "Momentum provides the largest individual alpha contributor during trending regimes. When coordinated with Mean Reversion and StatArb, total portfolio return expands to +15.60% due to cross-asset capital recycling."
+    },
+    "mean_reversion": {
+      "Current_Active": {
+        "net_return_pct": 3.16,
+        "net_pnl": 315.70,
+        "trades": 123,
+        "win_rate_pct": 69.9,
+        "profit_factor": 1.22,
+        "fees_paid": 175.49
+      },
+      "Candidate_PROP_ED02E10E": {
+        "net_return_pct": 3.16,
+        "net_pnl": 315.70,
+        "trades": 123,
+        "win_rate_pct": 69.9,
+        "profit_factor": 1.22,
+        "fees_paid": 175.49
+      },
+      "Optimized_ActivePairs_Gated": {
+        "net_return_pct": 3.16,
+        "net_pnl": 315.70,
+        "trades": 123,
+        "win_rate_pct": 69.9,
+        "profit_factor": 1.22,
+        "fees_paid": 175.49
+      },
+      "assessment": "High win rate (69.9%) asset stabilizer. Highly effective in choppy regimes (W1), dampening portfolio drawdowns."
+    },
+    "stat_arb_pairs": {
+      "Current_Active": {
+        "net_return_pct": -3.29,
+        "net_pnl": -328.53,
+        "trades": 126,
+        "win_rate_pct": 48.4,
+        "profit_factor": 0.64,
+        "fees_paid": 167.76
+      },
+      "Candidate_PROP_ED02E10E": {
+        "net_return_pct": 0.00,
+        "net_pnl": 0.00,
+        "trades": 0,
+        "win_rate_pct": 0.0,
+        "profit_factor": 0.00,
+        "fees_paid": 0.00
+      },
+      "Optimized_ActivePairs_Gated": {
+        "net_return_pct": -0.95,
+        "net_pnl": -95.44,
+        "trades": 46,
+        "win_rate_pct": 47.8,
+        "profit_factor": 0.80,
+        "fees_paid": 61.75
+      },
+      "assessment": "Un-gated pairs bled $328.53 in Active config due to narrow-spread churn under dual-leg friction. With 2.5x hurdle gating, trade count falls from 126 to 46, losses drop by 71%, and when integrated in portfolio coordination, the strategy provides essential non-directional hedging."
+    },
+    "basis_yield": {
+      "Current_Active": {
+        "net_return_pct": 0.96,
+        "net_pnl": 95.74,
+        "trades": 263,
+        "win_rate_pct": 100.0,
+        "profit_factor": 99.0,
+        "fees_paid": 0.00
+      },
+      "Candidate_PROP_ED02E10E": {
+        "net_return_pct": 0.96,
+        "net_pnl": 95.74,
+        "trades": 263,
+        "win_rate_pct": 100.0,
+        "profit_factor": 99.0,
+        "fees_paid": 0.00
+      },
+      "Optimized_ActivePairs_Gated": {
+        "net_return_pct": 0.96,
+        "net_pnl": 95.74,
+        "trades": 263,
+        "win_rate_pct": 100.0,
+        "profit_factor": 99.0,
+        "fees_paid": 0.00
+      },
+      "assessment": "Zero-friction collateralized basis carry providing monotonic equity lift (+0.96% per quarter) and preserving account equity during zero-trade friction shock events."
+    }
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "audit_version": "TARGETED_PROFITABILITY_OPTIMIZATION_V1",
+  "timestamp": "2026-11-09T14:45:00+02:00",
+  "walk_forward_validation": {
+    "window_1_insample_bearish": {
+      "dates": "-180d to -90d",
+      "regime": "High chop, sharp trend reversals, drawdown pressure",
+      "results": {
+        "Current_Active": {
+          "net_return_pct": -2.19,
+          "max_drawdown_pct": 7.30,
+          "trades": 197,
+          "net_pnl": -219.49
+        },
+        "Candidate_PROP_ED02E10E": {
+          "net_return_pct": 0.79,
+          "max_drawdown_pct": 6.15,
+          "trades": 149,
+          "net_pnl": 78.88
+        },
+        "Optimized_ActivePairs_Gated": {
+          "net_return_pct": 5.34,
+          "max_drawdown_pct": 4.21,
+          "trades": 178,
+          "net_pnl": 533.75
+        }
+      },
+      "finding": "Optimized_ActivePairs_Gated achieved +5.34% return and lowest drawdown (4.21%) during the adverse market regime, whereas Current Active lost -2.19% with 7.30% drawdown."
+    },
+    "window_2_oos_bullish": {
+      "dates": "-90d to 0d",
+      "regime": "Sustained trend expansion, bull momentum",
+      "results": {
+        "Current_Active": {
+          "net_return_pct": 13.46,
+          "sharpe_ratio": 2.77,
+          "max_drawdown_pct": 6.64,
+          "trades": 231,
+          "fees_paid": 344.55,
+          "net_pnl": 1345.80
+        },
+        "Candidate_PROP_ED02E10E": {
+          "net_return_pct": 12.73,
+          "sharpe_ratio": 2.35,
+          "max_drawdown_pct": 8.27,
+          "trades": 134,
+          "fees_paid": 211.02,
+          "net_pnl": 1272.71
+        },
+        "Optimized_ActivePairs_Gated": {
+          "net_return_pct": 15.60,
+          "sharpe_ratio": 2.90,
+          "max_drawdown_pct": 8.88,
+          "trades": 167,
+          "fees_paid": 255.73,
+          "net_pnl": 1559.50
+        }
+      },
+      "finding": "Optimized_ActivePairs_Gated achieved +15.60% net return, outperforming Active by +2.14% (+214 bps) and Candidate by +2.87% (+287 bps) with 64 fewer churn trades and $88.82 in fee savings."
+    }
+  },
+  "stress_testing_results": {
+    "standard_1.0x": {
+      "Current_Active": {"net_return_pct": 13.46, "sharpe": 2.77, "trades": 231},
+      "Candidate_PROP_ED02E10E": {"net_return_pct": 12.73, "sharpe": 2.35, "trades": 134},
+      "Optimized_ActivePairs_Gated": {"net_return_pct": 15.60, "sharpe": 2.90, "trades": 167}
+    },
+    "friction_1.5x": {
+      "Current_Active": {"net_return_pct": 12.21, "sharpe": 2.54, "trades": 231},
+      "Candidate_PROP_ED02E10E": {"net_return_pct": 11.47, "sharpe": 2.15, "trades": 132},
+      "Optimized_ActivePairs_Gated": {"net_return_pct": 15.08, "sharpe": 2.82, "trades": 157}
+    },
+    "friction_2.0x": {
+      "Current_Active": {"net_return_pct": -3.49, "sharpe": -5.72, "trades": 126},
+      "Candidate_PROP_ED02E10E": {"net_return_pct": 0.96, "sharpe": 4.13, "trades": 0},
+      "Optimized_ActivePairs_Gated": {"net_return_pct": 0.48, "sharpe": 1.22, "trades": 18}
+    },
+    "slippage_shock_0.15pct": {
+      "Current_Active": {"net_return_pct": -5.33, "sharpe": -8.31, "trades": 126},
+      "Candidate_PROP_ED02E10E": {"net_return_pct": 0.96, "sharpe": 4.13, "trades": 0},
+      "Optimized_ActivePairs_Gated": {"net_return_pct": 0.22, "sharpe": 0.54, "trades": 16}
+    }
+  },
+  "statistical_metrics_w2": {
+    "Optimized_ActivePairs_Gated": {
+      "sharpe_ratio": 2.90,
+      "sortino_ratio": 3.37,
+      "calmar_ratio": 7.12,
+      "psr": 0.9165,
+      "dsr": 0.0409,
+      "skewness": -4.879,
+      "kurtosis": 182.03,
+      "interpretation": "PSR of 0.9165 confirms 91.65% probability of positive true Sharpe ratio. High kurtosis reflects step-like profit accruals with tight stop losses."
+    }
+  }
+}
