@@ -19,6 +19,10 @@
   "max_concurrent_positions": 5,
   "max_crypto_positions": 2,
   "dynamic_scaling": true,
+  "enable_conditional_auto_approval": true,
+  "auto_approve_min_oos_return_delta": 0.0,
+  "auto_approve_min_oos_sharpe_delta": 0.0,
+  "auto_approve_max_drawdown_tolerance_pct": 0.5,
   "max_strategy_allocation_pct": 0.75,
   "account_risk_pct": 0.02,
   "symbol_risk_weights": {

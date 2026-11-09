@@ -236,6 +236,7 @@ def main():
     parser.add_argument("--interval", type=int, default=60, help="Loop interval in seconds (default: 60s)")
     parser.add_argument("--optimize-hours", type=int, default=6, help="Self-improvement tournament interval in hours (default: 6)")
     parser.add_argument("--scan-hours", type=int, default=24, help="Dynamic market universe discovery interval in hours (default: 24)")
+    parser.add_argument("--auto-approve", action="store_true", help="Enable 4-gate conditional auto-approval for self-improvement and discovery")
     parser.add_argument("--loop", action="store_true", help="Run continuous monitoring loop")
     args = parser.parse_args()
 
@@ -315,6 +316,8 @@ def _run(args):
     log(f"Max Concurrent:     {config.get('max_concurrent_positions', 3)} positions")
     log(f"Risk per Position:  {config.get('account_risk_pct', 0.02)*100:.1f}% of portfolio")
     log(f"Auto-Optimize:      Every {args.optimize_hours} hours")
+    auto_appr = bool(getattr(args, "auto_approve", False) or config.get("enable_conditional_auto_approval", False))
+    log(f"Auto-Approval:      {'ENABLED (4-Gate Verification)' if auto_appr else 'DISABLED (Requires Manual Review)'}")
     log(f"Log File:           {LOG_FILE}")
     log("=" * 68)
 

@@ -17,6 +17,9 @@ class ValidationReport:
     train_sharpe: float
     test_sharpe: float
     test_max_dd: float
+    base_test_sharpe: float = 0.0
+    base_test_max_dd: float = 0.0
+    test_sharpe_delta: float = 0.0
 
 
 def split_data(df: pd.DataFrame, train_ratio: float = 0.7) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -81,6 +84,7 @@ def validate_improvement(
 
     train_ret_delta = cand_train.total_return_pct - base_train.total_return_pct
     test_ret_delta = cand_test.total_return_pct - base_test.total_return_pct
+    test_sharpe_delta = cand_test.sharpe_ratio - base_test.sharpe_ratio
 
     # Safety checks
     if cand_test.max_drawdown_pct > max_dd_limit:
@@ -92,6 +96,9 @@ def validate_improvement(
             train_sharpe=cand_train.sharpe_ratio,
             test_sharpe=cand_test.sharpe_ratio,
             test_max_dd=cand_test.max_drawdown_pct,
+            base_test_sharpe=base_test.sharpe_ratio,
+            base_test_max_dd=base_test.max_drawdown_pct,
+            test_sharpe_delta=test_sharpe_delta,
         )
 
     # Must improve on training set AND stay positive / viable on unseen test set
@@ -104,6 +111,9 @@ def validate_improvement(
             train_sharpe=cand_train.sharpe_ratio,
             test_sharpe=cand_test.sharpe_ratio,
             test_max_dd=cand_test.max_drawdown_pct,
+            base_test_sharpe=base_test.sharpe_ratio,
+            base_test_max_dd=base_test.max_drawdown_pct,
+            test_sharpe_delta=test_sharpe_delta,
         )
 
     # Test set must not blow up
@@ -116,6 +126,9 @@ def validate_improvement(
             train_sharpe=cand_train.sharpe_ratio,
             test_sharpe=cand_test.sharpe_ratio,
             test_max_dd=cand_test.max_drawdown_pct,
+            base_test_sharpe=base_test.sharpe_ratio,
+            base_test_max_dd=base_test.max_drawdown_pct,
+            test_sharpe_delta=test_sharpe_delta,
         )
 
     return ValidationReport(
@@ -126,4 +139,7 @@ def validate_improvement(
         train_sharpe=cand_train.sharpe_ratio,
         test_sharpe=cand_test.sharpe_ratio,
         test_max_dd=cand_test.max_drawdown_pct,
+        base_test_sharpe=base_test.sharpe_ratio,
+        base_test_max_dd=base_test.max_drawdown_pct,
+        test_sharpe_delta=test_sharpe_delta,
     )

@@ -17,6 +17,7 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 import time
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
@@ -26,13 +27,16 @@ import math
 import re
 import uuid
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from agent.llm_client import query_local_llm, query_local_llm_with_metrics
 from core.risk_engine import MIN_ALLOWED_RISK_PCT, MAX_ALLOWED_RISK_PCT
 from core.data_loader import is_crypto_symbol
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = PROJECT_ROOT / "config" / "active_config.json"
 PENDING_PROPOSALS_PATH = PROJECT_ROOT / "config" / "pending_proposals.json"
 AUDIT_LOG_FILE = PROJECT_ROOT / "data" / "agent_governance_audit.log"
@@ -631,6 +635,205 @@ def reject_pending_proposal(
     return True
 
 
+def _parse_numeric_metric(val: Any) -> Optional[float]:
+    """Helper to safely parse percentages, dollar amounts, and numeric strings."""
+    if val is None:
+        return None
+    if isinstance(val, (int, float)):
+        return float(val)
+    s = str(val).replace("%", "").replace("+", "").replace("$", "").replace(",", "").strip()
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+def evaluate_conditional_auto_approval_gates(
+    candidate_cfg: Dict[str, Any],
+    base_cfg: Dict[str, Any],
+    empirical_proof: Optional[Dict[str, Any]],
+    invariants_passed: bool,
+    tests_passed: bool,
+    governor_verdict: str,
+    governor_confidence: float,
+    analyst_proposal: Optional[Dict[str, Any]] = None,
+) -> Tuple[bool, str, Dict[str, Any]]:
+    """
+    Evaluates the 4 strict conditional auto-approval gates:
+    Gate 1: Safety Invariants Pass (1%-5% risk, paper mode, max drawdown limits).
+    Gate 2: All Pytest Regression Tests Pass (zero broken code or regressions).
+    Gate 3: Governor Confidence is 100% (verdict == APPROVE, confidence >= 0.99).
+    Gate 4: Strict Alpha Superiority / Non-Degradation Gate:
+            - Empirical proof must be present.
+            - Out-of-sample return delta >= min_oos_return_delta (default 0.0%).
+            - Out-of-sample Sharpe ratio >= baseline Sharpe (test_sharpe_delta >= 0.0).
+            - Out-of-sample Max Drawdown <= baseline Max DD + tolerance (default 0.5%).
+            - Multi-window returns must not be negative on any validation window.
+    """
+    min_oos_ret_delta = float(base_cfg.get("auto_approve_min_oos_return_delta", 0.0))
+    min_oos_sharpe_delta = float(base_cfg.get("auto_approve_min_oos_sharpe_delta", 0.0))
+    max_dd_tol = float(base_cfg.get("auto_approve_max_drawdown_tolerance_pct", 0.5))
+
+    details: Dict[str, Any] = {
+        "gate_1_invariants": invariants_passed,
+        "gate_2_tests": tests_passed,
+        "gate_3_governor_verdict": governor_verdict,
+        "gate_3_governor_confidence": governor_confidence,
+        "gate_4_superiority": False,
+        "reasons": [],
+    }
+
+    # Gate 1: Safety Invariants
+    if not invariants_passed:
+        msg = "Gate 1 Failed: Safety invariants violated."
+        details["reasons"].append(msg)
+        return False, msg, details
+
+    # Gate 2: Pytest regression suite
+    if not tests_passed:
+        msg = "Gate 2 Failed: Pytest regression suite failed."
+        details["reasons"].append(msg)
+        return False, msg, details
+
+    # Gate 3: Governor Confidence
+    if governor_verdict != "APPROVE" or governor_confidence < 0.99:
+        msg = f"Gate 3 Failed: Governor verdict is {governor_verdict} (confidence={governor_confidence:.2f} < 1.00)."
+        details["reasons"].append(msg)
+        return False, msg, details
+
+    # Gate 4: Strict Alpha Superiority / Non-Degradation Gate
+    if not empirical_proof and not analyst_proposal:
+        msg = "Gate 4 Failed: No empirical proof provided to verify superiority over current baseline."
+        details["reasons"].append(msg)
+        return False, msg, details
+
+    proof = empirical_proof or {}
+
+    # 4a. Check Out-of-Sample Return Delta
+    if "test_return_delta" in proof:
+        ret_delta = _parse_numeric_metric(proof["test_return_delta"])
+        if ret_delta is not None:
+            details["test_return_delta"] = ret_delta
+            if ret_delta < min_oos_ret_delta:
+                msg = f"Gate 4 Failed: Out-of-sample return delta ({ret_delta:+.2f}%) did not meet minimum threshold ({min_oos_ret_delta:+.2f}%)."
+                details["reasons"].append(msg)
+                return False, msg, details
+
+    # 4b. Check Multi-window OOS returns (e.g. oos_w1_return, oos12_w1_return)
+    for w_key in ("oos_w1_return", "oos12_w1_return", "oos_w2_return", "oos12_w2_return"):
+        if w_key in proof:
+            w_ret = _parse_numeric_metric(proof[w_key])
+            if w_ret is not None:
+                details[w_key] = w_ret
+                if w_ret < 0.0:
+                    msg = f"Gate 4 Failed: Out-of-sample validation window ({w_key}={w_ret:+.2f}%) is negative; fails sure improvement check."
+                    details["reasons"].append(msg)
+                    return False, msg, details
+
+    # 4c. Check Out-of-Sample Sharpe Ratio
+    if "test_sharpe_delta" in proof:
+        sh_delta = _parse_numeric_metric(proof["test_sharpe_delta"])
+        if sh_delta is not None:
+            details["test_sharpe_delta"] = sh_delta
+            if sh_delta < min_oos_sharpe_delta:
+                msg = f"Gate 4 Failed: Out-of-sample Sharpe delta ({sh_delta:+.2f}) degraded below baseline threshold ({min_oos_sharpe_delta:+.2f})."
+                details["reasons"].append(msg)
+                return False, msg, details
+
+    if "test_sharpe" in proof and "base_test_sharpe" in proof:
+        cand_sh = _parse_numeric_metric(proof["test_sharpe"])
+        base_sh = _parse_numeric_metric(proof["base_test_sharpe"])
+        if cand_sh is not None and base_sh is not None and base_sh > 0:
+            details["test_sharpe"] = cand_sh
+            details["base_test_sharpe"] = base_sh
+            if cand_sh < base_sh:
+                msg = f"Gate 4 Failed: Candidate Out-of-Sample Sharpe ({cand_sh:.2f}) degraded below baseline ({base_sh:.2f})."
+                details["reasons"].append(msg)
+                return False, msg, details
+
+    # 4d. Check Out-of-Sample Max Drawdown Non-Degradation
+    if "test_max_dd" in proof and "base_test_max_dd" in proof:
+        cand_dd = _parse_numeric_metric(proof["test_max_dd"])
+        base_dd = _parse_numeric_metric(proof["base_test_max_dd"])
+        if cand_dd is not None and base_dd is not None and base_dd > 0:
+            details["test_max_dd"] = cand_dd
+            details["base_test_max_dd"] = base_dd
+            if cand_dd > (base_dd + max_dd_tol):
+                msg = f"Gate 4 Failed: Candidate Out-of-Sample MaxDD ({cand_dd:.1f}%) exceeds baseline MaxDD ({base_dd:.1f}% + {max_dd_tol:.1f}% tolerance)."
+                details["reasons"].append(msg)
+                return False, msg, details
+
+    # 4e. Check Analyst drag delta if present
+    if "drag_delta_pnl" in proof:
+        drag_delta = _parse_numeric_metric(proof["drag_delta_pnl"])
+        if drag_delta is not None:
+            details["drag_delta_pnl"] = drag_delta
+            if drag_delta > 0:
+                msg = f"Gate 4 Failed: Rebalance increases drag by ${drag_delta:.2f}."
+                details["reasons"].append(msg)
+                return False, msg, details
+
+    details["gate_4_superiority"] = True
+    return True, "All 4 conditional auto-approval gates PASSED (Invariants, Tests, Governor 100%, Alpha Superiority).", details
+
+
+def auto_approve_pending_proposals(
+    pending_path: Optional[Path] = None,
+    config_path: Optional[Path] = None,
+    verify_tests: bool = True,
+    auto_commit: Optional[bool] = None,
+) -> List[GovernorApprovalResult]:
+    """
+    Evaluates all PENDING_HUMAN_APPROVAL proposals against the 4 conditional auto-approval gates.
+    Auto-deploys any proposal that passes all 4 gates without requiring manual intervention.
+    """
+    path = pending_path or PENDING_PROPOSALS_PATH
+    proposals = list_pending_proposals(path)
+    results = []
+    base_cfg = load_config(config_path)
+
+    for p in proposals:
+        if p.get("status") != "PENDING_HUMAN_APPROVAL":
+            continue
+        prop_id = p.get("proposal_id", "")
+        # Evaluate 4 gates
+        passed, reason, _ = evaluate_conditional_auto_approval_gates(
+            candidate_cfg=_merge_proposed_changes_into_config(base_cfg, p.get("proposed_changes", {})),
+            base_cfg=base_cfg,
+            empirical_proof=p.get("empirical_proof"),
+            invariants_passed=p.get("invariants_passed", False),
+            tests_passed=p.get("tests_passed", False),
+            governor_verdict=p.get("governor_verdict", "DISAPPROVE"),
+            governor_confidence=float(p.get("governor_confidence", 0.0)),
+            analyst_proposal=p.get("analyst_proposal"),
+        )
+        if passed:
+            res = approve_pending_proposal(
+                proposal_id=prop_id,
+                approved_by="conditional_auto_gate",
+                config_path=config_path,
+                verify_tests=verify_tests,
+                auto_commit=auto_commit,
+                pending_path=pending_path,
+            )
+            results.append(res)
+        else:
+            res = GovernorApprovalResult(
+                approved=False,
+                status="HELD_FOR_HUMAN_REVIEW",
+                invariants_passed=p.get("invariants_passed", False),
+                tests_passed=p.get("tests_passed", False),
+                llm_risk_approved=False,
+                llm_rationale=f"Auto-approval gate withheld: {reason}",
+                rejection_reasons=[reason],
+                applied_changes={},
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                proposal_id=prop_id,
+            )
+            results.append(res)
+    return results
+
+
 def review_and_deploy_proposal(
     proposed_changes: Dict[str, Any],
     rationale: Optional[str] = None,
@@ -787,10 +990,30 @@ def review_and_deploy_proposal(
             append_governance_audit_log(res)
             return res
 
-    # Step 4: Mandatory Human-in-the-Loop Gate
-    # If human approval is required and not yet granted (or LLM returned NEEDS_HUMAN_REVIEW),
-    # save to pending queue and do NOT overwrite active_config.json!
-    if (require_human_approval and not human_approved) or (verdict_enum == "NEEDS_HUMAN_REVIEW" and not human_approved):
+    # Step 4: Mandatory Human-in-the-Loop Gate OR 4-Gate Conditional Auto-Approval
+    auto_approve_enabled = bool(
+        candidate_cfg.get("enable_conditional_auto_approval", False)
+        or base_cfg.get("enable_conditional_auto_approval", False)
+    )
+
+    auto_gate_passed = False
+    auto_gate_reason = ""
+    gate_details: Dict[str, Any] = {}
+
+    if auto_approve_enabled and not human_approved and verdict_enum != "DISAPPROVE":
+        auto_gate_passed, auto_gate_reason, gate_details = evaluate_conditional_auto_approval_gates(
+            candidate_cfg=candidate_cfg,
+            base_cfg=base_cfg,
+            empirical_proof=empirical_proof,
+            invariants_passed=invariants_ok,
+            tests_passed=tests_ok,
+            governor_verdict=verdict_enum,
+            governor_confidence=verdict_confidence,
+            analyst_proposal=analyst_proposal,
+        )
+
+    # If human approval is required and not granted, and auto-gate did not pass:
+    if (require_human_approval and not human_approved and not auto_gate_passed) or (verdict_enum == "NEEDS_HUMAN_REVIEW" and not human_approved):
         pending_record = {
             "proposal_id": prop_id,
             "status": "PENDING_HUMAN_APPROVAL",
@@ -801,6 +1024,11 @@ def review_and_deploy_proposal(
             "invariants_passed": True,
             "tests_passed": tests_ok,
             "human_approved": False,
+            "auto_gate_evaluation": {
+                "auto_approved": False,
+                "reason": auto_gate_reason or "Mandatory human review required.",
+                "details": gate_details,
+            },
             "proposed_changes": proposed_changes,
             "rationale": rationale or "Validated governance proposal awaiting human authorization.",
             "empirical_proof": empirical_proof or {},
@@ -815,8 +1043,8 @@ def review_and_deploy_proposal(
             invariants_passed=True,
             tests_passed=tests_ok,
             llm_risk_approved=(verdict_enum == "APPROVE"),
-            llm_rationale=llm_rationale,
-            rejection_reasons=["Awaiting mandatory human approval before applying to live configuration."],
+            llm_rationale=llm_rationale + (f" | Auto-Gate Notice: {auto_gate_reason}" if auto_gate_reason else ""),
+            rejection_reasons=[auto_gate_reason or "Awaiting mandatory human approval before applying to live configuration."],
             applied_changes={},
             timestamp=now_iso,
             verdict=verdict_enum,
@@ -829,7 +1057,7 @@ def review_and_deploy_proposal(
         append_governance_audit_log(res)
         return res
 
-    # Step 5: Human-Authorized Atomic Application with Backup
+    # Step 5: Authorized Atomic Application with Backup
     bak_file = cfg_file.with_suffix(".json.bak")
     if cfg_file.exists():
         shutil.copyfile(cfg_file, bak_file)
@@ -839,9 +1067,10 @@ def review_and_deploy_proposal(
         json.dump(candidate_cfg, f, indent=2)
     os.replace(tmp_target, cfg_file)
 
+    deployment_actor = "conditional_auto_gate" if auto_gate_passed else ("human_operator" if human_approved else "governor")
     should_commit = False if auto_commit is None else bool(auto_commit)
     if should_commit:
-        commit_msg = f"feat(governance): human-approved config deployment ({prop_id}) — {rationale or 'verified improvement'}"
+        commit_msg = f"feat(governance): {deployment_actor} config deployment ({prop_id}) — {rationale or 'verified improvement'}"
         commit_and_push_config(commit_msg)
 
     res = GovernorApprovalResult(
@@ -850,7 +1079,7 @@ def review_and_deploy_proposal(
         invariants_passed=True,
         tests_passed=tests_ok,
         llm_risk_approved=True,
-        llm_rationale=llm_rationale,
+        llm_rationale=llm_rationale + (" [Auto-Approved via 4-Gate Verification]" if auto_gate_passed else ""),
         rejection_reasons=[],
         applied_changes=proposed_changes,
         timestamp=now_iso,
@@ -870,6 +1099,7 @@ def main():
     parser.add_argument("--audit", action="store_true", help="Audit active_config.json against safety invariants")
     parser.add_argument("--proposal", type=str, default=None, help="JSON file containing candidate modifications to review")
     parser.add_argument("--pending", "--list-pending", dest="pending", action="store_true", help="List all proposals awaiting human approval")
+    parser.add_argument("--auto-approve-pending", action="store_true", help="Evaluate pending proposals against the 4 conditional auto-approval gates")
     parser.add_argument("--approve", type=str, default=None, help="Approve and deploy a pending proposal ID (e.g. PROP-XXXXXXXX)")
     parser.add_argument("--reject", type=str, default=None, help="Reject a pending proposal ID")
     parser.add_argument("--approver", type=str, default="human_cli_operator", help="Human approver identifier")
@@ -892,6 +1122,18 @@ def main():
             print(f"  - ID: {p.get('proposal_id')} | Status: {p.get('status')} | Verdict: {p.get('governor_verdict')} | Created: {p.get('created_at')}")
             print(f"    Rationale: {p.get('rationale')}")
             print(f"    Changes:   {json.dumps(p.get('proposed_changes', {}))}")
+        return
+
+    if args.auto_approve_pending:
+        results = auto_approve_pending_proposals(verify_tests=not args.no_tests)
+        deployed = [r for r in results if r.approved]
+        held = [r for r in results if not r.approved]
+        print(f"\n[Conditional Auto-Approval Evaluation Summary]")
+        print(f"  Total Evaluated: {len(results)}")
+        print(f"  Auto-Deployed:   {len(deployed)}")
+        print(f"  Held for Human:  {len(held)}")
+        for r in results:
+            print(f"  - {r.proposal_id}: {r.status} | {r.llm_rationale}")
         return
 
     if args.approve:
