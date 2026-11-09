@@ -6,7 +6,9 @@ has traded, calculating raw return and benchmark alpha (BTC for crypto, SPY for 
 to provide empirical evidence on strategy and risk gate efficacy.
 """
 
+import gzip
 import json
+import os
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -125,29 +127,106 @@ def log_decision(
     return entry
 
 
-def load_journal_entries(journal_path: Optional[Path] = None) -> List[Dict[str, Any]]:
-    """Load all journal records from disk."""
-    target_path = journal_path or JOURNAL_FILE
-    if not target_path.exists():
-        return []
-    entries = []
-    with open(target_path, "r", encoding="utf-8") as f:
+ARCHIVE_DIRNAME = "journal_archive"
+
+
+def _archive_dir(target_path: Path) -> Path:
+    return target_path.parent / ARCHIVE_DIRNAME
+
+
+def _iter_jsonl(path: Path):
+    opener = gzip.open if str(path).endswith(".gz") else open
+    with opener(path, "rt", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line:
                 try:
-                    entries.append(json.loads(line))
+                    yield json.loads(line)
                 except Exception:
                     continue
+
+
+def load_journal_entries(
+    journal_path: Optional[Path] = None,
+    include_archives: bool = False,
+) -> List[Dict[str, Any]]:
+    """Load journal records from disk (optionally including rotated gzip archives, oldest first)."""
+    target_path = journal_path or JOURNAL_FILE
+    entries: List[Dict[str, Any]] = []
+    if include_archives:
+        arch = _archive_dir(target_path)
+        if arch.exists():
+            for gz in sorted(arch.glob("decision_journal_*.jsonl.gz")):
+                entries.extend(_iter_jsonl(gz))
+    if target_path.exists():
+        entries.extend(_iter_jsonl(target_path))
     return entries
+
+
+def load_recent_settled_entries(
+    journal_path: Optional[Path] = None,
+    count: int = 50,
+    block_bytes: int = 1 << 20,
+) -> List[Dict[str, Any]]:
+    """Return the last ``count`` settled entries in file order WITHOUT parsing the whole file.
+
+    Reads the file backwards in blocks, so cost is bounded by the number of lines needed rather
+    than total journal size (previously every call re-parsed the entire multi-MB journal).
+    """
+    target_path = journal_path or JOURNAL_FILE
+    if not target_path.exists() or count <= 0:
+        return []
+    found: List[Dict[str, Any]] = []
+    with open(target_path, "rb") as f:
+        f.seek(0, os.SEEK_END)
+        pos = f.tell()
+        carry = b""
+        while pos > 0 and len(found) < count:
+            read = min(block_bytes, pos)
+            pos -= read
+            f.seek(pos)
+            chunk = f.read(read) + carry
+            lines = chunk.split(b"\n")
+            carry = lines[0] if pos > 0 else b""
+            candidates = lines[1:] if pos > 0 else lines
+            for raw in reversed(candidates):
+                raw = raw.strip()
+                if not raw:
+                    continue
+                try:
+                    e = json.loads(raw)
+                except Exception:
+                    continue
+                if e.get("settled", False):
+                    found.append(e)
+                    if len(found) >= count:
+                        break
+    found.reverse()
+    return found
+
+
+def _as_utc_index(df: pd.DataFrame) -> pd.DatetimeIndex:
+    idx = pd.DatetimeIndex(df.index)
+    return idx.tz_localize("UTC") if idx.tz is None else idx.tz_convert("UTC")
 
 
 def settle_journal(
     market_data: Dict[str, pd.DataFrame],
     holding_bars: int = 24,
     journal_path: Optional[Path] = None,
+    max_pending_days: float = 14.0,
+    max_reflections: int = 5,
 ) -> Tuple[int, int]:
     """Settle past decisions against forward market returns and benchmark alpha.
+
+    Efficiency/safety changes vs. the original implementation (results are identical for
+    entries that settle):
+      * forward bars are located with ``searchsorted`` instead of a boolean mask per entry;
+      * the (potentially tens-of-MB) journal is only rewritten when something actually changed
+        (the old code rewrote it on every 60s tick even when nothing settled);
+      * unsettled entries older than ``max_pending_days`` are tagged ``expired`` and no longer
+        re-scanned forever (their symbol may have left the watchlist, so they can never settle);
+      * at most ``max_reflections`` LLM post-mortems are generated per call to bound tick latency.
 
     Returns:
         (settled_count, pending_count)
@@ -159,41 +238,53 @@ def settle_journal(
 
     settled_count = 0
     pending_count = 0
-    updated_entries = []
+    changed = False
+    reflections_done = 0
+    now_utc = pd.Timestamp.now(tz="UTC")
+    expiry_cutoff = now_utc - pd.Timedelta(days=max_pending_days)
+
+    index_cache: Dict[str, pd.DatetimeIndex] = {}
+
+    def _idx(sym: str, frame: pd.DataFrame) -> pd.DatetimeIndex:
+        if sym not in index_cache:
+            index_cache[sym] = _as_utc_index(frame)
+        return index_cache[sym]
 
     for entry in entries:
-        if entry.get("settled", False):
-            updated_entries.append(entry)
+        if entry.get("settled", False) or entry.get("expired", False):
             continue
 
         sym = entry["symbol"]
-        df = market_data.get(sym)
-        if df is None or df.empty:
-            pending_count += 1
-            updated_entries.append(entry)
-            continue
-
-        entry_time_str = entry["timestamp"]
         try:
-            entry_dt = pd.to_datetime(entry_time_str, utc=True)
+            entry_dt = pd.to_datetime(entry["timestamp"], utc=True)
         except Exception:
             pending_count += 1
-            updated_entries.append(entry)
             continue
 
-        # Look for bars occurring after the decision timestamp
-        future_bars = df[df.index > entry_dt]
-        if len(future_bars) < holding_bars:
-            pending_count += 1
-            updated_entries.append(entry)
+        df = market_data.get(sym)
+        if df is None or df.empty:
+            if entry_dt < expiry_cutoff:
+                entry["expired"] = True
+                changed = True
+            else:
+                pending_count += 1
             continue
 
-        settle_bar = future_bars.iloc[holding_bars - 1]
+        idx = _idx(sym, df)
+        first_future = int(idx.searchsorted(entry_dt, side="right"))
+        if len(idx) - first_future < holding_bars:
+            if entry_dt < expiry_cutoff:
+                entry["expired"] = True
+                changed = True
+            else:
+                pending_count += 1
+            continue
+
+        settle_bar = df.iloc[first_future + holding_bars - 1]
         settle_price = float(settle_bar["close"])
         ref_price = float(entry["reference_price"])
         if ref_price <= 0:
             pending_count += 1
-            updated_entries.append(entry)
             continue
 
         raw_ret = (settle_price - ref_price) / ref_price
@@ -203,10 +294,11 @@ def settle_journal(
         bench_df = market_data.get(bench_sym)
         bench_ret = 0.0
         if bench_df is not None and not bench_df.empty:
-            bench_future = bench_df[bench_df.index > entry_dt]
-            if len(bench_future) >= holding_bars:
-                b_start = float(bench_future.iloc[0]["open"])
-                b_end = float(bench_future.iloc[holding_bars - 1]["close"])
+            b_idx = _idx(bench_sym, bench_df)
+            b_first = int(b_idx.searchsorted(entry_dt, side="right"))
+            if len(b_idx) - b_first >= holding_bars:
+                b_start = float(bench_df.iloc[b_first]["open"])
+                b_end = float(bench_df.iloc[b_first + holding_bars - 1]["close"])
                 if b_start > 0:
                     bench_ret = (b_end - b_start) / b_start
 
@@ -237,37 +329,125 @@ def settle_journal(
         entry["alpha_pct"] = round(alpha * 100.0, 3)
         entry["effective_call"] = effective
 
-        # Out-of-band LLM institutional post-mortem reflection
-        try:
-            entry["llm_reflection"] = generate_llm_reflection(
-                symbol=sym,
-                action=action,
-                strategy_id=entry.get("strategy_id", "strategy"),
-                ref_price=ref_price,
-                settle_price=settle_price,
-                forward_ret_pct=entry["forward_return_pct"],
-                alpha_pct=entry["alpha_pct"],
-                benchmark_symbol=bench_sym,
-            )
-        except Exception:
-            pass
+        # Out-of-band LLM institutional post-mortem reflection (qualitative only, rate-limited)
+        if reflections_done < max_reflections:
+            try:
+                entry["llm_reflection"] = generate_llm_reflection(
+                    symbol=sym,
+                    action=action,
+                    strategy_id=entry.get("strategy_id", "strategy"),
+                    ref_price=ref_price,
+                    settle_price=settle_price,
+                    forward_ret_pct=entry["forward_return_pct"],
+                    alpha_pct=entry["alpha_pct"],
+                    benchmark_symbol=bench_sym,
+                )
+                reflections_done += 1
+            except Exception:
+                pass
 
         settled_count += 1
-        updated_entries.append(entry)
+        changed = True
 
-    # Rewrite atomic journal
-    temp_path = target_path.with_suffix(".tmp")
-    with open(temp_path, "w", encoding="utf-8") as f:
-        for entry in updated_entries:
-            f.write(json.dumps(entry) + "\n")
-    temp_path.replace(target_path)
+    if changed:
+        # Atomic rewrite only when at least one record was settled/expired
+        temp_path = target_path.with_suffix(".tmp")
+        with open(temp_path, "w", encoding="utf-8") as f:
+            for entry in entries:
+                f.write(json.dumps(entry) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+        temp_path.replace(target_path)
 
     return settled_count, pending_count
 
 
+def rotate_journal(
+    journal_path: Optional[Path] = None,
+    max_active_bytes: int = 25 * 1024 * 1024,
+    keep_days: float = 7.0,
+    force: bool = False,
+) -> Dict[str, Any]:
+    """Archive old, finished journal records into gzip files without losing or reordering data.
+
+    Archived: records that are ``settled`` or ``expired`` AND older than ``keep_days``.
+    Kept in the active file (original order): everything else, including pending decisions and any
+    line that fails to parse (never dropped).
+
+    Safety:
+      * single-writer assumption is guaranteed by the bot's SingleInstanceLock;
+      * archive is written (temp + fsync + rename) BEFORE the active file is replaced, and its
+        name is deterministic for identical input, so a crash between the two steps cannot create
+        duplicate or missing history on retry;
+      * counts are verified (kept + archived == input) before the active file is replaced.
+    """
+    target_path = journal_path or JOURNAL_FILE
+    if not target_path.exists():
+        return {"rotated": False, "reason": "no journal"}
+    size = target_path.stat().st_size
+    if not force and size <= max_active_bytes:
+        return {"rotated": False, "reason": "below size threshold", "active_bytes": size}
+
+    cutoff = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=keep_days)
+    kept_lines: List[str] = []
+    archived_lines: List[str] = []
+    first_ts = last_ts = None
+    total = 0
+    with open(target_path, "r", encoding="utf-8") as f:
+        for raw in f:
+            if not raw.strip():
+                continue
+            total += 1
+            line = raw.rstrip("\n")
+            archive_it = False
+            try:
+                e = json.loads(line)
+                if e.get("settled", False) or e.get("expired", False):
+                    ts = pd.to_datetime(e["timestamp"], utc=True)
+                    archive_it = ts < cutoff
+                    if archive_it:
+                        first_ts = ts if first_ts is None else min(first_ts, ts)
+                        last_ts = ts if last_ts is None else max(last_ts, ts)
+            except Exception:
+                archive_it = False
+            (archived_lines if archive_it else kept_lines).append(line)
+
+    if not archived_lines:
+        return {"rotated": False, "reason": "nothing old enough to archive", "active_bytes": size}
+    if len(kept_lines) + len(archived_lines) != total:
+        raise RuntimeError("journal rotation count mismatch; aborting without changes")
+
+    arch_dir = _archive_dir(target_path)
+    arch_dir.mkdir(parents=True, exist_ok=True)
+    stamp = lambda t: t.strftime("%Y%m%dT%H%M%SZ")  # noqa: E731
+    arch_path = arch_dir / f"decision_journal_{stamp(first_ts)}_{stamp(last_ts)}_{len(archived_lines)}.jsonl.gz"
+    tmp_arch = arch_path.with_suffix(".gz.tmp")
+    with gzip.open(tmp_arch, "wt", encoding="utf-8") as gz:
+        for line in archived_lines:
+            gz.write(line + "\n")
+    os.replace(tmp_arch, arch_path)
+
+    tmp_active = target_path.with_suffix(".rotate.tmp")
+    with open(tmp_active, "w", encoding="utf-8") as f:
+        for line in kept_lines:
+            f.write(line + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp_active, target_path)
+
+    return {
+        "rotated": True,
+        "archived_records": len(archived_lines),
+        "kept_records": len(kept_lines),
+        "archive_file": str(arch_path),
+        "active_bytes_before": size,
+        "active_bytes_after": target_path.stat().st_size,
+    }
+
+
 def generate_journal_report(journal_path: Optional[Path] = None) -> str:
     """Generate summary report of settled decisions and gate effectiveness."""
-    entries = load_journal_entries(journal_path)
+    entries = load_journal_entries(journal_path, include_archives=True)
     if not entries:
         return "Decision Journal is empty. No records logged yet."
 
@@ -342,8 +522,11 @@ def get_gate_alpha_feedback(
         except OSError:
             pass
 
-    entries = load_journal_entries(journal_path)
-    settled = [e for e in entries if e.get("settled", False)]
+    settled = load_recent_settled_entries(journal_path, count=lookback_entries)
+    if len(settled) < lookback_entries:
+        # Active file may have been rotated: fall back to archives for the remaining history
+        full = load_journal_entries(journal_path, include_archives=True)
+        settled = [e for e in full if e.get("settled", False)][-lookback_entries:]
     if not settled:
         res = {
             "has_feedback": False,

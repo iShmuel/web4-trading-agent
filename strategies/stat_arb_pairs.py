@@ -43,6 +43,42 @@ class StatArbPairsStrategy:
         self.stop_z_score = float(cfg.get("stat_arb_stop_z", 3.5))
         self.min_correlation = float(cfg.get("min_pair_correlation", 0.70))
         self.max_half_life = float(cfg.get("max_pair_half_life_hours", 72.0))
+        # Cost-aware trade acceptance gate (0.0 = disabled; preserves historical behaviour).
+        # A pair entry is only accepted when expected spread reversion >= ratio x round-trip friction.
+        self.min_edge_cost_ratio = float(cfg.get("stat_arb_min_edge_cost_ratio", 0.0))
+        self.cost_per_side_pct = float(
+            cfg.get(
+                "stat_arb_cost_per_side_pct",
+                float(cfg.get("fee_pct", 0.0006)) + float(cfg.get("pair_slippage_pct", cfg.get("slippage_pct", 0.0004))),
+            )
+        )
+
+    def estimate_expected_edge_vs_cost(
+        self,
+        series_a: pd.Series,
+        series_b: pd.Series,
+        beta: float,
+        z_score: float,
+    ) -> Tuple[float, float, float]:
+        """Deterministically estimate the economics of entering a pair trade now.
+
+        Returns (expected_gross_edge_usd_per_a_unit, round_trip_cost_usd_per_a_unit, ratio).
+
+        Per 1 unit of A hedged with ``beta`` units of B, the position profits by the spread
+        move.  Reverting from |z| to ``exit_z_score`` captures (|z| - exit_z) * sigma_spread.
+        Round-trip friction applies to BOTH legs on BOTH sides:
+            2 sides x cost_per_side x (price_a + beta * price_b).
+        """
+        sub_a = series_a.iloc[-self.lookback_period:]
+        sub_b = series_b.iloc[-self.lookback_period:]
+        spread = sub_a - beta * sub_b
+        sigma = float(spread.std())
+        pa = float(sub_a.iloc[-1])
+        pb = float(sub_b.iloc[-1])
+        expected_edge = max(0.0, abs(z_score) - self.exit_z_score) * sigma
+        round_trip_cost = 2.0 * self.cost_per_side_pct * (pa + beta * pb)
+        ratio = expected_edge / round_trip_cost if round_trip_cost > 0 else 0.0
+        return expected_edge, round_trip_cost, ratio
 
     def calculate_spread_and_zscore(
         self,
@@ -239,6 +275,30 @@ class StatArbPairsStrategy:
                 correlation=corr,
                 half_life=half_life,
             )
+
+        # Cost-aware acceptance gate: reject entries whose expected reversion cannot cover friction
+        if self.min_edge_cost_ratio > 0.0 and abs(z_score) >= self.entry_z_score:
+            _, _, edge_ratio = self.estimate_expected_edge_vs_cost(
+                combined.iloc[:, 0], combined.iloc[:, 1], beta, z_score
+            )
+            if edge_ratio < self.min_edge_cost_ratio:
+                return PairTradeSignal(
+                    pair_id=pair_id,
+                    asset_a=asset_a,
+                    asset_b=asset_b,
+                    timestamp=now,
+                    action="NO_TRADE",
+                    z_score=z_score,
+                    hedge_ratio=beta,
+                    spread=cur_spread,
+                    reason=(
+                        f"Blocked by Cost Gate: expected reversion/round-trip cost = {edge_ratio:.2f} "
+                        f"< required {self.min_edge_cost_ratio:.2f}"
+                    ),
+                    is_stationary=is_stat,
+                    correlation=corr,
+                    half_life=half_life,
+                )
 
         # Check entry triggers
         if z_score <= -self.entry_z_score:

@@ -1,0 +1,59 @@
+[
+  {
+    "proposal_id": "PROP-ED02E10E",
+    "status": "PENDING_HUMAN_APPROVAL",
+    "governor_verdict": "APPROVE",
+    "governor_confidence": 1.0,
+    "governor_rationale": "Rule-only governance verification passed.",
+    "risk_assessment": "Deterministic invariant and parameter bounds check passed.",
+    "invariants_passed": true,
+    "tests_passed": true,
+    "human_approved": false,
+    "proposed_changes": {
+      "adx_chop_threshold": 26.0,
+      "bb_std": 1.8,
+      "stat_arb_entry_z": 2.5,
+      "stat_arb_min_edge_cost_ratio": 2.5,
+      "pairs_universe": [
+        [
+          "NVDA",
+          "AAPL"
+        ],
+        [
+          "WULF",
+          "CIFR"
+        ],
+        [
+          "IREN",
+          "CIFR"
+        ],
+        [
+          "BNB/USDT",
+          "LINK/USDT"
+        ],
+        [
+          "SOL/USDT",
+          "LINK/USDT"
+        ],
+        [
+          "MU",
+          "MCHP"
+        ]
+      ]
+    },
+    "rationale": "Raise ADX chop filter to 26, tighten MR Bollinger bands to 1.8 std, add 2.5x edge-to-cost gate on StatArb pairs, and align pairs universe with active non-blacklisted watchlist.",
+    "empirical_proof": {
+      "oos12_w1_return": "-0.84%",
+      "oos12_w2_return": "+12.39%",
+      "oos12_w2_sharpe": 2.34,
+      "live14_w1_return": "+6.32%",
+      "live14_w2_return": "+8.18%",
+      "live14_w1_sharpe": 1.79,
+      "live14_max_dd": "8.68%",
+      "evidence": "Tested across 72 optimization scenarios (144 replays) in research/optimization_experiments.py"
+    },
+    "analyst_proposal": null,
+    "target_config_path": "<repo_root>/config/active_config.json",
+    "created_at": "2026-11-09T10:16:37.098306+00:00"
+  }
+]

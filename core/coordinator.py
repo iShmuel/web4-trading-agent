@@ -314,6 +314,21 @@ class PortfolioCoordinator:
             self._symbol_engines[symbol] = (cfg, MomentumStrategy(cfg), MeanReversionStrategy(cfg))
         return self._symbol_engines[symbol]
 
+    def _pair_slippage_pct(self) -> float:
+        """Per-side adverse slippage applied to every pair leg fill (pairs always cross the spread)."""
+        return float(self.config.get("pair_slippage_pct", self.config.get("slippage_pct", 0.0004)))
+
+    def _pair_fill_price(self, price: float, side: str, opening: bool) -> float:
+        """Apply adverse slippage to a pair-leg fill.
+
+        Buying (opening a LONG or closing a SHORT) pays up; selling (opening a SHORT or
+        closing a LONG) receives less. Previously pair legs filled at the raw bar price, which
+        understated the real round-trip friction by 4 fills x slippage.
+        """
+        slip = self._pair_slippage_pct()
+        buying = (side == "LONG") if opening else (side == "SHORT")
+        return price * (1.0 + slip) if buying else price * (1.0 - slip)
+
     def _resolve_funding_state(
         self,
         symbol: str,
@@ -645,7 +660,7 @@ class PortfolioCoordinator:
                     pair_id_val = existing_pos.get("pair_id")
                     trade = self.account.close_position(
                         symbol=symbol,
-                        exit_price=cur_price * (0.9996 if pos_side == "LONG" else 1.0004),
+                        exit_price=self._pair_fill_price(cur_price, pos_side, opening=False),
                         exit_reason=f"Pair Leg Catastrophe Stop Hit (${cur_price:.2f} vs ${pair_stop:.2f})",
                         fee_pct=sym_cfg.get("fee_pct", 0.0006),
                     )
@@ -655,7 +670,7 @@ class PortfolioCoordinator:
                                 other_px = current_prices.get(other_sym, float(other_pos.get("entry_price", 0.0)))
                                 self.account.close_position(
                                     symbol=other_sym,
-                                    exit_price=other_px,
+                                    exit_price=self._pair_fill_price(other_px, other_pos.get("side", "LONG"), opening=False),
                                     exit_reason=f"Partner Leg Catastrophe Stop ({pair_id_val})",
                                     fee_pct=sym_cfg.get("fee_pct", 0.0006),
                                 )
@@ -1377,10 +1392,20 @@ class PortfolioCoordinator:
                     pa = current_prices.get(psig.asset_a, float(market_data[psig.asset_a]["close"].iloc[-1]))
                     pb = current_prices.get(psig.asset_b, float(market_data[psig.asset_b]["close"].iloc[-1]))
                     if self.account.has_position(psig.asset_a):
-                        self.account.close_position(psig.asset_a, pa, exit_reason=f"Dynamic Pair Exit ({psig.reason})")
+                        leg_side = self.account.get_position(psig.asset_a).get("side", "LONG")
+                        self.account.close_position(
+                            psig.asset_a,
+                            self._pair_fill_price(pa, leg_side, opening=False),
+                            exit_reason=f"Dynamic Pair Exit ({psig.reason})",
+                        )
                         executed += 1
                     if self.account.has_position(psig.asset_b):
-                        self.account.close_position(psig.asset_b, pb, exit_reason=f"Dynamic Pair Exit ({psig.reason})")
+                        leg_side = self.account.get_position(psig.asset_b).get("side", "LONG")
+                        self.account.close_position(
+                            psig.asset_b,
+                            self._pair_fill_price(pb, leg_side, opening=False),
+                            exit_reason=f"Dynamic Pair Exit ({psig.reason})",
+                        )
                         executed += 1
                     decisions.append(CoordinatorDecision(
                         symbol=psig.pair_id,
@@ -1439,7 +1464,7 @@ class PortfolioCoordinator:
                                 try:
                                     self.account.open_position(
                                         symbol=psig.asset_a,
-                                        entry_price=pa,
+                                        entry_price=self._pair_fill_price(pa, side_a, opening=True),
                                         units=units_a,
                                         stop_loss=stop_a,
                                         dollar_risk=dollar_risk,
@@ -1451,7 +1476,7 @@ class PortfolioCoordinator:
 
                                     self.account.open_position(
                                         symbol=psig.asset_b,
-                                        entry_price=pb,
+                                        entry_price=self._pair_fill_price(pb, side_b, opening=True),
                                         units=units_b,
                                         stop_loss=stop_b,
                                         dollar_risk=dollar_risk,
