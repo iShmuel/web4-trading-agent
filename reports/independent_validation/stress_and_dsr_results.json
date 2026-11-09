@@ -1,0 +1,139 @@
+{
+  "timestamp": "2026-11-09T10:55:08.212596+00:00",
+  "baseline_stress_tests": {
+    "base_1.0x": {
+      "fee_pct": 0.0006,
+      "slippage_pct": 0.0004,
+      "net_return_pct": 13.46,
+      "net_pnl": 1345.8,
+      "sharpe_ratio": 2.77,
+      "sortino_ratio": 4.58,
+      "max_drawdown_pct": 6.64,
+      "profit_factor": 1.48,
+      "total_fees_paid": 344.55,
+      "total_trades": 494,
+      "directional_trades": 231,
+      "elapsed_seconds": 14.0
+    },
+    "stress_1.5x": {
+      "fee_pct": 0.0009,
+      "slippage_pct": 0.0006,
+      "net_return_pct": 12.21,
+      "net_pnl": 1221.23,
+      "sharpe_ratio": 2.54,
+      "sortino_ratio": 4.16,
+      "max_drawdown_pct": 6.93,
+      "profit_factor": 1.43,
+      "total_fees_paid": 415.62,
+      "total_trades": 494,
+      "directional_trades": 231,
+      "elapsed_seconds": 14.0
+    },
+    "stress_2.0x": {
+      "fee_pct": 0.0012,
+      "slippage_pct": 0.0008,
+      "net_return_pct": -3.49,
+      "net_pnl": -349.0,
+      "sharpe_ratio": -5.72,
+      "sortino_ratio": -5.6,
+      "max_drawdown_pct": 3.53,
+      "profit_factor": 0.64,
+      "total_fees_paid": 171.52,
+      "total_trades": 389,
+      "directional_trades": 126,
+      "elapsed_seconds": 14.6
+    },
+    "shock_slippage_0.15pct": {
+      "fee_pct": 0.0006,
+      "slippage_pct": 0.0015,
+      "net_return_pct": -5.33,
+      "net_pnl": -533.43,
+      "sharpe_ratio": -8.31,
+      "sortino_ratio": -8.28,
+      "max_drawdown_pct": 5.36,
+      "profit_factor": 0.5,
+      "total_fees_paid": 166.06,
+      "total_trades": 389,
+      "directional_trades": 126,
+      "elapsed_seconds": 14.9
+    }
+  },
+  "candidate_stress_tests": {
+    "base_1.0x": {
+      "fee_pct": 0.0006,
+      "slippage_pct": 0.0004,
+      "net_return_pct": 14.41,
+      "net_pnl": 1441.31,
+      "sharpe_ratio": 2.67,
+      "sortino_ratio": 3.15,
+      "max_drawdown_pct": 8.75,
+      "profit_factor": 1.56,
+      "total_fees_paid": 249.1,
+      "total_trades": 424,
+      "directional_trades": 162,
+      "elapsed_seconds": 14.5
+    },
+    "stress_1.5x": {
+      "fee_pct": 0.0009,
+      "slippage_pct": 0.0006,
+      "net_return_pct": 12.73,
+      "net_pnl": 1273.05,
+      "sharpe_ratio": 2.37,
+      "sortino_ratio": 2.69,
+      "max_drawdown_pct": 9.22,
+      "profit_factor": 1.5,
+      "total_fees_paid": 307.68,
+      "total_trades": 412,
+      "directional_trades": 150,
+      "elapsed_seconds": 14.7
+    },
+    "stress_2.0x": {
+      "fee_pct": 0.0012,
+      "slippage_pct": 0.0008,
+      "net_return_pct": 0.48,
+      "net_pnl": 47.6,
+      "sharpe_ratio": 1.22,
+      "sortino_ratio": 0.72,
+      "max_drawdown_pct": 0.56,
+      "profit_factor": 1.18,
+      "total_fees_paid": 28.31,
+      "total_trades": 281,
+      "directional_trades": 18,
+      "elapsed_seconds": 15.1
+    },
+    "shock_slippage_0.15pct": {
+      "fee_pct": 0.0006,
+      "slippage_pct": 0.0015,
+      "net_return_pct": 0.22,
+      "net_pnl": 21.93,
+      "sharpe_ratio": 0.54,
+      "sortino_ratio": 0.34,
+      "max_drawdown_pct": 0.6,
+      "profit_factor": 1.09,
+      "total_fees_paid": 21.58,
+      "total_trades": 279,
+      "directional_trades": 16,
+      "elapsed_seconds": 15.3
+    }
+  },
+  "deflated_sharpe_analysis": {
+    "annualized_sharpe": 2.63,
+    "period_sharpe": 0.0281,
+    "skewness": -3.035,
+    "kurtosis": 206.391,
+    "observations": 2480,
+    "psr": 0.9067,
+    "dsr": 0.0358,
+    "expected_max_sr_ann": 6.23,
+    "dsr_passed_95pct": false,
+    "dsr_passed_80pct": false,
+    "num_trials_tested": 72
+  },
+  "trial_sharpe_distribution": {
+    "num_trials": 72,
+    "mean_sharpe": 0.45,
+    "std_sharpe": 1.98,
+    "max_sharpe": 4.13,
+    "min_sharpe": -5.54
+  }
+}
