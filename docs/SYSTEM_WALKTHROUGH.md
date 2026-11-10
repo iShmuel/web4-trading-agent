@@ -13,8 +13,11 @@ This document provides a granular, component-by-component walkthrough of the **W
    - [3.3 Cointegrated Statistical Arbitrage Pairs Bot](#33-cointegrated-statistical-arbitrage-pairs-bot)
    - [3.4 Delta-Neutral Perpetual Basis Yield Bot](#34-delta-neutral-perpetual-basis-yield-bot)
 4. [The Master Coordinator Engine (`core/coordinator.py`)](#4-the-master-coordinator-engine-corecoordinatorpy)
+   - [4.1 Multi-Source Market Data Pipeline (`core/data_loader.py`)](#41-multi-source-market-data-pipeline-coredata_loaderpy)
 5. [The Risk Fortress & Sizing Formulas (`core/risk_engine.py`)](#5-the-risk-fortress--sizing-formulas-corerisk_enginepy)
 6. [The Virtual Ledger & Execution Drag (`core/paper_account.py`)](#6-the-virtual-ledger--execution-drag-corepaper_accountpy)
+   - [6.1 Pre-Flight Execution Safety Guards (`core/preflight.py`)](#61-pre-flight-execution-safety-guards-corepreflightpy)
+   - [6.2 Decision Journal & 24h Settlement Engine (`core/journal.py`)](#62-decision-journal--24h-settlement-engine-corejournalpy)
 7. [Alternative Intelligence Radar & Regulatory Hygiene (`core/skill_intelligence_gate.py`)](#7-alternative-intelligence-radar--regulatory-hygiene-coreskill_intelligence_gatepy)
    - [7.1 NYSE Market Clock & Opening-Bell Buffer](#71-nyse-market-clock-holiday-calendar--opening-bell-buffer-nysemarketclock)
    - [7.2 SEC EDGAR 8-K Real-Time Filing Veto](#72-sec-edgar-8-k-real-time-filing-veto-secedgar8kmonitor)
@@ -22,13 +25,22 @@ This document provides a granular, component-by-component walkthrough of the **W
    - [7.4 Smart Money Radar: 13F Whales & Pelosi](#74-smart-money-radar-13f-institutional-whales--congressional-stock-act-smartmoneyradar)
    - [7.5 Tax Hygiene, Loss-Streak Locks & Drift Rebalancing](#75-tax-hygiene-loss-streak-locks--drift-rebalancing)
 8. [The Autonomous AI Layer & 4-Gate Auto-Approval (`agent/`)](#8-the-autonomous-ai-layer--4-gate-auto-approval-agent)
+   - [8.1 In-Sample Strategy Optimizer (`agent/optimizer.py`)](#81-in-sample-strategy-optimizer-agentoptimizerpy)
+   - [8.2 Out-of-Sample Walk-Forward Validator (`agent/validator.py`)](#82-out-of-sample-walk-forward-validator-agentvalidatorpy)
+   - [8.3 Constitutional Governor & Hot-Reload Gatekeeper (`agent/governor.py`)](#83-constitutional-governor--hot-reload-gatekeeper-agentgovernorpy)
+   - [8.4 Autonomous Asset Universe Screener & Toxic Drag Pruning (`agent/asset_selector.py`)](#84-autonomous-asset-universe-screener--toxic-drag-pruning-agentasset_selectorpy)
 9. [Macro & Decentralized Prediction Radars (`core/fred_radar.py` & `core/polymarket_radar.py`)](#9-macro--decentralized-prediction-radars-corefred_radarpy--corepolymarket_radarpy)
-10. [Institutional Stress Testing & Beyond-Sharpe Metrics (`core/institutional_stress_tester.py`)](#10-institutional-stress-testing--beyond-sharpe-metrics-coreinstitutional_stress_testerpy)
+10. [Institutional Stress Testing & Backtest Simulation (`core/institutional_stress_tester.py` & `core/backtest_engine.py`)](#10-institutional-stress-testing--backtest-simulation-coreinstitutional_stress_testerpy--corebacktest_enginepy)
+   - [10.1 Deflated Sharpe Ratio & Probabilistic Sharpe Ratio](#101-deflated-sharpe-ratio-dsr--probabilistic-sharpe-ratio-psr)
+   - [10.2 Ulcer Index & Underwater Duration](#102-ulcer-index--underwater-duration)
+   - [10.3 Break-Even Friction Sweep](#103-break-even-friction-sweep-1x-to-5x-stress-test)
+   - [10.4 Event-Driven Backtesting & Simulation Engine (`core/backtest_engine.py`)](#104-event-driven-backtesting--simulation-engine-corebacktest_enginepy)
 11. [Post-Trade Forensic Analyst & Local LLM Cognition (`agent/trade_analyst.py`)](#11-post-trade-forensic-analyst--local-llm-cognition-agenttrade_analystpy)
    - [11.1 Granular Forensic Capabilities](#111-granular-forensic-capabilities)
    - [11.2 Why Microsoft phi4-mini Was Chosen](#112-why-microsoft-phi4-mini-was-chosen)
    - [11.3 Why We Do Not Fine-Tune the LLM](#113-why-we-do-not-fine-tune-the-llm)
-12. [Repository File Map](#12-repository-file-map)
+12. [Real-Time Terminal Monitoring Dashboard (`dashboard.py`)](#12-real-time-terminal-monitoring-dashboard-dashboardpy)
+13. [Repository File Map](#13-repository-file-map)
 
 ---
 
@@ -209,6 +221,20 @@ sequenceDiagram
 * **Portfolio Concentration Check**:
   * Prevents total crypto exposure from exceeding configured portfolio risk limits (default 80% maximum).
 
+### 4.1 Multi-Source Market Data Pipeline (`core/data_loader.py`)
+To ensure reliable inputs across both cryptocurrency and equity desks, [`core/data_loader.py`](core/data_loader.py) orchestrates market ingestion, data sanitation, and high-performance local caching:
+* **Dual-Market Ingestion**:
+  * **Crypto Pairs**: Direct public CCXT ingestion (Binance Spot & Perpetual Futures) normalizing symbols (`BTC/USDT`, `ETH/USDT`, `SOL/USDT`).
+  * **Traditional Equities**: Historical and intraday candle feeds via `yfinance` (`SPY`, `QQQ`, `AAPL`, `NVDA`, `MCHP`, `XLE`, etc.).
+* **Data Quality & Hygiene Audit (`check_data_quality`)**:
+  * Rejects dataframes containing `NaN` / infinite values in OHLCV columns.
+  * Detects zero-volume flatline anomalies and discontinuous time gaps.
+  * Enforces monotonic ascending timestamp ordering so indicators never suffer lookahead leakage.
+* **Local Disk Caching (`data/`)**:
+  * Caches historical OHLCV data to parquet/csv files to eliminate network bottlenecks and exchange API rate-limit bans during high-frequency scans.
+* **Staleness Blackout**:
+  * Computes $\Delta t = \text{Current Time} - \text{Latest Bar Timestamp}$. If $\Delta t > \text{max\_stale\_minutes}$ (default 180m), the asset is quarantined from trade generation.
+
 ---
 
 ## 5. The Risk Fortress & Sizing Formulas (`core/risk_engine.py`)
@@ -243,6 +269,36 @@ To ensure paper-trading numbers reflect real-world execution, [`core/paper_accou
 * **Taker Exchange Fees**: $0.06\%$ ($6\text{ basis points}$) deducted on both Entry and Exit.
 * **Market Slippage**: $0.04\%$ ($4\text{ basis points}$) adverse price movement applied against every fill.
 * **Concurrency Protection**: Uses file locks to ensure that data in [`data/paper_portfolio.json`](data/paper_portfolio.json) is atomic and crash-resistant.
+
+### 6.1 Pre-Flight Execution Safety Guards (`core/preflight.py`)
+Before any proposed order is routed from the Coordinator to the Virtual Ledger, it must pass 5 execution safety guards orchestrated by `PreFlightGuard`:
+1. **Bid-Ask Spread Slippage Guard**:
+   * Evaluates relative market spread: $\text{Spread} = \frac{P_{\text{ask}} - P_{\text{bid}}}{P_{\text{mid}}}$.
+   * If $\text{Spread} > \text{max\_allowed\_spread}$ (e.g. $0.35\%$), the order is rejected to prevent excessive execution drag.
+2. **Tick Staleness Guard**:
+   * Verifies price quote freshness. If the quote timestamp is older than allowable tolerance, execution is halted.
+3. **Liquidity Depth & 5% Volume Participation Guard**:
+   * Rejects orders that exceed $5.0\%$ of the asset's rolling 24-hour volume, ensuring the strategy never over-participates in thin liquidity.
+4. **Cash Buffer & Minimum Notional Guard**:
+   * Enforces exchange minimum order sizes ($\ge \$10.00$) and preserves a hard-coded $10\%$ cash buffer so account equity is never fully illiquid.
+5. **Local LLM Devil's Advocate News Screener (`LocalLLMScreener`)**:
+   * Fetches the 3 most recent headlines via public Google News RSS for the target asset.
+   * Dispatches an out-of-band query to local Ollama (`phi4-mini:latest`) with a 6-second timeout: *"Does this news indicate catastrophic bankruptcy, SEC regulatory fraud, or protocol hack?"*
+   * If the LLM returns a veto verdict, the entry is aborted before capital is risked.
+
+### 6.2 Decision Journal & 24h Settlement Engine (`core/journal.py`)
+To ensure continuous empirical accountability, [`core/journal.py`](core/journal.py) tracks every decision and audits risk efficacy:
+* **Append-Only Decision Logging**:
+   * Logs every tick decision (`APPROVED`, `BLOCKED_BY_RISK`, `BLOCKED_BY_PREFLIGHT`, `NO_SIGNAL`) along with complete indicator states and market context directly to [`data/decision_journal.jsonl`](data/decision_journal.jsonl).
+* **24-Hour Settlement Math & Benchmark Alpha**:
+   * Re-evaluates each logged entry once 24 hours have elapsed:
+     $$\text{Forward Return} = \frac{P_{t+24\text{h}} - P_t}{P_t}$$
+     $$\text{Alpha vs Benchmark} = \text{Forward Return} - \text{Benchmark Return}_{t+24\text{h}}$$
+     *(Benchmark is `SPY` for equities, `BTC/USDT` for cryptocurrency).*
+* **2-Sentence Local LLM Cognitive Post-Mortem**:
+   * Calls `phi4-mini` to synthesize a concise, two-sentence qualitative reflection on settled outcomes, storing the insight alongside quantitative metrics.
+* **Empirical Risk Gate Attribution**:
+   * Mathematically proves whether risk gates prevented losses by calculating the forward return of trades that were blocked compared to those approved.
 
 ---
 
@@ -319,6 +375,30 @@ flowchart TD
 * **OOS Max Drawdown $\le \text{Baseline} + 0.5\%$**: The new strategy cannot expose the account to deeper crash drawdowns.
 * **Multi-Window Walk-Forward Verification**: If any single test window produces negative returns, the proposal is rejected as curve-fitted.
 
+### 8.1 In-Sample Strategy Optimizer (`agent/optimizer.py`)
+* **Role**: Exploration engine for technical parameters (Agent 10).
+* **Search Space**: Sweeps indicator lookbacks (e.g. Donchian channels 16–32, ATR multipliers 2.0–3.5, RSI bands 20–35) strictly on the in-sample (70%) training split.
+* **Objective Function**: Maximizes Profit Factor and Calmar Ratio while ensuring trade frequency meets statistical minimums ($N \ge 20$). Emits structured candidate proposals formatted for Gatekeeper review.
+
+### 8.2 Out-of-Sample Walk-Forward Validator (`agent/validator.py`)
+* **Role**: Anti-overfitting referee (Agent 11).
+* **Multi-Window Walk-Forward Protocol**: Evaluates candidate parameters strictly on unseen 30% out-of-sample data across multiple rolling time slices.
+* **Verification Logic**: Compares candidate backtests against baseline backtests using identical fee ($0.06\%$) and slippage ($0.04\%$) friction. Emits an immutable `ValidationReport` approving or vetoing candidate promotion based on Gate 4 rules.
+
+### 8.3 Constitutional Governor & Hot-Reload Gatekeeper (`agent/governor.py`)
+* **Role**: Autonomous executive and safety gatekeeper.
+* **Invariant Enforcer**: Audits all proposals against the immutable risk bounds ($1.0\% \le \text{risk} \le 5.0\%$, paper-trading mode).
+* **Automated Test Harness**: Executes all 152 regression tests via subprocess `pytest`. If even one test fails, the proposal is rejected immediately.
+* **Cryptographic Deployment**: Upon clearing all 4 gates, the Governor computes the SHA-256 hash of the configuration, merges the changes into [`config/active_config.json`](config/active_config.json), appends the audit trail to `governance_audit.jsonl`, and Git-commits the verified patch.
+
+### 8.4 Autonomous Asset Universe Screener & Toxic Drag Pruning (`agent/asset_selector.py`)
+* **Role**: Dynamic portfolio universe optimizer (Agent 9).
+* **Dynamic Discovery**: Scans Binance spot/perps volume rankings and Yahoo Finance equity screeners in real time without static asset lists.
+* **Composite Alpha Score (CAS)**:
+  $$\text{CAS} = (\text{Sharpe} \times 0.40) + (\text{Profit Factor} \times 0.30) + (\text{Win Rate} \times 0.30) - (\text{Drawdown Penalty})$$
+* **Toxic Drag Elimination**: Automatically identifies assets with persistent negative alpha or excessive drawdown, removing them from the active watchlist to protect total portfolio return.
+* **Blacklist Rehabilitation Audit**: Periodically re-evaluates blacklisted assets under current market conditions to reinstate them if their volatility or trend quality improves.
+
 ---
 
 ## 9. Macro & Decentralized Prediction Radars (`core/fred_radar.py` & `core/polymarket_radar.py`)
@@ -339,7 +419,7 @@ To prevent the trading bot from blindly entering technical breakout trades right
 
 ---
 
-## 10. Institutional Stress Testing & Beyond-Sharpe Metrics (`core/institutional_stress_tester.py`)
+## 10. Institutional Stress Testing & Backtest Simulation (`core/institutional_stress_tester.py` & `core/backtest_engine.py`)
 
 Traditional backtests rely solely on the Sharpe Ratio, which can be fooled by strategies that collect small gains and occasionally suffer massive "black swan" crashes. We implement institutional hedge-fund stress testing formulas:
 
@@ -355,6 +435,13 @@ Formulated by Marcos López de Prado (*Advances in Financial Machine Learning*):
 ### 10.3 Break-Even Friction Sweep (1x to 5x Stress Test)
 * Runs stress tests where exchange fees and slippage are artificially multiplied by $2\times, 3\times, 4\times$, and $5\times$.
 * **Margin of Safety**: A strategy must survive at least $2.5\times$ normal fees and slippage before it is deemed safe for production.
+
+### 10.4 Event-Driven Backtesting & Simulation Engine (`core/backtest_engine.py`)
+To validate strategies before deployment, [`core/backtest_engine.py`](core/backtest_engine.py) provides a high-fidelity event-driven simulation loop:
+* **Lookahead-Free Execution Simulation**: Iterates bar-by-bar across historical candles, updating active position state, dynamic trailing ATR stops, and scale-out triggers strictly on finalized candle closes.
+* **Realistic Execution Frictions**: Automatically applies $0.06\%$ taker fees and $0.04\%$ adverse market slippage to every entry and exit fill.
+* **Dynamic Timeframe Annualization (`_estimate_bars_per_year`)**: Incurs no hardcoded annualization assumptions; dynamically inspects median bar spacing from datetime indices to accurately annualize Sharpe, Sortino, and Calmar ratios for hourly crypto (8,760 bars/yr) or daily equities (252 bars/yr).
+* **Full Shifted 90-Day OOS Harness (`research/run_shifted_oos_validation.py`)**: Executes continuous walk-forward verification across 90-day out-of-sample regimes across all active symbols, generating standardized validation reports in `reports/oos_validation_report.json`.
 
 ---
 
@@ -398,17 +485,34 @@ In institutional quantitative trading, fine-tuning an LLM on price history is co
 
 ---
 
-## 12. Repository File Map
+## 12. Real-Time Terminal Monitoring Dashboard (`dashboard.py`)
+
+For live institutional monitoring without heavy GUI or web frameworks, [`dashboard.py`](dashboard.py) provides a high-performance, curses-style ANSI terminal dashboard:
+
+* **Zero-Impact Read-Only Architecture**: Operates exclusively in read-only mode using non-blocking checks against `data/live_trader.lock`. It can be run in multiple terminal splits simultaneously (`python dashboard.py --interval 2` or `--once`) without ever risking data corruption on [`data/paper_portfolio.json`](data/paper_portfolio.json).
+* **Live System Metrics**:
+  * **Daemon Status & PID**: Visual confirmation of whether `live_paper_trader.py` is actively ticking or halted.
+  * **Portfolio Accounting**: Real-time display of Starting Capital, Current Cash, Total Equity, Realized P&L, and Active Drawdown from peak.
+  * **Open Positions Matrix**: Displays open symbol, side, filled units, entry price, live market mark, unrealized P&L ($ and %), current trailing stop price, and trailing stop distance.
+  * **Continuous Scanner Feed**: Live stream showing the last evaluated price, regime verdict, and signal decision across all watched assets.
+
+---
+
+## 13. Repository File Map
 
 ```
 web4-trading-agent/
 ├── live_paper_trader.py       # Live daemon heartbeat loop (every 60s)
+├── dashboard.py               # Real-time ANSI curses-style terminal monitor
 ├── config/
 │   └── active_config.json     # Live parameters, active symbols & risk toggles
 ├── core/
 │   ├── coordinator.py         # Multi-strategy conflict arbiter & execution orchestrator
 │   ├── risk_engine.py         # 1%-5% equity sizing & circuit breakers
 │   ├── paper_account.py       # Simulated ledger, fills, fees & slippage
+│   ├── preflight.py           # 5 execution safety guards & LLM devil's advocate screener
+│   ├── journal.py             # Decision telemetry logging & 24h settlement engine
+│   ├── backtest_engine.py     # Event-driven backtesting engine with fees & slippage
 │   ├── basis_yield.py         # Delta-neutral funding rate carry harvest engine
 │   ├── data_loader.py         # Real-time & historical crypto/equity candle fetcher
 │   ├── fred_radar.py          # St. Louis Fed / VIX Macro Crash Defense Radar
@@ -422,16 +526,21 @@ web4-trading-agent/
 │   └── stat_arb_pairs.py      # Cointegrated statistical arbitrage pairs bot
 ├── agent/
 │   ├── governor.py            # 4-Gate auto-approval constitutional gatekeeper
-│   ├── optimizer.py           # In-sample discovery engine
+│   ├── optimizer.py           # In-sample parameter exploration engine
 │   ├── validator.py           # Out-of-sample walk-forward verification engine
-│   ├── asset_selector.py      # Walk-forward toxic drag pruning engine
+│   ├── asset_selector.py      # Dynamic universe discovery & toxic drag pruning engine
 │   ├── trade_analyst.py       # Post-trade forensic diagnosis & root-cause analyst
 │   └── llm_client.py          # Zero-dependency local Ollama (phi4-mini) LLM client
+├── research/
+│   └── run_shifted_oos_validation.py # 90-day shifted out-of-sample multi-strategy validation
 ├── data/
 │   ├── paper_portfolio.json   # Live ledger state, cash balance & closed trades
 │   ├── decision_journal.jsonl # Complete audit log of every tick decision
 │   └── trade_forensic_report.json # AI forensic diagnosis on closed trades
+├── reports/
+│   └── oos_validation_report.json # Empirical 90-day out-of-sample backtest report
 ├── docs/
-│   └── SYSTEM_WALKTHROUGH.md  # THIS MASTER DETAILED GUIDE
+│   ├── SYSTEM_WALKTHROUGH.md  # THIS MASTER DETAILED GUIDE
+│   └── web4-autonomous-levels.md # Web4 autonomy level specification
 └── tests/                     # 152 automated regression tests
 ```
