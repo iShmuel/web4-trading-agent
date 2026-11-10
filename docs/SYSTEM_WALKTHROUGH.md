@@ -5,33 +5,23 @@ This document provides a granular, component-by-component walkthrough of the **W
 ---
 
 ## Table of Contents
-1. [Why Diagrams Might Not Render Locally vs. GitHub](#1-why-diagrams-might-not-render-locally-vs-github)
-2. [Global Architecture Overview](#2-global-architecture-overview)
-3. [The Live Heartbeat Loop (`live_paper_trader.py`)](#3-the-live-heartbeat-loop-live_paper_traderpy)
-4. [The 4 Strategy Bots in Fine Detail](#4-the-4-strategy-bots-in-fine-detail)
-   - [4.1 Donchian Momentum Breakout Bot](#41-donchian-momentum-breakout-bot)
-   - [4.2 Bollinger / RSI Mean-Reversion Bot](#42-bollinger--rsi-mean-reversion-bot)
-   - [4.3 Cointegrated Statistical Arbitrage Pairs Bot](#43-cointegrated-statistical-arbitrage-pairs-bot)
-   - [4.4 Delta-Neutral Perpetual Basis Yield Bot](#44-delta-neutral-perpetual-basis-yield-bot)
-5. [The Master Coordinator Engine (`core/coordinator.py`)](#5-the-master-coordinator-engine-corecoordinatorpy)
-6. [The Risk Fortress & Sizing Formulas (`core/risk_engine.py`)](#6-the-risk-fortress--sizing-formulas-corerisk_enginepy)
-7. [The Virtual Ledger & Execution Drag (`core/paper_account.py`)](#7-the-virtual-ledger--execution-drag-corepaper_accountpy)
-8. [Alternative Intelligence Radar (`core/skill_intelligence_gate.py`)](#8-alternative-intelligence-radar-coreskill_intelligence_gatepy)
-9. [The Autonomous AI Layer & 4-Gate Auto-Approval (`agent/`)](#9-the-autonomous-ai-layer--4-gate-auto-approval-agent)
-10. [Repository File Map](#10-repository-file-map)
+1. [Global Architecture Overview](#1-global-architecture-overview)
+2. [The Live Heartbeat Loop (`live_paper_trader.py`)](#2-the-live-heartbeat-loop-live_paper_traderpy)
+3. [The 4 Strategy Bots in Fine Detail](#3-the-4-strategy-bots-in-fine-detail)
+   - [3.1 Donchian Momentum Breakout Bot](#31-donchian-momentum-breakout-bot)
+   - [3.2 Bollinger / RSI Mean-Reversion Bot](#32-bollinger--rsi-mean-reversion-bot)
+   - [3.3 Cointegrated Statistical Arbitrage Pairs Bot](#33-cointegrated-statistical-arbitrage-pairs-bot)
+   - [3.4 Delta-Neutral Perpetual Basis Yield Bot](#34-delta-neutral-perpetual-basis-yield-bot)
+4. [The Master Coordinator Engine (`core/coordinator.py`)](#4-the-master-coordinator-engine-corecoordinatorpy)
+5. [The Risk Fortress & Sizing Formulas (`core/risk_engine.py`)](#5-the-risk-fortress--sizing-formulas-corerisk_enginepy)
+6. [The Virtual Ledger & Execution Drag (`core/paper_account.py`)](#6-the-virtual-ledger--execution-drag-corepaper_accountpy)
+7. [Alternative Intelligence Radar (`core/skill_intelligence_gate.py`)](#7-alternative-intelligence-radar-coreskill_intelligence_gatepy)
+8. [The Autonomous AI Layer & 4-Gate Auto-Approval (`agent/`)](#8-the-autonomous-ai-layer--4-gate-auto-approval-agent)
+9. [Repository File Map](#9-repository-file-map)
 
 ---
 
-## 1. Why Diagrams Might Not Render Locally vs. GitHub
-
-Markdown files use **Mermaid (`mermaid`) code blocks** to render charts and sequence flows.
-
-* **Locally / Raw Text Editors**: If you open a `.md` file in standard Notepad, TextEdit, or VS Code without the *Markdown Preview Mermaid Support* plugin installed, the editor only sees raw text inside ` ```mermaid ` tags.
-* **On GitHub**: GitHub has a built-in Mermaid rendering engine. When this file is pushed to your Git repository and viewed in your browser on GitHub, all diagrams automatically turn into crisp, interactive visual diagrams.
-
----
-
-## 2. Global Architecture Overview
+## 1. Global Architecture Overview
 
 The system operates across **three primary operational tiers**:
 
@@ -90,7 +80,7 @@ flowchart TD
 
 ---
 
-## 3. The Live Heartbeat Loop (`live_paper_trader.py`)
+## 2. The Live Heartbeat Loop (`live_paper_trader.py`)
 
 The file [`live_paper_trader.py`](live_paper_trader.py) is the master executable that runs continuously in background memory.
 
@@ -109,9 +99,9 @@ The file [`live_paper_trader.py`](live_paper_trader.py) is the master executable
 
 ---
 
-## 4. The 4 Strategy Bots in Fine Detail
+## 3. The 4 Strategy Bots in Fine Detail
 
-### 4.1 Donchian Momentum Breakout Bot
+### 3.1 Donchian Momentum Breakout Bot
 * **File**: [`strategies/momentum.py`](strategies/momentum.py)
 * **Strategy Type**: Directional Trend-Following.
 * **Underlying Indicators**:
@@ -129,7 +119,7 @@ The file [`live_paper_trader.py`](live_paper_trader.py) is the master executable
 
 ---
 
-### 4.2 Bollinger / RSI Mean-Reversion Bot
+### 3.2 Bollinger / RSI Mean-Reversion Bot
 * **File**: [`strategies/mean_reversion.py`](strategies/mean_reversion.py)
 * **Strategy Type**: Counter-trend Swing Trader.
 * **Underlying Indicators**:
@@ -147,7 +137,7 @@ The file [`live_paper_trader.py`](live_paper_trader.py) is the master executable
 
 ---
 
-### 4.3 Cointegrated Statistical Arbitrage Pairs Bot
+### 3.3 Cointegrated Statistical Arbitrage Pairs Bot
 * **File**: [`strategies/stat_arb_pairs.py`](strategies/stat_arb_pairs.py)
 * **Strategy Type**: Market-Neutral Relative Value.
 * **Mechanism**:
@@ -164,7 +154,7 @@ The file [`live_paper_trader.py`](live_paper_trader.py) is the master executable
 
 ---
 
-### 4.4 Delta-Neutral Perpetual Basis Yield Bot
+### 3.4 Delta-Neutral Perpetual Basis Yield Bot
 * **File**: [`core/basis_yield.py`](core/basis_yield.py)
 * **Strategy Type**: Delta-Neutral Cash-and-Carry / Funding Arbitrage.
 * **Underlying Principle**:
@@ -180,7 +170,7 @@ The file [`live_paper_trader.py`](live_paper_trader.py) is the master executable
 
 ---
 
-## 5. The Master Coordinator Engine (`core/coordinator.py`)
+## 4. The Master Coordinator Engine (`core/coordinator.py`)
 
 The **Portfolio Coordinator** is the central brain that arbitrates conflicting advice from different bots:
 
@@ -208,11 +198,11 @@ sequenceDiagram
 
 ---
 
-## 6. The Risk Fortress & Sizing Formulas (`core/risk_engine.py`)
+## 5. The Risk Fortress & Sizing Formulas (`core/risk_engine.py`)
 
 No trade is ever placed without passing through the mathematical constraints in [`core/risk_engine.py`](core/risk_engine.py):
 
-### 6.1 Position Sizing Formula
+### 5.1 Position Sizing Formula
 $$\text{Dollar Risk} = \text{Account Equity} \times \text{Risk Percent}$$
 $$\text{Stop Distance} = |\text{Entry Price} - \text{Stop Loss Price}|$$
 $$\text{Position Units} = \frac{\text{Dollar Risk}}{\text{Stop Distance}}$$
@@ -220,11 +210,11 @@ $$\text{Position Units} = \frac{\text{Dollar Risk}}{\text{Stop Distance}}$$
 * **Hard-Coded Invariant**: $\text{Risk Percent}$ is strictly clamped between **$1.0\%$ minimum and $5.0\%$ maximum** of total equity.
 * If a coin is highly volatile ($\text{ATR}$ is large), the stop distance is wide, which automatically forces the unit size down.
 
-### 6.2 Volume Surge & Smart Money Sizing Multipliers
+### 5.2 Volume Surge & Smart Money Sizing Multipliers
 * **Volume Surge Multiplier**: If current candle volume is $\ge 1.5\times$ the 20-period average volume, the position size is boosted by **$1.2\times$** (rewarding high-liquidity institutional participation).
 * Even with boosts, the final risk is hard-capped at $\le 5.0\%$.
 
-### 6.3 Autonomous Circuit Breakers
+### 5.3 Autonomous Circuit Breakers
 1. **Daily Drawdown Breaker ($4.0\%$)**:
    * If equity loses $\ge 4.0\%$ in any rolling 24-hour window, all new trade entries are locked out until the next calendar day.
 2. **Trailing Peak Drawdown Breaker ($12.0\%$)**:
@@ -233,7 +223,7 @@ $$\text{Position Units} = \frac{\text{Dollar Risk}}{\text{Stop Distance}}$$
 
 ---
 
-## 7. The Virtual Ledger & Execution Drag (`core/paper_account.py`)
+## 6. The Virtual Ledger & Execution Drag (`core/paper_account.py`)
 
 To ensure paper-trading numbers reflect real-world execution, [`core/paper_account.py`](core/paper_account.py) enforces full execution friction:
 
@@ -243,7 +233,7 @@ To ensure paper-trading numbers reflect real-world execution, [`core/paper_accou
 
 ---
 
-## 8. Alternative Intelligence Radar (`core/skill_intelligence_gate.py`)
+## 7. Alternative Intelligence Radar (`core/skill_intelligence_gate.py`)
 
 This engine integrates alternative market datasets to filter and confirm trades:
 
@@ -259,7 +249,7 @@ This engine integrates alternative market datasets to filter and confirm trades:
 
 ---
 
-## 9. The Autonomous AI Layer & 4-Gate Auto-Approval (`agent/`)
+## 8. The Autonomous AI Layer & 4-Gate Auto-Approval (`agent/`)
 
 The repository includes a cognitive agent harness that autonomously tunes strategy parameters and removes unprofitable assets.
 
@@ -284,7 +274,7 @@ flowchart TD
 
 ---
 
-## 10. Repository File Map
+## 9. Repository File Map
 
 ```
 web4-trading-agent/
