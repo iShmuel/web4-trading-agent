@@ -15,7 +15,12 @@ This document provides a granular, component-by-component walkthrough of the **W
 4. [The Master Coordinator Engine (`core/coordinator.py`)](#4-the-master-coordinator-engine-corecoordinatorpy)
 5. [The Risk Fortress & Sizing Formulas (`core/risk_engine.py`)](#5-the-risk-fortress--sizing-formulas-corerisk_enginepy)
 6. [The Virtual Ledger & Execution Drag (`core/paper_account.py`)](#6-the-virtual-ledger--execution-drag-corepaper_accountpy)
-7. [Alternative Intelligence Radar (`core/skill_intelligence_gate.py`)](#7-alternative-intelligence-radar-coreskill_intelligence_gatepy)
+7. [Alternative Intelligence Radar & Regulatory Hygiene (`core/skill_intelligence_gate.py`)](#7-alternative-intelligence-radar--regulatory-hygiene-coreskill_intelligence_gatepy)
+   - [7.1 NYSE Market Clock & Opening-Bell Buffer](#71-nyse-market-clock-holiday-calendar--opening-bell-buffer-nysemarketclock)
+   - [7.2 SEC EDGAR 8-K Real-Time Filing Veto](#72-sec-edgar-8-k-real-time-filing-veto-secedgar8kmonitor)
+   - [7.3 SEC Fundamental XBRL Quality Filter](#73-sec-fundamental-xbrl-quality-filter-secfundamentalgate)
+   - [7.4 Smart Money Radar: 13F Whales & Pelosi](#74-smart-money-radar-13f-institutional-whales--congressional-stock-act-smartmoneyradar)
+   - [7.5 Tax Hygiene, Loss-Streak Locks & Drift Rebalancing](#75-tax-hygiene-loss-streak-locks--drift-rebalancing)
 8. [The Autonomous AI Layer & 4-Gate Auto-Approval (`agent/`)](#8-the-autonomous-ai-layer--4-gate-auto-approval-agent)
 9. [Macro & Decentralized Prediction Radars (`core/fred_radar.py` & `core/polymarket_radar.py`)](#9-macro--decentralized-prediction-radars-corefred_radarpy--corepolymarket_radarpy)
 10. [Institutional Stress Testing & Beyond-Sharpe Metrics (`core/institutional_stress_tester.py`)](#10-institutional-stress-testing--beyond-sharpe-metrics-coreinstitutional_stress_testerpy)
@@ -241,19 +246,53 @@ To ensure paper-trading numbers reflect real-world execution, [`core/paper_accou
 
 ---
 
-## 7. Alternative Intelligence Radar (`core/skill_intelligence_gate.py`)
+## 7. Alternative Intelligence Radar & Regulatory Hygiene (`core/skill_intelligence_gate.py`)
 
-This engine integrates alternative market datasets to filter and confirm trades:
+This engine serves as the institutional guardian connecting the bot's price-action algorithms to real-world market regulations, corporate disclosures, and elite fund flows across 5 distinct protective engines:
 
-1. **Whale & 13F Institutional Filing Radar**:
-   * Scrapes SEC 13F filings from elite funds (Berkshire Hathaway, Pershing Square, Appaloosa, Renaissance Technologies).
-   * Assets with net institutional accumulation receive positive conviction weighting.
-2. **Congressional STOCK Act Tracker**:
-   * Scrapes the U.S. House Clerk Periodic Transaction Reports (PTRs) for congressional trades.
-3. **SEC EDGAR 10-Q / 8-K Analyst**:
-   * Filters out companies with deteriorating fundamental health, guidance cuts, or negative operating margins.
-4. **Drift-Band Portfolio Rebalancing Engine**:
-   * Evaluates portfolio drift every cycle. If any single asset drifts $\ge 5\%$ above its intended allocation band, it executes a `REBALANCE_TRIM` to return to target.
+```mermaid
+flowchart TD
+    subgraph Gate ["core/skill_intelligence_gate.py (5 Protection Engines)"]
+        E1["1. NYSE Market Clock & Opening-Bell Buffer<br/>(trader-alerts)"]
+        E2["2. SEC EDGAR Form 8-K Event Monitor<br/>(trader-news)"]
+        E3["3. SEC Fundamental XBRL Gate<br/>(trader-analyst + screener)"]
+        E4["4. Smart Money Radar: 13F Whales & Pelosi<br/>(trader-copycat + pelosi)"]
+        E5["5. Wash-Sale Guard & Drift Rebalancer<br/>(trader-tax + rebalance)"]
+    end
+
+    Signal["Proposed Trade Signal"] --> Gate
+    Gate -->|Passes All Checks| Approved["Execution Approved"]
+    Gate -->|Fails Any Check| Blocked["Vetoed / Risk Throttled"]
+```
+
+### 7.1 NYSE Market Clock, Holiday Calendar & Opening-Bell Buffer (`NyseMarketClock`)
+* **Session Hours & DST Math**: Tracks exact New York Eastern Time, automatic Daylight Saving transitions (-4 EDT / -5 EST), 2026–2027 NYSE holidays, and 1:00 PM early close days (day after Thanksgiving, Christmas Eve).
+* **Opening-Bell 15-Minute Gap Whipsaw Buffer**: Blocks stock entries during the volatile first 15 minutes of trading (**9:30 AM – 9:45 AM ET**). This prevents the bot from buying false morning gaps that reverse abruptly once retail liquidity settles.
+
+### 7.2 SEC EDGAR 8-K Real-Time Filing Veto (`SecEdgar8KMonitor`)
+Directly polls the real-time SEC EDGAR Atom feed to detect critical corporate emergencies before a chart can reflect them:
+* **Item 1.03**: Bankruptcy or receivership.
+* **Item 1.05**: Material cybersecurity incident/breach.
+* **Item 4.02**: Past financials no longer reliable (accounting restatement/fraud).
+* **Item 5.02**: Abrupt departure of CEO, CFO, or directors.
+* **Action**: Instantly vetoes any pending or active BUY signals on the affected ticker.
+
+### 7.3 SEC Fundamental XBRL Quality Filter (`SecFundamentalGate`)
+* Parses raw XBRL financial statements from 10-Q and 10-K filings:
+  * YoY Revenue Growth (`revenue_growth_yoy`).
+  * Operating Margins (`operating_margin`).
+  * Diluted EPS & P/E Ratios.
+* **Hype Filter**: Disqualifies cash-bleeding, unprofitable companies from entering the long portfolio, preventing "pump-and-dump" traps.
+
+### 7.4 Smart Money Radar: 13F Institutional Whales & Congressional STOCK Act (`SmartMoneyRadar`)
+* **Form 13F Whale Accumulation**: Scrapes quarterly SEC 13F-HR filings from elite multi-billion-dollar fund managers (Warren Buffett / Berkshire, Ray Dalio / Bridgewater, Bill Ackman / Pershing Square, Jim Simons / Renaissance Technologies, Stanley Druckenmiller / Duquesne, David Tepper / Appaloosa).
+* **House Clerk STOCK Act PTR Disclosures**: Tracks Nancy Pelosi and congressional insider trades.
+* **Conviction Scaling**: When technical breakout signals coincide with net institutional accumulation, position sizing is boosted by up to $1.2\times$ (clamped strictly within the 1%–5% risk ceiling).
+
+### 7.5 Tax Hygiene, Loss-Streak Locks & Drift Rebalancing
+* **IRS 30-Day Wash-Sale Compliance**: Tracks dual share-class families (e.g. `GOOG` vs `GOOGL`, `BRK.A` vs `BRK.B`). If a lot was liquidated at a tax loss within the last 30 days, the engine flags wash-sale conflicts and prevents buying the sister share class.
+* **Loss-Streak Circuit Lock**: If any individual stock or coin suffers **2 consecutive stop-loss hits**, it is locked out for 24 hours to prevent burning capital in erratic price action.
+* **Drift-Band Portfolio Rebalancer**: If an asset's position weight drifts $> 5\%$ above its assigned target allocation, it automatically executes a `REBALANCE_TRIM` to lock in profit and re-center account capital.
 
 ---
 

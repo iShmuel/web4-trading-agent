@@ -749,7 +749,7 @@ def run_full_oos_and_multistrategy_validation() -> Dict[str, Any]:
     }
 
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    REPORT_PATH.write_text(json.dumps(report, indent=2))
+    REPORT_PATH.write_text(json.dumps(report, indent=2, default=str))
 
     print("\n" + "=" * 100)
     print("  SUMMARY OF SHIFTED 90-DAY OUT-OF-SAMPLE & MULTI-STRATEGY RESULTS (TAKER FEES + SLIPPAGE)")
