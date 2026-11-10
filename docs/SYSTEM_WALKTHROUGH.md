@@ -17,24 +17,24 @@ This document provides a granular, component-by-component walkthrough of the **W
 6. [The Virtual Ledger & Execution Drag (`core/paper_account.py`)](#6-the-virtual-ledger--execution-drag-corepaper_accountpy)
 7. [Alternative Intelligence Radar (`core/skill_intelligence_gate.py`)](#7-alternative-intelligence-radar-coreskill_intelligence_gatepy)
 8. [The Autonomous AI Layer & 4-Gate Auto-Approval (`agent/`)](#8-the-autonomous-ai-layer--4-gate-auto-approval-agent)
-9. [Repository File Map](#9-repository-file-map)
+9. [Macro & Decentralized Prediction Radars (`core/fred_radar.py` & `core/polymarket_radar.py`)](#9-macro--decentralized-prediction-radars-corefred_radarpy--corepolymarket_radarpy)
+10. [Institutional Stress Testing & Beyond-Sharpe Metrics (`core/institutional_stress_tester.py`)](#10-institutional-stress-testing--beyond-sharpe-metrics-coreinstitutional_stress_testerpy)
+11. [Post-Trade Forensic Analyst & Local LLM Cognition (`agent/trade_analyst.py`)](#11-post-trade-forensic-analyst--local-llm-cognition-agenttrade_analystpy)
+12. [Repository File Map](#12-repository-file-map)
 
 ---
 
 ## 1. Global Architecture Overview
 
-The system operates across **three primary operational tiers**:
+The system operates across **four primary operational tiers**:
 
 ```mermaid
 flowchart TD
-    subgraph DataTier ["1. Market Data Tier"]
+    subgraph DataTier ["1. Market & Alternative Data Tier"]
         DL["Data Loader (data_loader.py)"]
-        CCXT["Crypto Exchanges (Binance / Hyperliquid)"]
-        YF["Equities (Yahoo Finance)"]
-        FR["Perpetual Funding Rate Feeds"]
-        CCXT --> DL
-        YF --> DL
-        FR --> DL
+        FRED["Federal Reserve Macro Radar (fred_radar.py)"]
+        POLY["Polymarket Odds Radar (polymarket_radar.py)"]
+        SKILL["13F Whales & Pelosi Tracker (skill_intelligence_gate.py)"]
     end
 
     subgraph StrategyTier ["2. Strategy Bots Tier (Alpha Generators)"]
@@ -59,6 +59,9 @@ flowchart TD
         MR -->|Signal| COORD
         PAIRS -->|Signal| COORD
         BASIS -->|Yield| COORD
+        FRED -->|Risk Throttle| COORD
+        POLY -->|Binary Hedge| COORD
+        SKILL -->|Conviction Boost| COORD
         
         COORD --> RISK
         RISK --> REBAL
@@ -66,12 +69,14 @@ flowchart TD
         CIRCUIT --> BOOK
     end
 
-    subgraph CognitiveTier ["4. Cognitive AI Swarm (Self-Tuning)"]
+    subgraph CognitiveTier ["4. Cognitive AI Swarm & Forensics"]
         OPT["Optimizer (agent/optimizer.py)"]
         VAL["Validator (agent/validator.py)"]
         GOV["Governor Gatekeeper (agent/governor.py)"]
         ASSET["Asset Selector (agent/asset_selector.py)"]
+        ANALYST["Post-Trade Forensic LLM (agent/trade_analyst.py)"]
         
+        ANALYST -->|Hypotheses| OPT
         OPT --> VAL
         VAL --> GOV
         GOV -.->|Hot Reload Config| COORD
@@ -274,11 +279,73 @@ flowchart TD
 
 ---
 
-## 9. Repository File Map
+## 9. Macro & Decentralized Prediction Radars (`core/fred_radar.py` & `core/polymarket_radar.py`)
+
+To prevent the trading bot from blindly entering technical breakout trades right before a macroeconomic catastrophe or Fed interest rate shock, the system monitors macro regime indicators:
+
+### 9.1 FRED Macro Regime Radar ([`core/fred_radar.py`](core/fred_radar.py))
+* **CBOE VIX Volatility Index**: Gauges market-wide panic.
+  * If $\text{VIX} \ge 30.0$: Activates **`CRASH_DEFENSE`** regime. Disables breakout longs and cuts position risk by $50\%$ (`risk_scale_factor = 0.50`).
+  * If $\text{VIX} \in [22.0, 30.0)$: Activates **`VOLATILITY_EXPANSION`** regime with caution sizing.
+* **High-Yield OAS Credit Spreads**: Measures junk bond default risk and liquidity contraction. Spreads $> 500\text{ bps}$ force defensive cash preservation.
+* **10Y-2Y Treasury Yield Spread**: Monitors yield curve inversion and steepening regimes.
+
+### 9.2 Polymarket Decentralized Prediction Radar ([`core/polymarket_radar.py`](core/polymarket_radar.py))
+* Uses the public Polymarket Gamma API (zero API keys required) to read crowd-priced implied probabilities for binary macro events:
+  * **Fed Interest Rate Decision Odds**: Flags impending FOMC rate decisions to throttle risk 2 hours prior to rate announcements.
+  * **U.S. Recession Probabilities**: Detects spike in event-driven tail risks.
+
+---
+
+## 10. Institutional Stress Testing & Beyond-Sharpe Metrics (`core/institutional_stress_tester.py`)
+
+Traditional backtests rely solely on the Sharpe Ratio, which can be fooled by strategies that collect small gains and occasionally suffer massive "black swan" crashes. We implement institutional hedge-fund stress testing formulas:
+
+### 10.1 Deflated Sharpe Ratio (DSR) & Probabilistic Sharpe Ratio (PSR)
+Formulated by Marcos López de Prado (*Advances in Financial Machine Learning*):
+* **Probabilistic Sharpe Ratio (PSR)**: Adjusts the Sharpe Ratio for non-normal return distributions (skewness and fat-tailed kurtosis).
+* **Deflated Sharpe Ratio (DSR)**: Mathematically discounts the Sharpe Ratio for the number of backtest trials ($N$) evaluated. It computes the statistical probability that the strategy is genuinely profitable rather than a statistical fluke resulting from testing 50 different parameter variations.
+
+### 10.2 Ulcer Index & Underwater Duration
+* **Ulcer Index**: Measures both the **depth** and the **duration** of drawdowns. While Sharpe penalizes upside volatility, the Ulcer Index strictly measures real portfolio pain.
+* **Max Underwater Duration**: Measures how many hours or days the strategy took to recover back to a new all-time high after a loss.
+
+### 10.3 Break-Even Friction Sweep (1x to 5x Stress Test)
+* Runs stress tests where exchange fees and slippage are artificially multiplied by $2\times, 3\times, 4\times$, and $5\times$.
+* **Margin of Safety**: A strategy must survive at least $2.5\times$ normal fees and slippage before it is deemed safe for production.
+
+---
+
+## 11. Post-Trade Forensic Analyst & Local LLM Cognition (`agent/trade_analyst.py`)
+
+The Web4 platform includes an autonomous post-mortem diagnostic engine that reviews real executed trades to determine *why* losses occurred and propose corrective hypotheses:
+
+```mermaid
+flowchart LR
+    ClosedTrades["data/paper_portfolio.json<br/>(Executed Trades)"] --> Analyst["Trade Forensic Analyst<br/>(agent/trade_analyst.py)"]
+    DecisionJournal["data/decision_journal.jsonl<br/>(Indicator States at Fill)"] --> Analyst
+    
+    Analyst --> LLM["Local Ollama LLM<br/>(phi4-mini / qwen3)<br/>100% Offline, Zero Cloud Cost"]
+    LLM --> Hypothesis["Emits Formal Root-Cause Hypothesis<br/>(data/trade_forensic_report.json)"]
+    Hypothesis --> Optimizer["Optimizer Agent<br/>(Tests Hypothesis)"]
+```
+
+### Granular Forensic Capabilities:
+1. **Payoff & Expectancy Statistics**:
+   * Evaluates the **Payoff Ratio** ($\frac{\text{Average Win \$}}{\text{Average Loss \$}}$) and **Win Rate**.
+2. **Loss Attribution**:
+   * Categorizes whether losses were caused by **Trend Exhaustion**, **Whipsaw Chop**, **Bad Entry Timing**, or **Macro Volatility**.
+3. **Local LLM Cognitive Reasoning**:
+   * Uses a locally hosted model via Ollama ([`agent/llm_client.py`](agent/llm_client.py)) with zero API keys and zero cost.
+   * Prompts the local LLM with the exact indicators, entry/exit prices, and market context at the moment of the loss, instructing it to synthesize a formal mathematical tuning proposal for the Optimizer.
+
+---
+
+## 12. Repository File Map
 
 ```
 web4-trading-agent/
-├── live_paper_trader.py       # Live daemon heartbeat loop
+├── live_paper_trader.py       # Live daemon heartbeat loop (every 60s)
 ├── config/
 │   └── active_config.json     # Live parameters, active symbols & risk toggles
 ├── core/
@@ -287,7 +354,10 @@ web4-trading-agent/
 │   ├── paper_account.py       # Simulated ledger, fills, fees & slippage
 │   ├── basis_yield.py         # Delta-neutral funding rate carry harvest engine
 │   ├── data_loader.py         # Real-time & historical crypto/equity candle fetcher
-│   ├── skill_intelligence_gate.py # 13F radar, Pelosi tracker, drift rebalancer
+│   ├── fred_radar.py          # St. Louis Fed / VIX Macro Crash Defense Radar
+│   ├── polymarket_radar.py    # Polymarket decentralized prediction market odds radar
+│   ├── institutional_stress_tester.py # DSR, PSR, Ulcer Index & friction stress sweeps
+│   ├── skill_intelligence_gate.py # 13F whale radar, Pelosi tracker, drift rebalancer
 │   └── process_lock.py        # PID flock concurrency protection
 ├── strategies/
 │   ├── momentum.py            # Donchian channel breakout trend bot
@@ -297,9 +367,13 @@ web4-trading-agent/
 │   ├── governor.py            # 4-Gate auto-approval constitutional gatekeeper
 │   ├── optimizer.py           # In-sample discovery engine
 │   ├── validator.py           # Out-of-sample walk-forward verification engine
-│   └── asset_selector.py      # Walk-forward toxic drag pruning engine
+│   ├── asset_selector.py      # Walk-forward toxic drag pruning engine
+│   ├── trade_analyst.py       # Post-trade forensic diagnosis & root-cause analyst
+│   └── llm_client.py          # Zero-dependency local Ollama (phi4-mini) LLM client
 ├── data/
-│   └── paper_portfolio.json   # Live ledger state, cash balance & closed trades
+│   ├── paper_portfolio.json   # Live ledger state, cash balance & closed trades
+│   ├── decision_journal.jsonl # Complete audit log of every tick decision
+│   └── trade_forensic_report.json # AI forensic diagnosis on closed trades
 ├── docs/
 │   └── SYSTEM_WALKTHROUGH.md  # THIS MASTER DETAILED GUIDE
 └── tests/                     # 152 automated regression tests
