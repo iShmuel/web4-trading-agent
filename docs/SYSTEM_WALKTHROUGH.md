@@ -857,7 +857,7 @@ web4-trading-agent/
 │   ├── web4-autonomous-levels.md         # WHAT: Specification of autonomous agent levels (Level 1 to Level 5)
 │   │                                     # USED BY: Project planners and architectural governance
 │   │                                     # WHY NEEDED: Establishes the clear milestone roadmap for full self-improving algorithmic trading
-│
+│   │
 │   ├── presentation_assets/
 │   │   ├── build_presentation.py         # WHAT: Python automation script generating PowerPoint and PDF presentation decks
 │   │   │                                 # USED BY: Developers rendering the presentation via CLI
