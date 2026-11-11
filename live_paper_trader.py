@@ -105,16 +105,19 @@ def run_portfolio_tick(
     """Scan all assets in the watchlist using the PortfolioCoordinator."""
     config = load_config()
     watchlist = config.get("watchlist", ["BTC/USDT", "ETH/USDT", "SOL/USDT", "NVDA", "SPY"])
+    pairs_universe = config.get("pairs_universe", [])
+    pair_symbols = [s for p in pairs_universe if len(p) == 2 for s in p]
+    poll_symbols = list(dict.fromkeys(watchlist + pair_symbols))
     max_positions = config.get("max_concurrent_positions", 3)
 
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-    log(f"\n[{now_str}] Polling live watchlist ({len(watchlist)} assets | Max open positions: {max_positions})...")
+    log(f"\n[{now_str}] Polling live watchlist ({len(watchlist)} assets + {len(pairs_universe)} pairs | Max open positions: {max_positions})...")
 
     market_data: Dict[str, Any] = {}
     current_prices: Dict[str, float] = {}
 
     symbol_params = {}
-    for symbol in watchlist:
+    for symbol in poll_symbols:
         timeframe = coordinator.symbol_config(symbol).get("timeframe", config.get("timeframe", "1h"))
         fetch_days = 30 if is_crypto_symbol(symbol) else 90
         symbol_params[symbol] = {
@@ -124,8 +127,8 @@ def run_portfolio_tick(
             "closed_only": True,
         }
 
-    raw_data = fetch_ohlcv_batch(watchlist, symbol_params=symbol_params)
-    for symbol in watchlist:
+    raw_data = fetch_ohlcv_batch(poll_symbols, symbol_params=symbol_params)
+    for symbol in poll_symbols:
         df = raw_data.get(symbol)
         if df is None or df.empty:
             log(f"   ⚠️ Warning: failed to fetch market data for {symbol}")
@@ -198,7 +201,17 @@ def write_live_status(account: PaperAccount, cycle_report, current_prices: Dict[
     """
     try:
         assets = {}
+        basis_opportunity = None
         for d in cycle_report.decisions:
+            if d.strategy_id == "basis_yield":
+                basis_opportunity = {
+                    "symbol": d.symbol,
+                    "action": d.action,
+                    "apr": d.price,
+                    "reason": d.reason,
+                    "indicators": getattr(d, "indicators", {}) or {},
+                }
+                continue
             assets[d.symbol] = {
                 "action": d.action,
                 "strategy_id": d.strategy_id,
@@ -219,6 +232,7 @@ def write_live_status(account: PaperAccount, cycle_report, current_prices: Dict[
             "open_positions": cycle_report.open_positions,
             "prices": current_prices,
             "assets": assets,
+            "basis_yield": basis_opportunity,
         }
         tmp = STATUS_FILE.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(snapshot, indent=2, default=str))

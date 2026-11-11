@@ -106,3 +106,22 @@ This document records architectural, analytical, and operational items identifie
 * **Action Item for Operator:**
   After accumulating 1–2 weeks of forward live paper trading history (50+ closed trades across active regimes), review `data/trade_forensic_report.json` and decide whether to graduate `forensic_trade_interval` from `15` to `25`.
 
+---
+
+### 7. Zero-Dependency Single-File Web Dashboard (`web_dashboard.py`)
+
+* **Status**: Planned / Operator Interface
+* **Suggested Priority**: Medium (P2)
+* **What is Missing:**
+  The current monitoring dashboard (`dashboard.py`) is a terminal-based ANSI curses interface. While ultra-fast, lightweight, and zero-dependency, it requires terminal access (SSH or local console) and cannot be viewed directly from a smartphone or web browser on a local network.
+* **Why it Matters:**
+  When deploying the bot to a cloud VPS or remote headless server, having an optional browser-based UI enables remote monitoring without keeping an active SSH session or tmux window attached.
+* **Expected Benefit:**
+  Allows real-time monitoring of portfolio equity, open positions, cointegrated pairs Z-scores, and live execution logs from any web browser or mobile phone on the local network/VPN with zero cloud costs.
+* **Implementation Plan:**
+  Develop a single-file, zero-external-dependency web server (`web_dashboard.py`):
+  1. Use standard Python `http.server` or lightweight ASGI/FastAPI.
+  2. Implement an embedded modern HTML/CSS/JS single-page UI (dark theme, responsive mobile layout).
+  3. Stream live updates via Server-Sent Events (SSE) or a 2-second polling REST endpoint reading `data/live_status.json` and `data/paper_portfolio.json`.
+  4. Ensure 100% read-only operations using non-blocking read locks so it never interferes with the live trading daemon.
+

@@ -116,5 +116,123 @@
     "created_at": "2026-11-09T14:50:00+00:00",
     "approved_by": "human_quant_operator",
     "approved_at": "2026-11-09T13:13:20.540004+00:00"
+  },
+  {
+    "proposal_id": "PROP-1D7F3478",
+    "status": "PENDING_HUMAN_APPROVAL",
+    "governor_verdict": "APPROVE",
+    "governor_confidence": 0.85,
+    "governor_rationale": "VERDICT: APPROVE (confidence=0.85) | The proposed configuration adheres to the safe parameter bounds, and empirical evidence shows positive return improvement, drawdown reduction, and pruning of losing drags. | Risk: The strategy and combined portfolio risk impact is within acceptable limits, with no violations of risk bounds or safety gates.",
+    "risk_assessment": "The strategy and combined portfolio risk impact is within acceptable limits, with no violations of risk bounds or safety gates.",
+    "invariants_passed": true,
+    "tests_passed": true,
+    "human_approved": false,
+    "auto_gate_evaluation": {
+      "auto_approved": false,
+      "reason": "Gate 3 Failed: Governor verdict is APPROVE (confidence=0.85 < 1.00).",
+      "details": {
+        "gate_1_invariants": true,
+        "gate_2_tests": true,
+        "gate_3_governor_verdict": "APPROVE",
+        "gate_3_governor_confidence": 0.85,
+        "gate_4_superiority": false,
+        "reasons": [
+          "Gate 3 Failed: Governor verdict is APPROVE (confidence=0.85 < 1.00)."
+        ]
+      }
+    },
+    "proposed_changes": {
+      "watchlist": [
+        "LINK/USDT",
+        "BNB/USDT",
+        "AVAX/USDT",
+        "SOL/USDT",
+        "HYPE/USDT",
+        "SUI/USDT",
+        "NEAR/USDT",
+        "INIT/USDT",
+        "NOK",
+        "HIMS",
+        "XLE",
+        "MCHP",
+        "AAPL",
+        "CRWV",
+        "WULF",
+        "IREN",
+        "INTC",
+        "MU",
+        "JHX",
+        "CIFR",
+        "SOFI",
+        "NU",
+        "PLTR",
+        "SNAP"
+      ],
+      "blacklisted_symbols": [
+        "AAL",
+        "AMD",
+        "AMZN",
+        "BMT/USDT",
+        "BTC/USDT",
+        "CRWV",
+        "DKNG",
+        "DOGE/USDT",
+        "ENA/USDT",
+        "ETH/USDT",
+        "FOXA",
+        "GLD",
+        "GRAB",
+        "GRAM/USDT",
+        "HYPE/USDT",
+        "INTC",
+        "KVUE",
+        "MARA",
+        "NEAR/USDT",
+        "NVDA",
+        "ONE/USDT",
+        "PEPE/USDT",
+        "PFE",
+        "PLUG",
+        "QQQ",
+        "RWUSD/USDT",
+        "SLV",
+        "SOFI",
+        "SPCX",
+        "SPY",
+        "SUI/USDT",
+        "TAO/USDT",
+        "TLT",
+        "TRUMP/USDT",
+        "TRX/USDT",
+        "TSLA",
+        "TTD",
+        "U/USDT",
+        "UNI/USDT",
+        "XRP/USDT",
+        "ZEC/USDT"
+      ],
+      "rehabilitated_symbols": [
+        "AVAX/USDT",
+        "PLTR",
+        "SNAP"
+      ]
+    },
+    "rationale": "Periodic market discovery scan merged active portfolio with vetted discoveries, audited blacklist for parole, and pruned non-profitable drags.",
+    "empirical_proof": {
+      "scanned": 38,
+      "proven_profitable": 24,
+      "pruned_drags": 14,
+      "rehabilitated_count": 3,
+      "rehabilitated_symbols": [
+        "AVAX/USDT",
+        "PLTR",
+        "SNAP"
+      ],
+      "elite_assets": 16,
+      "viable_assets": 8
+    },
+    "analyst_proposal": null,
+    "target_config_path": "<repo_root>/config/active_config.json",
+    "created_at": "2026-11-11T13:24:35.617745+00:00"
   }
 ]

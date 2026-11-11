@@ -1498,6 +1498,21 @@ class PortfolioCoordinator:
                                     ))
                                 except Exception:
                                     pass
+                else:
+                    decisions.append(CoordinatorDecision(
+                        symbol=psig.pair_id,
+                        action=psig.action,
+                        strategy_id="stat_arb_pairs",
+                        price=current_prices.get(psig.asset_a, 0.0),
+                        reason=psig.reason,
+                        indicators={
+                            "z_score": psig.z_score,
+                            "beta": psig.hedge_ratio,
+                            "half_life": psig.half_life,
+                            "correlation": psig.correlation,
+                            "is_stationary": psig.is_stationary,
+                        },
+                    ))
 
         # Delta-Neutral Basis Funding Rate Yield Accrual Pass
         if self.is_strategy_enabled("basis_yield"):
@@ -1505,47 +1520,61 @@ class PortfolioCoordinator:
             if self.last_basis_accrual_time is not None:
                 elapsed_hours = (now - self.last_basis_accrual_time).total_seconds() / 3600.0
 
+            crypto_syms = [s for s in market_data.keys() if is_crypto_symbol(s)]
+            best_opp: Optional[BasisOpportunity] = None
+            for csym in crypto_syms:
+                opp = self.basis_yield_engine.evaluate_opportunity(csym)
+                if best_opp is None or opp.annualized_apr > best_opp.annualized_apr:
+                    best_opp = opp
+
             total_eq_now = self.account.get_total_equity(current_prices)
             breaker_ok, _ = self.risk_engine.check_circuit_breakers(total_eq_now, current_time=now)
             if elapsed_hours >= 8.0 and breaker_ok:
                 max_basis_pct = float(self.config.get("max_basis_allocation_pct", 0.30))
                 total_eq = self.account.get_total_equity(current_prices)
                 basis_alloc = min(self.account.cash * 0.80, total_eq * max_basis_pct)
-                if basis_alloc >= 50.0:
-                    crypto_syms = [s for s in market_data.keys() if is_crypto_symbol(s)]
-                    best_opp: Optional[BasisOpportunity] = None
-                    for csym in crypto_syms:
-                        opp = self.basis_yield_engine.evaluate_opportunity(csym)
-                        if opp.is_profitable:
-                            if best_opp is None or opp.annualized_apr > best_opp.annualized_apr:
-                                best_opp = opp
-
-                    if best_opp is not None:
-                        receipt = self.basis_yield_engine.accrue_funding_yield(
-                            account=self.account,
+                if basis_alloc >= 50.0 and best_opp is not None and best_opp.is_profitable:
+                    receipt = self.basis_yield_engine.accrue_funding_yield(
+                        account=self.account,
+                        symbol=best_opp.symbol,
+                        notional_capital=basis_alloc,
+                        funding_rate_8h=best_opp.funding_rate_8h,
+                        hours_elapsed=elapsed_hours,
+                    )
+                    self.last_basis_accrual_time = now
+                    if hasattr(self.account, "state") and isinstance(self.account.state, dict):
+                        self.account.state["last_basis_accrual_time"] = now.isoformat()
+                        if hasattr(self.account, "_save"):
+                            self.account._save()
+                    if receipt.get("status") == "ACCRUED":
+                        decisions.append(CoordinatorDecision(
                             symbol=best_opp.symbol,
-                            notional_capital=basis_alloc,
-                            funding_rate_8h=best_opp.funding_rate_8h,
-                            hours_elapsed=elapsed_hours,
-                        )
-                        self.last_basis_accrual_time = now
-                        if hasattr(self.account, "state") and isinstance(self.account.state, dict):
-                            self.account.state["last_basis_accrual_time"] = now.isoformat()
-                            if hasattr(self.account, "_save"):
-                                self.account._save()
-                        if receipt.get("status") == "ACCRUED":
-                            decisions.append(CoordinatorDecision(
-                                symbol=best_opp.symbol,
-                                action="ACCRUED_YIELD",
-                                strategy_id="basis_yield",
-                                price=best_opp.annualized_apr,
-                                reason=f"Accrued ${receipt['accrued_payout']:.2f} cash yield ({best_opp.annualized_apr:.1f}% APR)",
-                                indicators={
-                                    "funding_rate": best_opp.funding_rate_8h,
-                                    "apr": best_opp.annualized_apr,
-                                    "payout": receipt["accrued_payout"],
-                                },
-                            ))
+                            action="ACCRUED_YIELD",
+                            strategy_id="basis_yield",
+                            price=best_opp.annualized_apr,
+                            reason=f"Accrued ${receipt['accrued_payout']:.2f} cash yield ({best_opp.annualized_apr:.1f}% APR)",
+                            indicators={
+                                "funding_rate": best_opp.funding_rate_8h,
+                                "apr": best_opp.annualized_apr,
+                                "payout": receipt["accrued_payout"],
+                            },
+                        ))
+            elif best_opp is not None:
+                decisions.append(CoordinatorDecision(
+                    symbol=best_opp.symbol,
+                    action="YIELD_MONITOR",
+                    strategy_id="basis_yield",
+                    price=best_opp.annualized_apr,
+                    reason=f"Top carry candidate {best_opp.symbol} ({best_opp.annualized_apr:.1f}% APR | Hurdle: {self.basis_yield_engine.hurdle_apr:.1f}% | Next window in {max(0.0, 8.0 - elapsed_hours):.1f}h)",
+                    indicators={
+                        "funding_rate": best_opp.funding_rate_8h,
+                        "apr": best_opp.annualized_apr,
+                        "hours_elapsed": elapsed_hours,
+                        "hours_remaining": max(0.0, 8.0 - elapsed_hours),
+                        "hurdle_apr": self.basis_yield_engine.hurdle_apr,
+                        "hurdle_met": best_opp.is_profitable,
+                    },
+                ))
 
         # Skill Gate 5B: Portfolio Drift-Band Rebalancer Pass (trader-rebalance)
         if self.config.get("enable_drift_rebalancer", True) and self.account.positions:
