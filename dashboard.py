@@ -35,6 +35,7 @@ from core.process_lock import is_locked, read_lock_pid  # noqa: E402
 
 DATA_DIR = PROJECT_ROOT / "data"
 CONFIG_PATH = PROJECT_ROOT / "config" / "active_config.json"
+PENDING_PROPOSALS_FILE = PROJECT_ROOT / "config" / "pending_proposals.json"
 PORTFOLIO_FILE = DATA_DIR / "paper_portfolio.json"
 STATUS_FILE = DATA_DIR / "live_status.json"
 LOG_FILE = DATA_DIR / "live_trader.log"
@@ -86,11 +87,21 @@ def signed(value: float, text: str) -> str:
     return text
 
 
-def read_json(path: Path) -> Optional[Dict[str, Any]]:
+def read_json(path: Path) -> Any:
     try:
         return json.loads(path.read_text())
     except (OSError, ValueError):
         return None
+
+
+def get_pending_proposals(path: Path) -> List[Dict[str, Any]]:
+    data = read_json(path)
+    if isinstance(data, list):
+        return [p for p in data if isinstance(p, dict) and p.get("status") == "PENDING_HUMAN_APPROVAL"]
+    elif isinstance(data, dict):
+        if data.get("status") == "PENDING_HUMAN_APPROVAL":
+            return [data]
+    return []
 
 
 def age_seconds(iso_ts: Optional[str]) -> Optional[float]:
@@ -161,6 +172,29 @@ def render() -> str:
         f" Bot: {state}   |   {freshness}   |   4-Gate Auto-Approval: {auto_approve_state}   |   {dim('PAPER ONLY')}"
     )
     out.append(rule)
+
+    # ── 1.1 Governor Alerts (Pending Proposals) ───────────────────
+    pending = get_pending_proposals(PENDING_PROPOSALS_FILE)
+    if pending:
+        out.append(bold(yellow(f" 🔔 GOVERNOR NOTICE: {len(pending)} Proposal(s) Awaiting Your Human Approval!")))
+        for p in pending:
+            pid = p.get("proposal_id", "UNKNOWN")
+            conf = float(p.get("governor_confidence", 0.0)) * 100.0
+            changes = p.get("proposed_changes", {}) or {}
+            summary_parts = []
+            if "watchlist" in changes:
+                curr_wl = config.get("watchlist", []) or []
+                new_syms = [s for s in changes["watchlist"] if s not in curr_wl]
+                if new_syms:
+                    summary_parts.append(f"New Assets: {', '.join(new_syms[:4])}{' (+more)' if len(new_syms) > 4 else ''}")
+            if "pairs_universe" in changes:
+                summary_parts.append(f"Pairs: {len(changes['pairs_universe'])} pairs")
+            if not summary_parts:
+                rationale = p.get("rationale", "Parameter optimization") or ""
+                summary_parts.append(rationale[:65] + ("..." if len(rationale) > 65 else ""))
+            details = " | ".join(summary_parts)
+            out.append(f"   • {bold(pid)} (Confidence: {conf:.0f}%): {details}  → Action: tell Antigravity 'approve {pid}'")
+        out.append(rule)
 
     # ── 2. Account & Realized Capital ─────────────────────────────
     initial = float(portfolio.get("initial_capital", 10000.0))
