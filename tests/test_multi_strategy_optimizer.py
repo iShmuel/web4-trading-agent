@@ -265,14 +265,14 @@ def test_governor_merge_assigns_watchlist_symbols_to_profiles():
 def test_discover_cointegrated_pairs_adapts_to_changing_watchlist():
     from strategies.stat_arb_pairs import discover_cointegrated_pairs
 
-    base_series = _random_walk(350, seed=101, start=100.0)
+    base_series = _random_walk(350, seed=101)
     rng = np.random.default_rng(202)
     # Create two stationary cointegrated crypto legs and two stationary stock legs
     c1 = _ohlcv(base_series + rng.normal(0, 0.3, 350))
     c2 = _ohlcv(base_series * 0.5 + rng.normal(0, 0.2, 350))
     s1 = _ohlcv(base_series * 1.2 + rng.normal(0, 0.25, 350))
     s2 = _ohlcv(base_series * 1.2 + rng.normal(0, 0.25, 350))
-    divergent = _ohlcv(_random_walk(350, seed=999, start=50.0, drift=-0.002))
+    divergent = _ohlcv(_random_walk(350, seed=999, drift=-0.002))
 
     mdata = {
         "AAA/USDT": c1,
