@@ -362,7 +362,7 @@ flowchart TD
     G1 -- Fail --> Reject["REJECTED"]
     G1 -- Pass --> G2{"Gate 2: Unit Test Suite?<br/>152/152 Pytests Pass"}
     G2 -- Fail --> Reject
-    G2 -- Pass --> G3{"Gate 3: Governor Confidence?<br/>Confidence >= 0.99"}
+    G2 -- Pass --> G3{"Gate 3: Governor Confidence?<br/>Confidence >= 0.85 (Configurable)"}
     G3 -- Fail --> Reject
     G3 -- Pass --> G4{"Gate 4: Alpha Superiority?<br/>OOS Return Delta >= 0%<br/>OOS Sharpe Delta >= 0<br/>MaxDD <= Baseline"}
     G4 -- Fail --> Reject

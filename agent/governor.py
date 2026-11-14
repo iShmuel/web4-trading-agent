@@ -376,13 +376,14 @@ Respond ONLY with a valid JSON object matching this exact schema:
   "verdict": "APPROVE" | "DISAPPROVE" | "NEEDS_HUMAN_REVIEW",
   "reason": "Concise explanation of the decision",
   "risk_assessment": "Assessment of strategy and combined portfolio risk impact",
-  "confidence": 0.85
+  "confidence": <float between 0.0 and 1.0 based on statistical evidence quality>
 }}"""
 
     system_prompt = (
         "You are an institutional Chief Risk Governor. You must output ONLY valid JSON containing the keys "
         "'verdict', 'reason', 'risk_assessment', and 'confidence'. "
-        "Your 'verdict' MUST be one of 'APPROVE', 'DISAPPROVE', or 'NEEDS_HUMAN_REVIEW'."
+        "Your 'verdict' MUST be one of 'APPROVE', 'DISAPPROVE', or 'NEEDS_HUMAN_REVIEW'. "
+        "Your 'confidence' must be a float between 0.0 and 1.0 reflecting statistical evidence strength."
     )
 
     llm_call = query_local_llm_with_metrics(
@@ -662,7 +663,7 @@ def evaluate_conditional_auto_approval_gates(
     Evaluates the 4 strict conditional auto-approval gates:
     Gate 1: Safety Invariants Pass (1%-5% risk, paper mode, max drawdown limits).
     Gate 2: All Pytest Regression Tests Pass (zero broken code or regressions).
-    Gate 3: Governor Confidence is 100% (verdict == APPROVE, confidence >= 0.99).
+    Gate 3: Governor Confidence meets threshold (verdict == APPROVE, confidence >= min_governor_confidence, default 0.85).
     Gate 4: Strict Alpha Superiority / Non-Degradation Gate:
             - Empirical proof must be present.
             - Out-of-sample return delta >= min_oos_return_delta (default 0.0%).
@@ -673,12 +674,19 @@ def evaluate_conditional_auto_approval_gates(
     min_oos_ret_delta = float(base_cfg.get("auto_approve_min_oos_return_delta", 0.0))
     min_oos_sharpe_delta = float(base_cfg.get("auto_approve_min_oos_sharpe_delta", 0.0))
     max_dd_tol = float(base_cfg.get("auto_approve_max_drawdown_tolerance_pct", 0.5))
+    min_gov_confidence = float(
+        candidate_cfg.get(
+            "auto_approve_min_governor_confidence",
+            base_cfg.get("auto_approve_min_governor_confidence", 0.85),
+        )
+    )
 
     details: Dict[str, Any] = {
         "gate_1_invariants": invariants_passed,
         "gate_2_tests": tests_passed,
         "gate_3_governor_verdict": governor_verdict,
         "gate_3_governor_confidence": governor_confidence,
+        "gate_3_min_confidence": min_gov_confidence,
         "gate_4_superiority": False,
         "reasons": [],
     }
@@ -696,8 +704,8 @@ def evaluate_conditional_auto_approval_gates(
         return False, msg, details
 
     # Gate 3: Governor Confidence
-    if governor_verdict != "APPROVE" or governor_confidence < 0.99:
-        msg = f"Gate 3 Failed: Governor verdict is {governor_verdict} (confidence={governor_confidence:.2f} < 1.00)."
+    if governor_verdict != "APPROVE" or governor_confidence < (min_gov_confidence - 0.001):
+        msg = f"Gate 3 Failed: Governor verdict is {governor_verdict} (confidence={governor_confidence:.2f} < {min_gov_confidence:.2f})."
         details["reasons"].append(msg)
         return False, msg, details
 

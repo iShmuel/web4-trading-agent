@@ -88,11 +88,46 @@ def test_gate_3_governor_confidence_failure(test_env):
         invariants_passed=True,
         tests_passed=True,
         governor_verdict="APPROVE",
-        governor_confidence=0.75,  # Less than 100% confidence
+        governor_confidence=0.75,  # Less than default 85% confidence
     )
 
     assert passed is False
-    assert "Gate 3 Failed: Governor verdict is APPROVE (confidence=0.75 < 1.00)" in reason
+    assert "Gate 3 Failed: Governor verdict is APPROVE (confidence=0.75 < 0.85)" in reason
+
+
+def test_gate_3_governor_confidence_85_pct_passes(test_env):
+    passed, reason, details = evaluate_conditional_auto_approval_gates(
+        candidate_cfg=test_env["base_cfg"],
+        base_cfg=test_env["base_cfg"],
+        empirical_proof={"test_return_delta": 2.5, "test_sharpe_delta": 0.4},
+        invariants_passed=True,
+        tests_passed=True,
+        governor_verdict="APPROVE",
+        governor_confidence=0.85,  # 85% passes Gate 3
+    )
+
+    assert passed is True
+    assert details["gate_3_governor_confidence"] == 0.85
+    assert details["gate_3_min_confidence"] == 0.85
+
+
+def test_gate_3_governor_confidence_configurable_threshold(test_env):
+    cfg_with_custom_threshold = dict(test_env["base_cfg"])
+    cfg_with_custom_threshold["auto_approve_min_governor_confidence"] = 0.90
+
+    # 0.85 should fail under strict 0.90 threshold
+    passed, reason, details = evaluate_conditional_auto_approval_gates(
+        candidate_cfg=cfg_with_custom_threshold,
+        base_cfg=cfg_with_custom_threshold,
+        empirical_proof={"test_return_delta": 2.5, "test_sharpe_delta": 0.4},
+        invariants_passed=True,
+        tests_passed=True,
+        governor_verdict="APPROVE",
+        governor_confidence=0.85,
+    )
+
+    assert passed is False
+    assert "Gate 3 Failed: Governor verdict is APPROVE (confidence=0.85 < 0.90)" in reason
 
 
 def test_gate_4_sure_improvement_negative_return(test_env):

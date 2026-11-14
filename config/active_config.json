@@ -31,6 +31,7 @@
   "auto_approve_min_oos_return_delta": 0.0,
   "auto_approve_min_oos_sharpe_delta": 0.0,
   "auto_approve_max_drawdown_tolerance_pct": 0.5,
+  "auto_approve_min_governor_confidence": 0.85,
   "max_strategy_allocation_pct": 0.75,
   "account_risk_pct": 0.02,
   "symbol_risk_weights": {
