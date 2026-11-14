@@ -95,13 +95,46 @@ def read_json(path: Path) -> Any:
 
 
 def get_pending_proposals(path: Path) -> List[Dict[str, Any]]:
+    """Return only the single most recent valid pending proposal that requires human approval."""
     data = read_json(path)
-    if isinstance(data, list):
-        return [p for p in data if isinstance(p, dict) and p.get("status") == "PENDING_HUMAN_APPROVAL"]
-    elif isinstance(data, dict):
-        if data.get("status") == "PENDING_HUMAN_APPROVAL":
-            return [data]
-    return []
+    if not data:
+        return []
+    proposals = data if isinstance(data, list) else ([data] if isinstance(data, dict) else [])
+
+    # Find timestamp of the most recent DEPLOYED proposal to filter out obsolete proposals
+    latest_deployed_ts = None
+    for p in proposals:
+        if isinstance(p, dict) and p.get("status") == "DEPLOYED":
+            ts_str = p.get("approved_at") or p.get("created_at")
+            if ts_str:
+                try:
+                    ts = datetime.fromisoformat(ts_str)
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=timezone.utc)
+                    if latest_deployed_ts is None or ts > latest_deployed_ts:
+                        latest_deployed_ts = ts
+                except ValueError:
+                    pass
+
+    valid_pending: List[Dict[str, Any]] = []
+    for p in proposals:
+        if not isinstance(p, dict) or p.get("status") != "PENDING_HUMAN_APPROVAL":
+            continue
+        c_ts_str = p.get("created_at")
+        if c_ts_str and latest_deployed_ts is not None:
+            try:
+                c_ts = datetime.fromisoformat(c_ts_str)
+                if c_ts.tzinfo is None:
+                    c_ts = c_ts.replace(tzinfo=timezone.utc)
+                if c_ts < latest_deployed_ts:
+                    continue  # Obsolete proposal created before the latest deployed config
+            except ValueError:
+                pass
+        valid_pending.append(p)
+
+    # Sort by created_at descending (newest first) and return ONLY the latest needed one
+    valid_pending.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return valid_pending[:1]
 
 
 def age_seconds(iso_ts: Optional[str]) -> Optional[float]:
