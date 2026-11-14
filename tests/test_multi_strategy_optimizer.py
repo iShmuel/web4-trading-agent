@@ -249,9 +249,43 @@ def test_governor_merge_assigns_watchlist_symbols_to_profiles():
         },
     }
     merged = _merge_proposed_changes_into_config(
-        base, {"watchlist": ["SOL/USDT", "BARD/USDT", "BNB/USDT", "SMCI", "KDP"]}
+        base,
+        {
+            "watchlist": ["SOL/USDT", "BARD/USDT", "BNB/USDT", "SMCI", "KDP"],
+            "blacklisted_symbols": ["BTC/USDT"],
+        },
     )
     assert "BARD/USDT" in merged["asset_profiles"]["crypto_micro_swing"]["symbols"]
     assert "BNB/USDT" in merged["asset_profiles"]["crypto_macro"]["symbols"]
+    assert "BTC/USDT" not in merged["asset_profiles"]["crypto_macro"]["symbols"]
     assert "SMCI" in merged["asset_profiles"]["stocks_growth"]["symbols"]
     assert "KDP" in merged["asset_profiles"]["macro_hedges"]["symbols"]
+
+
+def test_discover_cointegrated_pairs_adapts_to_changing_watchlist():
+    from strategies.stat_arb_pairs import discover_cointegrated_pairs
+
+    base_series = _random_walk(350, seed=101, start=100.0)
+    rng = np.random.default_rng(202)
+    # Create two stationary cointegrated crypto legs and two stationary stock legs
+    c1 = _ohlcv(base_series + rng.normal(0, 0.3, 350))
+    c2 = _ohlcv(base_series * 0.5 + rng.normal(0, 0.2, 350))
+    s1 = _ohlcv(base_series * 1.2 + rng.normal(0, 0.25, 350))
+    s2 = _ohlcv(base_series * 1.2 + rng.normal(0, 0.25, 350))
+    divergent = _ohlcv(_random_walk(350, seed=999, start=50.0, drift=-0.002))
+
+    mdata = {
+        "AAA/USDT": c1,
+        "BBB/USDT": c2,
+        "CCC/USDT": divergent,
+        "STK1": s1,
+        "STK2": s2,
+    }
+    pairs = discover_cointegrated_pairs(
+        ["AAA/USDT", "BBB/USDT", "CCC/USDT", "STK1", "STK2"],
+        config={"pairs_lookback": 100, "pairs_min_correlation": 0.50, "pairs_Blacklist": []},
+        market_data=mdata,
+    )
+    assert ["AAA/USDT", "BBB/USDT"] in pairs
+    assert ["STK1", "STK2"] in pairs
+

@@ -1376,6 +1376,12 @@ class PortfolioCoordinator:
                     tuple(p) for p in raw_candidate_pairs
                     if len(p) == 2 and p[0] in market_data and p[1] in market_data
                 ]
+                for pid in active_pairs:
+                    parts = str(pid).split(":")
+                    if len(parts) == 2 and parts[0] in market_data and parts[1] in market_data:
+                        pt = (parts[0], parts[1])
+                        if pt not in valid_cfg_pairs:
+                            valid_cfg_pairs.append(pt)
                 if valid_cfg_pairs:
                     candidate_pairs = valid_cfg_pairs
                 elif any(s in cfg_pair_syms for s in market_data):

@@ -509,6 +509,10 @@ def _merge_proposed_changes_into_config(
     rehab_set = set(proposed_changes.get("rehabilitated_symbols", []))
     profiles = candidate_cfg.get("asset_profiles") or {}
     has_standard_profiles = "crypto_micro_swing" in profiles and "stocks_growth" in profiles
+    if has_standard_profiles and bl_set:
+        for p in profiles.values():
+            if isinstance(p, dict) and isinstance(p.get("symbols"), list):
+                p["symbols"] = [sym for sym in p["symbols"] if sym not in bl_set]
     assigned_in_profiles = {sym for p in profiles.values() if isinstance(p, dict) for sym in p.get("symbols", [])}
     macro_cryptos = {"BTC/USDT", "ETH/USDT", "BNB/USDT"}
     macro_equities = {"SPY", "QQQ", "GLD", "SLV", "TLT", "XLE", "KDP", "NOK", "CBRS"}

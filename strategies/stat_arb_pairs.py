@@ -392,3 +392,64 @@ class StatArbPairsStrategy:
 
         signals.sort(key=sort_key)
         return signals
+
+
+
+def discover_cointegrated_pairs(
+    symbols: List[str],
+    config: Optional[Dict[str, Any]] = None,
+    market_data: Optional[Dict[str, pd.DataFrame]] = None,
+    max_crypto_pairs: int = 3,
+    max_stock_pairs: int = 3,
+    max_pairs_per_symbol: int = 2,
+) -> List[List[str]]:
+    """Dynamically discover stationary, cointegrated pairs from the current active watchlist.
+
+    Pairs are formed within the same asset class (crypto-crypto and stock-stock) so
+    trading hours and volatility regimes match. Candidates are filtered by the live
+    ``StatArbPairsStrategy`` stationarity gate (correlation >= min_pair_correlation and
+    Ornstein-Uhlenbeck half-life <= max_pair_half_life_hours) and ranked by
+    ``correlation / log2(2 + half_life)``.
+    """
+    from core.data_loader import fetch_ohlcv, is_crypto_symbol
+
+    cfg = config or {}
+    strat = StatArbPairsStrategy(cfg)
+    timeframe = cfg.get("timeframe", "1h")
+
+    data: Dict[str, pd.DataFrame] = dict(market_data) if market_data else {}
+    for sym in symbols:
+        if sym in data:
+            continue
+        try:
+            df = fetch_ohlcv(sym, timeframe=timeframe, days=30 if is_crypto_symbol(sym) else 90)
+            if df is not None and len(df) >= strat.lookback_period:
+                data[sym] = df
+        except Exception:
+            continue
+
+    cryptos = [s for s in symbols if is_crypto_symbol(s) and s in data]
+    stocks = [s for s in symbols if not is_crypto_symbol(s) and s in data]
+
+    def _select_top(group: List[str], limit: int) -> List[List[str]]:
+        scored = []
+        for a, b in combinations(group, 2):
+            sig = strat.evaluate_pair(a, b, data[a], data[b])
+            if sig.is_stationary:
+                score = sig.correlation / np.log2(2.0 + max(0.5, sig.half_life))
+                scored.append((score, a, b))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        chosen: List[List[str]] = []
+        counts: Dict[str, int] = {}
+        for _, a, b in scored:
+            if len(chosen) >= limit:
+                break
+            if counts.get(a, 0) >= max_pairs_per_symbol or counts.get(b, 0) >= max_pairs_per_symbol:
+                continue
+            chosen.append([a, b])
+            counts[a] = counts.get(a, 0) + 1
+            counts[b] = counts.get(b, 0) + 1
+        return chosen
+
+    selected = _select_top(cryptos, max_crypto_pairs) + _select_top(stocks, max_stock_pairs)
+    return selected

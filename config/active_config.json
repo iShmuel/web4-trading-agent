@@ -188,28 +188,28 @@
   "stat_arb_risk_pct": 0.02,
   "pairs_universe": [
     [
-      "GLD",
-      "SLV"
-    ],
-    [
-      "NVDA",
-      "AMD"
-    ],
-    [
-      "NVDA",
-      "SPY"
-    ],
-    [
-      "BTC/USDT",
-      "ETH/USDT"
-    ],
-    [
-      "SOL/USDT",
+      "LINK/USDT",
       "AVAX/USDT"
     ],
     [
-      "XLE",
-      "TLT"
+      "LINK/USDT",
+      "BNB/USDT"
+    ],
+    [
+      "INIT/USDT",
+      "GRAM/USDT"
+    ],
+    [
+      "CBRS",
+      "AAPL"
+    ],
+    [
+      "NOK",
+      "WULF"
+    ],
+    [
+      "AAPL",
+      "MU"
     ]
   ],
   "use_asset_profiles": true,
@@ -217,8 +217,6 @@
     "crypto_micro_swing": {
       "symbols": [
         "SOL/USDT",
-        "SUI/USDT",
-        "NEAR/USDT",
         "LINK/USDT",
         "AVAX/USDT",
         "BARD/USDT",
@@ -239,10 +237,7 @@
       "rsi_overbought": 75.0
     },
     "crypto_range_mean_reversion": {
-      "symbols": [
-        "TAO/USDT",
-        "DOGE/USDT"
-      ],
+      "symbols": [],
       "timeframe": "1h",
       "breakout_lookback": 48,
       "ema_trend_filter": 50,
@@ -258,7 +253,6 @@
     },
     "crypto_macro": {
       "symbols": [
-        "BTC/USDT",
         "BNB/USDT"
       ],
       "timeframe": "1h",
@@ -275,10 +269,7 @@
     "stocks_growth": {
       "symbols": [
         "NVDA",
-        "AMD",
         "AAPL",
-        "PLTR",
-        "TSLA",
         "SMCI",
         "SNAP",
         "HIMS",
@@ -302,11 +293,6 @@
     },
     "macro_hedges": {
       "symbols": [
-        "SPY",
-        "QQQ",
-        "GLD",
-        "SLV",
-        "TLT",
         "XLE",
         "NOK",
         "CBRS",

@@ -109,7 +109,10 @@ def run_portfolio_tick(
     watchlist = config.get("watchlist", ["BTC/USDT", "ETH/USDT", "SOL/USDT", "NVDA", "SPY"])
     pairs_universe = config.get("pairs_universe", [])
     pair_symbols = [s for p in pairs_universe if len(p) == 2 for s in p]
-    poll_symbols = list(dict.fromkeys(watchlist + pair_symbols))
+    open_pair_symbols = [
+        s for pos in account.positions.values() if pos.get("pair_id") for s in str(pos["pair_id"]).split(":")
+    ]
+    poll_symbols = list(dict.fromkeys(watchlist + pair_symbols + open_pair_symbols))
     max_positions = config.get("max_concurrent_positions", 3)
 
     now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -418,9 +421,11 @@ def _run(args):
                         rehab_syms = rehab_report.get("rehabilitated_symbols", [])
                         if summary.get("recommended_watchlist") or rehab_syms:
                             from agent.governor import review_and_deploy_proposal
+                            from strategies.stat_arb_pairs import discover_cointegrated_pairs
                             merged_wl = list(
                                 dict.fromkeys(list(summary.get("recommended_watchlist", [])) + list(rehab_syms))
                             )
+                            dyn_pairs = discover_cointegrated_pairs(merged_wl, load_config())
                             prop = {
                                 "watchlist": merged_wl,
                                 "blacklisted_symbols": [
@@ -428,6 +433,8 @@ def _run(args):
                                 ],
                                 "rehabilitated_symbols": rehab_syms,
                             }
+                            if dyn_pairs:
+                                prop["pairs_universe"] = dyn_pairs
                             res = review_and_deploy_proposal(
                                 proposed_changes=prop,
                                 rationale="Periodic market discovery scan merged active portfolio with vetted discoveries, audited blacklist for parole, and pruned non-profitable drags.",
