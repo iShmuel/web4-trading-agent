@@ -396,6 +396,91 @@ def build_deterministic_analyst_proposals(stats: Dict[str, Any]) -> List[Dict[st
             "rationale": f"Prune {worst_sym} due to net loss drag of ${worst_data['pnl']:.2f}.",
         })
 
+    mr_info = by_strat.get("mean_reversion", {})
+    if int(mr_info.get("trades", 0)) > 0 and float(mr_info.get("pnl", 0.0)) < 0.0:
+        proposals.append({
+            "proposal_id": f"PROP-RULE-{uuid.uuid4().hex[:6].upper()}",
+            "strategy_id": "mean_reversion",
+            "strategy_name": STRATEGY_NAMES["mean_reversion"],
+            "hypothesis": "Widening Bollinger Band entry dispersion to 2.1 std will filter premature counter-trend entries.",
+            "proposed_changes": {"bb_std": 2.1},
+            "supporting_evidence": {
+                "mr_trades": mr_info.get("trades", 0),
+                "mr_pnl": mr_info.get("pnl", 0.0),
+                "mr_win_rate_pct": mr_info.get("win_rate_pct", 0.0),
+            },
+            "expected_benefit": "Improve Mean Reversion win rate and avoid catching falling knives before exhaustion.",
+            "identified_risks": [
+                "Fewer mean-reversion signals during mild consolidation bands."
+            ],
+            "evaluation_metrics": {
+                "target_win_rate_pct": 58.0,
+                "target_profit_factor": 1.25,
+            },
+            "confidence": 0.75,
+            "reasoning": "Deterministic rule fallback: Mean Reversion realized negative net PnL.",
+            "target": "mean_reversion",
+            "parameter": "bb_std",
+            "suggested_value": 2.1,
+            "rationale": "Widen Bollinger Band entry standard deviation to 2.1 to require deeper exhaustion.",
+        })
+
+    pairs_info = by_strat.get("stat_arb_pairs", {})
+    if int(pairs_info.get("trades", 0)) > 0 and float(pairs_info.get("pnl", 0.0)) < 0.0:
+        proposals.append({
+            "proposal_id": f"PROP-RULE-{uuid.uuid4().hex[:6].upper()}",
+            "strategy_id": "stat_arb_pairs",
+            "strategy_name": STRATEGY_NAMES["stat_arb_pairs"],
+            "hypothesis": "Raising Stat-Arb entry Z-score threshold to 2.75 will ensure wider spread dispersion before entry.",
+            "proposed_changes": {"stat_arb_entry_z": 2.75},
+            "supporting_evidence": {
+                "pairs_trades": pairs_info.get("trades", 0),
+                "pairs_pnl": pairs_info.get("pnl", 0.0),
+                "pairs_win_rate_pct": pairs_info.get("win_rate_pct", 0.0),
+            },
+            "expected_benefit": "Increase expected spread reversion edge relative to two-leg round-trip friction.",
+            "identified_risks": [
+                "Reduced pair trade frequency when spread oscillations remain below 2.75 sigma."
+            ],
+            "evaluation_metrics": {
+                "target_win_rate_pct": 60.0,
+                "target_profit_factor": 1.30,
+            },
+            "confidence": 0.76,
+            "reasoning": "Deterministic rule fallback: Stat-Arb pairs realized negative net PnL.",
+            "target": "stat_arb_pairs",
+            "parameter": "stat_arb_entry_z",
+            "suggested_value": 2.75,
+            "rationale": "Raise Stat-Arb entry Z-score to 2.75 to require wider spread dislocation.",
+        })
+
+    basis_info = by_strat.get("basis_yield", {})
+    if int(basis_info.get("trades", 0)) > 0 and float(basis_info.get("pnl", 0.0)) < 0.0:
+        proposals.append({
+            "proposal_id": f"PROP-RULE-{uuid.uuid4().hex[:6].upper()}",
+            "strategy_id": "basis_yield",
+            "strategy_name": STRATEGY_NAMES["basis_yield"],
+            "hypothesis": "Raising basis hurdle APR to 10.0% will ensure funding carry exceeds hedging friction.",
+            "proposed_changes": {"basis_hurdle_apr": 10.0},
+            "supporting_evidence": {
+                "basis_trades": basis_info.get("trades", 0),
+                "basis_pnl": basis_info.get("pnl", 0.0),
+            },
+            "expected_benefit": "Prevent low-yield carry allocations from being eroded by rebalance slippage.",
+            "identified_risks": [
+                "Idle cash remains unallocated when annualized funding rates are between 8% and 10%."
+            ],
+            "evaluation_metrics": {
+                "target_profit_factor": 1.50,
+            },
+            "confidence": 0.75,
+            "reasoning": "Deterministic rule fallback: Basis yield realized negative net PnL.",
+            "target": "basis_yield",
+            "parameter": "basis_hurdle_apr",
+            "suggested_value": 10.0,
+            "rationale": "Raise basis hurdle APR to 10.0% to cover delta-hedging costs.",
+        })
+
     return proposals
 
 

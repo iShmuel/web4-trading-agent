@@ -301,76 +301,49 @@ def evaluate_candidate_asset(
         fee_pct = float(scfg.get("fee_pct", 0.0006))
         slip_pct = float(scfg.get("slippage_pct", 0.0004))
 
-    # Evaluate In-Sample & Out-of-Sample via Momentum & Mean Reversion
-    train_mom = run_backtest(
-        train_df,
+    # Evaluate In-Sample & Out-of-Sample via Momentum & Mean Reversion (with full profile parameter fidelity)
+    mom_kwargs = dict(
         initial_capital=10_000.0,
-        account_risk_pct=0.02,
+        account_risk_pct=float(scfg.get("account_risk_pct", 0.02)),
         breakout_lookback=int(scfg.get("breakout_lookback", 20)),
         ema_trend_filter=int(scfg.get("ema_trend_filter", 32)),
         atr_period=int(scfg.get("atr_period", 14)),
         atr_multiplier=float(scfg.get("atr_multiplier", 2.5)),
+        take_profit_atr_mult=float(scfg.get("take_profit_atr_mult", 2.0)),
+        take_profit_ratio=float(scfg.get("take_profit_ratio", 0.5)),
+        allow_long=bool(scfg.get("allow_long", True)),
+        allow_short=bool(scfg.get("allow_short", True)),
         fee_pct=fee_pct,
         slippage_pct=slip_pct,
     )
-    test_mom = run_backtest(
-        test_df,
+    mr_kwargs = dict(
         initial_capital=10_000.0,
-        account_risk_pct=0.02,
-        breakout_lookback=int(scfg.get("breakout_lookback", 20)),
-        ema_trend_filter=int(scfg.get("ema_trend_filter", 32)),
+        account_risk_pct=float(scfg.get("account_risk_pct", 0.02)),
+        bb_period=int(scfg.get("bb_period", 20)),
+        bb_std=float(scfg.get("bb_std", 2.0)),
+        rsi_period=int(scfg.get("rsi_period", 14)),
+        rsi_oversold=float(scfg.get("rsi_oversold", 30.0)),
+        rsi_overbought=float(scfg.get("rsi_overbought", 70.0)),
         atr_period=int(scfg.get("atr_period", 14)),
-        atr_multiplier=float(scfg.get("atr_multiplier", 2.5)),
+        atr_stop_mult=float(scfg.get("mr_atr_stop_mult", 2.0)),
+        adx_period=int(scfg.get("adx_period", 14)),
+        adx_threshold=float(scfg.get("adx_threshold", scfg.get("adx_chop_threshold", 25.0))),
+        max_hold_bars=int(scfg.get("mr_max_hold_bars", 48)),
+        scale_out_ratio=float(scfg.get("mr_scale_out_ratio", 0.5)),
+        allow_long=bool(scfg.get("mr_allow_long", scfg.get("allow_long", True))),
+        allow_short=bool(scfg.get("mr_allow_short", False)),
         fee_pct=fee_pct,
         slippage_pct=slip_pct,
     )
 
-    train_mr = run_mean_reversion_backtest(
-        train_df,
-        initial_capital=10_000.0,
-        account_risk_pct=0.02,
-        bb_period=int(scfg.get("bb_period", 20)),
-        bb_std=float(scfg.get("bb_std", 2.0)),
-        rsi_period=int(scfg.get("rsi_period", 14)),
-        atr_period=int(scfg.get("atr_period", 14)),
-        fee_pct=fee_pct,
-        slippage_pct=slip_pct,
-    )
-    test_mr = run_mean_reversion_backtest(
-        test_df,
-        initial_capital=10_000.0,
-        account_risk_pct=0.02,
-        bb_period=int(scfg.get("bb_period", 20)),
-        bb_std=float(scfg.get("bb_std", 2.0)),
-        rsi_period=int(scfg.get("rsi_period", 14)),
-        atr_period=int(scfg.get("atr_period", 14)),
-        fee_pct=fee_pct,
-        slippage_pct=slip_pct,
-    )
+    train_mom = run_backtest(train_df, **mom_kwargs)
+    test_mom = run_backtest(test_df, **mom_kwargs)
+    train_mr = run_mean_reversion_backtest(train_df, **mr_kwargs)
+    test_mr = run_mean_reversion_backtest(test_df, **mr_kwargs)
 
     # Full period evaluation
-    full_mom = run_backtest(
-        raw_df,
-        initial_capital=10_000.0,
-        account_risk_pct=0.02,
-        breakout_lookback=int(scfg.get("breakout_lookback", 20)),
-        ema_trend_filter=int(scfg.get("ema_trend_filter", 32)),
-        atr_period=int(scfg.get("atr_period", 14)),
-        atr_multiplier=float(scfg.get("atr_multiplier", 2.5)),
-        fee_pct=fee_pct,
-        slippage_pct=slip_pct,
-    )
-    full_mr = run_mean_reversion_backtest(
-        raw_df,
-        initial_capital=10_000.0,
-        account_risk_pct=0.02,
-        bb_period=int(scfg.get("bb_period", 20)),
-        bb_std=float(scfg.get("bb_std", 2.0)),
-        rsi_period=int(scfg.get("rsi_period", 14)),
-        atr_period=int(scfg.get("atr_period", 14)),
-        fee_pct=fee_pct,
-        slippage_pct=slip_pct,
-    )
+    full_mom = run_backtest(raw_df, **mom_kwargs)
+    full_mr = run_mean_reversion_backtest(raw_df, **mr_kwargs)
 
     mom_ret = round(full_mom.total_return_pct, 2)
     mr_ret = round(full_mr.total_return_pct, 2)

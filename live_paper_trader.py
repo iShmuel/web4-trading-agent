@@ -104,6 +104,8 @@ def run_portfolio_tick(
 ) -> Dict[str, float]:
     """Scan all assets in the watchlist using the PortfolioCoordinator."""
     config = load_config()
+    if config != coordinator.config:
+        coordinator.reload_config(config)
     watchlist = config.get("watchlist", ["BTC/USDT", "ETH/USDT", "SOL/USDT", "NVDA", "SPY"])
     pairs_universe = config.get("pairs_universe", [])
     pair_symbols = [s for p in pairs_universe if len(p) == 2 for s in p]
@@ -339,23 +341,29 @@ def _run(args):
         log(f"\n[Engine] Starting continuous portfolio monitoring loop (Checking every {args.interval}s)...")
         last_opt_time = time.time()
         last_scan_time = time.time()
+        last_forensic_time = time.time()
         last_analyzed_trade_count = len(account.state.get("closed_trades", []))
         forensic_interval = int(config.get("forensic_trade_interval", 15))
+        forensic_max_hours = float(config.get("forensic_max_hours", 12.0))
 
         try:
             while True:
                 run_portfolio_tick(account, risk_engine, coordinator)
 
-                # Event-driven post-trade forensic audit trigger (every X closed trades)
+                # Event-driven + periodic post-trade forensic audit trigger (every X closed trades, or every 12h if new trades closed)
                 cur_closed = len(account.state.get("closed_trades", []))
-                if (cur_closed - last_analyzed_trade_count) >= forensic_interval and cur_closed > 0:
+                new_trades = cur_closed - last_analyzed_trade_count
+                forensic_due = new_trades >= forensic_interval or (
+                    new_trades > 0 and (time.time() - last_forensic_time) >= (forensic_max_hours * 3600)
+                )
+                if forensic_due and cur_closed > 0:
                     log("\n" + "=" * 68)
-                    log(f"   🔍 AGENT 10: AUTOMATED POST-TRADE FORENSIC AUDIT TRIGGERED ({cur_closed} trades)")
+                    log(f"   🔍 AGENT 10: AUTOMATED POST-TRADE FORENSIC AUDIT TRIGGERED ({cur_closed} trades, +{new_trades} new)")
                     log("=" * 68)
                     try:
                         from agent.trade_analyst import run_trade_forensic_analysis
                         summary = run_trade_forensic_analysis(
-                            trade_window=forensic_interval,
+                            trade_window=max(forensic_interval, new_trades),
                             use_llm=True,
                             auto_submit_to_governor=True,
                         )
@@ -364,15 +372,20 @@ def _run(args):
                     except Exception as e:
                         log(f"[Trade Forensic Notice] {e}")
                     last_analyzed_trade_count = cur_closed
+                    last_forensic_time = time.time()
 
                 # Periodic self-improvement tournament (Agent 11)
                 elapsed = time.time() - last_opt_time
                 if elapsed >= (args.optimize_hours * 3600):
                     log("\n" + "=" * 68)
-                    log("   ⏰ PERIODIC SELF-IMPROVEMENT TOURNAMENT TRIGGERED (Agent 11)")
+                    log("   ⏰ PERIODIC MULTI-STRATEGY SELF-IMPROVEMENT TOURNAMENT TRIGGERED (Agent 11)")
                     log("=" * 68)
                     try:
-                        res = run_optimization_cycle(auto_commit=True)
+                        from agent.multi_strategy_optimizer import run_multi_strategy_optimization
+                        res = run_multi_strategy_optimization(auto_commit=True)
+                        for r in res.get("results", []):
+                            detail = r.get("reason") or r.get("candidate") or ""
+                            log(f"[Auto-Optimize] {r.get('task')}: {str(r.get('status')).upper()} {detail}")
                         if res.get("status") == "deployed":
                             coordinator.reload_config(load_config())
                         log(f"[Auto-Optimize Result] Status: {res.get('status')}")

@@ -788,3 +788,253 @@ def run_mean_reversion_backtest(
         trades=trades,
         equity_curve=equity_curve,
     )
+
+
+def run_pairs_backtest(
+    df_a: pd.DataFrame,
+    df_b: pd.DataFrame,
+    lookback: int = 48,
+    entry_z: float = 2.0,
+    exit_z: float = 0.5,
+    stop_z: float = 3.5,
+    min_edge_cost_ratio: float = 0.0,
+    allocation_pct: float = 0.30,
+    initial_capital: float = 10000.0,
+    fee_pct: float = 0.0006,
+    slippage_pct: float = 0.0004,
+) -> BacktestResult:
+    """Market-neutral Stat-Arb pairs backtest (rolling beta + rolling Z-score).
+
+    Mirrors the live ``StatArbPairsStrategy`` decision rules:
+      * Enter LONG_A_SHORT_B when z <= -entry_z, SHORT_A_LONG_B when z >= entry_z.
+      * Optional cost gate: expected reversion edge must be >= ratio x round-trip friction.
+      * Exit at |z| <= exit_z (target) or |z| >= stop_z (stop).
+    Fees and slippage are charged on both legs, both sides. Equity is marked to market
+    every bar so max drawdown reflects open-position risk.
+    """
+    common_idx = df_a.index.intersection(df_b.index)
+    series_a = df_a.loc[common_idx, "close"].astype(float)
+    series_b = df_b.loc[common_idx, "close"].astype(float)
+    lookback = int(lookback)
+
+    equity = initial_capital
+    peak_equity = initial_capital
+    max_drawdown = 0.0
+    total_fees = 0.0
+    trades: List[TradeRecord] = []
+    equity_curve: List[float] = [equity]
+    position: Optional[Dict[str, Any]] = None
+    cost_per_side = fee_pct + slippage_pct
+
+    if len(common_idx) < lookback + 10:
+        return BacktestResult(
+            initial_capital=initial_capital, final_equity=equity, total_return_pct=0.0,
+            total_trades=0, winning_trades=0, losing_trades=0, win_rate=0.0,
+            profit_factor=0.0, max_drawdown_pct=0.0, sharpe_ratio=0.0,
+            equity_curve=equity_curve,
+        )
+
+    arr_a = series_a.values
+    arr_b = series_b.values
+
+    for i in range(lookback, len(common_idx)):
+        win_a = arr_a[i - lookback:i]
+        win_b = arr_b[i - lookback:i]
+        var_b = float(np.var(win_b))
+        beta = float(np.cov(win_a, win_b)[0, 1] / var_b) if var_b > 0 else 1.0
+        beta = max(0.01, min(beta, 10.0))
+        spread_win = win_a - beta * win_b
+        mu = float(spread_win.mean())
+        sigma = float(spread_win.std(ddof=1))
+        cur_a = float(arr_a[i])
+        cur_b = float(arr_b[i])
+        z = (cur_a - beta * cur_b - mu) / sigma if sigma > 0 else 0.0
+
+        unrealized = 0.0
+        if position is not None:
+            sign = 1.0 if position["type"] == "LONG_A_SHORT_B" else -1.0
+            pnl_a = sign * (cur_a - position["entry_a"]) * position["units_a"]
+            pnl_b = -sign * (cur_b - position["entry_b"]) * position["units_b"]
+            unrealized = pnl_a + pnl_b
+
+            reason = ""
+            if abs(z) <= exit_z:
+                reason = "TARGET_REVERSION"
+            elif abs(z) >= stop_z:
+                reason = "STOP_Z"
+            if reason:
+                exit_notional = cur_a * position["units_a"] + cur_b * position["units_b"]
+                exit_cost = exit_notional * cost_per_side
+                net = unrealized - position["entry_cost"] - exit_cost
+                total_fees += exit_cost
+                equity += unrealized - exit_cost
+                trades.append(TradeRecord(
+                    entry_time=position["entry_time"], exit_time=common_idx[i],
+                    entry_price=position["entry_a"], exit_price=cur_a,
+                    units=position["units_a"], dollar_risk=position["notional"],
+                    pnl=net, return_pct=(net / position["notional"]) * 100.0 if position["notional"] else 0.0,
+                    exit_reason=reason,
+                    side="LONG" if sign > 0 else "SHORT",
+                    strategy_id="stat_arb_pairs",
+                ))
+                position = None
+                unrealized = 0.0
+
+        if position is None and abs(z) >= entry_z and sigma > 0:
+            accept = True
+            if min_edge_cost_ratio > 0:
+                edge = max(0.0, abs(z) - exit_z) * sigma
+                rt_cost = 2.0 * cost_per_side * (cur_a + beta * cur_b)
+                accept = rt_cost > 0 and (edge / rt_cost) >= min_edge_cost_ratio
+            if accept:
+                notional = equity * allocation_pct
+                units_a = (notional * 0.5) / cur_a
+                units_b = (notional * 0.5) / cur_b
+                entry_cost = notional * cost_per_side
+                total_fees += entry_cost
+                equity -= entry_cost
+                position = {
+                    "type": "LONG_A_SHORT_B" if z <= -entry_z else "SHORT_A_LONG_B",
+                    "entry_a": cur_a, "entry_b": cur_b,
+                    "units_a": units_a, "units_b": units_b,
+                    "entry_cost": entry_cost, "notional": notional,
+                    "entry_time": common_idx[i],
+                }
+
+        mtm = equity + unrealized
+        if mtm > peak_equity:
+            peak_equity = mtm
+        dd = (peak_equity - mtm) / peak_equity if peak_equity > 0 else 0.0
+        max_drawdown = max(max_drawdown, dd)
+        equity_curve.append(mtm)
+
+    total_trades = len(trades)
+    winning = sum(1 for t in trades if t.pnl > 0)
+    gross_profit = sum(t.pnl for t in trades if t.pnl > 0)
+    gross_loss = abs(sum(t.pnl for t in trades if t.pnl < 0))
+    profit_factor = (gross_profit / gross_loss) if gross_loss > 0 else (99.0 if gross_profit > 0 else 0.0)
+    final_equity = equity_curve[-1]
+    pct_returns = pd.Series(equity_curve).pct_change().dropna()
+    std_ret = pct_returns.std()
+    bars_per_year = _estimate_bars_per_year(pd.DataFrame(index=common_idx))
+    sharpe = (pct_returns.mean() / std_ret * np.sqrt(bars_per_year)) if std_ret and std_ret > 0 else 0.0
+
+    return BacktestResult(
+        initial_capital=initial_capital,
+        final_equity=final_equity,
+        total_return_pct=((final_equity - initial_capital) / initial_capital) * 100.0,
+        total_trades=total_trades,
+        winning_trades=winning,
+        losing_trades=total_trades - winning,
+        win_rate=(winning / total_trades) if total_trades else 0.0,
+        profit_factor=profit_factor,
+        max_drawdown_pct=max_drawdown * 100.0,
+        sharpe_ratio=float(sharpe),
+        total_fees_paid=total_fees,
+        trades=trades,
+        equity_curve=equity_curve,
+    )
+
+
+def run_basis_yield_backtest(
+    df: pd.DataFrame,
+    hurdle_apr: float = 8.0,
+    max_basis_allocation_pct: float = 0.30,
+    initial_capital: float = 10000.0,
+    fee_pct: float = 0.0006,
+    slippage_pct: float = 0.0004,
+) -> BacktestResult:
+    """Delta-neutral perpetual basis / funding-rate yield backtest on 1h bars.
+
+    Models 8-hour funding epochs from spot basis premium relative to its 24-bar EMA
+    plus delta-hedging rebalance friction proportional to realized 8h spot movement
+    and entry/exit leg costs when toggling the carry position on/off.
+    """
+    if df is None or len(df) < 32:
+        return BacktestResult(
+            initial_capital=initial_capital, final_equity=initial_capital, total_return_pct=0.0,
+            total_trades=0, winning_trades=0, losing_trades=0, win_rate=0.0,
+            profit_factor=0.0, max_drawdown_pct=0.0, sharpe_ratio=0.0,
+            equity_curve=[initial_capital],
+        )
+
+    close = df["close"].astype(float)
+    ema24 = close.ewm(span=24, adjust=False).mean()
+    basis_prem = ((close - ema24) / ema24).clip(-0.05, 0.05)
+
+    equity = initial_capital
+    peak_equity = initial_capital
+    max_drawdown = 0.0
+    total_fees = 0.0
+    trades: List[TradeRecord] = []
+    equity_curve: List[float] = [equity]
+    cost_per_side = fee_pct + slippage_pct
+    in_carry = False
+
+    closes = close.values
+    prems = basis_prem.values
+    idx = df.index
+
+    for i in range(24, len(df), 8):
+        # Implied 8h funding rate: 1bp baseline + basis premium sensitivity
+        rate_8h = 0.0001 + 0.012 * float(prems[i])
+        annualized_apr = rate_8h * 3.0 * 365.0 * 100.0
+        move_8h = abs(closes[i] - closes[i - 8]) / closes[i - 8] if closes[i - 8] > 0 else 0.0
+
+        if annualized_apr >= hurdle_apr:
+            alloc_pct = min(max_basis_allocation_pct, 0.25 if annualized_apr >= 25.0 else 0.15)
+            notional = equity * alloc_pct
+            # Entry cost if opening carry + ongoing delta-rebalance friction during volatile 8h swings
+            entry_cost = (notional * cost_per_side * 0.5) if not in_carry else 0.0
+            rebal_cost = notional * cost_per_side * (move_8h * 2.5)
+            friction = entry_cost + rebal_cost
+            gross_yield = notional * rate_8h
+            net_pnl = gross_yield - friction
+            total_fees += friction
+            equity += net_pnl
+            in_carry = True
+            trades.append(TradeRecord(
+                entry_time=idx[i - 8], exit_time=idx[i],
+                entry_price=float(closes[i - 8]), exit_price=float(closes[i]),
+                units=notional, dollar_risk=friction,
+                pnl=net_pnl, return_pct=(net_pnl / notional) * 100.0 if notional > 0 else 0.0,
+                exit_reason=f"BASIS_YIELD ({annualized_apr:.1f}% APR)",
+                side="LONG", strategy_id="basis_yield",
+            ))
+        else:
+            if in_carry:
+                exit_cost = (equity * min(max_basis_allocation_pct, 0.15)) * cost_per_side * 0.25
+                total_fees += exit_cost
+                equity -= exit_cost
+                in_carry = False
+
+        if equity > peak_equity:
+            peak_equity = equity
+        dd = (peak_equity - equity) / peak_equity if peak_equity > 0 else 0.0
+        max_drawdown = max(max_drawdown, dd)
+        equity_curve.append(equity)
+
+    total_trades = len(trades)
+    winning = sum(1 for t in trades if t.pnl > 0)
+    gross_profit = sum(t.pnl for t in trades if t.pnl > 0)
+    gross_loss = abs(sum(t.pnl for t in trades if t.pnl < 0))
+    profit_factor = (gross_profit / gross_loss) if gross_loss > 0 else (99.0 if gross_profit > 0 else 0.0)
+    pct_returns = pd.Series(equity_curve).pct_change().dropna()
+    std_ret = pct_returns.std()
+    sharpe = (pct_returns.mean() / std_ret * np.sqrt(365.25 * 3.0)) if std_ret and std_ret > 0 else 0.0
+
+    return BacktestResult(
+        initial_capital=initial_capital,
+        final_equity=equity,
+        total_return_pct=((equity - initial_capital) / initial_capital) * 100.0,
+        total_trades=total_trades,
+        winning_trades=winning,
+        losing_trades=total_trades - winning,
+        win_rate=(winning / total_trades) if total_trades else 0.0,
+        profit_factor=profit_factor,
+        max_drawdown_pct=max_drawdown * 100.0,
+        sharpe_ratio=float(sharpe),
+        total_fees_paid=total_fees,
+        trades=trades,
+        equity_curve=equity_curve,
+    )

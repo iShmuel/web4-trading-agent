@@ -66,6 +66,11 @@ PARAMETER_BOUNDS: Dict[str, Tuple[float, float]] = {
     "adx_trend_threshold": (18.0, 45.0),
     "stat_arb_z_entry": (1.2, 4.0),
     "stat_arb_z_exit": (0.0, 1.5),
+    "stat_arb_entry_z": (1.2, 4.0),
+    "stat_arb_exit_z": (0.0, 1.5),
+    "stat_arb_stop_z": (2.5, 6.0),
+    "stat_arb_lookback": (24.0, 240.0),
+    "mr_atr_stop_mult": (1.0, 5.0),
     "basis_hurdle_apr": (2.0, 40.0),
     "max_basis_allocation_pct": (0.05, 0.45),
 }
@@ -502,6 +507,12 @@ def _merge_proposed_changes_into_config(
         candidate_cfg["watchlist"] = [s for s in candidate_cfg["watchlist"] if s not in bl_set]
 
     rehab_set = set(proposed_changes.get("rehabilitated_symbols", []))
+    profiles = candidate_cfg.get("asset_profiles") or {}
+    has_standard_profiles = "crypto_micro_swing" in profiles and "stocks_growth" in profiles
+    assigned_in_profiles = {sym for p in profiles.values() if isinstance(p, dict) for sym in p.get("symbols", [])}
+    macro_cryptos = {"BTC/USDT", "ETH/USDT", "BNB/USDT"}
+    macro_equities = {"SPY", "QQQ", "GLD", "SLV", "TLT", "XLE", "KDP", "NOK", "CBRS"}
+
     for s in candidate_cfg.get("watchlist", []):
         if s in rehab_set:
             candidate_cfg.setdefault("symbol_risk_weights", {})[s] = 0.01
@@ -510,6 +521,13 @@ def _merge_proposed_changes_into_config(
             candidate_cfg["symbol_risk_weights"][s] = 0.02
         if s not in candidate_cfg.setdefault("symbol_exposure_caps", {}):
             candidate_cfg["symbol_exposure_caps"][s] = 0.35
+        if has_standard_profiles and s not in assigned_in_profiles:
+            if "/" in s:
+                target_prof = "crypto_macro" if (s in macro_cryptos and "crypto_macro" in profiles) else "crypto_micro_swing"
+            else:
+                target_prof = "macro_hedges" if (s in macro_equities and "macro_hedges" in profiles) else "stocks_growth"
+            profiles[target_prof].setdefault("symbols", []).append(s)
+            assigned_in_profiles.add(s)
 
     return candidate_cfg
 

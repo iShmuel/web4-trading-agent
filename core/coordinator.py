@@ -1520,7 +1520,8 @@ class PortfolioCoordinator:
             if self.last_basis_accrual_time is not None:
                 elapsed_hours = (now - self.last_basis_accrual_time).total_seconds() / 3600.0
 
-            crypto_syms = [s for s in market_data.keys() if is_crypto_symbol(s)]
+            bl_set = set(self.config.get("blacklisted_symbols", []))
+            crypto_syms = [s for s in market_data.keys() if is_crypto_symbol(s) and s not in bl_set]
             best_opp: Optional[BasisOpportunity] = None
             for csym in crypto_syms:
                 opp = self.basis_yield_engine.evaluate_opportunity(csym)

@@ -219,7 +219,12 @@
         "SOL/USDT",
         "SUI/USDT",
         "NEAR/USDT",
-        "LINK/USDT"
+        "LINK/USDT",
+        "AVAX/USDT",
+        "BARD/USDT",
+        "INIT/USDT",
+        "GRAM/USDT",
+        "ONE/USDT"
       ],
       "timeframe": "1h",
       "breakout_lookback": 48,
@@ -273,7 +278,15 @@
         "AMD",
         "AAPL",
         "PLTR",
-        "TSLA"
+        "TSLA",
+        "SMCI",
+        "SNAP",
+        "HIMS",
+        "WULF",
+        "IREN",
+        "MU",
+        "CIFR",
+        "NU"
       ],
       "timeframe": "1h",
       "breakout_lookback": 48,
@@ -294,7 +307,10 @@
         "GLD",
         "SLV",
         "TLT",
-        "XLE"
+        "XLE",
+        "NOK",
+        "CBRS",
+        "KDP"
       ],
       "timeframe": "1h",
       "breakout_lookback": 48,
