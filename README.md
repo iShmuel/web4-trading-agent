@@ -1,6 +1,7 @@
 # Web4 Autonomous Quantitative Trading Desk
 
-[![Tests: 135/135 Passing](https://img.shields.io/badge/pytest-135%2F135%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
+[![Tests: 184/184 Passing](https://img.shields.io/badge/pytest-184%2F184%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
+[![CPI Score: 97.3/100](https://img.shields.io/badge/CPI%20Score-97.3%2F100-38bdf8?style=for-the-badge)](core/cpi_benchmark.py)
 [![Execution Mode](https://img.shields.io/badge/execution-strictly%20simulated%20paper-38bdf8?style=for-the-badge)](core/paper_account.py)
 [![Architecture](https://img.shields.io/badge/architecture-Dynamic%20N--Strategy%20MAS-8b5cf6?style=for-the-badge)](agent/)
 [![Local LLM](https://img.shields.io/badge/local%20gpu%20llm-phi4--mini%20(Ollama)-f59e0b?style=for-the-badge)](agent/governor.py)
@@ -172,9 +173,14 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Run Test Suite (135/135 Tests Passing)
+### 2. Run Test Suite (184/184 Tests Passing)
 ```bash
 .venv/bin/pytest -v
+```
+
+### 3. Run Automated CPI Benchmark Harness (CPI: 97.3 / 100 | 85.3% Overall WR)
+```bash
+.venv/bin/python live_paper_trader.py --cpi-benchmark
 ```
 
 ### 3. Run Shifted 90-Day Out-of-Sample Validation

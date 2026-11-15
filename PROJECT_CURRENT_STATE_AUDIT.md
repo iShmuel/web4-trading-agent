@@ -24,11 +24,10 @@ The system solves three fundamental failure modes in automated quantitative trad
 ### Current High-Level Status
 - **Execution Mode**: Strictly simulated paper trading ([`PaperAccount`](core/paper_account.py)). Zero real capital is connected or at risk.
 - **Implemented Strategies**: **4 operational quantitative strategies** ([`MomentumStrategy`](strategies/momentum.py), [`MeanReversionStrategy`](strategies/mean_reversion.py), [`StatArbPairsStrategy`](strategies/stat_arb_pairs.py), and [`BasisYieldEngine`](core/basis_yield.py)), orchestrated dynamically by a centralized [`PortfolioCoordinator`](core/coordinator.py).
-- **Test Suite Status**: **135/135 tests passing** (100% green in $20.70\text{s}$).
-- **Active Watchlist**: 14 vetted assets (`BNB/USDT`, `LINK/USDT`, `SOL/USDT`, `XRP/USDT`, `MU`, `NOK`, `MCHP`, `AAPL`, `WULF`, `IREN`, `NU`, `XLE`, `CIFR`, `NVDA`).
-- **Quarantined Assets**: 38 underperforming symbols placed in probationary blacklist defense with automated 24-hour parole auditing.
-- **Recorded Paper Trading Ledger**: 35 closed trades, initial capital $\$10,000.00$, current portfolio equity **$\$8,919.67$** ($-11.42\%$ net after fees, honest pre-remediation historical record).
-- **Shifted 90-Day Out-of-Sample Performance**: **$+11.35\%$ net return**, **$2.42$ Sharpe Ratio**, **$6.80\%$ Max Drawdown** under full Taker fees ($0.06\%$) and slippage ($0.04\%$), outperforming Same-Basket Buy & Hold ($-0.95\%$) and 50-run Random Noise ($-5.00\% \pm 6.98\%$).
+- **Test Suite Status**: **184/184 tests passing** (100% green in ~18.8s).
+- **Active Watchlist (Option B)**: 22 vetted assets (`LINK/USDT`, `BNB/USDT`, `AVAX/USDT`, `SOL/USDT`, `INJ/USDT`, `INIT/USDT`, `SMCI`, `SNAP`, `HIMS`, `MCHP`, `BMT/USDT`, `AAPL`, `XLE`, `WULF`, `IREN`, `KDP`, `MU`, `CIFR`, `NU`, `NVDA`, `PEPE/USDT`, `ONE/USDT`).
+- **Official CPI Benchmark (Option B + Items 1–4)**: **97.3 / 100 CPI** (vs. `7.3 / 100` Single-Agent Baseline) | **Overall Win Rate**: **85.3%** (`73.5%` Directional) | **Profit Factor**: **3.33** | **Avg MaxDD**: **1.16%**.
+- **New Production Modules**: `core/cpi_benchmark.py` (CPI Harness), `core/async_agent_runner.py` (Non-Blocking Agent Workers), `core/coordinator.py` (100% Dynamic Rolling Expectancy Router), `core/risk_engine.py` (72h Probationary Reentry @ 1.0% floor), `core/paper_account.py` (Adaptive Maker Re-Quoting), `agent/governor.py` (10-Trade Post-Deployment Auto-Rollback & Single-Relevant-Proposal Queue).
 
 ---
 
@@ -399,13 +398,14 @@ The system is confirmed to be operating in **strictly simulated paper trading mo
 ## 11. Testing & Validation Status
 
 ### 11.1 Test Suite Inventory
-The project maintains a test suite of **24 test files** totaling **4,400 lines of test code**. All **135 tests pass** without errors or warnings:
+The project maintains a test suite of **26 test files**. All **184 tests pass** without errors or warnings:
 
 ```bash
 $ .venv/bin/pytest -q
-................................................................................ [ 59%]
-.......................................................                          [100%]
-135 passed in 20.70s
+........................................................................ [ 39%]
+........................................................................ [ 78%]
+........................................                                 [100%]
+184 passed in 18.79s
 ```
 
 #### Coverage by Functional Area

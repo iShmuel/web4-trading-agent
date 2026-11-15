@@ -123,6 +123,16 @@ web4-trading-agent/
 │   │                                     # WHY NEEDED: Vetos trades on adverse SEC filings and optimizes tax efficiency (wash-sale rules)
 │   │
 │   ├── process_lock.py                   # WHAT: Linux OS-level file locking via `fcntl.flock` PID tracking
+│   │                                     # USED BY: live_paper_trader.py
+│   │                                     # WHY NEEDED: Prevents duplicate concurrent trading loops
+│   │
+│   ├── cpi_benchmark.py                  # WHAT: 4-tier Automated Central Performance Index (CPI) Benchmark Harness
+│   │                                     # USED BY: live_paper_trader.py --cpi-benchmark & tests/test_roadmap_items_1_to_4.py
+│   │                                     # WHY NEEDED: Empirically scores Web4 Coordinated & Option B vs. Single-Agent & Uncoordinated baselines
+│   │
+│   ├── async_agent_runner.py             # WHAT: Non-blocking ThreadPoolExecutor worker pool for heavy Agent 9/10/11 tasks
+│   │                                     # USED BY: live_paper_trader.py --loop
+│   │                                     # WHY NEEDED: Prevents 20s-35s LLM/Optimizer jobs from stalling the 60s stop-loss loop
 │   │                                     # USED BY: Acquired by live_paper_trader.py; checked by dashboard.py
 │   │                                     # WHY NEEDED: Prevents duplicate bot instances from running simultaneously and doubling risk
 │   │
@@ -549,6 +559,14 @@ web4-trading-agent/
     ├── test_trade_analyst.py             # WHAT: Tests forensic trade analysis and LLM prompt construction logic
     │                                     # USED BY: pytest runner
     │                                     # WHY NEEDED: Ensures trade telemetry is correctly structured for the local LLM prompt
+    │
+    ├── test_audit_fixes.py               # WHAT: Regression suite for all 11 audit fixes (rollback, log rotation, live-price exits, weekend staleness)
+    │                                     # USED BY: pytest runner
+    │                                     # WHY NEEDED: Guarantees every critical bug fix and rollback safety net stays intact
+    │
+    ├── test_roadmap_items_1_to_4.py      # WHAT: Unit & integration tests for CPI Benchmark, 72h Probationary Reentry, Maker Re-Quoting, & Async Runner
+    │                                     # USED BY: pytest runner
+    │                                     # WHY NEEDED: Verifies all 4 deployed roadmap enhancements and 1%-5% risk bounds
     │
     └── test_web4_self_improvement.py     # WHAT: Tests the end-to-end self-improvement loop (optimizer -> validator -> governor)
                                           # USED BY: pytest runner
