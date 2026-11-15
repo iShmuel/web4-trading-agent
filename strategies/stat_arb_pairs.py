@@ -42,8 +42,11 @@ class StatArbPairsStrategy:
         self.exit_z_score = float(cfg.get("stat_arb_exit_z", cfg.get("pairs_exit_z", 0.5)))
         self.stop_z_score = float(cfg.get("stat_arb_stop_z", cfg.get("pairs_stop_z", 3.5)))
         self.min_correlation = float(cfg.get("min_pair_correlation", cfg.get("pairs_min_correlation", 0.70)))
-        self.min_return_correlation = float(cfg.get("min_pair_return_correlation", 0.55))
+        self.min_return_correlation = float(cfg.get("min_pair_return_correlation", 0.45))
         self.max_half_life = float(cfg.get("max_pair_half_life_hours", 72.0))
+        self.max_stale_minutes = int(cfg.get("max_stale_minutes", 180))
+        self._enforce_staleness = "max_stale_minutes" in cfg
+        self._last_ret_corr = 0.0
         self.require_reversal_hook = bool(cfg.get("stat_arb_require_reversal_hook", False))
         self.blacklisted_pairs = {
             f"{p[0]}:{p[1]}" if isinstance(p, (list, tuple)) and len(p) == 2 else str(p)
@@ -160,6 +163,7 @@ class StatArbPairsStrategy:
         else:
             half_life = 999.0
 
+        self._last_ret_corr = round(float(ret_corr), 2)
         is_stationary = (
             (corr >= self.min_correlation)
             and (ret_corr >= self.min_return_correlation)
@@ -212,6 +216,29 @@ class StatArbPairsStrategy:
 
         z_score, beta, cur_spread = self.calculate_spread_and_zscore(combined.iloc[:, 0], combined.iloc[:, 1])
         corr, half_life, is_stat = self.calculate_cointegration_quality(combined.iloc[:, 0], combined.iloc[:, 1], beta)
+
+        # Staleness check for live market ticks (or when max_stale_minutes is explicitly enforced)
+        quote_time = df_a.attrs.get("quote_time") or df_b.attrs.get("quote_time")
+        if self.max_stale_minutes > 0 and (quote_time is not None or self._enforce_staleness):
+            ref_now = quote_time if isinstance(quote_time, datetime) else now
+            last_bar_ts = combined.index[-1]
+            if hasattr(last_bar_ts, "tzinfo") and last_bar_ts.tzinfo is not None:
+                stale_mins = (ref_now - last_bar_ts).total_seconds() / 60.0
+                if stale_mins > self.max_stale_minutes:
+                    return PairTradeSignal(
+                        pair_id=pair_id,
+                        asset_a=asset_a,
+                        asset_b=asset_b,
+                        timestamp=now,
+                        action="HOLD" if existing_pair_position is not None else "NO_TRADE",
+                        z_score=z_score,
+                        hedge_ratio=beta,
+                        spread=cur_spread,
+                        reason=f"Stale pair data: {stale_mins:.0f}m old > {self.max_stale_minutes}m limit (market closed)",
+                        is_stationary=is_stat,
+                        correlation=corr,
+                        half_life=half_life,
+                    )
 
         # If holding a pair position, check exit conditions
         if existing_pair_position is not None:
@@ -343,7 +370,11 @@ class StatArbPairsStrategy:
                 z_score=z_score,
                 hedge_ratio=beta,
                 spread=cur_spread,
-                reason=f"Filtered by Stationarity Gate: Corr={corr:.2f} (min {self.min_correlation}), Half-life={half_life:.1f}h (max {self.max_half_life}h)",
+                reason=(
+                    f"Filtered by Stationarity Gate: Corr={corr:.2f} (min {self.min_correlation}), "
+                    f"RetCorr={self._last_ret_corr:.2f} (min {self.min_return_correlation}), "
+                    f"Half-life={half_life:.1f}h (max {self.max_half_life}h)"
+                ),
                 is_stationary=False,
                 correlation=corr,
                 half_life=half_life,

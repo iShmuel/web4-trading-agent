@@ -379,7 +379,7 @@
   "bb_std": 1.9,
   "stat_arb_min_edge_cost_ratio": 2.5,
   "stat_arb_require_reversal_hook": true,
-  "min_pair_return_correlation": 0.55,
+  "min_pair_return_correlation": 0.45,
   "pair_stop_cooldown_hours": 12.0,
   "pairs_Blacklist": [
     "INIT/USDT:GRAM/USDT",

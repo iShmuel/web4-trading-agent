@@ -378,11 +378,20 @@ class RiskEngine:
             atr_ratio_baseline=0.025,
         )
         is_short = (side.upper() == "SHORT")
+        valid_suggested_stop = (
+            (not is_short and 0.0 < suggested_stop < entry_price)
+            or (is_short and suggested_stop > entry_price)
+        )
+        eff_atr_mult = (
+            abs(entry_price - suggested_stop) / atr
+            if (valid_suggested_stop and atr > 0)
+            else atr_multiplier
+        )
         units, initial_stop, dollar_risk = self.calculate_position(
             equity=equity,
             entry_price=entry_price,
             atr=atr,
-            atr_multiplier=atr_multiplier,
+            atr_multiplier=eff_atr_mult,
             risk_pct=effective_risk_pct,
             is_short=is_short,
         )

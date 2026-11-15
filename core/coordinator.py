@@ -6,7 +6,7 @@ and coordinates paper execution and portfolio accounting.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import math
 import time
 from typing import Dict, Any, List, Optional, Tuple
@@ -674,6 +674,17 @@ class PortfolioCoordinator:
                                     exit_reason=f"Partner Leg Catastrophe Stop ({pair_id_val})",
                                     fee_pct=sym_cfg.get("fee_pct", 0.0006),
                                 )
+                        if not hasattr(self, "pair_cooldown_until"):
+                            self.pair_cooldown_until = {}
+                        if not hasattr(self, "pair_stop_counts"):
+                            self.pair_stop_counts = {}
+                        now_stop = datetime.now(timezone.utc)
+                        self.pair_cooldown_until[pair_id_val] = now_stop + timedelta(
+                            hours=float(self.config.get("pair_stop_cooldown_hours", 12.0))
+                        )
+                        self.pair_stop_counts[pair_id_val] = self.pair_stop_counts.get(pair_id_val, 0) + 1
+                        if self.pair_stop_counts[pair_id_val] >= 2:
+                            self.pairs_strategy.blacklisted_pairs.add(pair_id_val)
                     return CoordinatorDecision(
                         symbol=symbol,
                         action="EXIT",
@@ -1079,8 +1090,20 @@ class PortfolioCoordinator:
         last_ts = df.index[-1] if hasattr(df.index[-1], 'tzinfo') else None
         
         # Confluence stop tightening: Triple-timeframe alignment permits tighter stop loss
-        base_atr_mult = sym_cfg.get("atr_multiplier", self.config.get("atr_multiplier", 2.25))
-        effective_atr_mult = base_atr_mult * (0.85 if (has_confluence and conf_score >= 0.90) else 1.0)
+        if chosen_sig.strategy_id == "mean_reversion":
+            base_atr_mult = sym_cfg.get("mr_atr_stop_mult", self.config.get("mr_atr_stop_mult", 2.0))
+            effective_atr_mult = base_atr_mult
+            effective_suggested_stop = chosen_sig.suggested_stop
+        else:
+            base_atr_mult = sym_cfg.get("atr_multiplier", self.config.get("atr_multiplier", 2.25))
+            effective_atr_mult = base_atr_mult * (0.85 if (has_confluence and conf_score >= 0.90) else 1.0)
+            if has_confluence and conf_score >= 0.90 and chosen_sig.atr > 0:
+                if chosen_sig.direction == SignalDirection.SHORT:
+                    effective_suggested_stop = round(chosen_sig.reference_price + (chosen_sig.atr * effective_atr_mult), 4)
+                else:
+                    effective_suggested_stop = round(chosen_sig.reference_price - (chosen_sig.atr * effective_atr_mult), 4)
+            else:
+                effective_suggested_stop = chosen_sig.suggested_stop
 
         # Chop-Zone Risk Throttling: Cut risk in half (e.g. 1.0% vs 2.0%) during low-ADX range chop
         base_risk_pct = sym_cfg.get("account_risk_pct", self.config.get("account_risk_pct", 0.02))
@@ -1142,7 +1165,7 @@ class PortfolioCoordinator:
             side=chosen_sig.direction.value,
             strategy_id=chosen_sig.strategy_id,
             entry_price=chosen_sig.reference_price,
-            suggested_stop=chosen_sig.suggested_stop,
+            suggested_stop=effective_suggested_stop,
             atr=chosen_sig.atr,
             atr_multiplier=effective_atr_mult,
             equity=total_equity,
@@ -1410,11 +1433,13 @@ class PortfolioCoordinator:
                 if psig.action == "CLOSE_PAIR":
                     pa = current_prices.get(psig.asset_a, float(market_data[psig.asset_a]["close"].iloc[-1]))
                     pb = current_prices.get(psig.asset_b, float(market_data[psig.asset_b]["close"].iloc[-1]))
+                    pair_fee_pct = float(self.config.get("fee_pct", 0.0006))
                     if self.account.has_position(psig.asset_a):
                         leg_side = self.account.get_position(psig.asset_a).get("side", "LONG")
                         self.account.close_position(
                             psig.asset_a,
                             self._pair_fill_price(pa, leg_side, opening=False),
+                            fee_pct=pair_fee_pct,
                             exit_reason=f"Dynamic Pair Exit ({psig.reason})",
                         )
                         executed += 1
@@ -1423,6 +1448,7 @@ class PortfolioCoordinator:
                         self.account.close_position(
                             psig.asset_b,
                             self._pair_fill_price(pb, leg_side, opening=False),
+                            fee_pct=pair_fee_pct,
                             exit_reason=f"Dynamic Pair Exit ({psig.reason})",
                         )
                         executed += 1
@@ -1501,7 +1527,8 @@ class PortfolioCoordinator:
                             entry_sp_mean = float(sp_win.mean()) if len(sp_win) > 0 else 0.0
                             entry_sp_std = float(sp_win.std()) if len(sp_win) > 1 else 1.0
 
-                            if total_cost > 0 and units_a > 0 and units_b > 0 and self.account.cash >= (total_cost * 1.002):
+                            pair_fee_pct = float(self.config.get("fee_pct", 0.0006))
+                            if total_cost > 0 and units_a > 0 and units_b > 0 and self.account.cash >= (total_cost * (1.0 + 2.0 * pair_fee_pct)):
                                 try:
                                     self.account.open_position(
                                         symbol=psig.asset_a,
@@ -1509,6 +1536,7 @@ class PortfolioCoordinator:
                                         units=units_a,
                                         stop_loss=stop_a,
                                         dollar_risk=dollar_risk,
+                                        fee_pct=pair_fee_pct,
                                         max_concurrent_positions=self.risk_engine.max_open_positions,
                                         side=side_a,
                                         strategy_id="stat_arb_pairs",
@@ -1527,6 +1555,7 @@ class PortfolioCoordinator:
                                         units=units_b,
                                         stop_loss=stop_b,
                                         dollar_risk=dollar_risk,
+                                        fee_pct=pair_fee_pct,
                                         max_concurrent_positions=self.risk_engine.max_open_positions,
                                         side=side_b,
                                         strategy_id="stat_arb_pairs",

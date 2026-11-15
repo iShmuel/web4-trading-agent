@@ -590,21 +590,19 @@ def run_mean_reversion_backtest(
                             bars_held = 0
                             stop_loss = initial_stop
                             tp_hit = False
-                        entry_time = idx
-                        bars_held = 0
-                        stop_loss = initial_stop
-                        tp_hit = False
 
         else:
             bars_held += 1
             exit_triggered = False
             exit_price = 0.0
             exit_reason = ""
+            round_trip_cost_pct = 2.0 * (fee_pct + slippage_pct)
 
             if pos_side == "LONG":
-                # 0. Partial Take-Profit check (halfway to SMA)
+                min_long_profit = entry_price * (1.0 + round_trip_cost_pct)
+                # 0. Partial Take-Profit check (halfway to SMA, only when profitable above friction)
                 halfway = entry_price + (bb_sma - entry_price) * 0.5
-                if scale_out_ratio > 0 and not tp_hit and high >= halfway:
+                if scale_out_ratio > 0 and not tp_hit and bb_sma > min_long_profit and halfway >= min_long_profit and high >= halfway:
                     exec_tp_price = halfway * (1.0 - slippage_pct)
                     tp_units = units * scale_out_ratio
                     exit_fee = (tp_units * exec_tp_price) * fee_pct
@@ -637,8 +635,8 @@ def run_mean_reversion_backtest(
                     exit_triggered = True
                     exit_price = min(stop_loss, close) * (1.0 - slippage_pct)
                     exit_reason = "Stop Loss Hit"
-                # 2. Mean target (SMA) reached
-                elif high >= bb_sma:
+                # 2. Mean target (SMA) reached (only when SMA is profitable above entry + friction)
+                elif bb_sma >= min_long_profit and high >= bb_sma:
                     exit_triggered = True
                     exit_price = bb_sma * (1.0 - slippage_pct)
                     exit_reason = "Mean Target Hit (SMA)"
@@ -675,9 +673,10 @@ def run_mean_reversion_backtest(
                     units = 0.0
 
             elif pos_side == "SHORT":
-                # 0. Partial Take-Profit check (halfway to SMA)
+                max_short_profit = entry_price * (1.0 - round_trip_cost_pct)
+                # 0. Partial Take-Profit check (halfway to SMA, only when profitable below friction)
                 halfway = entry_price - (entry_price - bb_sma) * 0.5
-                if scale_out_ratio > 0 and not tp_hit and low <= halfway:
+                if scale_out_ratio > 0 and not tp_hit and bb_sma < max_short_profit and halfway <= max_short_profit and low <= halfway:
                     exec_tp_price = halfway * (1.0 + slippage_pct)
                     tp_units = units * scale_out_ratio
                     exit_fee = (tp_units * exec_tp_price) * fee_pct
@@ -710,8 +709,8 @@ def run_mean_reversion_backtest(
                     exit_triggered = True
                     exit_price = max(stop_loss, close) * (1.0 + slippage_pct)
                     exit_reason = "Stop Loss Hit"
-                # 2. Mean target reached
-                elif low <= bb_sma:
+                # 2. Mean target reached (only when SMA is profitable below entry - friction)
+                elif bb_sma <= max_short_profit and low <= bb_sma:
                     exit_triggered = True
                     exit_price = bb_sma * (1.0 + slippage_pct)
                     exit_reason = "Mean Target Hit (SMA)"

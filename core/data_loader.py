@@ -258,7 +258,9 @@ def fetch_ohlcv(
                     if max_cache_age_hours is not None
                     else max(3600.0, tf_delta.total_seconds() * 2)
                 )
-                if age_seconds <= allowed_age:
+                file_age_seconds = max(0.0, time.time() - cache_path.stat().st_mtime)
+                recently_refreshed_equity = (not is_crypto_symbol(symbol)) and (file_age_seconds <= 300.0)
+                if age_seconds <= allowed_age or recently_refreshed_equity:
                     print(f"[DataLoader] Loaded {len(df)} candles from fresh local cache: {cache_path.name}")
                     return filter_closed_bars(df, timeframe) if closed_only else df
                 else:

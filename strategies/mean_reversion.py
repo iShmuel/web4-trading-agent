@@ -323,12 +323,14 @@ class MeanReversionStrategy:
                 indicators=indicators,
             )
 
-        # Partial Take-Profit check: scale out 50% halfway to the SMA mean
+        # Partial Take-Profit check: scale out 50% halfway to the SMA mean (only when target is above round-trip costs)
         tp_hit = position.get("tp_hit", False)
+        min_long_profit_price = entry_price * (1.0 + self.estimated_cost_pct)
+        max_short_profit_price = entry_price * (1.0 - self.estimated_cost_pct)
         if self.scale_out_enabled and not tp_hit:
-            if side == "LONG":
+            if side == "LONG" and bb_sma > min_long_profit_price:
                 halfway_target = entry_price + (bb_sma - entry_price) * 0.5
-                if price >= halfway_target:
+                if halfway_target >= min_long_profit_price and price >= halfway_target:
                     return TradingSignal(
                         strategy_id=self.STRATEGY_ID,
                         symbol=symbol,
@@ -341,9 +343,9 @@ class MeanReversionStrategy:
                         exit_reason=f"Halfway Scale-Out Take-Profit ({int(self.scale_out_ratio*100)}% Banked)",
                         indicators=indicators,
                     )
-            elif side == "SHORT":
+            elif side == "SHORT" and bb_sma < max_short_profit_price:
                 halfway_target = entry_price - (entry_price - bb_sma) * 0.5
-                if price <= halfway_target:
+                if halfway_target <= max_short_profit_price and price <= halfway_target:
                     return TradingSignal(
                         strategy_id=self.STRATEGY_ID,
                         symbol=symbol,
@@ -357,8 +359,8 @@ class MeanReversionStrategy:
                         indicators=indicators,
                     )
 
-        # Mean reversion target: price returned to SMA
-        if side == "LONG" and price >= bb_sma:
+        # Mean reversion target: price returned to SMA (must be net profitable above round-trip costs)
+        if side == "LONG" and bb_sma >= min_long_profit_price and price >= bb_sma:
             return TradingSignal(
                 strategy_id=self.STRATEGY_ID,
                 symbol=symbol,
@@ -371,7 +373,7 @@ class MeanReversionStrategy:
                 indicators=indicators,
             )
 
-        if side == "SHORT" and price <= bb_sma:
+        if side == "SHORT" and bb_sma <= max_short_profit_price and price <= bb_sma:
             return TradingSignal(
                 strategy_id=self.STRATEGY_ID,
                 symbol=symbol,

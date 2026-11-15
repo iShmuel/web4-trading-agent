@@ -18,7 +18,6 @@ from core.risk_engine import RiskEngine
 from core.coordinator import PortfolioCoordinator
 from core.data_loader import fetch_ohlcv, fetch_ohlcv_batch, check_data_quality, is_crypto_symbol
 from core.process_lock import SingleInstanceLock, AlreadyRunningError
-from agent.optimizer import run_optimization_cycle
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = PROJECT_ROOT / "config" / "active_config.json"
@@ -121,6 +120,7 @@ def run_portfolio_tick(
     market_data: Dict[str, Any] = {}
     current_prices: Dict[str, float] = {}
 
+    is_weekend = datetime.now(timezone.utc).weekday() >= 5
     symbol_params = {}
     for symbol in poll_symbols:
         timeframe = coordinator.symbol_config(symbol).get("timeframe", config.get("timeframe", "1h"))
@@ -128,7 +128,7 @@ def run_portfolio_tick(
         symbol_params[symbol] = {
             "timeframe": timeframe,
             "days": fetch_days,
-            "force_refresh": True,
+            "force_refresh": is_crypto_symbol(symbol) or (not is_weekend),
             "closed_only": True,
         }
 
@@ -326,7 +326,7 @@ def _run(args):
     log("       WEB4 MULTI-STRATEGY LIVE PAPER TRADING ENGINE STARTED")
     log("=" * 68)
     log(f"Execution Mode:     PAPER TRADING ONLY (Zero Real Capital Risk)")
-    log(f"Strategies:         Momentum / Trend Following + Mean Reversion")
+    log(f"Strategies:         Momentum / Trend Following + Mean Reversion + Stat-Arb Pairs + Basis Yield")
     log(f"Watchlist:          {', '.join(watchlist)}")
     for sym in watchlist:
         sc = coordinator.symbol_config(sym)

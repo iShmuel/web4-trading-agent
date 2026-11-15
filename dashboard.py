@@ -368,8 +368,16 @@ def render() -> str:
             status_str = green(f"● ACTIVE ({side_a} {p[0]} / {side_b} {p[1]})")
         elif p_dec.get("action") in ("LONG_A_SHORT_B", "SHORT_A_LONG_B"):
             status_str = green(f"● {p_dec.get('action')}")
+        elif "stale pair data" in reason.lower():
+            status_str = dim("⏸ MARKET CLOSED (Stale)")
         elif not is_stat or ("filtered" in reason.lower()) or (corr and corr < 0.70):
-            status_str = yellow(f"⚠ STATIONARITY GATE ({'Corr<0.7' if corr < 0.7 else 'HalfLife>72h'})")
+            if corr < 0.70:
+                gate_tag = "Corr<0.7"
+            elif hl > 72.0:
+                gate_tag = "HalfLife>72h"
+            else:
+                gate_tag = "RetCorr<Min"
+            status_str = yellow(f"⚠ STATIONARITY GATE ({gate_tag})")
         elif z and abs(z) < entry_z:
             status_str = green("🟢 EQUILIBRIUM (Inside Band)")
         else:
