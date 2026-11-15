@@ -536,8 +536,38 @@ def _merge_proposed_changes_into_config(
     return candidate_cfg
 
 
+def is_proposal_still_relevant(
+    proposal: Dict[str, Any],
+    current_cfg: Optional[Dict[str, Any]] = None,
+) -> bool:
+    """Return True only if a pending proposal's changes are not already applied
+    and its baseline assumptions still match the live configuration."""
+    if not isinstance(proposal, dict):
+        return False
+    changes = proposal.get("proposed_changes")
+    if not isinstance(changes, dict) or not changes:
+        return False
+    cfg = current_cfg if current_cfg is not None else load_config()
+    if not cfg:
+        return True
+
+    # 1. If every proposed key/value already matches live config, it is obsolete
+    if all(cfg.get(k) == v for k, v in changes.items()):
+        return False
+
+    # 2. If the proposal recorded the baseline 'current_value' for a single parameter
+    #    and the live config has already moved away from that baseline, it is obsolete
+    evidence = proposal.get("empirical_proof") or (proposal.get("analyst_proposal") or {}).get("supporting_evidence") or {}
+    if isinstance(evidence, dict) and "current_value" in evidence and len(changes) == 1:
+        param_key = next(iter(changes.keys()))
+        if param_key in cfg and cfg[param_key] != evidence["current_value"]:
+            return False
+
+    return True
+
+
 def list_pending_proposals(pending_path: Optional[Path] = None) -> List[Dict[str, Any]]:
-    """Load all pending proposals awaiting human approval."""
+    """Load all proposals from the pending proposals file."""
     path = pending_path or PENDING_PROPOSALS_PATH
     if not path.exists():
         return []
@@ -553,15 +583,34 @@ def list_pending_proposals(pending_path: Optional[Path] = None) -> List[Dict[str
 def save_pending_proposal(
     record: Dict[str, Any],
     pending_path: Optional[Path] = None,
+    current_cfg: Optional[Dict[str, Any]] = None,
 ) -> Path:
-    """Atomically persist a validated proposal to the pending human approval queue."""
+    """Atomically persist a validated proposal to the pending human approval queue.
+    Automatically supersedes any older PENDING_HUMAN_APPROVAL proposals or obsolete proposals
+    so at most ONE (the newest still-relevant proposal) awaits human approval."""
     path = pending_path or PENDING_PROPOSALS_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     existing = list_pending_proposals(path)
-    existing = [p for p in existing if p.get("proposal_id") != record.get("proposal_id")]
-    existing.append(record)
+    cfg = current_cfg if current_cfg is not None else load_config()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    rec_id = record.get("proposal_id")
+    rec_status = record.get("status")
+
+    updated: List[Dict[str, Any]] = []
+    for p in existing:
+        if p.get("proposal_id") == rec_id:
+            continue
+        if p.get("status") == "PENDING_HUMAN_APPROVAL":
+            if rec_status in ("PENDING_HUMAN_APPROVAL", "DEPLOYED") or not is_proposal_still_relevant(p, cfg):
+                p = dict(p)
+                p["status"] = "SUPERSEDED"
+                p["superseded_by"] = rec_id
+                p["superseded_at"] = now_iso
+        updated.append(p)
+
+    updated.append(record)
     tmp = path.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(existing, indent=2))
+    tmp.write_text(json.dumps(updated, indent=2))
     os.replace(tmp, path)
     return path
 
@@ -1087,7 +1136,7 @@ def review_and_deploy_proposal(
         append_governance_audit_log(res)
         return res
 
-    # Step 5: Authorized Atomic Application with Backup
+    # Step 5: Authorized Atomic Application with Backup & Post-Deployment Rollback Checkpoint
     bak_file = cfg_file.with_suffix(".json.bak")
     if cfg_file.exists():
         shutil.copyfile(cfg_file, bak_file)
@@ -1098,6 +1147,52 @@ def review_and_deploy_proposal(
         f.flush()
         os.fsync(f.fileno())
     os.replace(tmp_target, cfg_file)
+
+    # Supersede any older pending proposals that are now obsolete after this deployment
+    try:
+        if pend_file.exists():
+            all_pend = list_pending_proposals(pend_file)
+            changed = False
+            for p in all_pend:
+                if p.get("status") == "PENDING_HUMAN_APPROVAL" and not is_proposal_still_relevant(p, candidate_cfg):
+                    p["status"] = "SUPERSEDED"
+                    p["superseded_by"] = prop_id
+                    p["superseded_at"] = now_iso
+                    changed = True
+            if changed:
+                tmp_p = pend_file.with_suffix(".json.tmp")
+                tmp_p.write_text(json.dumps(all_pend, indent=2))
+                os.replace(tmp_p, pend_file)
+    except Exception:
+        pass
+
+    # Record post-deployment rollback checkpoint so live degradation can auto-revert to .bak
+    try:
+        port_file = PROJECT_ROOT / "data" / "paper_portfolio.json"
+        closed_trades = []
+        if port_file.exists():
+            closed_trades = json.loads(port_file.read_text()).get("closed_trades", []) or []
+        recent_slice = closed_trades[-15:] if closed_trades else []
+        pre_exp = (
+            sum(float(t.get("pnl", 0.0)) for t in recent_slice) / len(recent_slice)
+            if recent_slice
+            else 0.0
+        )
+        snap_file = cfg_file.parent / "last_deployment_snapshot.json"
+        snap_payload = {
+            "proposal_id": prop_id,
+            "deployed_at": now_iso,
+            "trade_count_at_deploy": len(closed_trades),
+            "pre_deploy_expectancy": round(pre_exp, 4),
+            "backup_config_path": str(bak_file),
+            "target_config_path": str(cfg_file),
+            "rolled_back": False,
+        }
+        tmp_snap = snap_file.with_suffix(".json.tmp")
+        tmp_snap.write_text(json.dumps(snap_payload, indent=2))
+        os.replace(tmp_snap, snap_file)
+    except Exception:
+        pass
 
     deployment_actor = "conditional_auto_gate" if auto_gate_passed else ("human_operator" if human_approved else "governor")
     should_commit = False if auto_commit is None else bool(auto_commit)
@@ -1124,6 +1219,76 @@ def review_and_deploy_proposal(
     )
     append_governance_audit_log(res)
     return res
+
+
+def check_and_rollback_if_degraded(
+    closed_trades: List[Dict[str, Any]],
+    config_path: Optional[Path] = None,
+    snapshot_path: Optional[Path] = None,
+    min_eval_trades: int = 10,
+) -> Dict[str, Any]:
+    """Post-Deployment Automatic Rollback Safety Net.
+    Evaluates the first `min_eval_trades` closed trades after a Governor deployment.
+    If post-deployment net PnL is negative AND expectancy degraded materially vs pre-deployment
+    (or win rate collapsed below 35%), atomically restores active_config.json.bak."""
+    cfg_file = config_path or CONFIG_PATH
+    snap_file = snapshot_path or (cfg_file.parent / "last_deployment_snapshot.json")
+    if not snap_file.exists():
+        return {"rolled_back": False, "reason": "No deployment snapshot present"}
+
+    try:
+        snap = json.loads(snap_file.read_text())
+    except Exception:
+        return {"rolled_back": False, "reason": "Unreadable deployment snapshot"}
+
+    if snap.get("rolled_back"):
+        return {"rolled_back": False, "reason": "Already rolled back"}
+
+    base_count = int(snap.get("trade_count_at_deploy", 0))
+    new_trades = closed_trades[base_count:] if len(closed_trades) > base_count else []
+    if len(new_trades) < min_eval_trades:
+        return {
+            "rolled_back": False,
+            "reason": f"Awaiting post-deploy sample ({len(new_trades)}/{min_eval_trades} trades)",
+        }
+
+    eval_window = new_trades[:min_eval_trades]
+    post_pnl = sum(float(t.get("pnl", 0.0)) for t in eval_window)
+    post_exp = post_pnl / len(eval_window)
+    wins = sum(1 for t in eval_window if float(t.get("pnl", 0.0)) > 0)
+    post_wr = (wins / len(eval_window)) * 100.0
+    pre_exp = float(snap.get("pre_deploy_expectancy", 0.0))
+
+    degraded = post_pnl < 0.0 and (post_wr < 35.0 or post_exp < (pre_exp - 3.0))
+    if not degraded:
+        return {
+            "rolled_back": False,
+            "reason": f"Post-deploy performance healthy (PnL=${post_pnl:+.2f}, WR={post_wr:.1f}%, Exp=${post_exp:+.2f})",
+        }
+
+    bak_file = Path(snap.get("backup_config_path", str(cfg_file.with_suffix(".json.bak"))))
+    if not bak_file.exists():
+        return {"rolled_back": False, "reason": "Backup config .bak not found for rollback"}
+
+    tmp_restore = cfg_file.with_suffix(".rollback.tmp")
+    shutil.copyfile(bak_file, tmp_restore)
+    os.replace(tmp_restore, cfg_file)
+
+    snap["rolled_back"] = True
+    snap["rolled_back_at"] = datetime.now(timezone.utc).isoformat()
+    snap["rollback_reason"] = (
+        f"Auto-Rollback triggered after {len(eval_window)} trades: "
+        f"Post-deploy PnL=${post_pnl:+.2f}, WR={post_wr:.1f}%, Exp=${post_exp:+.2f} vs Pre-Exp=${pre_exp:+.2f}"
+    )
+    tmp_snap = snap_file.with_suffix(".json.tmp")
+    tmp_snap.write_text(json.dumps(snap, indent=2))
+    os.replace(tmp_snap, snap_file)
+
+    return {
+        "rolled_back": True,
+        "proposal_id": snap.get("proposal_id"),
+        "reason": snap["rollback_reason"],
+    }
 
 
 def main():

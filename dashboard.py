@@ -94,12 +94,13 @@ def read_json(path: Path) -> Any:
         return None
 
 
-def get_pending_proposals(path: Path) -> List[Dict[str, Any]]:
-    """Return only the single most recent valid pending proposal that requires human approval."""
+def get_pending_proposals(path: Path, current_cfg: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    """Return only the single most recent valid pending proposal that is still relevant to current_cfg."""
     data = read_json(path)
     if not data:
         return []
     proposals = data if isinstance(data, list) else ([data] if isinstance(data, dict) else [])
+    cfg = current_cfg if current_cfg is not None else (read_json(CONFIG_PATH) or {})
 
     # Find timestamp of the most recent DEPLOYED proposal to filter out obsolete proposals
     latest_deployed_ts = None
@@ -120,6 +121,18 @@ def get_pending_proposals(path: Path) -> List[Dict[str, Any]]:
     for p in proposals:
         if not isinstance(p, dict) or p.get("status") != "PENDING_HUMAN_APPROVAL":
             continue
+        changes = p.get("proposed_changes")
+        if not isinstance(changes, dict) or not changes:
+            continue
+        # Skip if proposed changes are already applied in active_config.json
+        if cfg and all(cfg.get(k) == v for k, v in changes.items()):
+            continue
+        # Skip if baseline 'current_value' in evidence no longer matches active_config.json
+        evidence = p.get("empirical_proof") or (p.get("analyst_proposal") or {}).get("supporting_evidence") or {}
+        if isinstance(evidence, dict) and "current_value" in evidence and len(changes) == 1 and cfg:
+            param_key = next(iter(changes.keys()))
+            if param_key in cfg and cfg[param_key] != evidence["current_value"]:
+                continue
         c_ts_str = p.get("created_at")
         if c_ts_str and latest_deployed_ts is not None:
             try:
@@ -132,7 +145,7 @@ def get_pending_proposals(path: Path) -> List[Dict[str, Any]]:
                 pass
         valid_pending.append(p)
 
-    # Sort by created_at descending (newest first) and return ONLY the latest needed one
+    # Sort by created_at descending (newest first) and return ONLY the latest relevant one
     valid_pending.sort(key=lambda x: x.get("created_at", ""), reverse=True)
     return valid_pending[:1]
 
@@ -207,7 +220,7 @@ def render() -> str:
     out.append(rule)
 
     # ── 1.1 Governor Alerts (Pending Proposals) ───────────────────
-    pending = get_pending_proposals(PENDING_PROPOSALS_FILE)
+    pending = get_pending_proposals(PENDING_PROPOSALS_FILE, config)
     if pending:
         out.append(bold(yellow(f" 🔔 GOVERNOR NOTICE: {len(pending)} Proposal(s) Awaiting Your Human Approval!")))
         for p in pending:

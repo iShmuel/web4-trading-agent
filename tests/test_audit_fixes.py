@@ -262,3 +262,79 @@ def test_intra_minute_wick_live_high_triggers_partial_take_profit():
     assert sig.take_profit_ratio == 0.5
 
 
+def test_governor_queue_keeps_only_latest_relevant_proposal(tmp_path):
+    """Verify save_pending_proposal supersedes older pending proposals so at most ONE
+    (the newest still-relevant proposal) remains in PENDING_HUMAN_APPROVAL."""
+    from agent.governor import save_pending_proposal, list_pending_proposals, is_proposal_still_relevant
+    from dashboard import get_pending_proposals
+
+    pend_file = tmp_path / "pending_proposals.json"
+    cfg = {"adx_chop_threshold": 24.0, "atr_multiplier": 2.75}
+
+    p1 = {
+        "proposal_id": "PROP-OLD",
+        "status": "PENDING_HUMAN_APPROVAL",
+        "proposed_changes": {"adx_chop_threshold": 22.0},
+        "empirical_proof": {"current_value": 20.0},
+        "created_at": "2026-11-15T10:00:00+00:00",
+    }
+    p2 = {
+        "proposal_id": "PROP-NEW",
+        "status": "PENDING_HUMAN_APPROVAL",
+        "proposed_changes": {"atr_multiplier": 2.5},
+        "empirical_proof": {"current_value": 2.75},
+        "created_at": "2026-11-15T12:00:00+00:00",
+    }
+
+    save_pending_proposal(p1, pending_path=pend_file, current_cfg=cfg)
+    save_pending_proposal(p2, pending_path=pend_file, current_cfg=cfg)
+
+    all_records = list_pending_proposals(pend_file)
+    old_rec = next(r for r in all_records if r["proposal_id"] == "PROP-OLD")
+    new_rec = next(r for r in all_records if r["proposal_id"] == "PROP-NEW")
+    assert old_rec["status"] == "SUPERSEDED"
+    assert new_rec["status"] == "PENDING_HUMAN_APPROVAL"
+
+    # p1 is also irrelevant because cfg["adx_chop_threshold"] is 24.0 != current_value 20.0
+    assert is_proposal_still_relevant(p1, cfg) is False
+    assert is_proposal_still_relevant(p2, cfg) is True
+
+    visible = get_pending_proposals(pend_file, current_cfg=cfg)
+    assert len(visible) == 1
+    assert visible[0]["proposal_id"] == "PROP-NEW"
+
+
+def test_post_deployment_auto_rollback_safety_net(tmp_path):
+    """Verify check_and_rollback_if_degraded automatically restores active_config.json.bak
+    when post-deployment live trades suffer negative PnL and degraded expectancy."""
+    import json
+    from agent.governor import check_and_rollback_if_degraded
+
+    cfg_file = tmp_path / "active_config.json"
+    bak_file = tmp_path / "active_config.json.bak"
+    snap_file = tmp_path / "last_deployment_snapshot.json"
+
+    bak_file.write_text(json.dumps({"atr_multiplier": 2.75}))
+    cfg_file.write_text(json.dumps({"atr_multiplier": 1.80}))
+    snap_file.write_text(
+        json.dumps(
+            {
+                "proposal_id": "PROP-BAD",
+                "deployed_at": "2026-11-15T12:00:00+00:00",
+                "trade_count_at_deploy": 5,
+                "pre_deploy_expectancy": 10.0,
+                "backup_config_path": str(bak_file),
+                "target_config_path": str(cfg_file),
+                "rolled_back": False,
+            }
+        )
+    )
+
+    # 5 pre-deploy trades (+10 each) followed by 10 post-deploy losing trades (-15 each)
+    closed_trades = [{"pnl": 10.0} for _ in range(5)] + [{"pnl": -15.0} for _ in range(10)]
+    res = check_and_rollback_if_degraded(closed_trades, config_path=cfg_file, snapshot_path=snap_file, min_eval_trades=10)
+    assert res["rolled_back"] is True
+    assert json.loads(cfg_file.read_text())["atr_multiplier"] == 2.75
+
+
+

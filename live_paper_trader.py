@@ -357,7 +357,17 @@ def _run(args):
                 run_portfolio_tick(account, risk_engine, coordinator)
 
                 # Event-driven + periodic post-trade forensic audit trigger (every X closed trades, or every 12h if new trades closed)
-                cur_closed = len(account.state.get("closed_trades", []))
+                cur_closed_list = account.state.get("closed_trades", [])
+                cur_closed = len(cur_closed_list)
+                if cur_closed > last_analyzed_trade_count:
+                    try:
+                        from agent.governor import check_and_rollback_if_degraded
+                        rb_res = check_and_rollback_if_degraded(cur_closed_list)
+                        if rb_res.get("rolled_back"):
+                            coordinator.reload_config(load_config())
+                            log(f"⚠️ [AUTO-ROLLBACK SAFETY NET] {rb_res.get('reason')}")
+                    except Exception as e:
+                        log(f"[Auto-Rollback Notice] {e}")
                 new_trades = cur_closed - last_analyzed_trade_count
                 forensic_due = new_trades >= forensic_interval or (
                     new_trades > 0 and (time.time() - last_forensic_time) >= (forensic_max_hours * 3600)
