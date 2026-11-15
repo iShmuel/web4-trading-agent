@@ -135,3 +135,75 @@ def test_stat_arb_pairs_blocks_stale_weekend_equity_bars():
     sig = strat.evaluate_pair("MU", "CIFR", df_a, df_b, existing_pair_position=None)
     assert sig.action == "NO_TRADE"
     assert "stale pair data" in sig.reason.lower()
+
+
+def test_filter_closed_bars_preserves_live_price_and_triggers_intra_hour_exit():
+    """Verify filter_closed_bars drops the forming 1h bar for indicator purity while storing
+    df.attrs['live_price'] so open positions react to real-time intra-hour stop/target prices."""
+    from core.data_loader import filter_closed_bars
+
+    now = datetime(2026, 6, 1, 14, 35, 0, tzinfo=timezone.utc)
+    dates = pd.date_range("2026-05-29 14:00:00", periods=73, freq="1h", tz="UTC")
+    closes = 100.0 + np.sin(np.linspace(0, 12, 73)) * 2.0
+    closes[-2] = 100.0
+    # Last bar (14:00-15:00 UTC) is still forming at 14:35 UTC and dropped sharply to 84.0 (below stop 88.0)
+    closes[-1] = 84.0
+    raw_df = pd.DataFrame(
+        {"open": closes, "high": closes + 0.5, "low": closes - 0.5, "close": closes, "volume": 1000.0},
+        index=dates,
+    )
+
+    closed_df = filter_closed_bars(raw_df, timeframe="1h", as_of=now)
+    # Indicator dataframe must drop the incomplete 14:00 bar (last closed bar close is 100.0)
+    assert len(closed_df) == 72
+    assert float(closed_df.iloc[-1]["close"]) == 100.0
+    # But live_price metadata must capture the real-time 84.0 intra-hour price!
+    assert closed_df.attrs.get("live_price") == 84.0
+
+    # Evaluating an open LONG position with trailing_stop=88.0 must trigger EXIT at 84.0 immediately
+    mr = MeanReversionStrategy({"max_stale_minutes": 0})
+    pos = {"symbol": "SOL/USDT", "entry_price": 95.0, "trailing_stop": 88.0, "side": "LONG", "tp_hit": False}
+    sig = mr.evaluate("SOL/USDT", closed_df, existing_position=pos)
+    assert sig.status == SignalStatus.EXIT
+    assert sig.reference_price == 84.0
+
+
+def test_correlation_guard_excludes_market_neutral_stat_arb_pairs():
+    """Verify open market-neutral stat_arb_pairs crypto legs do not block directional crypto entries."""
+    risk = RiskEngine(default_risk_pct=0.02, max_crypto_positions=2, max_open_positions=5)
+    active = {
+        "AVAX/USDT": {"units": 100.0, "entry_price": 10.0, "side": "LONG", "strategy_id": "stat_arb_pairs"},
+        "BARD/USDT": {"units": 1000.0, "entry_price": 1.0, "side": "SHORT", "strategy_id": "stat_arb_pairs"},
+    }
+    verdict = risk.validate_proposed_entry(
+        symbol="SOL/USDT",
+        side="LONG",
+        strategy_id="momentum",
+        entry_price=100.0,
+        suggested_stop=95.0,
+        atr=2.0,
+        atr_multiplier=2.5,
+        equity=10000.0,
+        cash=8000.0,
+        active_positions=active,
+    )
+    assert verdict.approved is True
+
+
+def test_live_trader_log_rotation(tmp_path, monkeypatch):
+    """Verify log() rotates live_trader.log to live_trader.log.1 when size reaches MAX_LOG_BYTES."""
+    import live_paper_trader
+
+    test_log = tmp_path / "live_trader.log"
+    monkeypatch.setattr(live_paper_trader, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(live_paper_trader, "LOG_FILE", test_log)
+    monkeypatch.setattr(live_paper_trader, "MAX_LOG_BYTES", 100)
+
+    test_log.write_text("X" * 120)
+    live_paper_trader.log("Fresh line after rotation")
+
+    rotated = tmp_path / "live_trader.log.1"
+    assert rotated.exists()
+    assert rotated.read_text() == "X" * 120
+    assert "Fresh line after rotation" in test_log.read_text()
+

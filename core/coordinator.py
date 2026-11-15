@@ -632,7 +632,7 @@ class PortfolioCoordinator:
                 reason="No market data provided",
             )
 
-        cur_price = float(df.iloc[-1]["close"])
+        cur_price = float(df.attrs.get("live_price", df.iloc[-1]["close"]))
         current_prices[symbol] = cur_price
         existing_pos = self.account.get_position(symbol)
         sym_cfg, momentum_strategy, mean_reversion_strategy = self._engines_for(symbol)

@@ -358,9 +358,14 @@ class RiskEngine:
                 reason=f"Max positions limit reached: {len(active_positions)}/{self.max_open_positions}",
             )
 
-        # Cross-Asset Correlation Guard: Limit simultaneous crypto positions to max_crypto_positions
-        if is_crypto_symbol(symbol):
-            current_crypto_pos = sum(1 for sym in active_positions if is_crypto_symbol(sym))
+        # Cross-Asset Correlation Guard: Limit simultaneous directional crypto positions to max_crypto_positions
+        # (Market-neutral stat_arb_pairs legs are hedged Long/Short and excluded from directional crypto count)
+        if is_crypto_symbol(symbol) and strategy_id != "stat_arb_pairs":
+            current_crypto_pos = sum(
+                1
+                for sym, pos in active_positions.items()
+                if is_crypto_symbol(sym) and pos.get("strategy_id") != "stat_arb_pairs"
+            )
             if current_crypto_pos >= self.max_crypto_positions:
                 return RiskVerdict(
                     approved=False,

@@ -23,15 +23,18 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = PROJECT_ROOT / "config" / "active_config.json"
 DATA_DIR = PROJECT_ROOT / "data"
 LOG_FILE = DATA_DIR / "live_trader.log"
+MAX_LOG_BYTES = 10 * 1024 * 1024  # 10 MB automatic log rotation threshold
 LOCK_FILE = DATA_DIR / "live_trader.lock"
 STATUS_FILE = DATA_DIR / "live_status.json"
 
 
 def log(msg: str):
-    """Print to console and append to data/live_trader.log."""
+    """Print to console and append to data/live_trader.log with 10 MB rotation."""
     print(msg, flush=True)
     try:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
+        if LOG_FILE.exists() and LOG_FILE.stat().st_size >= MAX_LOG_BYTES:
+            LOG_FILE.replace(LOG_FILE.with_suffix(".log.1"))
         with open(LOG_FILE, "a") as f:
             f.write(f"{msg}\n")
     except Exception:
@@ -147,7 +150,7 @@ def run_portfolio_tick(
                 continue
             df.attrs["quote_time"] = datetime.now(timezone.utc)
             market_data[symbol] = df
-            current_prices[symbol] = float(df.iloc[-1]["close"])
+            current_prices[symbol] = float(df.attrs.get("live_price", df.iloc[-1]["close"]))
         except Exception as e:
             log(f"   ⚠️ Warning validating {symbol}: {e}")
 

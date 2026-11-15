@@ -67,8 +67,13 @@ def filter_closed_bars(
         df = df.copy()
         df.index = idx
 
+    live_price = float(df["close"].iloc[-1])
+    live_bar_time = df.index[-1]
     mask = (df.index + tf_delta) <= ref_time
-    return df[mask]
+    closed_df = df[mask].copy()
+    closed_df.attrs["live_price"] = live_price
+    closed_df.attrs["live_bar_time"] = live_bar_time
+    return closed_df
 
 
 def check_data_quality(

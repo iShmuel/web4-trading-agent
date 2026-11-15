@@ -140,9 +140,10 @@ class MomentumStrategy:
         in_uptrend = price > ema
         in_downtrend = price < ema
 
-        # --- If holding a position: evaluate exit/hold ---
+        # --- If holding a position: evaluate exit/hold (using live intra-hour tick price if available) ---
         if existing_position is not None:
-            return self._evaluate_exit(symbol, price, atr, existing_position, indicators)
+            live_exit_price = float(df.attrs.get("live_price", price))
+            return self._evaluate_exit(symbol, live_exit_price, atr, existing_position, indicators)
 
         # --- No position: evaluate entry ---
 
