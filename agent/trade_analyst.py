@@ -337,7 +337,8 @@ def build_deterministic_analyst_proposals(stats: Dict[str, Any]) -> List[Dict[st
     by_strat = stats.get("by_strategy", {})
     mom_info = by_strat.get("momentum", {})
 
-    if stats.get("win_rate_pct", 0.0) < 55.0 or float(mom_info.get("pnl", 0.0)) < 0.0:
+    has_mom_trades = int(stats.get("momentum_trades", mom_info.get("trades", 0)) or 0) > 0 or not by_strat
+    if has_mom_trades and (stats.get("win_rate_pct", 0.0) < 55.0 or float(mom_info.get("pnl", 0.0)) < 0.0):
         proposals.append({
             "proposal_id": f"PROP-RULE-{uuid.uuid4().hex[:6].upper()}",
             "strategy_id": "momentum",

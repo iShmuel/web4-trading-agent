@@ -37,12 +37,18 @@ class StatArbPairsStrategy:
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         cfg = config or {}
-        self.lookback_period = int(cfg.get("stat_arb_lookback", 48))
-        self.entry_z_score = float(cfg.get("stat_arb_entry_z", 2.0))
-        self.exit_z_score = float(cfg.get("stat_arb_exit_z", 0.5))
-        self.stop_z_score = float(cfg.get("stat_arb_stop_z", 3.5))
-        self.min_correlation = float(cfg.get("min_pair_correlation", 0.70))
+        self.lookback_period = int(cfg.get("stat_arb_lookback", cfg.get("pairs_lookback", 48)))
+        self.entry_z_score = float(cfg.get("stat_arb_entry_z", cfg.get("pairs_entry_z", 2.0)))
+        self.exit_z_score = float(cfg.get("stat_arb_exit_z", cfg.get("pairs_exit_z", 0.5)))
+        self.stop_z_score = float(cfg.get("stat_arb_stop_z", cfg.get("pairs_stop_z", 3.5)))
+        self.min_correlation = float(cfg.get("min_pair_correlation", cfg.get("pairs_min_correlation", 0.70)))
+        self.min_return_correlation = float(cfg.get("min_pair_return_correlation", 0.55))
         self.max_half_life = float(cfg.get("max_pair_half_life_hours", 72.0))
+        self.require_reversal_hook = bool(cfg.get("stat_arb_require_reversal_hook", False))
+        self.blacklisted_pairs = {
+            f"{p[0]}:{p[1]}" if isinstance(p, (list, tuple)) and len(p) == 2 else str(p)
+            for p in cfg.get("pairs_Blacklist", cfg.get("blacklisted_pairs", []))
+        }
         # Cost-aware trade acceptance gate (0.0 = disabled; preserves historical behaviour).
         # A pair entry is only accepted when expected spread reversion >= ratio x round-trip friction.
         self.min_edge_cost_ratio = float(cfg.get("stat_arb_min_edge_cost_ratio", 0.0))
@@ -129,6 +135,15 @@ class StatArbPairsStrategy:
         if np.isnan(corr):
             corr = 0.0
 
+        ret_a = sub_a.pct_change().dropna()
+        ret_b = sub_b.pct_change().dropna()
+        if len(ret_a) > 5 and float(ret_a.std()) > 1e-12 and float(ret_b.std()) > 1e-12:
+            ret_corr = float(np.corrcoef(ret_a, ret_b)[0, 1])
+            if np.isnan(ret_corr):
+                ret_corr = 0.0
+        else:
+            ret_corr = corr
+
         spread = sub_a - (beta * sub_b)
         d_spread = spread.diff().dropna()
         prev_spread = (spread - spread.mean()).iloc[:-1]
@@ -145,7 +160,12 @@ class StatArbPairsStrategy:
         else:
             half_life = 999.0
 
-        is_stationary = (corr >= self.min_correlation) and (lam < -0.01) and (0.1 <= half_life <= self.max_half_life)
+        is_stationary = (
+            (corr >= self.min_correlation)
+            and (ret_corr >= self.min_return_correlation)
+            and (lam < -0.01)
+            and (0.1 <= half_life <= self.max_half_life)
+        )
         return corr, round(half_life, 1), is_stationary
 
     def evaluate_pair(
@@ -195,7 +215,38 @@ class StatArbPairsStrategy:
 
         # If holding a pair position, check exit conditions
         if existing_pair_position is not None:
-            if abs(z_score) <= self.exit_z_score:
+            locked_z = z_score
+            profit_gate_ok = True
+            net_pnl_est = 0.0
+            if isinstance(existing_pair_position, dict):
+                l_beta = float(existing_pair_position.get("hedge_ratio", beta) or beta)
+                l_mu = existing_pair_position.get("entry_spread_mean")
+                l_sd = existing_pair_position.get("entry_spread_std")
+                ca = float(combined.iloc[-1, 0])
+                cb = float(combined.iloc[-1, 1])
+                if l_mu is not None and l_sd is not None and float(l_sd) > 0:
+                    locked_z = ((ca - l_beta * cb) - float(l_mu)) / float(l_sd)
+                ea = float(existing_pair_position.get("entry_a", 0.0) or 0.0)
+                eb = float(existing_pair_position.get("entry_b", 0.0) or 0.0)
+                ua = float(existing_pair_position.get("units_a", 0.0) or 0.0)
+                ub = float(existing_pair_position.get("units_b", 0.0) or 0.0)
+                side_a = str(existing_pair_position.get("side_a", "LONG"))
+                sign = 1.0 if side_a == "LONG" else -1.0
+                if ea > 0 and eb > 0 and ua > 0 and ub > 0:
+                    gross = sign * ((ca - ea) * ua - (cb - eb) * ub)
+                    entry_fees = float(existing_pair_position.get("fees_paid", 0.0) or 0.0)
+                    exit_cost = (ca * ua + cb * ub) * self.cost_per_side_pct
+                    net_pnl_est = gross - entry_fees - exit_cost
+                    profit_gate_ok = net_pnl_est > 0.0
+                reverted = (
+                    abs(z_score) <= self.exit_z_score
+                    or (sign > 0 and locked_z >= -self.exit_z_score)
+                    or (sign < 0 and locked_z <= self.exit_z_score)
+                )
+            else:
+                reverted = abs(z_score) <= self.exit_z_score
+
+            if reverted and profit_gate_ok:
                 return PairTradeSignal(
                     pair_id=pair_id,
                     asset_a=asset_a,
@@ -211,17 +262,18 @@ class StatArbPairsStrategy:
                     correlation=corr,
                     half_life=half_life,
                 )
-            elif abs(z_score) >= self.stop_z_score:
+            elif abs(locked_z) >= self.stop_z_score or abs(z_score) >= self.stop_z_score:
+                eff_z = locked_z if abs(locked_z) >= abs(z_score) else z_score
                 return PairTradeSignal(
                     pair_id=pair_id,
                     asset_a=asset_a,
                     asset_b=asset_b,
                     timestamp=now,
                     action="CLOSE_PAIR",
-                    z_score=z_score,
+                    z_score=eff_z,
                     hedge_ratio=beta,
                     spread=cur_spread,
-                    reason=f"Stop loss triggered: Spread divergence Z-Score {z_score:+.2f} exceeded stop {self.stop_z_score}",
+                    reason=f"Stop loss triggered: Spread divergence Z-Score {eff_z:+.2f} exceeded stop {self.stop_z_score}",
                     confidence=0.95,
                     is_stationary=is_stat,
                     correlation=corr,
@@ -244,6 +296,11 @@ class StatArbPairsStrategy:
                     half_life=half_life,
                 )
             else:
+                hold_note = (
+                    f"Holding pair position: current Z-Score {z_score:+.2f} (Half-life {half_life:.1f}h)"
+                    if profit_gate_ok
+                    else f"Holding pair: rolling Z {z_score:+.2f} near target due to mean drift, waiting for positive net spread PnL (${net_pnl_est:+.2f})"
+                )
                 return PairTradeSignal(
                     pair_id=pair_id,
                     asset_a=asset_a,
@@ -253,11 +310,27 @@ class StatArbPairsStrategy:
                     z_score=z_score,
                     hedge_ratio=beta,
                     spread=cur_spread,
-                    reason=f"Holding pair position: current Z-Score {z_score:+.2f} (Half-life {half_life:.1f}h)",
+                    reason=hold_note,
                     is_stationary=is_stat,
                     correlation=corr,
                     half_life=half_life,
                 )
+
+        if pair_id in self.blacklisted_pairs:
+            return PairTradeSignal(
+                pair_id=pair_id,
+                asset_a=asset_a,
+                asset_b=asset_b,
+                timestamp=now,
+                action="NO_TRADE",
+                z_score=z_score,
+                hedge_ratio=beta,
+                spread=cur_spread,
+                reason=f"Blocked: Pair {pair_id} is quarantined in pairs_Blacklist",
+                is_stationary=False,
+                correlation=corr,
+                half_life=half_life,
+            )
 
         # No existing pair position: check dynamic stationarity gate
         if not is_stat:
@@ -321,7 +394,60 @@ class StatArbPairsStrategy:
                     half_life=half_life,
                 )
 
-        # Check entry triggers
+        # Check entry triggers (with optional 1-bar Reversal Hook confirmation to avoid catching accelerating breakouts)
+        if self.require_reversal_hook and len(combined) >= self.lookback_period + 1:
+            prev_z, _, _ = self.calculate_spread_and_zscore(combined.iloc[:-1, 0], combined.iloc[:-1, 1])
+            hook_floor = max(self.exit_z_score + 0.5, 1.4)
+            long_hook = (-self.stop_z_score < prev_z <= -self.entry_z_score) and (prev_z < z_score <= -hook_floor)
+            short_hook = (self.entry_z_score <= prev_z < self.stop_z_score) and (hook_floor <= z_score < prev_z)
+            if long_hook:
+                return PairTradeSignal(
+                    pair_id=pair_id,
+                    asset_a=asset_a,
+                    asset_b=asset_b,
+                    timestamp=now,
+                    action="LONG_A_SHORT_B",
+                    z_score=z_score,
+                    hedge_ratio=beta,
+                    spread=cur_spread,
+                    reason=f"Spread reversal hook confirmed: Z-Score hooked {prev_z:+.2f} -> {z_score:+.2f} (Long {asset_a}, Short {asset_b} [Beta={beta:.2f}, HL={half_life:.1f}h])",
+                    confidence=min(1.0, abs(prev_z) / 3.0),
+                    is_stationary=True,
+                    correlation=corr,
+                    half_life=half_life,
+                )
+            elif short_hook:
+                return PairTradeSignal(
+                    pair_id=pair_id,
+                    asset_a=asset_a,
+                    asset_b=asset_b,
+                    timestamp=now,
+                    action="SHORT_A_LONG_B",
+                    z_score=z_score,
+                    hedge_ratio=beta,
+                    spread=cur_spread,
+                    reason=f"Spread reversal hook confirmed: Z-Score hooked {prev_z:+.2f} -> {z_score:+.2f} (Short {asset_a}, Long {asset_b} [Beta={beta:.2f}, HL={half_life:.1f}h])",
+                    confidence=min(1.0, abs(prev_z) / 3.0),
+                    is_stationary=True,
+                    correlation=corr,
+                    half_life=half_life,
+                )
+            elif abs(z_score) >= self.entry_z_score:
+                return PairTradeSignal(
+                    pair_id=pair_id,
+                    asset_a=asset_a,
+                    asset_b=asset_b,
+                    timestamp=now,
+                    action="NO_TRADE",
+                    z_score=z_score,
+                    hedge_ratio=beta,
+                    spread=cur_spread,
+                    reason=f"Awaiting Reversal Hook: Spread Z-Score {z_score:+.2f} still expanding from {prev_z:+.2f}",
+                    is_stationary=True,
+                    correlation=corr,
+                    half_life=half_life,
+                )
+
         if z_score <= -self.entry_z_score:
             return PairTradeSignal(
                 pair_id=pair_id,
@@ -453,16 +579,48 @@ def discover_cointegrated_pairs(
     stocks = [s for s in symbols if not is_crypto_symbol(s) and s in data]
 
     def _select_top(group: List[str], limit: int) -> List[List[str]]:
+        from core.backtest_engine import run_pairs_backtest
+
         scored = []
+        fallback_scored = []
         for a, b in combinations(group, 2):
+            if f"{a}:{b}" in strat.blacklisted_pairs or f"{b}:{a}" in strat.blacklisted_pairs:
+                continue
             sig = strat.evaluate_pair(a, b, data[a], data[b])
-            if sig.is_stationary:
-                score = sig.correlation / np.log2(2.0 + max(0.5, sig.half_life))
-                scored.append((score, a, b))
-        scored.sort(key=lambda x: x[0], reverse=True)
+            stat_score = sig.correlation / np.log2(2.0 + max(0.5, sig.half_life)) if sig.is_stationary else 0.0
+            common = data[a].index.intersection(data[b].index)
+            if len(common) >= max(120, strat.lookback_period * 2 + 20):
+                mid = len(common) // 2
+                bt_full = run_pairs_backtest(
+                    data[a],
+                    data[b],
+                    lookback=strat.lookback_period,
+                    entry_z=strat.entry_z_score,
+                    exit_z=strat.exit_z_score,
+                    stop_z=strat.stop_z_score,
+                    min_edge_cost_ratio=max(1.5, strat.min_edge_cost_ratio),
+                )
+                bt_oos = run_pairs_backtest(
+                    data[a].loc[common[mid - strat.lookback_period :]],
+                    data[b].loc[common[mid - strat.lookback_period :]],
+                    lookback=strat.lookback_period,
+                    entry_z=strat.entry_z_score,
+                    exit_z=strat.exit_z_score,
+                    stop_z=strat.stop_z_score,
+                    min_edge_cost_ratio=max(1.5, strat.min_edge_cost_ratio),
+                )
+                if bt_full.total_trades > 0 and bt_full.total_return_pct > 0.0 and bt_oos.total_return_pct >= 0.0:
+                    scored.append((bt_full.total_return_pct + bt_oos.total_return_pct + stat_score * 0.1, a, b))
+                elif sig.is_stationary and bt_full.total_trades == 0:
+                    fallback_scored.append((stat_score, a, b))
+            elif sig.is_stationary:
+                fallback_scored.append((stat_score, a, b))
+
+        pool = scored if scored else fallback_scored
+        pool.sort(key=lambda x: x[0], reverse=True)
         chosen: List[List[str]] = []
         counts: Dict[str, int] = {}
-        for _, a, b in scored:
+        for _, a, b in pool:
             if len(chosen) >= limit:
                 break
             if counts.get(a, 0) >= max_pairs_per_symbol or counts.get(b, 0) >= max_pairs_per_symbol:

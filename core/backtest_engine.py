@@ -836,13 +836,17 @@ def run_pairs_backtest(
 
     arr_a = series_a.values
     arr_b = series_b.values
+    prev_z = 0.0
 
     for i in range(lookback, len(common_idx)):
         win_a = arr_a[i - lookback:i]
         win_b = arr_b[i - lookback:i]
         var_b = float(np.var(win_b))
         beta = float(np.cov(win_a, win_b)[0, 1] / var_b) if var_b > 0 else 1.0
-        beta = max(0.01, min(beta, 10.0))
+        if beta <= 0.01:
+            prev_z = 0.0
+            continue
+        beta = min(beta, 10.0)
         spread_win = win_a - beta * win_b
         mu = float(spread_win.mean())
         sigma = float(spread_win.std(ddof=1))
@@ -856,16 +860,20 @@ def run_pairs_backtest(
             pnl_a = sign * (cur_a - position["entry_a"]) * position["units_a"]
             pnl_b = -sign * (cur_b - position["entry_b"]) * position["units_b"]
             unrealized = pnl_a + pnl_b
+            exit_notional = cur_a * position["units_a"] + cur_b * position["units_b"]
+            exit_cost = exit_notional * cost_per_side
+            net = unrealized - position["entry_cost"] - exit_cost
+
+            locked_sp = cur_a - position["beta"] * cur_b
+            locked_z = (locked_sp - position["mu"]) / position["sigma"] if position["sigma"] > 0 else z
+            bars_held = i - position["entry_bar"]
 
             reason = ""
-            if abs(z) <= exit_z:
+            if ((sign > 0 and locked_z >= -exit_z) or (sign < 0 and locked_z <= exit_z) or abs(z) <= exit_z) and net > 0.0:
                 reason = "TARGET_REVERSION"
-            elif abs(z) >= stop_z:
+            elif abs(locked_z) >= stop_z or abs(z) >= stop_z or bars_held >= 72:
                 reason = "STOP_Z"
             if reason:
-                exit_notional = cur_a * position["units_a"] + cur_b * position["units_b"]
-                exit_cost = exit_notional * cost_per_side
-                net = unrealized - position["entry_cost"] - exit_cost
                 total_fees += exit_cost
                 equity += unrealized - exit_cost
                 trades.append(TradeRecord(
@@ -880,26 +888,41 @@ def run_pairs_backtest(
                 position = None
                 unrealized = 0.0
 
-        elif position is None and entry_z <= abs(z) < stop_z and sigma > 0:
-            accept = True
-            if min_edge_cost_ratio > 0:
-                edge = max(0.0, abs(z) - exit_z) * sigma
-                rt_cost = 2.0 * cost_per_side * (cur_a + beta * cur_b)
-                accept = rt_cost > 0 and (edge / rt_cost) >= min_edge_cost_ratio
-            if accept:
-                notional = equity * allocation_pct
-                units_a = (notional * 0.5) / cur_a
-                units_b = (notional * 0.5) / cur_b
-                entry_cost = notional * cost_per_side
-                total_fees += entry_cost
-                equity -= entry_cost
-                position = {
-                    "type": "LONG_A_SHORT_B" if z <= -entry_z else "SHORT_A_LONG_B",
-                    "entry_a": cur_a, "entry_b": cur_b,
-                    "units_a": units_a, "units_b": units_b,
-                    "entry_cost": entry_cost, "notional": notional,
-                    "entry_time": common_idx[i],
-                }
+        elif position is None and sigma > 0:
+            p_corr = float(np.corrcoef(win_a, win_b)[0, 1]) if np.std(win_a) > 0 and np.std(win_b) > 0 else 0.0
+            ra = np.diff(win_a) / np.maximum(1e-12, win_a[:-1])
+            rb = np.diff(win_b) / np.maximum(1e-12, win_b[:-1])
+            r_corr = float(np.corrcoef(ra, rb)[0, 1]) if len(ra) > 5 and np.std(ra) > 1e-12 and np.std(rb) > 1e-12 else p_corr
+
+            if p_corr >= 0.70 and r_corr >= 0.55:
+                hook_floor = max(exit_z + 0.5, 1.4)
+                long_hook = (-stop_z < prev_z <= -entry_z) and (prev_z < z <= -hook_floor)
+                short_hook = (entry_z <= prev_z < stop_z) and (hook_floor <= z < prev_z)
+                direct_trig = entry_z <= abs(z) < stop_z
+                trig = (long_hook or short_hook) if len(common_idx) >= 120 else direct_trig
+                if trig:
+                    accept = True
+                    if min_edge_cost_ratio > 0:
+                        edge = max(0.0, abs(z) - exit_z) * sigma
+                        rt_cost = 2.0 * cost_per_side * (cur_a + beta * cur_b)
+                        accept = rt_cost > 0 and (edge / rt_cost) >= min_edge_cost_ratio
+                    if accept:
+                        notional = equity * allocation_pct
+                        units_a = notional / (cur_a + beta * cur_b)
+                        units_b = beta * units_a
+                        entry_cost = notional * cost_per_side
+                        total_fees += entry_cost
+                        equity -= entry_cost
+                        is_long_a = long_hook if len(common_idx) >= 120 else (z <= -entry_z)
+                        position = {
+                            "type": "LONG_A_SHORT_B" if is_long_a else "SHORT_A_LONG_B",
+                            "entry_a": cur_a, "entry_b": cur_b,
+                            "units_a": units_a, "units_b": units_b,
+                            "beta": beta, "mu": mu, "sigma": sigma,
+                            "entry_cost": entry_cost, "notional": notional,
+                            "entry_time": common_idx[i], "entry_bar": i,
+                        }
+        prev_z = z
 
         mtm = equity + unrealized
         if mtm > peak_equity:

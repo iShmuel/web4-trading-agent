@@ -188,28 +188,28 @@
   "stat_arb_risk_pct": 0.02,
   "pairs_universe": [
     [
-      "LINK/USDT",
-      "AVAX/USDT"
+      "AVAX/USDT",
+      "BARD/USDT"
+    ],
+    [
+      "BARD/USDT",
+      "ONE/USDT"
     ],
     [
       "LINK/USDT",
-      "BNB/USDT"
+      "ONE/USDT"
     ],
     [
-      "INIT/USDT",
-      "GRAM/USDT"
-    ],
-    [
-      "CBRS",
-      "AAPL"
+      "MU",
+      "CIFR"
     ],
     [
       "NOK",
-      "WULF"
+      "CBRS"
     ],
     [
-      "AAPL",
-      "MU"
+      "HIMS",
+      "NOK"
     ]
   ],
   "use_asset_profiles": true,
@@ -377,5 +377,12 @@
   "max_position_pct": 25.0,
   "rebalance_band_pct": 5.0,
   "bb_std": 1.9,
-  "stat_arb_min_edge_cost_ratio": 2.5
+  "stat_arb_min_edge_cost_ratio": 2.5,
+  "stat_arb_require_reversal_hook": true,
+  "min_pair_return_correlation": 0.55,
+  "pair_stop_cooldown_hours": 12.0,
+  "pairs_Blacklist": [
+    "INIT/USDT:GRAM/USDT",
+    "LINK/USDT:AVAX/USDT"
+  ]
 }

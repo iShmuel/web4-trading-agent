@@ -1362,11 +1362,24 @@ class PortfolioCoordinator:
 
         # Dynamic Pairs Trading Multi-Asset Evaluation Pass
         if self.is_strategy_enabled(StatArbPairsStrategy.STRATEGY_ID):
-            active_pairs: Dict[str, str] = {}
+            active_pairs: Dict[str, Any] = {}
             for sym, pos in self.account.positions.items():
                 pid = pos.get("pair_id")
-                if pid:
-                    active_pairs[pid] = pos.get("side", "LONG")
+                if pid and ":" in str(pid):
+                    leg_a, leg_b = str(pid).split(":", 1)
+                    pos_a = self.account.positions.get(leg_a, {})
+                    pos_b = self.account.positions.get(leg_b, {})
+                    active_pairs[pid] = {
+                        "side_a": pos_a.get("side", pos.get("side", "LONG")),
+                        "entry_a": pos_a.get("entry_price", 0.0),
+                        "entry_b": pos_b.get("entry_price", 0.0),
+                        "units_a": pos_a.get("units", 0.0),
+                        "units_b": pos_b.get("units", 0.0),
+                        "hedge_ratio": pos.get("hedge_ratio", 1.0),
+                        "entry_spread_mean": pos.get("entry_spread_mean"),
+                        "entry_spread_std": pos.get("entry_spread_std"),
+                        "fees_paid": float(pos_a.get("fees_paid", 0.0) or 0.0) + float(pos_b.get("fees_paid", 0.0) or 0.0),
+                    }
 
             raw_candidate_pairs = self.config.get("pairs_universe") or self.config.get("stat_arb_pairs")
             candidate_pairs = None
@@ -1413,6 +1426,15 @@ class PortfolioCoordinator:
                             exit_reason=f"Dynamic Pair Exit ({psig.reason})",
                         )
                         executed += 1
+                    if "Stop loss triggered" in psig.reason:
+                        if not hasattr(self, "pair_cooldown_until"):
+                            self.pair_cooldown_until = {}
+                        if not hasattr(self, "pair_stop_counts"):
+                            self.pair_stop_counts = {}
+                        self.pair_cooldown_until[psig.pair_id] = now + timedelta(hours=float(self.config.get("pair_stop_cooldown_hours", 12.0)))
+                        self.pair_stop_counts[psig.pair_id] = self.pair_stop_counts.get(psig.pair_id, 0) + 1
+                        if self.pair_stop_counts[psig.pair_id] >= 2:
+                            self.pairs_strategy.blacklisted_pairs.add(psig.pair_id)
                     decisions.append(CoordinatorDecision(
                         symbol=psig.pair_id,
                         action="CLOSE_PAIR",
@@ -1422,6 +1444,16 @@ class PortfolioCoordinator:
                         indicators={"z_score": psig.z_score, "beta": psig.hedge_ratio, "half_life": psig.half_life, "correlation": psig.correlation},
                     ))
                 elif psig.action in ("LONG_A_SHORT_B", "SHORT_A_LONG_B"):
+                    cd_until = getattr(self, "pair_cooldown_until", {}).get(psig.pair_id)
+                    if cd_until is not None and now < cd_until:
+                        decisions.append(CoordinatorDecision(
+                            symbol=psig.pair_id,
+                            action="REJECTED",
+                            strategy_id="stat_arb_pairs",
+                            price=current_prices.get(psig.asset_a, 0.0),
+                            reason=f"Pair {psig.pair_id} in post-stop cooldown until {cd_until.isoformat()}",
+                        ))
+                        continue
                     total_eq = self.account.get_total_equity(current_prices)
                     breaker_ok, breaker_reason = self.risk_engine.check_circuit_breakers(total_eq, current_time=now)
                     if not breaker_ok:
@@ -1449,24 +1481,27 @@ class PortfolioCoordinator:
                             stop_b = round(pb * (1.0 - stop_pct) if side_b == "LONG" else pb * (1.0 + stop_pct), 6)
 
                             base_leg_notional = min(dollar_risk / max(0.01, stop_pct), total_eq * 0.15)
-                            norm_beta = (
-                                max(0.5, min(2.0, float(psig.hedge_ratio) * (pb / pa)))
-                                if (pa > 0 and pb > 0 and psig.hedge_ratio > 0)
-                                else 1.0
-                            )
-                            notional_a = base_leg_notional
-                            notional_b = min(base_leg_notional * norm_beta, total_eq * 0.15)
-                            total_cost = notional_a + notional_b
-                            if total_cost > (self.account.cash * 0.90) and total_cost > 0:
-                                scale = (self.account.cash * 0.90) / total_cost
-                                notional_a *= scale
-                                notional_b *= scale
-                                total_cost = notional_a + notional_b
+                            total_cost = min(base_leg_notional * 2.0, total_eq * 0.30, self.account.cash * 0.90)
+                            beta_val = max(0.01, min(10.0, float(psig.hedge_ratio))) if psig.hedge_ratio and psig.hedge_ratio > 0 else 1.0
+                            if pa > 0 and pb > 0 and total_cost > 0:
+                                units_a = total_cost / (pa + beta_val * pb)
+                                units_b = beta_val * units_a
+                            else:
+                                units_a = 0.0
+                                units_b = 0.0
 
-                            units_a = notional_a / pa if pa > 0 else 0.0
-                            units_b = notional_b / pb if pb > 0 else 0.0
+                            # Compute entry spread mean and std to lock the basket
+                            comb_ab = pd.concat(
+                                [market_data[psig.asset_a]["close"], market_data[psig.asset_b]["close"]],
+                                axis=1,
+                                join="inner",
+                            ).dropna()
+                            lb = self.pairs_strategy.lookback_period
+                            sp_win = comb_ab.iloc[-lb:, 0] - beta_val * comb_ab.iloc[-lb:, 1]
+                            entry_sp_mean = float(sp_win.mean()) if len(sp_win) > 0 else 0.0
+                            entry_sp_std = float(sp_win.std()) if len(sp_win) > 1 else 1.0
 
-                            if total_cost > 0 and self.account.cash >= (total_cost * 1.002):
+                            if total_cost > 0 and units_a > 0 and units_b > 0 and self.account.cash >= (total_cost * 1.002):
                                 try:
                                     self.account.open_position(
                                         symbol=psig.asset_a,
@@ -1478,7 +1513,13 @@ class PortfolioCoordinator:
                                         side=side_a,
                                         strategy_id="stat_arb_pairs",
                                     )
-                                    self.account.set_position_fields(psig.asset_a, pair_id=psig.pair_id, hedge_ratio=psig.hedge_ratio)
+                                    self.account.set_position_fields(
+                                        psig.asset_a,
+                                        pair_id=psig.pair_id,
+                                        hedge_ratio=beta_val,
+                                        entry_spread_mean=entry_sp_mean,
+                                        entry_spread_std=entry_sp_std,
+                                    )
 
                                     self.account.open_position(
                                         symbol=psig.asset_b,
@@ -1490,7 +1531,13 @@ class PortfolioCoordinator:
                                         side=side_b,
                                         strategy_id="stat_arb_pairs",
                                     )
-                                    self.account.set_position_fields(psig.asset_b, pair_id=psig.pair_id, hedge_ratio=psig.hedge_ratio)
+                                    self.account.set_position_fields(
+                                        psig.asset_b,
+                                        pair_id=psig.pair_id,
+                                        hedge_ratio=beta_val,
+                                        entry_spread_mean=entry_sp_mean,
+                                        entry_spread_std=entry_sp_std,
+                                    )
 
                                     executed += 2
                                     signals_count += 1
