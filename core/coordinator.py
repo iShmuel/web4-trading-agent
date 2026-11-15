@@ -139,6 +139,8 @@ class PortfolioCoordinator:
                 self._strategy_enabled[sid] = sid in enabled_set
         # Derivatives funding rate cache: symbol -> (timestamp, funding_rate)
         self._funding_cache: Dict[str, Tuple[float, Optional[float]]] = {}
+        # Dynamic Rolling Expectancy Router cache: symbol -> (epoch_ts, chosen_strategy)
+        self._rolling_router_cache: Dict[str, Tuple[float, str]] = {}
         # Timestamp of most recent crypto stop-loss exit for contagion cooldown protection
         self._last_crypto_stop_time: Optional[pd.Timestamp] = None
 
@@ -197,6 +199,91 @@ class PortfolioCoordinator:
 
     def symbol_config(self, symbol: str) -> Dict[str, Any]:
         return self._engines_for(symbol)[0]
+
+    def _resolve_dynamic_rolling_strategy(
+        self,
+        symbol: str,
+        df: pd.DataFrame,
+        sym_cfg: Dict[str, Any],
+    ) -> str:
+        """100% Dynamic Rolling Expectancy & Regime Router (Option B).
+
+        Evaluates Momentum, Mean Reversion, and Crypto Basis Yield over a rolling
+        historical window (cached for 6h per symbol) and dynamically selects the
+        highest-Sharpe strategy with PF >= 1.15, or parks choppy crypto in
+        `basis_yield` until a directional trend re-emerges.
+        """
+        if not self.config.get("enable_dynamic_rolling_router", False):
+            return "all"
+
+        now_epoch = time.time()
+        ttl = float(self.config.get("dynamic_router_cache_seconds", 21600.0))
+        cached = self._rolling_router_cache.get(symbol)
+        if cached is not None and (now_epoch - cached[0]) < ttl:
+            return cached[1]
+
+        is_crypto = is_crypto_symbol(symbol)
+        min_bars = 120 if not is_crypto else 250
+        if df is None or len(df) < min_bars:
+            return "all"
+
+        lookback_bars = 336 if is_crypto else min(280, len(df))
+        df_win = df.iloc[-lookback_bars:].copy()
+
+        try:
+            from core.backtest_engine import (
+                run_backtest,
+                run_basis_yield_backtest,
+                run_mean_reversion_backtest,
+            )
+
+            r_mom = run_backtest(
+                df_win,
+                breakout_lookback=int(sym_cfg.get("breakout_lookback", 36)),
+                ema_trend_filter=int(sym_cfg.get("ema_trend_filter", 200)),
+                atr_multiplier=float(sym_cfg.get("atr_multiplier", 2.5)),
+                take_profit_atr_mult=float(sym_cfg.get("take_profit_atr_mult", 2.0)),
+                allow_long=bool(sym_cfg.get("allow_long", True)),
+                allow_short=bool(sym_cfg.get("allow_short", False)),
+                fee_pct=0.0002,
+                slippage_pct=0.0001,
+            )
+            r_mr = run_mean_reversion_backtest(
+                df_win,
+                bb_period=int(sym_cfg.get("bb_period", 20)),
+                bb_std=float(sym_cfg.get("bb_std", 2.1)),
+                rsi_oversold=float(sym_cfg.get("rsi_oversold", 28.0)),
+                rsi_overbought=float(sym_cfg.get("rsi_overbought", 72.0)),
+                adx_threshold=float(sym_cfg.get("adx_threshold", 24.0)),
+                allow_short=bool(sym_cfg.get("mr_allow_short", False)),
+                fee_pct=0.0002,
+                slippage_pct=0.0001,
+            )
+            r_by = (
+                run_basis_yield_backtest(df_win, hurdle_apr=5.0, fee_pct=0.0002, slippage_pct=0.0001)
+                if is_crypto
+                else None
+            )
+
+            min_pf = float(self.config.get("dynamic_router_min_pf", 1.15))
+            cands = []
+            if r_mom.total_trades >= 2 and r_mom.profit_factor >= min_pf:
+                cands.append((r_mom.sharpe_ratio, MomentumStrategy.STRATEGY_ID))
+            if r_mr.total_trades >= 2 and r_mr.profit_factor >= min_pf:
+                cands.append((r_mr.sharpe_ratio, MeanReversionStrategy.STRATEGY_ID))
+            if r_by is not None and r_by.total_trades >= 1 and r_by.profit_factor >= 1.0:
+                cands.append((r_by.sharpe_ratio, "basis_yield"))
+
+            if cands:
+                cands.sort(key=lambda x: x[0], reverse=True)
+                choice = cands[0][1]
+            else:
+                choice = "basis_yield" if is_crypto else "cash"
+        except Exception:
+            choice = "all"
+
+        self._rolling_router_cache[symbol] = (now_epoch, choice)
+        return choice
 
     def register_strategy(self, strategy_id: str, strategy: Any, enabled: bool = True) -> None:
         """Dynamically register an independent strategy plugin with the coordinator."""
@@ -280,6 +367,7 @@ class PortfolioCoordinator:
         self.mean_reversion_strategy = MeanReversionStrategy(config)
         self.pairs_strategy = StatArbPairsStrategy(config)
         self._symbol_engines.clear()
+        self._rolling_router_cache.clear()
         self.llm_screener.enabled = bool(config.get("enable_local_llm_preflight", self.llm_screener.enabled))
         self.llm_screener.model = config.get("local_llm_model", self.llm_screener.model)
         self.basis_yield_engine.hurdle_apr = float(config.get("basis_hurdle_apr", self.basis_yield_engine.hurdle_apr))
@@ -835,26 +923,38 @@ class PortfolioCoordinator:
                 )
 
         # 2. No open position: generate signals from all enabled directional strategies
-        if self.is_strategy_enabled(MomentumStrategy.STRATEGY_ID):
+        dyn_route = self._resolve_dynamic_rolling_strategy(symbol, df, sym_cfg)
+        allow_mom_dyn = dyn_route in ("all", MomentumStrategy.STRATEGY_ID)
+        allow_mr_dyn = dyn_route in ("all", MeanReversionStrategy.STRATEGY_ID)
+
+        if self.is_strategy_enabled(MomentumStrategy.STRATEGY_ID) and allow_mom_dyn:
             mom_sig = momentum_strategy.evaluate(symbol, df, existing_position=None)
         else:
             mom_sig = create_no_trade_signal(
                 strategy_id=MomentumStrategy.STRATEGY_ID,
                 symbol=symbol,
                 price=cur_price,
-                reason="Momentum strategy disabled",
+                reason=(
+                    f"Dynamic Router selected '{dyn_route}' for {symbol}"
+                    if not allow_mom_dyn
+                    else "Momentum strategy disabled"
+                ),
             )
 
         # Altcoin Strategy Specialization: Restrict high-beta crypto altcoins to Momentum only
         is_altcoin = is_crypto_symbol(symbol) and symbol.upper() not in ("BTC/USDT", "ETH/USDT")
         suppress_mr = is_altcoin and self.config.get("crypto_altcoin_momentum_only", False)
 
-        if not self.is_strategy_enabled(MeanReversionStrategy.STRATEGY_ID):
+        if not self.is_strategy_enabled(MeanReversionStrategy.STRATEGY_ID) or not allow_mr_dyn:
             mr_sig = create_no_trade_signal(
                 strategy_id=MeanReversionStrategy.STRATEGY_ID,
                 symbol=symbol,
                 price=cur_price,
-                reason="Mean-Reversion strategy disabled",
+                reason=(
+                    f"Dynamic Router selected '{dyn_route}' for {symbol}"
+                    if not allow_mr_dyn
+                    else "Mean-Reversion strategy disabled"
+                ),
             )
         elif suppress_mr:
             mr_sig = create_no_trade_signal(

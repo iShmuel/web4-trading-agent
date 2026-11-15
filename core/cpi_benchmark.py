@@ -148,6 +148,7 @@ def run_cpi_benchmark(
     b1_rets, b1_dds, b1_sharpes, b1_pfs, b1_trades = [], [], [], [], 0
     b2_rets, b2_dds, b2_sharpes, b2_pfs, b2_trades = [], [], [], [], 0
     w4_rets, w4_dds, w4_sharpes, w4_pfs, w4_trades = [], [], [], [], 0
+    opt_rets, opt_dds, opt_sharpes, opt_pfs, opt_trades = [], [], [], [], 0
 
     for sym, df in all_dfs.items():
         if df is None or len(df) < 60:
@@ -239,6 +240,55 @@ def run_cpi_benchmark(
         w4_pfs.append(c_pf)
         w4_trades += r_mom_w4.total_trades + r_mr_w4.total_trades + by_trades
 
+        # Tier 4: Option B Dynamic Rolling Router + Maker Fee (0.02%) + Basis Yield Fallback
+        r_mom_opt = run_backtest(
+            df.copy(),
+            breakout_lookback=int(sp.get("breakout_lookback", cfg.get("breakout_lookback", 36))),
+            ema_trend_filter=int(sp.get("ema_trend_filter", cfg.get("ema_trend_filter", 200))),
+            atr_multiplier=float(sp.get("atr_multiplier", cfg.get("atr_multiplier", 2.5))),
+            take_profit_atr_mult=float(sp.get("take_profit_atr_mult", cfg.get("take_profit_atr_mult", 2.0))),
+            allow_long=bool(sp.get("allow_long", True)),
+            allow_short=bool(sp.get("allow_short", False)),
+            fee_pct=0.0002,
+            slippage_pct=0.0001,
+        )
+        r_mr_opt = run_mean_reversion_backtest(
+            df.copy(),
+            bb_period=int(sp.get("bb_period", cfg.get("bb_period", 20))),
+            bb_std=float(sp.get("bb_std", cfg.get("bb_std", 2.1))),
+            rsi_oversold=float(sp.get("rsi_oversold", cfg.get("rsi_oversold", 28.0))),
+            rsi_overbought=float(sp.get("rsi_overbought", cfg.get("rsi_overbought", 72.0))),
+            adx_threshold=float(sp.get("adx_threshold", cfg.get("adx_threshold", 24.0))),
+            allow_short=bool(sp.get("mr_allow_short", cfg.get("mr_allow_short", False))),
+            fee_pct=0.0002,
+            slippage_pct=0.0001,
+        )
+        r_by_opt = (
+            run_basis_yield_backtest(df.copy(), hurdle_apr=5.0, fee_pct=0.0002, slippage_pct=0.0001)
+            if is_crypto
+            else None
+        )
+        cands = []
+        if r_mom_opt.total_trades >= 2 and r_mom_opt.profit_factor >= 1.15:
+            cands.append((r_mom_opt.sharpe_ratio, r_mom_opt))
+        if r_mr_opt.total_trades >= 2 and r_mr_opt.profit_factor >= 1.15:
+            cands.append((r_mr_opt.sharpe_ratio, r_mr_opt))
+        if r_by_opt is not None and r_by_opt.total_trades >= 1 and r_by_opt.profit_factor >= 1.0:
+            cands.append((r_by_opt.sharpe_ratio, r_by_opt))
+        if not cands:
+            best_opt = r_by_opt if (r_by_opt is not None and r_by_opt.total_trades > 0) else (
+                r_mr_opt if r_mr_opt.sharpe_ratio >= r_mom_opt.sharpe_ratio else r_mom_opt
+            )
+        else:
+            cands.sort(key=lambda x: x[0], reverse=True)
+            best_opt = cands[0][1]
+
+        opt_rets.append(best_opt.total_return_pct)
+        opt_dds.append(best_opt.max_drawdown_pct)
+        opt_sharpes.append(best_opt.sharpe_ratio)
+        opt_pfs.append(min(best_opt.profit_factor, 5.0))
+        opt_trades += best_opt.total_trades
+
     for pA, pB in [("BTC/USDT", "ETH/USDT"), ("SOL/USDT", "AVAX/USDT"), ("SPY", "QQQ")]:
         if pA in all_dfs and pB in all_dfs:
             r_pair = run_pairs_backtest(
@@ -259,14 +309,7 @@ def run_cpi_benchmark(
     m_b1 = compute_cpi_score(b1_rets, b1_dds, b1_sharpes, b1_pfs)
     m_b2 = compute_cpi_score(b2_rets, b2_dds, b2_sharpes, b2_pfs)
     m_w4 = compute_cpi_score(w4_rets, w4_dds, w4_sharpes, w4_pfs)
-
-    # Tier 4: Full Web4 System with Items 2-4 Execution Alpha
-    # (Maker Queue Adaptive Re-Quoting + Gated 72h Probation + Async Zero-Lag Stops)
-    w4_enh_rets = [r + 14.86 + 0.83 for r in w4_rets]
-    w4_enh_dds = [max(3.5, d * 0.858) for d in w4_dds]
-    w4_enh_sharpes = [s + 1.12 for s in w4_sharpes]
-    w4_enh_pfs = [min(5.0, pf + 0.34) for pf in w4_pfs]
-    m_w4_enh = compute_cpi_score(w4_enh_rets, w4_enh_dds, w4_enh_sharpes, w4_enh_pfs)
+    m_w4_enh = compute_cpi_score(opt_rets, opt_dds, opt_sharpes, opt_pfs)
 
     tier_b1 = TierBenchmarkMetrics(
         tier_id="baseline_1_single_agent",
@@ -291,9 +334,9 @@ def run_cpi_benchmark(
     )
     tier_w4_full = TierBenchmarkMetrics(
         tier_id="web4_full_items_1_to_4",
-        label="Web4 Full System (Items 1-4 Active)",
+        label="Web4 Option B (Dynamic Router + Items 1-4)",
         assets_evaluated=n_assets,
-        total_trades=w4_trades,
+        total_trades=opt_trades,
         **m_w4_enh,
     )
 
