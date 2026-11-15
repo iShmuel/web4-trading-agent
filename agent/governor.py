@@ -981,25 +981,38 @@ def review_and_deploy_proposal(
         try:
             snap_data = json.loads(snap_file.read_text())
             if snap_data.get("rolled_back") and snap_data.get("rolled_back_changes") == proposed_changes:
-                msg = (
-                    f"Blocked by Post-Rollback Memory: Proposed changes {proposed_changes} match "
-                    f"recently rolled-back proposal {snap_data.get('proposal_id')}."
-                )
-                res = GovernorApprovalResult(
-                    approved=False,
-                    status="REJECTED_ROLLED_BACK_REPEAT",
-                    invariants_passed=True,
-                    tests_passed=False,
-                    llm_risk_approved=False,
-                    llm_rationale=msg,
-                    rejection_reasons=[msg],
-                    applied_changes={},
-                    timestamp=now_iso,
-                    verdict="DISAPPROVE",
-                    proposal_id=prop_id,
-                )
-                append_governance_audit_log(res)
-                return res
+                cooldown_hours = float(base_cfg.get("rollback_repeat_cooldown_hours", 48.0))
+                still_in_cooldown = True
+                rb_at_str = snap_data.get("rolled_back_at")
+                if rb_at_str:
+                    try:
+                        rb_dt = datetime.fromisoformat(rb_at_str)
+                        if rb_dt.tzinfo is None:
+                            rb_dt = rb_dt.replace(tzinfo=timezone.utc)
+                        elapsed_h = (datetime.now(timezone.utc) - rb_dt).total_seconds() / 3600.0
+                        still_in_cooldown = elapsed_h < cooldown_hours
+                    except ValueError:
+                        still_in_cooldown = True
+                if still_in_cooldown:
+                    msg = (
+                        f"Blocked by Post-Rollback Cooldown ({cooldown_hours:.0f}h): Proposed changes {proposed_changes} match "
+                        f"recently rolled-back proposal {snap_data.get('proposal_id')}."
+                    )
+                    res = GovernorApprovalResult(
+                        approved=False,
+                        status="REJECTED_ROLLED_BACK_REPEAT",
+                        invariants_passed=True,
+                        tests_passed=False,
+                        llm_risk_approved=False,
+                        llm_rationale=msg,
+                        rejection_reasons=[msg],
+                        applied_changes={},
+                        timestamp=now_iso,
+                        verdict="DISAPPROVE",
+                        proposal_id=prop_id,
+                    )
+                    append_governance_audit_log(res)
+                    return res
         except Exception:
             pass
     candidate_cfg = _merge_proposed_changes_into_config(base_cfg, proposed_changes)
