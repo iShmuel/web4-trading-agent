@@ -447,6 +447,8 @@ def render() -> str:
         rsi = ind.get("rsi")
         adx = ind.get("adx")
 
+        rl = reason.lower()
+        fr_pct = ind.get("funding_rate_pct")
         if action == "HOLD":
             stop = a.get("stop_loss", 0.0)
             if price and stop and price > 0:
@@ -462,6 +464,18 @@ def render() -> str:
                 next_trigger = yellow(f"Breakout +{gap:.2f}%")
             else:
                 next_trigger = f"Breakout +{gap:.2f}%"
+        elif "selected 'basis_yield'" in rl:
+            next_trigger = (
+                f"Carry FR {fr_pct:+.3f}%" if isinstance(fr_pct, (int, float)) else "Basis Yield"
+            )
+        elif "selected 'cash'" in rl:
+            next_trigger = dim("Cash (PF < 1.15)")
+        elif "selected 'mean_reversion'" in rl:
+            next_trigger = dim("Mean Reversion")
+        elif "stale data" in rl:
+            next_trigger = dim("Market Closed")
+        elif "blacklisted" in rl or "asset pruned" in rl:
+            next_trigger = yellow("Quarantined")
         elif "NO DATA" in tag or price_txt == "         —":
             next_trigger = dim("Opens Mon 15:30")
         else:
@@ -472,6 +486,16 @@ def render() -> str:
         elif isinstance(bh, (int, float)) and isinstance(ema, (int, float)):
             trend_label = green("Uptrend ▲") if price and price > ema else red("Downtrend ▼")
             mom_setup = f"Needs >${bh:,.1f} ({trend_label})"
+        elif "selected 'basis_yield'" in rl:
+            mom_setup = green("Dynamic: Basis Yield")
+        elif "selected 'cash'" in rl:
+            mom_setup = dim("Dynamic: Stand Down")
+        elif "selected 'mean_reversion'" in rl:
+            mom_setup = "Dynamic: Mean Reversion"
+        elif "stale data" in rl:
+            mom_setup = dim("Stale / Market Closed")
+        elif "blacklisted" in rl or "asset pruned" in rl:
+            mom_setup = dim("Blacklisted")
         elif "NO DATA" in tag or price_txt == "         —":
             mom_setup = dim("US Market opens 15:30")
         else:
