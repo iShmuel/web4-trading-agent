@@ -103,11 +103,11 @@ def test_stat_arb_pairs_engine():
     dates = pd.date_range("2026-01-01", periods=60, freq="1h")
     # Base price series for B
     price_b = 50.0 + np.sin(np.linspace(0, 10, 60)) * 5.0
-    # Cointegrated series A = 2 * B
-    price_a = 2.0 * price_b
+    # Cointegrated series A = 2 * B with stationary mean-reverting spread
+    price_a = 2.0 * price_b + np.cos(np.linspace(0, 30, 60)) * 2.0
 
-    # Add a massive divergence at the end (A drops, creating an extreme negative Z-score)
-    price_a[-1] -= 20.0
+    # Add a spread divergence at the end within the valid entry band (-3.5 < Z <= -2.0)
+    price_a[-1] -= 6.0
 
     df_a = pd.DataFrame({"open": price_a, "high": price_a + 1, "low": price_a - 1, "close": price_a}, index=dates)
     df_b = pd.DataFrame({"open": price_b, "high": price_b + 1, "low": price_b - 1, "close": price_b}, index=dates)
