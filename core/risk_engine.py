@@ -71,10 +71,16 @@ class RiskEngine:
         }
         self.symbol_exposure_caps: Dict[str, float] = dict(symbol_exposure_caps or {})
 
-        # Kill switch state
+        # Kill switch & Probationary Reentry (Item 2) state
         self._is_halted: bool = False
         self._halt_reason: str = ""
         self.circuit_breaker_triggered_at: Optional[str] = None
+        self.in_probation: bool = False
+        self.probation_consecutive_wins: int = 0
+        self.probation_required_wins: int = 3
+        self.probation_cooldown_hours: float = 72.0
+        self.probation_floor_equity: float = 0.0
+        self.probation_max_additional_dd_pct: float = 0.025  # 2.5% max extra drawdown during probation
 
         # Tracking for circuit breakers
         self.peak_equity: float = 0.0
@@ -135,11 +141,111 @@ class RiskEngine:
         """Manually or automatically trigger the emergency trading halt and persist it."""
         self._is_halted = True
         self._halt_reason = reason
-        if not self.circuit_breaker_triggered_at:
-            ts = current_time if current_time is not None else datetime.now(timezone.utc)
-            self.circuit_breaker_triggered_at = ts.isoformat()
+        self.in_probation = False
+        self.probation_consecutive_wins = 0
+        ts = current_time if current_time is not None else datetime.now(timezone.utc)
+        self.circuit_breaker_triggered_at = ts.isoformat()
         self._persist_risk_state(force_save=True)
         print(f"[RiskEngine] 🚨 KILL SWITCH TRIGGERED: {reason}")
+
+    def evaluate_probationary_reentry(
+        self,
+        current_equity: float,
+        vix_stable: bool = False,
+        ema_200_reclaimed: bool = False,
+        strategy_profit_factor: float = 1.20,
+        current_time: Optional[datetime] = None,
+    ) -> Tuple[bool, str]:
+        """Item 2: Dynamic Kill-Switch Half-Step Recovery Protocol (72h Probationary Reentry).
+
+        Transitions the RiskEngine from HALTED into PROBATION (1.0% minimum risk floor
+        per Invariant Rule #3) ONLY when all 3 stabilization gates pass:
+          1. >= 72 hours have elapsed since `circuit_breaker_triggered_at`
+          2. Macro volatility is stable (`vix_stable=True`, VIX < 20) AND 200-EMA is reclaimed
+          3. Strategy expectancy is positive (`strategy_profit_factor >= 1.15`)
+        """
+        if not self._is_halted:
+            return True, "System is not halted"
+
+        if not self.circuit_breaker_triggered_at:
+            return False, "Missing circuit breaker timestamp for probationary cooldown check"
+
+        now_ts = current_time if current_time is not None else datetime.now(timezone.utc)
+        if now_ts.tzinfo is None:
+            now_ts = now_ts.replace(tzinfo=timezone.utc)
+
+        try:
+            halted_dt = datetime.fromisoformat(str(self.circuit_breaker_triggered_at).replace("Z", "+00:00"))
+            if halted_dt.tzinfo is None:
+                halted_dt = halted_dt.replace(tzinfo=timezone.utc)
+            elapsed_hours = (now_ts - halted_dt).total_seconds() / 3600.0
+        except Exception:
+            return False, "Invalid circuit breaker timestamp"
+
+        if elapsed_hours < self.probation_cooldown_hours:
+            return (
+                False,
+                f"Probationary cooldown active: {elapsed_hours:.1f}h / {self.probation_cooldown_hours:.1f}h elapsed",
+            )
+
+        if not vix_stable or not ema_200_reclaimed:
+            return (
+                False,
+                f"Probationary regime gate not met (vix_stable={vix_stable}, ema_200_reclaimed={ema_200_reclaimed})",
+            )
+
+        if strategy_profit_factor < 1.15:
+            return (
+                False,
+                f"Probationary expectancy gate not met (PF {strategy_profit_factor:.2f} < 1.15)",
+            )
+
+        # Transition from HALTED -> PROBATION (clamped at 1.0% minimum risk per Invariant Rule #3)
+        self._is_halted = False
+        self._halt_reason = ""
+        self.in_probation = True
+        self.probation_consecutive_wins = 0
+        self.probation_floor_equity = float(current_equity)
+        self.peak_equity = float(current_equity)
+        self.current_drawdown = 0.0
+        self._persist_risk_state(force_save=True)
+        msg = (
+            f"Probationary Reentry activated after {elapsed_hours:.1f}h cooldown "
+            f"(risk clamped to {MIN_ALLOWED_RISK_PCT*100:.1f}% until {self.probation_required_wins} consecutive wins)"
+        )
+        print(f"[RiskEngine] 🛡️ {msg}")
+        return True, msg
+
+    def record_probation_trade_outcome(
+        self,
+        pnl: float,
+        current_equity: float,
+        current_time: Optional[datetime] = None,
+    ) -> str:
+        """Track consecutive wins during Probationary Reentry or re-halt on loss/drawdown."""
+        if not self.in_probation:
+            return "NORMAL"
+
+        if pnl > 0:
+            self.probation_consecutive_wins += 1
+            if self.probation_consecutive_wins >= self.probation_required_wins:
+                self.in_probation = False
+                self.probation_consecutive_wins = 0
+                self.circuit_breaker_triggered_at = None
+                self._persist_risk_state(force_save=True)
+                print(
+                    f"[RiskEngine] ✅ Probationary Reentry graduated after {self.probation_required_wins} "
+                    f"consecutive wins! Normal risk sizing restored."
+                )
+                return "GRADUATED"
+            return f"PROBATION_WIN_{self.probation_consecutive_wins}"
+
+        # Any losing trade during probation immediately re-latches the 72h kill switch
+        self.trigger_kill_switch(
+            reason=f"Probationary trade loss (${pnl:.2f}) — re-entering 72h cooldown",
+            current_time=current_time,
+        )
+        return "RE_HALTED"
 
     def reset_kill_switch(self, authorized: bool = True, reset_peak_to_current: Optional[float] = None) -> bool:
         """Reset emergency halt state.
@@ -222,7 +328,17 @@ class RiskEngine:
                 self.trigger_kill_switch(reason, current_time=current_time)
                 return False, reason
 
-        # 2. Max drawdown circuit breaker
+        # 2. Max drawdown circuit breaker (or probationary tight drawdown floor)
+        if self.in_probation and self.probation_floor_equity > 0:
+            prob_dd = max(0.0, (self.probation_floor_equity - current_equity) / self.probation_floor_equity)
+            if prob_dd >= self.probation_max_additional_dd_pct:
+                reason = (
+                    f"Probationary drawdown limit breached: {prob_dd*100:.2f}% loss from probation floor "
+                    f"exceeds {self.probation_max_additional_dd_pct*100:.1f}% limit"
+                )
+                self.trigger_kill_switch(reason, current_time=current_time)
+                return False, reason
+
         if self.peak_equity > 0:
             drawdown = self.current_drawdown
             if drawdown >= self.max_drawdown_limit_pct:
@@ -376,12 +492,16 @@ class RiskEngine:
         base_risk = self.symbol_risk_weights.get(
             symbol, requested_risk_pct if requested_risk_pct is not None else self.risk_pct
         ) * float(risk_multiplier)
-        effective_risk_pct = self.compute_volatility_adjusted_risk(
-            base_risk_pct=base_risk,
-            current_atr=atr,
-            entry_price=entry_price,
-            atr_ratio_baseline=0.025,
-        )
+        if self.in_probation:
+            # Item 2: During Probationary Reentry, lock risk to the 1.0% floor (Invariant Rule #3)
+            effective_risk_pct = MIN_ALLOWED_RISK_PCT
+        else:
+            effective_risk_pct = self.compute_volatility_adjusted_risk(
+                base_risk_pct=base_risk,
+                current_atr=atr,
+                entry_price=entry_price,
+                atr_ratio_baseline=0.025,
+            )
         is_short = (side.upper() == "SHORT")
         valid_suggested_stop = (
             (not is_short and 0.0 < suggested_stop < entry_price)

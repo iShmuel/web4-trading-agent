@@ -18,6 +18,8 @@ from core.risk_engine import RiskEngine
 from core.coordinator import PortfolioCoordinator
 from core.data_loader import fetch_ohlcv, fetch_ohlcv_batch, check_data_quality, is_crypto_symbol
 from core.process_lock import SingleInstanceLock, AlreadyRunningError
+from core.async_agent_runner import AsyncAgentTaskRunner
+from core.cpi_benchmark import run_cpi_benchmark
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = PROJECT_ROOT / "config" / "active_config.json"
@@ -254,6 +256,7 @@ def main():
     parser.add_argument("--once", action="store_true", help="Run a single live portfolio scan across all assets")
     parser.add_argument("--status", action="store_true", help="Display current multi-asset portfolio status")
     parser.add_argument("--journal", action="store_true", help="Display audit report of settled decision journal and gate alpha")
+    parser.add_argument("--cpi-benchmark", action="store_true", help="Run the 3-tier Automated CPI Benchmark Harness (Item 1)")
     parser.add_argument("--reset", action="store_true", help="Reset portfolio to $10,000 initial cash")
     parser.add_argument("--interval", type=int, default=60, help="Loop interval in seconds (default: 60s)")
     parser.add_argument("--optimize-hours", type=int, default=6, help="Self-improvement tournament interval in hours (default: 6)")
@@ -262,7 +265,24 @@ def main():
     parser.add_argument("--loop", action="store_true", help="Run continuous monitoring loop")
     args = parser.parse_args()
 
-    # --status and --journal are read-only and may run alongside the bot.
+    # --status, --journal, and --cpi-benchmark are read-only and may run alongside the bot.
+    if args.cpi_benchmark:
+        rep = run_cpi_benchmark()
+        print("=" * 88)
+        print("       AUTOMATED CENTRAL PERFORMANCE INDEX (CPI) BENCHMARK HARNESS")
+        print("=" * 88)
+        for t_data in rep["tiers"].values():
+            print(
+                f"{t_data['label']:40s} | "
+                f"AvgRet: {t_data['avg_return_pct']:+6.2f}% | "
+                f"MaxDD: {t_data['avg_max_drawdown_pct']:5.2f}% | "
+                f"Sharpe: {t_data['avg_sharpe_ratio']:+5.2f} | "
+                f"PF: {t_data['avg_profit_factor']:4.2f} | "
+                f"CPI: {t_data['cpi_score']:5.1f}/100"
+            )
+        print("=" * 88)
+        return
+
     if args.journal:
         from core.journal import generate_journal_report
         print(generate_journal_report())
@@ -345,6 +365,7 @@ def _run(args):
 
     if args.loop:
         log(f"\n[Engine] Starting continuous portfolio monitoring loop (Checking every {args.interval}s)...")
+        async_runner = AsyncAgentTaskRunner(max_workers=3)
         last_opt_time = time.time()
         last_scan_time = time.time()
         last_forensic_time = time.time()
@@ -352,9 +373,108 @@ def _run(args):
         forensic_interval = int(config.get("forensic_trade_interval", 15))
         forensic_max_hours = float(config.get("forensic_max_hours", 12.0))
 
+        def _bg_forensic_task(tw: int):
+            from agent.trade_analyst import run_trade_forensic_analysis
+            return run_trade_forensic_analysis(
+                trade_window=tw,
+                use_llm=True,
+                auto_submit_to_governor=True,
+            )
+
+        def _bg_optimizer_task():
+            from agent.multi_strategy_optimizer import run_multi_strategy_optimization
+            return run_multi_strategy_optimization(auto_commit=True)
+
+        def _bg_discovery_task():
+            from agent.asset_selector import (
+                scan_candidate_universe,
+                build_selection_summary,
+                audit_and_rehabilitate_blacklist,
+            )
+            from agent.governor import review_and_deploy_proposal
+            from strategies.stat_arb_pairs import discover_cointegrated_pairs
+
+            evals = scan_candidate_universe(
+                days=90,
+                dynamic_discovery=True,
+                merge_existing=True,
+                top_crypto_discovery=15,
+                top_stock_discovery=15,
+                use_llm=True,
+            )
+            summary = build_selection_summary(evals, max_crypto=8, max_stocks=16)
+            rehab_report = audit_and_rehabilitate_blacklist(days=60, use_llm=True)
+            rehab_syms = rehab_report.get("rehabilitated_symbols", [])
+            if summary.get("recommended_watchlist") or rehab_syms:
+                merged_wl = list(
+                    dict.fromkeys(list(summary.get("recommended_watchlist", [])) + list(rehab_syms))
+                )
+                dyn_pairs = discover_cointegrated_pairs(merged_wl, load_config())
+                prop = {
+                    "watchlist": merged_wl,
+                    "blacklisted_symbols": [
+                        s for s in summary.get("recommended_blacklist", []) if s not in set(rehab_syms)
+                    ],
+                    "rehabilitated_symbols": rehab_syms,
+                }
+                if dyn_pairs:
+                    prop["pairs_universe"] = dyn_pairs
+                res = review_and_deploy_proposal(
+                    proposed_changes=prop,
+                    rationale="Periodic market discovery scan merged active portfolio with vetted discoveries, audited blacklist for parole, and pruned non-profitable drags.",
+                    empirical_proof={
+                        "scanned": summary["total_assets_scanned"],
+                        "proven_profitable": summary.get("proven_profitable_count", 0),
+                        "pruned_drags": summary.get("proven_non_profitable_count", 0),
+                        "rehabilitated_count": len(rehab_syms),
+                        "rehabilitated_symbols": rehab_syms,
+                        "elite_assets": summary["tier_counts"]["ELITE_ALPHA"],
+                        "viable_assets": summary["tier_counts"]["VIABLE_ALPHA"],
+                    },
+                    verify_tests=True,
+                    use_llm=True,
+                )
+                return {
+                    "approved": res.approved,
+                    "merged_wl": merged_wl,
+                    "rehab_syms": rehab_syms,
+                    "blacklisted": prop["blacklisted_symbols"],
+                }
+            return {"approved": False}
+
         try:
             while True:
                 run_portfolio_tick(account, risk_engine, coordinator)
+
+                # Item 4: Harvest completed non-blocking background agent tasks (< 0.001s)
+                for done_task in async_runner.harvest_completed():
+                    if not done_task.success:
+                        log(f"[AsyncAgent:{done_task.task_key}] Error ({done_task.duration_sec:.2f}s): {done_task.error}")
+                        continue
+                    if done_task.task_key == "trade_analyst_forensics":
+                        summary = done_task.result
+                        coordinator.reload_config(load_config())
+                        log(
+                            f"[Trade Forensic Audit] Completed in {done_task.duration_sec:.1f}s (non-blocking) | "
+                            f"WR: {summary.win_rate_pct}% | PnL: ${summary.total_realized_pnl:+,.2f} | PF: {summary.profit_factor:.2f}"
+                        )
+                    elif done_task.task_key == "multi_strategy_optimizer":
+                        res = done_task.result or {}
+                        for r in res.get("results", []):
+                            detail = r.get("reason") or r.get("candidate") or ""
+                            log(f"[Auto-Optimize] {r.get('task')}: {str(r.get('status')).upper()} {detail}")
+                        if res.get("status") == "deployed":
+                            coordinator.reload_config(load_config())
+                        log(f"[Auto-Optimize Result] Status: {res.get('status')} ({done_task.duration_sec:.1f}s non-blocking)")
+                    elif done_task.task_key == "asset_selector_discovery":
+                        res = done_task.result or {}
+                        if res.get("approved"):
+                            coordinator.reload_config(load_config())
+                            log(
+                                f"[Market Discovery] Approved & deployed {len(res.get('merged_wl', []))} proven assets "
+                                f"({done_task.duration_sec:.1f}s non-blocking | Rehabilitated: {len(res.get('rehab_syms', []))}, "
+                                f"Pruned: {len(res.get('blacklisted', []))})."
+                            )
 
                 # Event-driven + periodic post-trade forensic audit trigger (every X closed trades, or every 12h if new trades closed)
                 cur_closed_list = account.state.get("closed_trades", [])
@@ -373,109 +493,39 @@ def _run(args):
                 forensic_due = new_trades >= forensic_interval or (
                     new_trades > 0 and (time.time() - last_forensic_time) >= (forensic_max_hours * 3600)
                 )
-                if forensic_due and cur_closed > 0:
+                if forensic_due and cur_closed > 0 and not async_runner.is_running("trade_analyst_forensics"):
                     log("\n" + "=" * 68)
-                    log(f"   🔍 AGENT 10: AUTOMATED POST-TRADE FORENSIC AUDIT TRIGGERED ({cur_closed} trades, +{new_trades} new)")
+                    log(f"   🔍 AGENT 10: ASYNC POST-TRADE FORENSIC AUDIT DISPATCHED ({cur_closed} trades, +{new_trades} new)")
                     log("=" * 68)
-                    try:
-                        from agent.trade_analyst import run_trade_forensic_analysis
-                        summary = run_trade_forensic_analysis(
-                            trade_window=max(forensic_interval, new_trades),
-                            use_llm=True,
-                            auto_submit_to_governor=True,
-                        )
-                        coordinator.reload_config(load_config())
-                        log(f"[Trade Forensic Audit] WR: {summary.win_rate_pct}% | PnL: ${summary.total_realized_pnl:+,.2f} | PF: {summary.profit_factor:.2f}")
-                    except Exception as e:
-                        log(f"[Trade Forensic Notice] {e}")
+                    async_runner.submit_task(
+                        "trade_analyst_forensics",
+                        _bg_forensic_task,
+                        max(forensic_interval, new_trades),
+                    )
                     last_analyzed_trade_count = cur_closed
                     last_forensic_time = time.time()
 
                 # Periodic self-improvement tournament (Agent 11)
                 elapsed = time.time() - last_opt_time
-                if elapsed >= (args.optimize_hours * 3600):
+                if elapsed >= (args.optimize_hours * 3600) and not async_runner.is_running("multi_strategy_optimizer"):
                     log("\n" + "=" * 68)
-                    log("   ⏰ PERIODIC MULTI-STRATEGY SELF-IMPROVEMENT TOURNAMENT TRIGGERED (Agent 11)")
+                    log("   ⏰ ASYNC MULTI-STRATEGY SELF-IMPROVEMENT TOURNAMENT DISPATCHED (Agent 11)")
                     log("=" * 68)
-                    try:
-                        from agent.multi_strategy_optimizer import run_multi_strategy_optimization
-                        res = run_multi_strategy_optimization(auto_commit=True)
-                        for r in res.get("results", []):
-                            detail = r.get("reason") or r.get("candidate") or ""
-                            log(f"[Auto-Optimize] {r.get('task')}: {str(r.get('status')).upper()} {detail}")
-                        if res.get("status") == "deployed":
-                            coordinator.reload_config(load_config())
-                        log(f"[Auto-Optimize Result] Status: {res.get('status')}")
-                    except Exception as e:
-                        log(f"[Auto-Optimize Error] {e}")
+                    async_runner.submit_task("multi_strategy_optimizer", _bg_optimizer_task)
                     last_opt_time = time.time()
 
                 # Periodic dynamic market universe discovery (Agent 9 & 12)
                 scan_elapsed = time.time() - last_scan_time
-                if scan_elapsed >= (args.scan_hours * 3600):
+                if scan_elapsed >= (args.scan_hours * 3600) and not async_runner.is_running("asset_selector_discovery"):
                     log("\n" + "=" * 68)
-                    log("   🌐 PERIODIC DYNAMIC MARKET DISCOVERY TRIGGERED (Agent 9)")
+                    log("   🌐 ASYNC DYNAMIC MARKET DISCOVERY DISPATCHED (Agent 9)")
                     log("=" * 68)
-                    try:
-                        from agent.asset_selector import (
-                            scan_candidate_universe,
-                            build_selection_summary,
-                            audit_and_rehabilitate_blacklist,
-                        )
-                        evals = scan_candidate_universe(
-                            days=90,
-                            dynamic_discovery=True,
-                            merge_existing=True,
-                            top_crypto_discovery=15,
-                            top_stock_discovery=15,
-                            use_llm=True,
-                        )
-                        summary = build_selection_summary(evals, max_crypto=8, max_stocks=16)
-                        rehab_report = audit_and_rehabilitate_blacklist(days=60, use_llm=True)
-                        rehab_syms = rehab_report.get("rehabilitated_symbols", [])
-                        if summary.get("recommended_watchlist") or rehab_syms:
-                            from agent.governor import review_and_deploy_proposal
-                            from strategies.stat_arb_pairs import discover_cointegrated_pairs
-                            merged_wl = list(
-                                dict.fromkeys(list(summary.get("recommended_watchlist", [])) + list(rehab_syms))
-                            )
-                            dyn_pairs = discover_cointegrated_pairs(merged_wl, load_config())
-                            prop = {
-                                "watchlist": merged_wl,
-                                "blacklisted_symbols": [
-                                    s for s in summary.get("recommended_blacklist", []) if s not in set(rehab_syms)
-                                ],
-                                "rehabilitated_symbols": rehab_syms,
-                            }
-                            if dyn_pairs:
-                                prop["pairs_universe"] = dyn_pairs
-                            res = review_and_deploy_proposal(
-                                proposed_changes=prop,
-                                rationale="Periodic market discovery scan merged active portfolio with vetted discoveries, audited blacklist for parole, and pruned non-profitable drags.",
-                                empirical_proof={
-                                    "scanned": summary["total_assets_scanned"],
-                                    "proven_profitable": summary.get("proven_profitable_count", 0),
-                                    "pruned_drags": summary.get("proven_non_profitable_count", 0),
-                                    "rehabilitated_count": len(rehab_syms),
-                                    "rehabilitated_symbols": rehab_syms,
-                                    "elite_assets": summary["tier_counts"]["ELITE_ALPHA"],
-                                    "viable_assets": summary["tier_counts"]["VIABLE_ALPHA"],
-                                },
-                                verify_tests=True,
-                                use_llm=True,
-                            )
-                            if res.approved:
-                                coordinator.reload_config(load_config())
-                                log(
-                                    f"[Market Discovery] Approved & deployed {len(merged_wl)} proven assets "
-                                    f"(Rehabilitated: {len(rehab_syms)}, Pruned: {len(prop['blacklisted_symbols'])})."
-                                )
-                    except Exception as e:
-                        log(f"[Market Discovery Notice] {e}")
+                    async_runner.submit_task("asset_selector_discovery", _bg_discovery_task)
                     last_scan_time = time.time()
 
                 time.sleep(args.interval)
         except KeyboardInterrupt:
+            async_runner.shutdown(wait=False)
             log("\n[Engine] Multi-asset trading paused by user.")
     else:
         run_portfolio_tick(account, risk_engine, coordinator)

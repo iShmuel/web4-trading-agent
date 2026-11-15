@@ -726,6 +726,12 @@ class PortfolioCoordinator:
                     fee_pct=sym_cfg.get("fee_pct", 0.0006),
                     current_time=bar_exit_dt,
                 )
+                if getattr(self.risk_engine, "in_probation", False):
+                    self.risk_engine.record_probation_trade_outcome(
+                        pnl=float(trade.get("pnl", 0.0)),
+                        current_equity=self.account.get_total_equity(current_prices),
+                        current_time=bar_exit_dt,
+                    )
                 if is_crypto_symbol(symbol) and trade.get("pnl", 0.0) < 0 and "Stop" in trade.get("exit_reason", ""):
                     bar_ts = df.index[-1]
                     self._last_crypto_stop_time = bar_ts if isinstance(bar_ts, pd.Timestamp) else pd.Timestamp.now(tz="UTC")
@@ -1160,6 +1166,20 @@ class PortfolioCoordinator:
 
         combined_risk_mult = vol_risk_mult * macro_risk_mult * sm_verdict.risk_multiplier * conf_risk_mult
 
+        # Item 2: Dynamic Kill-Switch Half-Step Recovery Protocol (72h Probationary Reentry)
+        if self.risk_engine.is_halted and hasattr(self.risk_engine, "evaluate_probationary_reentry"):
+            ema200_val = merged_ind.get("macro_ema") or merged_ind.get("ema_filter")
+            ema200_reclaimed = bool(ema200_val is not None and not pd.isna(ema200_val) and cur_price >= float(ema200_val))
+            vix_stable = bool(fred_report.vix_level < 20.0 or fred_report.regime == "STABLE")
+            strat_pf = float(sym_cfg.get("historical_profit_factor", 1.25))
+            self.risk_engine.evaluate_probationary_reentry(
+                current_equity=total_equity,
+                vix_stable=vix_stable,
+                ema_200_reclaimed=ema200_reclaimed,
+                strategy_profit_factor=strat_pf,
+                current_time=last_ts,
+            )
+
         risk_verdict = self.risk_engine.validate_proposed_entry(
             symbol=symbol,
             side=chosen_sig.direction.value,
@@ -1270,13 +1290,45 @@ class PortfolioCoordinator:
                     indicators=merged_ind,
                 )
 
-        # 4. Execute approved paper entry
-        # 4. Smart Order Routing (Execution Alpha: Maker vs Taker)
+        # 4. Smart Order Routing & Item 3: Maker Queue Tracking & Adaptive Re-Quoting Engine
         exec_mode = sym_cfg.get("execution_mode", self.config.get("execution_mode", "maker"))
         if exec_mode == "maker":
-            # Maker post-only limit execution: zero slippage, reduced maker fee (0.02% vs 0.06%)
-            applied_fee_pct = sym_cfg.get("maker_fee_pct", self.config.get("maker_fee_pct", 0.0002))
-            exec_price = cur_price
+            maker_fee_cfg = float(sym_cfg.get("maker_fee_pct", self.config.get("maker_fee_pct", 0.0002)))
+            if hasattr(self.account, "evaluate_maker_fill_or_requote") and self.config.get("enable_adaptive_requoting", True):
+                bar_open = float(last_row.get("open", cur_price))
+                bar_high = float(last_row.get("high", cur_price))
+                bar_low = float(last_row.get("low", cur_price))
+                bar_vol = float(last_row.get("volume", 1.0)) if "volume" in last_row else 1.0
+                avg_vol = float(df["volume"].iloc[-20:].mean()) if ("volume" in df.columns and len(df) >= 20) else bar_vol
+                mq_res = self.account.evaluate_maker_fill_or_requote(
+                    side=chosen_sig.direction.value,
+                    quote_price=cur_price,
+                    bar_open=bar_open,
+                    bar_high=bar_high,
+                    bar_low=bar_low,
+                    bar_close=cur_price,
+                    bar_volume=bar_vol,
+                    avg_volume=avg_vol,
+                    maker_fee_pct=maker_fee_cfg,
+                    taker_fee_pct=float(chosen_sig.estimated_fee_pct),
+                )
+                merged_ind["maker_queue_mode"] = mq_res["execution_mode"]
+                if not mq_res["filled"]:
+                    return CoordinatorDecision(
+                        symbol=symbol,
+                        action="REJECTED",
+                        strategy_id=chosen_sig.strategy_id,
+                        price=cur_price,
+                        reason=f"Blocked by Adaptive Maker Queue: {mq_res['execution_mode']} (unconfirmed low-depth spike)",
+                        signal=chosen_sig,
+                        risk_verdict=risk_verdict,
+                        indicators=merged_ind,
+                    )
+                applied_fee_pct = float(mq_res["effective_fee_pct"])
+                exec_price = float(mq_res["exec_price"])
+            else:
+                applied_fee_pct = maker_fee_cfg
+                exec_price = cur_price
         else:
             applied_fee_pct = chosen_sig.estimated_fee_pct
             slippage_factor = 1.0 + (chosen_sig.estimated_slippage_pct if chosen_sig.direction == SignalDirection.LONG else -chosen_sig.estimated_slippage_pct)

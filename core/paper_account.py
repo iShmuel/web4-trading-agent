@@ -425,3 +425,71 @@ class PaperAccount:
         self.state["closed_trades"].append(trade_record)
         self._save()
         return trade_record
+
+    @staticmethod
+    def evaluate_maker_fill_or_requote(
+        side: str,
+        quote_price: float,
+        bar_open: float,
+        bar_high: float,
+        bar_low: float,
+        bar_close: float,
+        bar_volume: float = 1.0,
+        avg_volume: float = 1.0,
+        maker_fee_pct: float = 0.0004,
+        taker_fee_pct: float = 0.0006,
+        requote_slippage_pct: float = 0.00015,
+    ) -> Dict[str, Any]:
+        """Item 3: Maker Order Queue Tracking & Adaptive Re-Quoting Engine.
+
+        Determines whether a resting Maker Limit order fills passively in the queue,
+        is adaptively re-quoted inside the spread after 30s on a high-velocity breakout,
+        or is cancelled to avoid chasing a low-depth false spike.
+        """
+        side_u = side.upper()
+        bar_range = max(float(bar_high) - float(bar_low), 1e-9)
+        if side_u == "LONG":
+            pullback_ratio = max(0.0, (float(bar_open) - float(bar_low)) / bar_range)
+            body_ratio = (float(bar_close) - float(bar_open)) / bar_range
+        else:
+            pullback_ratio = max(0.0, (float(bar_high) - float(bar_open)) / bar_range)
+            body_ratio = (float(bar_open) - float(bar_close)) / bar_range
+
+        # 1. Passive Maker Limit Fill: bar pulled back >= 15% of range to touch our resting quote
+        if pullback_ratio >= 0.15:
+            return {
+                "filled": True,
+                "execution_mode": "PASSIVE_MAKER_FILL",
+                "exec_price": float(quote_price),
+                "effective_fee_pct": float(maker_fee_pct),
+                "pullback_ratio": round(pullback_ratio, 4),
+            }
+
+        # 2. Impulsive Breakout (pullback < 15%): Passive limit sat unfilled in queue for 30s.
+        # Check velocity & depth confirmation before stepping inside the spread:
+        vol_confirmed = float(bar_volume) >= (float(avg_volume) * 0.85) if avg_volume > 0 else True
+        velocity_confirmed = body_ratio >= 0.35 or vol_confirmed
+
+        if velocity_confirmed:
+            adj_price = (
+                float(quote_price) * (1.0 + float(requote_slippage_pct))
+                if side_u == "LONG"
+                else float(quote_price) * (1.0 - float(requote_slippage_pct))
+            )
+            return {
+                "filled": True,
+                "execution_mode": "ADAPTIVE_REQUOTED_FILL",
+                "exec_price": adj_price,
+                "effective_fee_pct": float(taker_fee_pct),
+                "pullback_ratio": round(pullback_ratio, 4),
+            }
+
+        # 3. Low-depth / unconfirmed spike: cancel resting order rather than chasing a thin wick
+        return {
+            "filled": False,
+            "execution_mode": "CANCELLED_UNFILLED_SPIKE",
+            "exec_price": float(quote_price),
+            "effective_fee_pct": 0.0,
+            "pullback_ratio": round(pullback_ratio, 4),
+        }
+

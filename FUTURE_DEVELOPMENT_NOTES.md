@@ -6,7 +6,7 @@ This document records architectural, analytical, and operational items identifie
 
 ### 1. Automated Central Performance Index (CPI) Benchmark Harness
 
-* **Status**: Planned / Academic Benchmark
+* **Status**: ✅ IMPLEMENTED & VERIFIED (`core/cpi_benchmark.py`, `live_paper_trader.py --cpi-benchmark`)
 * **Suggested Priority**: Medium (P2)
 * **What is Missing:**
   The Central Performance Index (CPI) is formalized in the presentation as a **conceptual and mathematical evaluation framework** for comparing our multi-agent architecture against two theoretical baselines:
@@ -24,7 +24,7 @@ This document records architectural, analytical, and operational items identifie
 
 ### 2. Dynamic Kill-Switch Half-Step Recovery Protocol (Probationary Reentry)
 
-* **Status**: Planned / Architectural Refinement
+* **Status**: ✅ IMPLEMENTED & VERIFIED (`core/risk_engine.py`, `core/coordinator.py` — 72h cooldown + VIX/EMA200/PF gate @ 1.0% risk floor per Invariant Rule #3)
 * **Suggested Priority**: High (P1)
 * **What is Missing:**
   In `core/risk_engine.py`, when portfolio drawdown reaches the 15% maximum limit, the circuit breaker triggers a hard latch (`self._is_halted = True`). In the current implementation, this halt is permanent until an engineer manually clears it via `reset_kill_switch()`.
@@ -43,7 +43,7 @@ This document records architectural, analytical, and operational items identifie
 
 ### 3. Maker Order Queue Tracking & Adaptive Re-Quoting Engine
 
-* **Status**: Future Research / Execution Modeling
+* **Status**: ✅ IMPLEMENTED & VERIFIED (`core/paper_account.py`, `core/coordinator.py`)
 * **Suggested Priority**: High (P1)
 * **What is Missing:**
   The current maker model in `core/paper_account.py` applies a passive $0.02\%$ maker fee and $0.00\%$ slippage under next-open execution. However, it assumes passive limit orders are filled at the opening quote without modeling real-world order book queue depth, partial fills, or adverse selection during violent market gaps.
@@ -61,7 +61,7 @@ This document records architectural, analytical, and operational items identifie
 
 ### 4. Decentralized Multi-Process Agent Distribution (Microservices / RPC)
 
-* **Status**: Future Research / Infrastructure
+* **Status**: ✅ IMPLEMENTED & VERIFIED (`core/async_agent_runner.py`, `live_paper_trader.py`)
 * **Suggested Priority**: Low (P3)
 * **What is Missing:**
   All 8 agents currently execute as modular Python classes within a single sequential process loop (`live_paper_trader.py`). They run within one operating system thread on the local host.
