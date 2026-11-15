@@ -1095,6 +1095,8 @@ def review_and_deploy_proposal(
     tmp_target = cfg_file.with_suffix(".json.tmp")
     with open(tmp_target, "w") as f:
         json.dump(candidate_cfg, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
     os.replace(tmp_target, cfg_file)
 
     deployment_actor = "conditional_auto_gate" if auto_gate_passed else ("human_operator" if human_approved else "governor")

@@ -1401,6 +1401,7 @@ class PortfolioCoordinator:
                         "hedge_ratio": pos.get("hedge_ratio", 1.0),
                         "entry_spread_mean": pos.get("entry_spread_mean"),
                         "entry_spread_std": pos.get("entry_spread_std"),
+                        "entry_time": pos_a.get("entry_time") or pos.get("entry_time"),
                         "fees_paid": float(pos_a.get("fees_paid", 0.0) or 0.0) + float(pos_b.get("fees_paid", 0.0) or 0.0),
                     }
 

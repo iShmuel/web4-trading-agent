@@ -44,6 +44,7 @@ class StatArbPairsStrategy:
         self.min_correlation = float(cfg.get("min_pair_correlation", cfg.get("pairs_min_correlation", 0.70)))
         self.min_return_correlation = float(cfg.get("min_pair_return_correlation", 0.45))
         self.max_half_life = float(cfg.get("max_pair_half_life_hours", 72.0))
+        self.max_hold_hours = float(cfg.get("stat_arb_max_hold_hours", 72.0))
         self.max_stale_minutes = int(cfg.get("max_stale_minutes", 180))
         self._enforce_staleness = "max_stale_minutes" in cfg
         self._last_ret_corr = 0.0
@@ -322,6 +323,33 @@ class StatArbPairsStrategy:
                     correlation=corr,
                     half_life=half_life,
                 )
+            elif isinstance(existing_pair_position, dict) and existing_pair_position.get("entry_time") and self.max_hold_hours > 0:
+                try:
+                    entry_dt = pd.Timestamp(existing_pair_position["entry_time"])
+                    if entry_dt.tzinfo is None:
+                        entry_dt = entry_dt.tz_localize("UTC")
+                    ref_bar_ts = combined.index[-1]
+                    if hasattr(ref_bar_ts, "tzinfo") and ref_bar_ts.tzinfo is None:
+                        ref_bar_ts = ref_bar_ts.tz_localize("UTC")
+                    hours_held = max(0.0, (ref_bar_ts - entry_dt).total_seconds() / 3600.0)
+                    if hours_held >= self.max_hold_hours:
+                        return PairTradeSignal(
+                            pair_id=pair_id,
+                            asset_a=asset_a,
+                            asset_b=asset_b,
+                            timestamp=now,
+                            action="CLOSE_PAIR",
+                            z_score=z_score,
+                            hedge_ratio=beta,
+                            spread=cur_spread,
+                            reason=f"Time-stop reached: Held {hours_held:.1f}h >= {self.max_hold_hours:.0f}h max hold limit (freeing stagnant pair capital)",
+                            confidence=0.85,
+                            is_stationary=is_stat,
+                            correlation=corr,
+                            half_life=half_life,
+                        )
+                except Exception:
+                    pass
             else:
                 hold_note = (
                     f"Holding pair position: current Z-Score {z_score:+.2f} (Half-life {half_life:.1f}h)"

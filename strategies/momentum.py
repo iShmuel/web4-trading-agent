@@ -140,10 +140,15 @@ class MomentumStrategy:
         in_uptrend = price > ema
         in_downtrend = price < ema
 
-        # --- If holding a position: evaluate exit/hold (using live intra-hour tick price if available) ---
+        # --- If holding a position: evaluate exit/hold (using live intra-hour tick & wick prices if available) ---
         if existing_position is not None:
             live_exit_price = float(df.attrs.get("live_price", price))
-            return self._evaluate_exit(symbol, live_exit_price, atr, existing_position, indicators)
+            live_high = float(df.attrs.get("live_high", live_exit_price))
+            live_low = float(df.attrs.get("live_low", live_exit_price))
+            return self._evaluate_exit(
+                symbol, live_exit_price, atr, existing_position, indicators,
+                live_high=live_high, live_low=live_low,
+            )
 
         # --- No position: evaluate entry ---
 
@@ -240,6 +245,8 @@ class MomentumStrategy:
         atr: float,
         position: Dict[str, Any],
         indicators: Dict[str, float],
+        live_high: Optional[float] = None,
+        live_low: Optional[float] = None,
     ) -> TradingSignal:
         """Evaluate whether to exit, partially exit, or hold an existing position."""
         now = datetime.now(timezone.utc)
@@ -248,6 +255,8 @@ class MomentumStrategy:
         side = position.get("side", "LONG")
         tp_hit = position.get("tp_hit", False)
         tp_target = position.get("tp_target", 0.0)
+        high_probe = max(price, float(live_high)) if live_high is not None else price
+        low_probe = min(price, float(live_low)) if live_low is not None else price
 
         # Check trailing stop hit
         if side == "LONG" and price <= trailing_stop:
@@ -276,18 +285,19 @@ class MomentumStrategy:
                 indicators=indicators,
             )
 
-        # Partial take-profit: scale out once price reaches the ATR target set at entry
+        # Partial take-profit: scale out once price (or intra-minute wick high/low) reaches the ATR target set at entry
         tp_ratio = position.get("tp_ratio", self.take_profit_ratio)
         if not tp_hit and tp_target > 0 and tp_ratio > 0:
-            reached = price >= tp_target if side == "LONG" else price <= tp_target
+            reached = high_probe >= tp_target if side == "LONG" else low_probe <= tp_target
             if reached:
+                fill_ref = max(price, tp_target) if side == "LONG" else min(price, tp_target)
                 return TradingSignal(
                     strategy_id=self.STRATEGY_ID,
                     symbol=symbol,
                     timestamp=now,
                     direction=SignalDirection.LONG if side == "LONG" else SignalDirection.SHORT,
                     status=SignalStatus.PARTIAL_EXIT,
-                    reference_price=price,
+                    reference_price=fill_ref,
                     atr=atr,
                     take_profit_ratio=tp_ratio,
                     exit_reason=f"Momentum Partial Take-Profit ({tp_ratio*100:.0f}% at {tp_target:.2f})",

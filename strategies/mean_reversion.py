@@ -134,10 +134,15 @@ class MeanReversionStrategy:
             "adx": adx,
         }
 
-        # --- If holding a position: evaluate exit/hold (using live intra-hour tick price if available) ---
+        # --- If holding a position: evaluate exit/hold (using live intra-hour tick & wick prices if available) ---
         if existing_position is not None:
             live_exit_price = float(df.attrs.get("live_price", price))
-            return self._evaluate_exit(symbol, live_exit_price, atr, rsi, bb_sma, existing_position, indicators, data)
+            live_high = float(df.attrs.get("live_high", live_exit_price))
+            live_low = float(df.attrs.get("live_low", live_exit_price))
+            return self._evaluate_exit(
+                symbol, live_exit_price, atr, rsi, bb_sma, existing_position, indicators, data,
+                live_high=live_high, live_low=live_low,
+            )
 
         # --- No position: evaluate entry ---
 
@@ -289,6 +294,8 @@ class MeanReversionStrategy:
         position: Dict[str, Any],
         indicators: Dict[str, float],
         data: pd.DataFrame,
+        live_high: Optional[float] = None,
+        live_low: Optional[float] = None,
     ) -> TradingSignal:
         """Evaluate whether to exit or hold a mean-reversion position."""
         now = datetime.now(timezone.utc)
@@ -296,6 +303,8 @@ class MeanReversionStrategy:
         trailing_stop = position["trailing_stop"]
         side = position.get("side", "LONG")
         entry_time = position.get("entry_time", "")
+        high_probe = max(price, float(live_high)) if live_high is not None else price
+        low_probe = min(price, float(live_low)) if live_low is not None else price
 
         # Stop-loss check
         if side == "LONG" and price <= trailing_stop:
@@ -331,14 +340,14 @@ class MeanReversionStrategy:
         if self.scale_out_enabled and not tp_hit:
             if side == "LONG" and bb_sma > min_long_profit_price:
                 halfway_target = entry_price + (bb_sma - entry_price) * 0.5
-                if halfway_target >= min_long_profit_price and price >= halfway_target:
+                if halfway_target >= min_long_profit_price and high_probe >= halfway_target:
                     return TradingSignal(
                         strategy_id=self.STRATEGY_ID,
                         symbol=symbol,
                         timestamp=now,
                         direction=SignalDirection.LONG,
                         status=SignalStatus.PARTIAL_EXIT,
-                        reference_price=price,
+                        reference_price=max(price, halfway_target),
                         atr=atr,
                         take_profit_ratio=self.scale_out_ratio,
                         exit_reason=f"Halfway Scale-Out Take-Profit ({int(self.scale_out_ratio*100)}% Banked)",
@@ -346,14 +355,14 @@ class MeanReversionStrategy:
                     )
             elif side == "SHORT" and bb_sma < max_short_profit_price:
                 halfway_target = entry_price - (entry_price - bb_sma) * 0.5
-                if halfway_target <= max_short_profit_price and price <= halfway_target:
+                if halfway_target <= max_short_profit_price and low_probe <= halfway_target:
                     return TradingSignal(
                         strategy_id=self.STRATEGY_ID,
                         symbol=symbol,
                         timestamp=now,
                         direction=SignalDirection.SHORT,
                         status=SignalStatus.PARTIAL_EXIT,
-                        reference_price=price,
+                        reference_price=min(price, halfway_target),
                         atr=atr,
                         take_profit_ratio=self.scale_out_ratio,
                         exit_reason=f"Halfway Scale-Out Take-Profit ({int(self.scale_out_ratio*100)}% Banked)",

@@ -207,3 +207,58 @@ def test_live_trader_log_rotation(tmp_path, monkeypatch):
     assert rotated.read_text() == "X" * 120
     assert "Fresh line after rotation" in test_log.read_text()
 
+
+def test_stat_arb_max_hold_hours_time_stop():
+    """Verify StatArbPairsStrategy closes stagnant pair positions that exceed stat_arb_max_hold_hours."""
+    dates = pd.date_range("2026-01-01", periods=100, freq="1h", tz="UTC")
+    base_b = 30.0 + np.sin(np.linspace(0, 15, 100)) * 2.0
+    base_a = 2.5 * base_b + 10.0 + np.cos(np.linspace(0, 40, 100)) * 1.5
+    base_a[-1] -= 1.8  # Still diverging (|Z| > 0.5 target, < 3.5 stop)
+
+    df_a = pd.DataFrame({"close": base_a}, index=dates)
+    df_b = pd.DataFrame({"close": base_b}, index=dates)
+
+    strat = StatArbPairsStrategy({"stat_arb_lookback": 48, "stat_arb_max_hold_hours": 72.0})
+    existing = {
+        "side_a": "LONG",
+        "entry_a": float(base_a[10]),
+        "entry_b": float(base_b[10]),
+        "units_a": 10.0,
+        "units_b": 25.0,
+        "hedge_ratio": 2.5,
+        "entry_time": dates[10].isoformat(),  # Held 89 hours (>= 72h limit)
+    }
+    sig = strat.evaluate_pair("GLD", "SLV", df_a, df_b, existing_pair_position=existing)
+    assert sig.action == "CLOSE_PAIR"
+    assert "time-stop reached" in sig.reason.lower()
+
+
+def test_intra_minute_wick_live_high_triggers_partial_take_profit():
+    """Verify filter_closed_bars attaches live_high/live_low and allows 50% scale-out TP
+    to bank intra-minute spikes that pull back before the 60s poll close."""
+    from core.data_loader import filter_closed_bars
+
+    now = datetime(2026, 6, 1, 14, 35, 0, tzinfo=timezone.utc)
+    dates = pd.date_range("2026-05-29 14:00:00", periods=73, freq="1h", tz="UTC")
+    closes = 100.0 + np.sin(np.linspace(0, 12, 73)) * 2.0
+    closes[-2] = 94.0
+    # Forming bar (14:00-15:00 UTC) spiked to high=99.0 (above halfway target ~95.0) then pulled back to close=93.5
+    closes[-1] = 93.5
+    highs = closes + 0.5
+    highs[-1] = 99.0
+    lows = closes - 0.5
+
+    raw_df = pd.DataFrame(
+        {"open": closes, "high": highs, "low": lows, "close": closes, "volume": 1000.0},
+        index=dates,
+    )
+    closed_df = filter_closed_bars(raw_df, timeframe="1h", as_of=now)
+    assert closed_df.attrs.get("live_high") == 99.0
+
+    mr = MeanReversionStrategy({"mr_scale_out_enabled": True, "mr_scale_out_ratio": 0.5, "max_stale_minutes": 0})
+    pos = {"symbol": "SOL/USDT", "entry_price": 90.0, "trailing_stop": 85.0, "side": "LONG", "tp_hit": False}
+    sig = mr.evaluate("SOL/USDT", closed_df, existing_position=pos)
+    assert sig.status == SignalStatus.PARTIAL_EXIT
+    assert sig.take_profit_ratio == 0.5
+
+

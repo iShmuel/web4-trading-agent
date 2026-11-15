@@ -68,10 +68,14 @@ def filter_closed_bars(
         df.index = idx
 
     live_price = float(df["close"].iloc[-1])
+    live_high = float(df["high"].iloc[-1]) if "high" in df.columns else live_price
+    live_low = float(df["low"].iloc[-1]) if "low" in df.columns else live_price
     live_bar_time = df.index[-1]
     mask = (df.index + tf_delta) <= ref_time
     closed_df = df[mask].copy()
     closed_df.attrs["live_price"] = live_price
+    closed_df.attrs["live_high"] = live_high
+    closed_df.attrs["live_low"] = live_low
     closed_df.attrs["live_bar_time"] = live_bar_time
     return closed_df
 
@@ -280,8 +284,10 @@ def fetch_ohlcv(
     else:
         df = fetch_stock_ohlcv(symbol=symbol, timeframe=timeframe, days=days)
 
-    # Save to local CSV cache
-    df.to_csv(cache_path)
+    # Save to local CSV cache atomically to prevent concurrent read corruption
+    tmp_cache = cache_path.with_suffix(f".{os.getpid()}.tmp.csv")
+    df.to_csv(tmp_cache)
+    os.replace(tmp_cache, cache_path)
     print(f"[DataLoader] Saved {len(df)} candles to local cache: {cache_path.name}")
     return filter_closed_bars(df, timeframe) if closed_only else df
 
