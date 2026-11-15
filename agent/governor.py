@@ -976,6 +976,32 @@ def review_and_deploy_proposal(
             return res
 
     base_cfg = load_config(cfg_file)
+    snap_file = cfg_file.parent / "last_deployment_snapshot.json"
+    if not human_approved and snap_file.exists():
+        try:
+            snap_data = json.loads(snap_file.read_text())
+            if snap_data.get("rolled_back") and snap_data.get("rolled_back_changes") == proposed_changes:
+                msg = (
+                    f"Blocked by Post-Rollback Memory: Proposed changes {proposed_changes} match "
+                    f"recently rolled-back proposal {snap_data.get('proposal_id')}."
+                )
+                res = GovernorApprovalResult(
+                    approved=False,
+                    status="REJECTED_ROLLED_BACK_REPEAT",
+                    invariants_passed=True,
+                    tests_passed=False,
+                    llm_risk_approved=False,
+                    llm_rationale=msg,
+                    rejection_reasons=[msg],
+                    applied_changes={},
+                    timestamp=now_iso,
+                    verdict="DISAPPROVE",
+                    proposal_id=prop_id,
+                )
+                append_governance_audit_log(res)
+                return res
+        except Exception:
+            pass
     candidate_cfg = _merge_proposed_changes_into_config(base_cfg, proposed_changes)
 
     # Step 1: Invariant & Parameter Bounds Check
@@ -1184,6 +1210,7 @@ def review_and_deploy_proposal(
             "deployed_at": now_iso,
             "trade_count_at_deploy": len(closed_trades),
             "pre_deploy_expectancy": round(pre_exp, 4),
+            "proposed_changes": proposed_changes,
             "backup_config_path": str(bak_file),
             "target_config_path": str(cfg_file),
             "rolled_back": False,
@@ -1276,6 +1303,8 @@ def check_and_rollback_if_degraded(
 
     snap["rolled_back"] = True
     snap["rolled_back_at"] = datetime.now(timezone.utc).isoformat()
+    snap["rolled_back_trade_count"] = len(closed_trades)
+    snap["rolled_back_changes"] = snap.get("proposed_changes", {})
     snap["rollback_reason"] = (
         f"Auto-Rollback triggered after {len(eval_window)} trades: "
         f"Post-deploy PnL=${post_pnl:+.2f}, WR={post_wr:.1f}%, Exp=${post_exp:+.2f} vs Pre-Exp=${pre_exp:+.2f}"

@@ -365,6 +365,7 @@ def _run(args):
                         rb_res = check_and_rollback_if_degraded(cur_closed_list)
                         if rb_res.get("rolled_back"):
                             coordinator.reload_config(load_config())
+                            last_analyzed_trade_count = cur_closed
                             log(f"⚠️ [AUTO-ROLLBACK SAFETY NET] {rb_res.get('reason')}")
                     except Exception as e:
                         log(f"[Auto-Rollback Notice] {e}")

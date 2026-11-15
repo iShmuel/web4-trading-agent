@@ -335,6 +335,23 @@ def test_post_deployment_auto_rollback_safety_net(tmp_path):
     res = check_and_rollback_if_degraded(closed_trades, config_path=cfg_file, snapshot_path=snap_file, min_eval_trades=10)
     assert res["rolled_back"] is True
     assert json.loads(cfg_file.read_text())["atr_multiplier"] == 2.75
+    snap_after = json.loads(snap_file.read_text())
+    assert snap_after["rolled_back_trade_count"] == 15
+
+    # Verify Governor blocks re-proposing the exact same change that just triggered a rollback
+    from agent.governor import review_and_deploy_proposal
+    snap_after["rolled_back_changes"] = {"atr_multiplier": 1.80}
+    snap_file.write_text(json.dumps(snap_after))
+    repeat_res = review_and_deploy_proposal(
+        proposed_changes={"atr_multiplier": 1.80},
+        rationale="Trying to re-apply the exact failed config",
+        config_path=cfg_file,
+        verify_tests=False,
+        use_llm=False,
+    )
+    assert repeat_res.approved is False
+    assert repeat_res.status == "REJECTED_ROLLED_BACK_REPEAT"
+
 
 
 

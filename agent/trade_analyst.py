@@ -169,7 +169,7 @@ def validate_analyst_proposal_schema(
 
 
 def load_closed_trades(portfolio_path: Optional[Path] = None, limit: Optional[int] = None) -> List[Dict[str, Any]]:
-    """Load closed trades from paper portfolio state."""
+    """Load closed trades from paper portfolio state (isolating post-rollback trades if a rollback occurred)."""
     path = portfolio_path or PORTFOLIO_FILE
     if not path.exists():
         return []
@@ -177,6 +177,17 @@ def load_closed_trades(portfolio_path: Optional[Path] = None, limit: Optional[in
         with open(path, "r") as f:
             data = json.load(f)
         closed = data.get("closed_trades", [])
+        if portfolio_path is None:
+            snap_file = PROJECT_ROOT / "config" / "last_deployment_snapshot.json"
+            if snap_file.exists():
+                try:
+                    snap = json.loads(snap_file.read_text())
+                    if snap.get("rolled_back") and int(snap.get("rolled_back_trade_count", 0)) > 0:
+                        rb_idx = int(snap["rolled_back_trade_count"])
+                        if len(closed) > rb_idx:
+                            closed = closed[rb_idx:]
+                except Exception:
+                    pass
         if limit and limit > 0:
             return closed[-limit:]
         return closed
