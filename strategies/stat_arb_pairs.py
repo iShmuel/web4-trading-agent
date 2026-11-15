@@ -276,6 +276,27 @@ class StatArbPairsStrategy:
                 half_life=half_life,
             )
 
+        # Never enter when spread divergence is already at or beyond the stop-loss Z-score
+        # (prevents immediate next-tick stop-out churn if |Z| >= stop_z_score).
+        if abs(z_score) >= self.stop_z_score:
+            return PairTradeSignal(
+                pair_id=pair_id,
+                asset_a=asset_a,
+                asset_b=asset_b,
+                timestamp=now,
+                action="NO_TRADE",
+                z_score=z_score,
+                hedge_ratio=beta,
+                spread=cur_spread,
+                reason=(
+                    f"Blocked by Stop-Z Ceiling: Spread Z-Score {z_score:+.2f} "
+                    f"exceeds stop threshold ±{self.stop_z_score}"
+                ),
+                is_stationary=is_stat,
+                correlation=corr,
+                half_life=half_life,
+            )
+
         # Cost-aware acceptance gate: reject entries whose expected reversion cannot cover friction
         if self.min_edge_cost_ratio > 0.0 and abs(z_score) >= self.entry_z_score:
             _, _, edge_ratio = self.estimate_expected_edge_vs_cost(

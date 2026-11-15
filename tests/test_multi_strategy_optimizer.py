@@ -289,3 +289,23 @@ def test_discover_cointegrated_pairs_adapts_to_changing_watchlist():
     assert ["AAA/USDT", "BBB/USDT"] in pairs
     assert ["STK1", "STK2"] in pairs
 
+
+def test_stat_arb_blocks_entry_when_z_exceeds_stop_z():
+    from strategies.stat_arb_pairs import StatArbPairsStrategy
+
+    base = _random_walk(150, seed=55)
+    rng = np.random.default_rng(77)
+    a = base + rng.normal(0, 0.1, 150)
+    b = base.copy()
+    # Spike the final bar of A so Z-score is well above stop_z_score (3.5)
+    a[-1] = a[-1] + 5.0
+    df_a = _ohlcv(a)
+    df_b = _ohlcv(b)
+
+    strat = StatArbPairsStrategy({"pairs_lookback": 100, "pairs_entry_z": 2.0, "pairs_stop_z": 3.5})
+    sig = strat.evaluate_pair("A/USDT", "B/USDT", df_a, df_b, existing_pair_position=None)
+    assert abs(sig.z_score) >= 3.5
+    assert sig.action == "NO_TRADE"
+    assert "Stop-Z Ceiling" in sig.reason
+
+

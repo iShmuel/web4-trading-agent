@@ -38,11 +38,11 @@ def test_dynamic_pairs_scanner_identifies_cointegrated_pairs():
     """Verify that dynamic pairs scanner filters out trending pairs and detects stationary mean-reverting pairs."""
     dates = pd.date_range("2026-01-01", periods=100, freq="1h", tz="UTC")
     
-    # Pair 1: Cointegrated (GLD vs SLV)
+    # Pair 1: Cointegrated (GLD vs SLV) with stationary mean-reverting spread
     base_slv = 30.0 + np.sin(np.linspace(0, 15, 100)) * 2.0
-    base_gld = 2.5 * base_slv + 10.0
-    # Add temporary spread divergence at the end for entry signal
-    base_gld[-1] -= 8.0  # Underpriced spread -> Long GLD, Short SLV
+    base_gld = 2.5 * base_slv + 10.0 + np.cos(np.linspace(0, 40, 100)) * 1.5
+    # Add temporary spread divergence at the end within entry band (2.0 <= |Z| < 3.5)
+    base_gld[-1] -= 2.5  # Underpriced spread -> Long GLD, Short SLV
     
     # Pair 2: Non-cointegrated / trending (Diverging secular drift)
     trend_a = np.linspace(100, 200, 100)
@@ -85,9 +85,9 @@ def test_coordinator_dynamic_pair_execution_and_dual_leg_exit(test_setup):
     dates = pd.date_range("2026-01-01", periods=100, freq="1h", tz="UTC")
 
     base_slv = 30.0 + np.sin(np.linspace(0, 15, 100)) * 2.0
-    base_gld = 2.5 * base_slv + 10.0
-    # Create extreme underpriced spread
-    base_gld[-1] -= 10.0
+    base_gld = 2.5 * base_slv + 10.0 + np.cos(np.linspace(0, 40, 100)) * 1.5
+    # Create underpriced spread inside valid entry band (2.0 <= |Z| < 3.5)
+    base_gld[-1] -= 2.5
 
     df_gld = pd.DataFrame({"close": base_gld, "high": base_gld + 0.5, "low": base_gld - 0.5, "open": base_gld, "volume": 1000}, index=dates)
     df_slv = pd.DataFrame({"close": base_slv, "high": base_slv + 0.5, "low": base_slv - 0.5, "open": base_slv, "volume": 1000}, index=dates)

@@ -880,7 +880,7 @@ def run_pairs_backtest(
                 position = None
                 unrealized = 0.0
 
-        if position is None and abs(z) >= entry_z and sigma > 0:
+        elif position is None and entry_z <= abs(z) < stop_z and sigma > 0:
             accept = True
             if min_edge_cost_ratio > 0:
                 edge = max(0.0, abs(z) - exit_z) * sigma
