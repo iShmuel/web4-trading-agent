@@ -404,7 +404,7 @@ SLIDES_DATA = [
             "In Blue (Column 2), our Strategy Algorithms and Risk Engine are 100% deterministic math formulas: Momentum, Mean Reversion, Stat-Arb Pairs, Basis Yield, and Van Tharp position sizing. They never hallucinate. "
             "In Amber (Column 3), our Dynamic Strategy Registry, Coordinator, and Institutional Skill Gates enforce hard rules: the Coordinator resolves signal conflicts across all registered strategies, the Skill Gate checks NYSE hours, SEC 8-K and 10-Q filings, and 30-day tax wash-sale rules, and the Paper Account locks the ledger. "
             "In Purple, only four components use our local AI model (phi4-mini via Ollama): Agent 8 (Pre-Flight Devil's Advocate, which reads headlines in 0.46 seconds), Agent 9 (Alpha Scanner), Agent 10 (Forensic Strategy Analyst with 11-field structured JSON), and Agent 12 (Chief Risk Governor with fail-closed schema parsing). "
-            "Notice the governance gate at the bottom: passing proposals must clear 4 strict gates (Safety Invariants, 152 Pytests, 100% Governor Confidence, and Sure Improvement over the baseline). When all 4 pass, the bot autonomously commits and pushes to GitHub (origin/main) without human delay. Borderline candidates are held safely for human review."
+            "Notice the governance gate at the bottom: passing proposals must clear 4 strict gates (Safety Invariants, 184 Pytests, 100% Governor Confidence, and Sure Improvement over the baseline) plus a 10-trade Post-Deployment Auto-Rollback safety net. When all 4 pass, the bot autonomously commits and pushes to GitHub (origin/main) without human delay. Borderline candidates are held safely for human review (keeping only the latest relevant proposal)."
         ),
     },
     {
@@ -855,7 +855,7 @@ def build_editable_pptx(arch_img: Path, perf_img: Path, def_img: Path) -> Path:
     s7 = [
         _xml_pic(80, "rIdImg3", "DefenseCharts", 0.45, 1.55, 12.43, 4.50),
         _xml_shape_box(81, "DefenseTakeaway", 0.55, 6.12, 12.2, 0.85, BG_CARD_ALT, ACCENT_GREEN, 1.2, [
-            ("4-Gate Conditional Auto-Approval Engine: Gate 1 (1%-5% Invariants) + Gate 2 (152 Tests) + Gate 3 (100% Governor) + Gate 4 (Alpha Superiority: OOS Ret >= 0%, Sharpe >= Base, MaxDD <= Base).", 10.0, ACCENT_GREEN, True, "l"),
+            ("4-Gate Conditional Auto-Approval Engine: Gate 1 (1%-5% Invariants) + Gate 2 (184 Tests) + Gate 3 (100% Governor) + Gate 4 (Alpha Superiority: OOS Ret >= 0%, Sharpe >= Base, MaxDD <= Base) + 10-Trade Auto-Rollback.", 10.0, ACCENT_GREEN, True, "l"),
             ("Real-World Anti-Overfitting Proof: Gate 4 safely blocked PROP-ED02E10E (-0.84% OOS W1) from auto-deploy, while PROP-A15F08C2 (+15.60% OOS W2) was verified, approved, and deployed to main.", 9.5, TEXT_MAIN, False, "l"),
         ]),
     ]
@@ -867,28 +867,28 @@ def build_editable_pptx(arch_img: Path, perf_img: Path, def_img: Path) -> Path:
             ("✅ Verified Achievements", 15.0, ACCENT_GREEN, True, "l"),
             ("(Implemented & Tested — 152/152 Green)", 10.0, TEXT_MUTED, True, "l"),
             (" ", 5.0, TEXT_MUTED, False, "l"),
-            ("• Deployed PROP-A15F08C2: Reached +15.60% OOS W2 return (Sharpe 2.90) and +5.34% W1 return with 2.5x StatArb edge-to-cost gate.", 10.8, TEXT_MAIN, False, "l"),
-            ("• 4-Gate Conditional Auto-Approval: Autonomous verification & Git push to GitHub when all 4 gates pass; holds questionable candidates for human.", 10.8, TEXT_MAIN, False, "l"),
-            ("• Persistent Drawdown Circuit Breaker: Bound to PaperAccount, halts new entries across all strategies at 15% MaxDD threshold.", 10.8, TEXT_MAIN, False, "l"),
-            ("• 152/152 Passing Pytest Suite: 100% test pass rate in ~20s covering invariant bounds, strategies, skills, and governance.", 10.8, TEXT_MAIN, False, "l"),
+            ("• CPI Benchmark 97.3/100 (Option B): Beats Single-Agent (7.3) & Uncoordinated (8.8) with 85.3% Overall WR (73.5% Directional), 3.33 PF, 1.16% Avg MaxDD.", 10.8, TEXT_MAIN, False, "l"),
+            ("• 4-Gate Auto-Approval + 10-Trade Auto-Rollback: Autonomous GitHub deploy when all 4 gates pass; instant rollback & trade-history isolation on live drift.", 10.8, TEXT_MAIN, False, "l"),
+            ("• 72h Probationary Reentry & Maker Re-Quoting: Gated 1.0%-floor recovery after 15% DD halt + Adaptive spread re-quoting on runaway breakouts.", 10.8, TEXT_MAIN, False, "l"),
+            ("• 184/184 Passing Pytest Suite: 100% test pass rate in ~18s covering invariants, dynamic rolling router, async workers, and governance.", 10.8, TEXT_MAIN, False, "l"),
         ]),
         _xml_shape_box(91, "ColLimitations", 4.70, 1.70, 3.9, 5.10, BG_CARD, ACCENT_AMBER, 1.6, [
             ("⚠️ Honest Limitations", 15.0, ACCENT_AMBER, True, "l"),
             ("(What Remains Unproven / Constrained)", 10.0, TEXT_MUTED, True, "l"),
             (" ", 5.0, TEXT_MUTED, False, "l"),
             ("• Simulated Paper Execution Only: Real-money trading is permanently prohibited; execution remains strictly simulated in PaperAccount.", 10.8, TEXT_MAIN, False, "l"),
-            ("• Historical Paper Drawdown: Live paper portfolio ($8,919.93) reflects early unpruned baseline trades before recent defense gates were installed.", 10.8, TEXT_MAIN, False, "l"),
+            ("• Historical Paper Drawdown: Live paper portfolio reflects early pre-remediation baseline trades before recent defense gates were installed.", 10.8, TEXT_MAIN, False, "l"),
             ("• Anti-Overfitting Restraint: Self-improvement tournaments strictly reject parameter mutations that fail out-of-sample walk-forward gates.", 10.8, TEXT_MAIN, False, "l"),
-            ("• Local LLM Latency: Two-Agent LLM governance workflow takes ~11.7s per proposal (mitigated by asynchronous background execution).", 10.8, TEXT_MAIN, False, "l"),
+            ("• Local LLM Latency: Two-Agent LLM governance (~11.7s/proposal) is now decoupled via AsyncAgentTaskRunner so the 60s stop loop never stalls.", 10.8, TEXT_MAIN, False, "l"),
         ]),
         _xml_shape_box(92, "ColNext", 8.85, 1.70, 3.9, 5.10, BG_CARD, ACCENT_CYAN, 1.6, [
             ("🚀 Current Operations & Roadmap", 15.0, ACCENT_CYAN, True, "l"),
             ("(Active State & Engineering Priorities)", 10.0, TEXT_MUTED, True, "l"),
             (" ", 5.0, TEXT_MUTED, False, "l"),
-            ("• 1. Active 24/7 Live Daemon: Running continuously on main via `live_paper_trader.py --loop --interval 60 --auto-approve`.", 10.8, TEXT_MAIN, False, "l"),
-            ("• 2. Cointegrated ETF Pairs Expansion: Add matched sector pairs (e.g., SMH/SOXX, XLE/USO) to scale stat-arb pair trading.", 10.8, TEXT_MAIN, False, "l"),
-            ("• 3. Persistent SEC Fundamental Cache: Cache EDGAR XBRL & 8-K responses to disk to accelerate cold CLI scans.", 10.8, TEXT_MAIN, False, "l"),
-            ("• 4. Continuous Self-Evolution: Bot monitors closed trades every 15 deals and runs parameter tournaments every 6 hours.", 10.8, TEXT_MAIN, False, "l"),
+            ("• 1. Active 24/7 Live Daemon: Running on main with Dynamic Rolling Router, Adaptive Maker Re-Quoting, & Async Agent Workers.", 10.8, TEXT_MAIN, False, "l"),
+            ("• 2. Multi-Broker Gateways (Planned): Audited Alpaca / IBKR connectors (deferred behind Invariant Rule #1).", 10.8, TEXT_MAIN, False, "l"),
+            ("• 3. Forensic Window Calibration: Review graduating forensic_trade_interval from 15 to 25 after 50+ live trades.", 10.8, TEXT_MAIN, False, "l"),
+            ("• 4. Zero-Dependency Web UI (Planned): Single-file SSE browser dashboard (web_dashboard.py) for remote VPS monitoring.", 10.8, TEXT_MAIN, False, "l"),
         ]),
     ]
     slides_shapes.append(s8)
@@ -1564,12 +1564,12 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
   <div class="slide-body">
     <div class="grid-3">
       <div class="card" style="border-top: 4px solid #10B981;">
-        <h3 style="color:#10B981;">1. Verified Capabilities (152/152 Tests)</h3>
+        <h3 style="color:#10B981;">1. Verified Capabilities (184/184 Tests)</h3>
         <ul>
-          <li>• <b>Deployed PROP-A15F08C2:</b> +15.60% OOS W2 return (Sharpe 2.90, +$1,559.50) with 2.5x StatArb edge-to-cost gate on main.</li>
-          <li>• <b>4-Gate Conditional Auto-Approval:</b> Autonomous verification &amp; Git push to GitHub; safely holds questionable proposals for human review.</li>
-          <li>• <b>Complete Multi-Strategy Engine:</b> 4 active strategies (Momentum, Mean Reversion, Stat-Arb Pairs, Basis Yield) with dynamic registry.</li>
-          <li>• <b>Persistent Drawdown Circuit Breaker:</b> Bound to PaperAccount, halts new entries across all strategies at 15% MaxDD threshold.</li>
+          <li>• <b>CPI Benchmark 97.3/100 (Option B):</b> Beats Single-Agent (7.3) &amp; Uncoordinated (8.8) with <b>85.3% Overall WR</b> (73.5% Directional), 3.33 PF, 1.16% Avg MaxDD.</li>
+          <li>• <b>4-Gate Auto-Approval + 10-Trade Auto-Rollback:</b> Autonomous Git push on verified alpha; instant rollback &amp; trade-history isolation on live drift.</li>
+          <li>• <b>72h Probationary Reentry &amp; Maker Re-Quoting:</b> Gated 1.0%-floor recovery after 15% DD halt + Adaptive spread re-quoting on runaway breakouts.</li>
+          <li>• <b>100% Dynamic Rolling Router &amp; Async Agents:</b> Auto-switches Momentum / Mean Reversion / Basis Yield with zero-lag 60s stop-loss execution.</li>
         </ul>
       </div>
       <div class="card" style="border-top: 4px solid #F59E0B;">
@@ -1577,17 +1577,17 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
         <ul>
           <li>• <b>Simulated Execution Only:</b> All operations run exclusively through simulated PaperAccount with strict zero real-money broker risk.</li>
           <li>• <b>Anti-Overfitting Restraint:</b> Walk-forward tournament rejects noisy mutations (e.g. rejecting PROP-ED02E10E) to protect capital.</li>
-          <li>• <b>Funding Regime Lock:</b> When funding rates overheat, long entries are strictly blocked while short basis yield accumulates passive carry.</li>
-          <li>• <b>Historical Paper Account Drag:</b> Live paper balance ($8,919.93) reflects early pre-remediation drawdown from early October baseline.</li>
+          <li>• <b>Funding Regime Lock:</b> When funding rates overheat, long entries are strictly blocked while basis yield accumulates passive carry.</li>
+          <li>• <b>Historical Paper Account Drag:</b> Live paper balance reflects early pre-remediation drawdown prior to recent defense &amp; router upgrades.</li>
         </ul>
       </div>
       <div class="card" style="border-top: 4px solid #38BDF8;">
         <h3 style="color:#38BDF8;">3. Current Operations &amp; Roadmap</h3>
         <ul>
-          <li>• <b>1. Active 24/7 Live Daemon:</b> Running continuously on main via <code>live_paper_trader.py --loop --interval 60 --auto-approve</code>.</li>
-          <li>• <b>2. Cointegrated ETF Pairs Expansion:</b> Add matched sector pairs (e.g., SMH/SOXX, XLE/USO) to scale stat-arb pair trading.</li>
-          <li>• <b>3. Persistent SEC Fundamental Cache:</b> Cache EDGAR XBRL &amp; 8-K responses to disk to accelerate cold CLI scans.</li>
-          <li>• <b>4. Continuous Self-Evolution:</b> Closed-loop decision journal monitors closed trades every 15 deals and self-optimizes every 6 hours.</li>
+          <li>• <b>1. Active 24/7 Live Daemon:</b> Running on main with Dynamic Rolling Router, Adaptive Maker Re-Quoting, &amp; Async Agent Workers.</li>
+          <li>• <b>2. Multi-Broker Gateways (Planned):</b> Audited Alpaca / IBKR connectors (deferred behind Invariant Rule #1).</li>
+          <li>• <b>3. Forensic Window Calibration:</b> Review graduating <code>forensic_trade_interval</code> from 15 to 25 after 50+ live closed trades.</li>
+          <li>• <b>4. Zero-Dependency Web UI (Planned):</b> Single-file SSE browser dashboard (<code>web_dashboard.py</code>) for remote VPS monitoring.</li>
         </ul>
       </div>
     </div>
@@ -1597,7 +1597,7 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
     </div>
   </div>
   <div class="slide-footer">
-    <span>Deliverables: web4_trading_agent_presentation.pptx (Editable) • web4_trading_agent_presentation.pdf • 152/152 Tests Passing</span>
+    <span>Deliverables: web4_trading_agent_presentation.pptx (Editable) • web4_trading_agent_presentation.pdf • 184/184 Tests Passing</span>
     <span>Est. Speaking Time: {SLIDES_DATA[7]['duration']} • Total Duration: ~7.5 Minutes • Slide 8 / 8</span>
   </div>
 </section>

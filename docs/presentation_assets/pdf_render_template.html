@@ -482,12 +482,12 @@
   <div class="slide-body">
     <div class="grid-3">
       <div class="card" style="border-top: 4px solid #10B981;">
-        <h3 style="color:#10B981;">1. Verified Capabilities (152/152 Tests)</h3>
+        <h3 style="color:#10B981;">1. Verified Capabilities (184/184 Tests)</h3>
         <ul>
-          <li>• <b>Deployed PROP-A15F08C2:</b> +15.60% OOS W2 return (Sharpe 2.90, +$1,559.50) with 2.5x StatArb edge-to-cost gate on main.</li>
-          <li>• <b>4-Gate Conditional Auto-Approval:</b> Autonomous verification &amp; Git push to GitHub; safely holds questionable proposals for human review.</li>
-          <li>• <b>Complete Multi-Strategy Engine:</b> 4 active strategies (Momentum, Mean Reversion, Stat-Arb Pairs, Basis Yield) with dynamic registry.</li>
-          <li>• <b>Persistent Drawdown Circuit Breaker:</b> Bound to PaperAccount, halts new entries across all strategies at 15% MaxDD threshold.</li>
+          <li>• <b>CPI Benchmark 97.3/100 (Option B):</b> Beats Single-Agent (7.3) &amp; Uncoordinated (8.8) with <b>85.3% Overall WR</b> (73.5% Directional), 3.33 PF, 1.16% Avg MaxDD.</li>
+          <li>• <b>4-Gate Auto-Approval + 10-Trade Auto-Rollback:</b> Autonomous Git push on verified alpha; instant rollback &amp; trade-history isolation on live drift.</li>
+          <li>• <b>72h Probationary Reentry &amp; Maker Re-Quoting:</b> Gated 1.0%-floor recovery after 15% DD halt + Adaptive spread re-quoting on runaway breakouts.</li>
+          <li>• <b>100% Dynamic Rolling Router &amp; Async Agents:</b> Auto-switches Momentum / Mean Reversion / Basis Yield with zero-lag 60s stop-loss execution.</li>
         </ul>
       </div>
       <div class="card" style="border-top: 4px solid #F59E0B;">
@@ -495,17 +495,17 @@
         <ul>
           <li>• <b>Simulated Execution Only:</b> All operations run exclusively through simulated PaperAccount with strict zero real-money broker risk.</li>
           <li>• <b>Anti-Overfitting Restraint:</b> Walk-forward tournament rejects noisy mutations (e.g. rejecting PROP-ED02E10E) to protect capital.</li>
-          <li>• <b>Funding Regime Lock:</b> When funding rates overheat, long entries are strictly blocked while short basis yield accumulates passive carry.</li>
-          <li>• <b>Historical Paper Account Drag:</b> Live paper balance ($8,919.93) reflects early pre-remediation drawdown from early October baseline.</li>
+          <li>• <b>Funding Regime Lock:</b> When funding rates overheat, long entries are strictly blocked while basis yield accumulates passive carry.</li>
+          <li>• <b>Historical Paper Account Drag:</b> Live paper balance reflects early pre-remediation drawdown prior to recent defense &amp; router upgrades.</li>
         </ul>
       </div>
       <div class="card" style="border-top: 4px solid #38BDF8;">
         <h3 style="color:#38BDF8;">3. Current Operations &amp; Roadmap</h3>
         <ul>
-          <li>• <b>1. Active 24/7 Live Daemon:</b> Running continuously on main via <code>live_paper_trader.py --loop --interval 60 --auto-approve</code>.</li>
-          <li>• <b>2. Cointegrated ETF Pairs Expansion:</b> Add matched sector pairs (e.g., SMH/SOXX, XLE/USO) to scale stat-arb pair trading.</li>
-          <li>• <b>3. Persistent SEC Fundamental Cache:</b> Cache EDGAR XBRL &amp; 8-K responses to disk to accelerate cold CLI scans.</li>
-          <li>• <b>4. Continuous Self-Evolution:</b> Closed-loop decision journal monitors closed trades every 15 deals and self-optimizes every 6 hours.</li>
+          <li>• <b>1. Active 24/7 Live Daemon:</b> Running on main with Dynamic Rolling Router, Adaptive Maker Re-Quoting, &amp; Async Agent Workers.</li>
+          <li>• <b>2. Multi-Broker Gateways (Planned):</b> Audited Alpaca / IBKR connectors (deferred behind Invariant Rule #1).</li>
+          <li>• <b>3. Forensic Window Calibration:</b> Review graduating <code>forensic_trade_interval</code> from 15 to 25 after 50+ live closed trades.</li>
+          <li>• <b>4. Zero-Dependency Web UI (Planned):</b> Single-file SSE browser dashboard (<code>web_dashboard.py</code>) for remote VPS monitoring.</li>
         </ul>
       </div>
     </div>
@@ -515,7 +515,7 @@
     </div>
   </div>
   <div class="slide-footer">
-    <span>Deliverables: web4_trading_agent_presentation.pptx (Editable) • web4_trading_agent_presentation.pdf • 152/152 Tests Passing</span>
+    <span>Deliverables: web4_trading_agent_presentation.pptx (Editable) • web4_trading_agent_presentation.pdf • 184/184 Tests Passing</span>
     <span>Est. Speaking Time: 50 seconds • Total Duration: ~7.5 Minutes • Slide 8 / 8</span>
   </div>
 </section>
