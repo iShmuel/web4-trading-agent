@@ -114,12 +114,20 @@ def build_dashboard_payload(
     initial_cap = float(portfolio.get("initial_capital", 10000.0))
 
     eq_curve: List[float] = [round(initial_cap, 2)]
+    eq_points: List[Dict[str, Any]] = [{"eq": round(initial_cap, 2), "label": f"Start ${initial_cap:,.0f}", "pnl": 0.0}]
     running = initial_cap
-    for t in closed:
-        running += float(t.get("pnl", 0.0))
-        eq_curve.append(round(running, 2))
+    for idx, t in enumerate(closed, start=1):
+        pnl_t = float(t.get("pnl", 0.0))
+        running += pnl_t
+        eq_val = round(running, 2)
+        eq_curve.append(eq_val)
+        sym_t = str(t.get("symbol", "Trade"))
+        sign_t = "+" if pnl_t >= 0 else ""
+        eq_points.append({"eq": eq_val, "label": f"#{idx} {sym_t} {sign_t}${pnl_t:,.2f}", "pnl": round(pnl_t, 2)})
     if isinstance(status.get("equity"), (int, float)):
-        eq_curve.append(round(float(status["equity"]), 2))
+        live_eq = round(float(status["equity"]), 2)
+        eq_curve.append(live_eq)
+        eq_points.append({"eq": live_eq, "label": f"Live ${live_eq:,.2f}", "pnl": None})
 
     prices = status.get("prices", {}) or {}
     actions = status.get("assets") or status.get("actions") or {}
@@ -282,6 +290,7 @@ def build_dashboard_payload(
         "pairs": pairs_rows,
         "recent_trades": list(reversed(closed[-15:])),
         "equity_curve": eq_curve[-120:],
+        "equity_points": eq_points[-120:],
     }
 
 
@@ -324,7 +333,11 @@ HTML_PAGE = """<!doctype html>
   .zbar { position:relative; display:inline-block; width:110px; height:8px; background:#1e293b; border-radius:4px; vertical-align:middle; margin-right:6px; }
   .zbar-mid { position:absolute; left:50%; top:-2px; width:1px; height:12px; background:#475569; }
   .zbar-dot { position:absolute; top:-1px; width:8px; height:10px; border-radius:3px; transform:translateX(-50%); }
-  svg { width:100%; height:130px; display:block; }
+  svg { width:100%; height:130px; display:block; overflow:visible; }
+  .eq-wrap { position:relative; }
+  .eq-dot { cursor:pointer; transition:r .1s; }
+  .eq-dot:hover { r:5.5; }
+  #eq-tip { position:fixed; display:none; pointer-events:none; background:#0f172a; border:1px solid var(--cyan); color:var(--text); padding:4px 9px; border-radius:6px; font-size:12px; font-weight:600; z-index:99; white-space:nowrap; box-shadow:0 4px 12px rgba(0,0,0,.5); }
 </style>
 </head>
 <body>
@@ -338,8 +351,9 @@ HTML_PAGE = """<!doctype html>
 
   <div class="section">
     <div class="sec-head"><h2>Portfolio Equity Curve (Realized Ledger + Live Mark)</h2><span class="sub" id="eq-range"></span></div>
-    <svg id="eq-svg" viewBox="0 0 800 130" preserveAspectRatio="none"></svg>
+    <div class="eq-wrap"><svg id="eq-svg" viewBox="0 0 800 130" preserveAspectRatio="none"></svg></div>
   </div>
+  <div id="eq-tip"></div>
 
   <div class="section">
     <div class="sec-head"><h2>Open Positions</h2><span class="sub" id="open-sub"></span></div>
@@ -396,13 +410,28 @@ function renderWatchlist(){
     <td>${r.status}</td><td>${r.regime}</td><td>${stratPill(r.strategy)}</td><td>${r.trigger}</td>
   </tr>`).join('') || '<tr><td colspan="6" class="p-muted">No matching symbols</td></tr>';
 }
-function renderCurve(pts){
+function showEqTip(e, txt){
+  const tip = document.getElementById('eq-tip');
+  tip.textContent = txt;
+  tip.style.display = 'block';
+  tip.style.left = Math.min(window.innerWidth - 220, e.clientX + 10) + 'px';
+  tip.style.top = Math.max(8, e.clientY - 30) + 'px';
+}
+function hideEqTip(){ document.getElementById('eq-tip').style.display = 'none'; }
+function renderCurve(pts, metaPts){
   const svg = document.getElementById('eq-svg');
   if(!pts || pts.length < 2){ svg.innerHTML = ''; return; }
   const min = Math.min(...pts), max = Math.max(...pts), span = (max - min) || 1;
   document.getElementById('eq-range').textContent = `Min $${fmt(min)} | Max $${fmt(max)} | Now $${fmt(pts[pts.length-1])}`;
-  const coords = pts.map((v,i) => `${(i/(pts.length-1)*800).toFixed(1)},${(120 - ((v-min)/span)*105).toFixed(1)}`).join(' ');
-  svg.innerHTML = `<polyline fill="none" stroke="#38bdf8" stroke-width="2.5" points="${coords}" />`;
+  const xy = pts.map((v,i) => [Number((i/(pts.length-1)*800).toFixed(1)), Number((120 - ((v-min)/span)*105).toFixed(1))]);
+  const coords = xy.map(p => `${p[0]},${p[1]}`).join(' ');
+  const dots = xy.map((p, i) => {
+    const m = (metaPts && metaPts[i]) || {label: `$${fmt(pts[i])}`, pnl: null};
+    const fill = m.pnl === null ? '#38bdf8' : (m.pnl > 0 ? '#10b981' : (m.pnl < 0 ? '#ef4444' : '#38bdf8'));
+    const safeTxt = String(m.label || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return `<circle class="eq-dot" cx="${p[0]}" cy="${p[1]}" r="3" fill="${fill}" onmouseenter="showEqTip(event,'${safeTxt}')" onmousemove="showEqTip(event,'${safeTxt}')" onmouseleave="hideEqTip()"><title>${safeTxt}</title></circle>`;
+  }).join('');
+  svg.innerHTML = `<polyline fill="none" stroke="#38bdf8" stroke-width="2" points="${coords}" />${dots}`;
 }
 function render(d){
   lastData = d;
@@ -420,7 +449,7 @@ function render(d){
     <div class="card"><div class="k">Closed Fills (${a.closed_trades})</div><div class="v ${a.realized_pnl>=0?'ok':'bad'}">$${fmt(a.realized_pnl)}</div><div class="sub">WR: ${a.win_rate_pct}% (${a.wins}W / ${a.losses}L) | PF: ${fmt(rt.profit_factor ?? 0)} | Fees: $${fmt(rt.total_fees ?? 0)}</div></div>
     <div class="card"><div class="k">Basis Yield Carry</div><div class="v ok">+$${fmt(by.total_carry_usd)}</div><div class="sub">${by.payouts} payouts | Top: ${by.top_symbol} (${fmt(by.top_apr)}% / ${by.hurdle_apr}%) | Next: ${by.next_epoch_hours}h</div></div>
     <div class="card"><div class="k">Maker Telemetry</div><div class="v">${mt.fill_rate_pct}%</div><div class="sub">${mt.filled}/${mt.total} fills | ${mt.avg_slippage_bps} bps slip</div></div>`;
-  renderCurve(d.equity_curve);
+  renderCurve(d.equity_curve, d.equity_points);
   document.getElementById('open-sub').textContent = `${d.open_positions.length} open | $${fmt(rt.open_notional ?? 0)} notional (${fmt(rt.open_exposure_pct ?? 0, 1)}% eq)`;
   document.getElementById('open-body').innerHTML = d.open_positions.map(p => `<tr>
     <td><b>${p.symbol}</b></td><td>${p.strategy_id}</td><td>${p.side}</td><td>${p.units}</td>
