@@ -241,12 +241,18 @@ def build_dashboard_payload(
             "fred_vix_regime": str(status.get("fred_vix_regime", "STABLE (Crash Defense OFF)")),
         },
         "account": {
-            "equity": round(float(status.get("equity", portfolio.get("cash", initial_cap))), 2),
+            "initial_capital": round(initial_cap, 2),
+            "equity": round(equity_val, 2),
+            "return_vs_initial_pct": round(((equity_val - initial_cap) / initial_cap * 100.0) if initial_cap > 0 else 0.0, 2),
             "cash": round(float(portfolio.get("cash", 0.0)), 2),
+            "unrealized_pnl": round(sum(p["unrealized_pnl"] for p in open_positions), 2),
             "realized_pnl": realized,
             "closed_trades": len(closed),
+            "wins": wins,
+            "losses": len(closed) - wins,
             "win_rate_pct": round((wins / len(closed) * 100.0) if closed else 0.0, 1),
             "drawdown_pct": round(float(portfolio.get("current_drawdown", 0.0)) * 100.0, 2),
+            "peak_dd_limit_pct": float(cfg.get("max_drawdown_limit_pct", 12.0)),
             "circuit_breaker": str(portfolio.get("circuit_breaker_status", "OK")),
         },
         "basis_yield": {
@@ -408,10 +414,10 @@ function render(d){
     <span class="badge">${d.bot.auto_approval ? '4-Gate Auto-Approval: ON':'Manual Approval'}</span>`;
   const a = d.account, by = d.basis_yield, mt = d.maker_telemetry, rt = d.risk_telemetry || {};
   document.getElementById('kpi-grid').innerHTML = `
-    <div class="card"><div class="k">Total Equity</div><div class="v">$${fmt(a.equity)}</div><div class="sub">Cash: $${fmt(a.cash)} | Peak: $${fmt(rt.peak_equity ?? a.equity)}</div></div>
+    <div class="card"><div class="k">Total Equity</div><div class="v">$${fmt(a.equity)} <span class="${a.return_vs_initial_pct>=0?'ok':'bad'}" style="font-size:13px">(${a.return_vs_initial_pct>=0?'+':''}${fmt(a.return_vs_initial_pct)}% vs $${fmt(a.initial_capital,0)})</span></div><div class="sub">Cash: $${fmt(a.cash)} | Unrealized: <span class="${a.unrealized_pnl>=0?'ok':'bad'}">$${fmt(a.unrealized_pnl)}</span> | Peak: $${fmt(rt.peak_equity ?? a.equity)}</div></div>
     <div class="card"><div class="k">Open Exposure &amp; Risk</div><div class="v">${rt.open_count ?? 0}/${rt.max_open_positions ?? 5}</div><div class="sub">${fmt(rt.open_exposure_pct ?? 0, 1)}% deployed ($${fmt(rt.open_notional ?? 0)})</div></div>
-    <div class="card"><div class="k">Drawdown &amp; Breaker</div><div class="v ${a.circuit_breaker==='OK'?'ok':'bad'}">${a.drawdown_pct}%</div><div class="sub">Breaker: ${a.circuit_breaker} | Pruned: ${rt.blacklisted_symbols_count ?? 0}</div></div>
-    <div class="card"><div class="k">Closed Fills (${a.closed_trades})</div><div class="v ${a.realized_pnl>=0?'ok':'bad'}">$${fmt(a.realized_pnl)}</div><div class="sub">WR: ${a.win_rate_pct}% | PF: ${fmt(rt.profit_factor ?? 0)} | Fees: $${fmt(rt.total_fees ?? 0)}</div></div>
+    <div class="card"><div class="k">Drawdown &amp; Breaker</div><div class="v ${a.circuit_breaker==='OK'?'ok':'bad'}">${a.drawdown_pct}% <span class="p-muted" style="font-size:13px">/ ${fmt(a.peak_dd_limit_pct ?? 12,1)}%</span></div><div class="sub">Breaker: ${a.circuit_breaker} | Pruned: ${rt.blacklisted_symbols_count ?? 0}</div></div>
+    <div class="card"><div class="k">Closed Fills (${a.closed_trades})</div><div class="v ${a.realized_pnl>=0?'ok':'bad'}">$${fmt(a.realized_pnl)}</div><div class="sub">WR: ${a.win_rate_pct}% (${a.wins}W / ${a.losses}L) | PF: ${fmt(rt.profit_factor ?? 0)} | Fees: $${fmt(rt.total_fees ?? 0)}</div></div>
     <div class="card"><div class="k">Basis Yield Carry</div><div class="v ok">+$${fmt(by.total_carry_usd)}</div><div class="sub">${by.payouts} payouts | Top: ${by.top_symbol} (${fmt(by.top_apr)}% / ${by.hurdle_apr}%) | Next: ${by.next_epoch_hours}h</div></div>
     <div class="card"><div class="k">Maker Telemetry</div><div class="v">${mt.fill_rate_pct}%</div><div class="sub">${mt.filled}/${mt.total} fills | ${mt.avg_slippage_bps} bps slip</div></div>`;
   renderCurve(d.equity_curve);
