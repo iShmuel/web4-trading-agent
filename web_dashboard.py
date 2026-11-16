@@ -124,6 +124,20 @@ def build_dashboard_payload(
     watchlist = [s for s in cfg.get("watchlist", []) if s not in bl_set]
     rows = [_classify_watchlist_row(sym, actions.get(sym, {}), prices.get(sym)) for sym in watchlist]
 
+    pairs_rows = []
+    for p in (cfg.get("pairs_universe") or []):
+        if isinstance(p, (list, tuple)) and len(p) == 2:
+            pid = f"{p[0]}:{p[1]}"
+            p_dec = actions.get(pid, {}) or {}
+            ind = p_dec.get("indicators", {}) or {}
+            pairs_rows.append({
+                "pair": pid,
+                "correlation": round(float(ind.get("correlation", 0.0)), 2),
+                "half_life": round(float(ind.get("half_life", 0.0)), 1),
+                "z_score": round(float(ind.get("z_score", 0.0)), 2),
+                "verdict": str(p_dec.get("reason") or p_dec.get("action") or "Scanning"),
+            })
+
     open_positions = []
     for sym, pos in (portfolio.get("positions", {}) or {}).items():
         cur_px = prices.get(sym, pos.get("entry_price", 0.0))
@@ -179,7 +193,7 @@ def build_dashboard_payload(
         "maker_telemetry": summarize_maker_telemetry(),
         "open_positions": open_positions,
         "watchlist": rows,
-        "pairs": list(status.get("pairs_desk", []) or []),
+        "pairs": pairs_rows,
         "recent_trades": list(reversed(closed[-15:])),
         "equity_curve": eq_curve[-120:],
     }
@@ -255,6 +269,11 @@ HTML_PAGE = """<!doctype html>
   </div>
 
   <div class="section">
+    <div class="sec-head"><h2>Cointegrated Stat-Arb Pairs Desk</h2></div>
+    <table><thead><tr><th>Pair</th><th>Correlation</th><th>Half-Life</th><th>Z-Score</th><th>Status / Verdict</th></tr></thead><tbody id="pairs-body"></tbody></table>
+  </div>
+
+  <div class="section">
     <div class="sec-head"><h2>Recent Closed Fills</h2></div>
     <table><thead><tr><th>Symbol</th><th>Strategy</th><th>Side</th><th>Entry</th><th>Exit</th><th>Net P&amp;L</th><th>Return</th><th>Reason</th></tr></thead><tbody id="closed-body"></tbody></table>
   </div>
@@ -307,6 +326,10 @@ function render(d){
     <td class="${p.unrealized_pnl>=0?'ok':'bad'}">$${fmt(p.unrealized_pnl)}</td>
   </tr>`).join('') || '<tr><td colspan="8" class="p-muted">No open positions</td></tr>';
   renderWatchlist();
+  document.getElementById('pairs-body').innerHTML = (d.pairs || []).map(p => `<tr>
+    <td><b>${p.pair}</b></td><td>${p.correlation >= 0 ? '+':''}${fmt(p.correlation)}</td>
+    <td>${fmt(p.half_life, 1)}h</td><td>${p.z_score >= 0 ? '+':''}${fmt(p.z_score)}</td><td>${p.verdict}</td>
+  </tr>`).join('') || '<tr><td colspan="5" class="p-muted">No pairs configured</td></tr>';
   document.getElementById('closed-body').innerHTML = d.recent_trades.map(t => `<tr>
     <td><b>${t.symbol}</b></td><td>${t.strategy_id||'—'}</td><td>${t.side}</td>
     <td>$${fmt(t.entry_price,4)}</td><td>$${fmt(t.exit_price,4)}</td>
