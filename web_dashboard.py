@@ -435,13 +435,21 @@ function renderCurve(pts, metaPts){
     const val = max - f * span;
     return `<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="#1f2937" stroke-dasharray="3,3" /><text x="52" y="${Number(y)+3}" text-anchor="end" fill="#9ca3af" font-size="10">$${fmt(val,0)}</text>`;
   }).join('');
-  const xTicks = [0, 0.25, 0.5, 0.75, 1].map(f => {
-    const idx = Math.min(pts.length - 1, Math.round(f * (pts.length - 1)));
-    const x = (x0 + (idx / (pts.length - 1)) * w).toFixed(1);
-    const ts = (metaPts && metaPts[idx] && metaPts[idx].ts) ? metaPts[idx].ts : `#${idx+1}`;
-    const anchor = f === 0 ? 'start' : (f === 1 ? 'end' : 'middle');
-    return `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" stroke="#1e293b" stroke-dasharray="2,3" /><text x="${x}" y="124" text-anchor="${anchor}" fill="#9ca3af" font-size="10">${ts}</text>`;
-  }).join('');
+  let xTicks = '', seenDays = new Set(), lastLabelX = -999;
+  for(let i = 0; i < pts.length; i++){
+    const rawTs = (metaPts && metaPts[i] && metaPts[i].ts) ? String(metaPts[i].ts) : '';
+    const day = rawTs.slice(0, 5);
+    if(!day || seenDays.has(day)) continue;
+    seenDays.add(day);
+    const xNum = x0 + (i / (pts.length - 1)) * w;
+    const x = xNum.toFixed(1);
+    xTicks += `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" stroke="#1e293b" stroke-dasharray="2,3" />`;
+    if(xNum - lastLabelX >= 36){
+      const anchor = i === 0 ? 'start' : (xNum > x1 - 24 ? 'end' : 'middle');
+      xTicks += `<text x="${x}" y="124" text-anchor="${anchor}" fill="#9ca3af" font-size="10">${day}</text>`;
+      lastLabelX = xNum;
+    }
+  }
   const xy = pts.map((v,i) => [Number((x0 + (i/(pts.length-1))*w).toFixed(1)), Number((y1 - ((v-min)/span)*h).toFixed(1))]);
   const coords = xy.map(p => `${p[0]},${p[1]}`).join(' ');
   const dots = xy.map((p, i) => {
