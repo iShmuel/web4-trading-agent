@@ -336,13 +336,13 @@ HTML_PAGE = """<!doctype html>
   .zbar { position:relative; display:inline-block; width:110px; height:8px; background:#1e293b; border-radius:4px; vertical-align:middle; margin-right:6px; }
   .zbar-mid { position:absolute; left:50%; top:-2px; width:1px; height:12px; background:#475569; }
   .zbar-dot { position:absolute; top:-1px; width:8px; height:10px; border-radius:3px; transform:translateX(-50%); }
-  svg { width:100%; height:130px; display:block; overflow:visible; }
+  svg { width:100%; height:220px; display:block; overflow:visible; }
   .eq-wrap { position:relative; }
   .eq-dot { cursor:pointer; transition:r .1s; }
   .eq-dot:hover { r:5.5; }
   #eq-tip { position:fixed; display:none; pointer-events:none; background:#0f172a; border:1px solid var(--cyan); color:var(--text); padding:4px 9px; border-radius:6px; font-size:12px; font-weight:600; z-index:99; white-space:nowrap; box-shadow:0 4px 12px rgba(0,0,0,.5); }
   .two-col { display:grid; grid-template-columns:repeat(auto-fit,minmax(460px,1fr)); gap:16px; margin-bottom:16px; }
-  .two-col .section { margin-bottom:0; }
+  .two-col .section { margin-bottom:0; min-height:290px; }
 </style>
 </head>
 <body>
@@ -357,7 +357,7 @@ HTML_PAGE = """<!doctype html>
   <div class="two-col">
     <div class="section">
       <div class="sec-head"><h2>Portfolio Equity Curve (Realized Ledger + Live Mark)</h2><span class="sub" id="eq-range"></span></div>
-      <div class="eq-wrap"><svg id="eq-svg" viewBox="0 0 800 130" preserveAspectRatio="none"></svg></div>
+      <div class="eq-wrap"><svg id="eq-svg" viewBox="0 0 800 220" preserveAspectRatio="none"></svg></div>
     </div>
     <div class="section">
       <div class="sec-head"><h2>Strategy Performance Breakdown</h2><span class="sub" id="strat-sub"></span></div>
@@ -429,7 +429,7 @@ function renderCurve(pts, metaPts){
   if(!pts || pts.length < 2){ svg.innerHTML = ''; return; }
   const min = Math.min(...pts), max = Math.max(...pts), span = (max - min) || 1;
   document.getElementById('eq-range').textContent = `Min $${fmt(min)} | Max $${fmt(max)} | Now $${fmt(pts[pts.length-1])}`;
-  const x0 = 58, x1 = 790, y0 = 12, y1 = 106, w = x1 - x0, h = y1 - y0;
+  const x0 = 58, x1 = 790, y0 = 14, y1 = 192, w = x1 - x0, h = y1 - y0;
   const hGrid = [0, 0.5, 1].map(f => {
     const y = (y0 + f * h).toFixed(1);
     const val = max - f * span;
@@ -446,7 +446,7 @@ function renderCurve(pts, metaPts){
     xTicks += `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" stroke="#1e293b" stroke-dasharray="2,3" />`;
     if(xNum - lastLabelX >= 36){
       const anchor = i === 0 ? 'start' : (xNum > x1 - 24 ? 'end' : 'middle');
-      xTicks += `<text x="${x}" y="124" text-anchor="${anchor}" fill="#9ca3af" font-size="10">${day}</text>`;
+      xTicks += `<text x="${x}" y="212" text-anchor="${anchor}" fill="#9ca3af" font-size="10">${day}</text>`;
       lastLabelX = xNum;
     }
   }
