@@ -33,18 +33,7 @@ This document tracks **only unbuilt and queued items** for the **Web4 Autonomous
 
 ---
 
-### 3. Zero-Dependency Single-File Web Dashboard (`web_dashboard.py`)
-
-* **Status**: Planned / Operator Interface
-* **Suggested Priority**: Medium (P2)
-* **What is Missing:**
-  The current monitoring dashboard (`dashboard.py`) is a terminal-based ANSI interface requiring SSH or local console access.
-* **Implementation Plan:**
-  Develop a single-file, zero-external-dependency web server (`web_dashboard.py`) using standard Python `http.server` with a read-only SSE/JSON endpoint reading `data/live_status.json` and `data/paper_portfolio.json`.
-
----
-
-### 4. Portable Cloud / VPS Deployment Bootstrap (`scripts/setup_vps.sh`) & Configurable Ollama Endpoint
+### 3. Portable Cloud / VPS Deployment Bootstrap (`scripts/setup_vps.sh`) & Configurable Ollama Endpoint
 
 * **Status**: Planned / Infrastructure Portability
 * **Suggested Priority**: Medium (P2)
@@ -56,7 +45,7 @@ This document tracks **only unbuilt and queued items** for the **Web4 Autonomous
 
 ---
 
-### 5. Remaining Multi-Strategy Alpha Expansion Candidates (9 Unbuilt Strategies)
+### 4. Remaining Multi-Strategy Alpha Expansion Candidates (9 Unbuilt Strategies)
 
 * **Status**: Planned / Research Queue (Detailed guide in [`docs/NEW_STRATEGIES_ROADMAP.md`](docs/NEW_STRATEGIES_ROADMAP.md))
 * **Suggested Priority**: Medium (P2)
@@ -66,7 +55,7 @@ This document tracks **only unbuilt and queued items** for the **Web4 Autonomous
 
 ---
 
-### 6. Live-vs-Backtest Execution Drift Monitor (`core/journal.py`)
+### 5. Live-vs-Backtest Execution Drift Monitor (`core/journal.py`)
 
 * **Status**: Planned / Execution Quality & Decay Detection
 * **Suggested Priority**: Medium (P2)
@@ -75,7 +64,7 @@ This document tracks **only unbuilt and queued items** for the **Web4 Autonomous
 
 ---
 
-### 7. Automated Data Retention, Log Rotation & Parquet/SQLite Storage
+### 6. Automated Data Retention, Log Rotation & Parquet/SQLite Storage
 
 * **Status**: Planned / Long-Running VPS Hygiene
 * **Suggested Priority**: Low-Medium (P3)
@@ -84,7 +73,7 @@ This document tracks **only unbuilt and queued items** for the **Web4 Autonomous
 
 ---
 
-### 8. Realized Tax-Lot & Fee-Tier Savings Ledger Export
+### 7. Realized Tax-Lot & Fee-Tier Savings Ledger Export
 
 * **Status**: Planned / Accounting & Broker Readiness
 * **Suggested Priority**: Low (P3)

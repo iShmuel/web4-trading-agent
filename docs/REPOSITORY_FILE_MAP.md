@@ -583,6 +583,7 @@ web4-trading-agent/
     ├── test_squeeze_and_pullback.py      # WHAT: Tests for Volatility Squeeze, Trend Pullback, & Idle-Cash Sweep
     ├── test_correlation_guard.py         # WHAT: Tests for Portfolio Rolling Return-Correlation Guard (>= 0.75)
     ├── test_vwap_reversion.py            # WHAT: Tests for Rolling VWAP Fair-Value Reversion strategy
+    ├── test_web_dashboard.py             # WHAT: Unit & HTTP endpoint tests for read-only web_dashboard.py
     └── test_web4_self_improvement.py     # WHAT: Tests the end-to-end self-improvement loop (optimizer -> validator -> governor)
                                           # USED BY: pytest runner
                                           # WHY NEEDED: Proves that the complete autonomous self-tuning cycle operates safely without errors
