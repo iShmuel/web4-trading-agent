@@ -315,12 +315,11 @@ class PortfolioCoordinator:
                 )
                 if r_vw.total_trades >= 2 and r_vw.profit_factor >= min_pf:
                     cands.append((r_vw.sharpe_ratio, VwapReversionStrategy.STRATEGY_ID))
-            if r_by is not None and r_by.total_trades >= 1 and r_by.profit_factor >= 1.0:
-                cands.append((r_by.sharpe_ratio, "basis_yield"))
-
             if cands:
                 cands.sort(key=lambda x: x[0], reverse=True)
                 choice = cands[0][1]
+            elif r_by is not None and r_by.total_trades >= 1 and r_by.profit_factor >= 1.0:
+                choice = "basis_yield"
             else:
                 choice = "basis_yield" if is_crypto else "cash"
         except Exception:
