@@ -113,8 +113,9 @@ def build_dashboard_payload(
     realized = round(sum(float(t.get("pnl", 0.0)) for t in closed), 2)
     initial_cap = float(portfolio.get("initial_capital", 10000.0))
 
+    first_ts = str(closed[0].get("entry_time", ""))[5:16].replace("T", " ") if closed else "Start"
     eq_curve: List[float] = [round(initial_cap, 2)]
-    eq_points: List[Dict[str, Any]] = [{"eq": round(initial_cap, 2), "label": f"Start ${initial_cap:,.0f}", "pnl": 0.0}]
+    eq_points: List[Dict[str, Any]] = [{"eq": round(initial_cap, 2), "ts": first_ts or "Start", "label": f"Start ${initial_cap:,.0f}", "pnl": 0.0}]
     running = initial_cap
     for idx, t in enumerate(closed, start=1):
         pnl_t = float(t.get("pnl", 0.0))
@@ -123,11 +124,13 @@ def build_dashboard_payload(
         eq_curve.append(eq_val)
         sym_t = str(t.get("symbol", "Trade"))
         sign_t = "+" if pnl_t >= 0 else ""
-        eq_points.append({"eq": eq_val, "label": f"#{idx} {sym_t} {sign_t}${pnl_t:,.2f}", "pnl": round(pnl_t, 2)})
+        ts_t = str(t.get("exit_time") or t.get("entry_time") or "")[5:16].replace("T", " ")
+        eq_points.append({"eq": eq_val, "ts": ts_t, "label": f"#{idx} {sym_t} {sign_t}${pnl_t:,.2f}" + (f" ({ts_t})" if ts_t else ""), "pnl": round(pnl_t, 2)})
     if isinstance(status.get("equity"), (int, float)):
         live_eq = round(float(status["equity"]), 2)
+        now_ts = str(status.get("updated_at") or datetime.now(timezone.utc).isoformat())[5:16].replace("T", " ")
         eq_curve.append(live_eq)
-        eq_points.append({"eq": live_eq, "label": f"Live ${live_eq:,.2f}", "pnl": None})
+        eq_points.append({"eq": live_eq, "ts": now_ts, "label": f"Live ${live_eq:,.2f} ({now_ts})", "pnl": None})
 
     prices = status.get("prices", {}) or {}
     actions = status.get("assets") or status.get("actions") or {}
@@ -426,7 +429,20 @@ function renderCurve(pts, metaPts){
   if(!pts || pts.length < 2){ svg.innerHTML = ''; return; }
   const min = Math.min(...pts), max = Math.max(...pts), span = (max - min) || 1;
   document.getElementById('eq-range').textContent = `Min $${fmt(min)} | Max $${fmt(max)} | Now $${fmt(pts[pts.length-1])}`;
-  const xy = pts.map((v,i) => [Number((i/(pts.length-1)*800).toFixed(1)), Number((120 - ((v-min)/span)*105).toFixed(1))]);
+  const x0 = 58, x1 = 790, y0 = 12, y1 = 106, w = x1 - x0, h = y1 - y0;
+  const hGrid = [0, 0.5, 1].map(f => {
+    const y = (y0 + f * h).toFixed(1);
+    const val = max - f * span;
+    return `<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="#1f2937" stroke-dasharray="3,3" /><text x="52" y="${Number(y)+3}" text-anchor="end" fill="#9ca3af" font-size="10">$${fmt(val,0)}</text>`;
+  }).join('');
+  const xTicks = [0, 0.25, 0.5, 0.75, 1].map(f => {
+    const idx = Math.min(pts.length - 1, Math.round(f * (pts.length - 1)));
+    const x = (x0 + (idx / (pts.length - 1)) * w).toFixed(1);
+    const ts = (metaPts && metaPts[idx] && metaPts[idx].ts) ? metaPts[idx].ts : `#${idx+1}`;
+    const anchor = f === 0 ? 'start' : (f === 1 ? 'end' : 'middle');
+    return `<line x1="${x}" y1="${y0}" x2="${x}" y2="${y1}" stroke="#1e293b" stroke-dasharray="2,3" /><text x="${x}" y="124" text-anchor="${anchor}" fill="#9ca3af" font-size="10">${ts}</text>`;
+  }).join('');
+  const xy = pts.map((v,i) => [Number((x0 + (i/(pts.length-1))*w).toFixed(1)), Number((y1 - ((v-min)/span)*h).toFixed(1))]);
   const coords = xy.map(p => `${p[0]},${p[1]}`).join(' ');
   const dots = xy.map((p, i) => {
     const m = (metaPts && metaPts[i]) || {label: `$${fmt(pts[i])}`, pnl: null};
@@ -434,7 +450,7 @@ function renderCurve(pts, metaPts){
     const safeTxt = String(m.label || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     return `<circle class="eq-dot" cx="${p[0]}" cy="${p[1]}" r="3" fill="${fill}" onmouseenter="showEqTip(event,'${safeTxt}')" onmousemove="showEqTip(event,'${safeTxt}')" onmouseleave="hideEqTip()"><title>${safeTxt}</title></circle>`;
   }).join('');
-  svg.innerHTML = `<polyline fill="none" stroke="#38bdf8" stroke-width="2" points="${coords}" />${dots}`;
+  svg.innerHTML = `${hGrid}${xTicks}<polyline fill="none" stroke="#38bdf8" stroke-width="2" points="${coords}" />${dots}`;
 }
 function render(d){
   lastData = d;
