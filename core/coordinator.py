@@ -182,6 +182,10 @@ class PortfolioCoordinator:
             except Exception:
                 self.last_basis_accrual_time = None
 
+        self.pair_cooldown_until: Dict[str, datetime] = {}
+        self.pair_stop_counts: Dict[str, int] = {}
+        self._load_pair_stop_state()
+
         # 5 Institutional AGY Skill Gates (trader-alerts, trader-news, trader-analyst, trader-copycat/pelosi, trader-tax/rebalance)
         self.nyse_clock = NyseMarketClock(
             opening_bell_buffer_minutes=int(config.get("nyse_opening_bell_buffer_minutes", 15))
@@ -456,6 +460,99 @@ class PortfolioCoordinator:
         slip = self._pair_slippage_pct()
         buying = (side == "LONG") if opening else (side == "SHORT")
         return price * (1.0 + slip) if buying else price * (1.0 - slip)
+
+    def _load_pair_stop_state(self) -> None:
+        """Restore persisted pair cooldowns and stop-out strike counts from account state."""
+        state = getattr(self.account, "state", None)
+        if not isinstance(state, dict):
+            return
+        raw_cooldowns = state.get("pair_cooldown_until", {})
+        if isinstance(raw_cooldowns, dict):
+            for pid, ts_str in raw_cooldowns.items():
+                try:
+                    parsed = datetime.fromisoformat(str(ts_str))
+                    self.pair_cooldown_until[str(pid)] = (
+                        parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed
+                    )
+                except Exception:
+                    continue
+        raw_counts = state.get("pair_stop_counts", {})
+        if isinstance(raw_counts, dict):
+            for pid, cnt in raw_counts.items():
+                try:
+                    c_val = int(cnt)
+                except Exception:
+                    continue
+                self.pair_stop_counts[str(pid)] = c_val
+                if c_val >= 2:
+                    self.pairs_strategy.blacklisted_pairs.add(str(pid))
+
+    def _record_pair_stop(self, pair_id: str, now: datetime) -> None:
+        """Record a pair stop-out, apply cooldown/2-strike blacklist, and persist to disk."""
+        if not pair_id:
+            return
+        if not hasattr(self, "pair_cooldown_until"):
+            self.pair_cooldown_until = {}
+        if not hasattr(self, "pair_stop_counts"):
+            self.pair_stop_counts = {}
+        cooldown_hours = float(self.config.get("pair_stop_cooldown_hours", 12.0))
+        self.pair_cooldown_until[pair_id] = now + timedelta(hours=cooldown_hours)
+        self.pair_stop_counts[pair_id] = self.pair_stop_counts.get(pair_id, 0) + 1
+        if self.pair_stop_counts[pair_id] >= 2:
+            self.pairs_strategy.blacklisted_pairs.add(pair_id)
+
+        state = getattr(self.account, "state", None)
+        if isinstance(state, dict):
+            state["pair_cooldown_until"] = {
+                k: v.isoformat() for k, v in self.pair_cooldown_until.items()
+            }
+            state["pair_stop_counts"] = dict(self.pair_stop_counts)
+            if hasattr(self.account, "_save"):
+                self.account._save()
+
+    @staticmethod
+    def _recent_atr_pct(df: Optional[pd.DataFrame], window: int = 14) -> float:
+        """Estimate recent per-bar volatility as mean (high-low)/close or |close diff|/close."""
+        if df is None or len(df) < 3 or "close" not in df.columns:
+            return 0.0
+        sub = df.iloc[-max(3, window):]
+        close = pd.to_numeric(sub["close"], errors="coerce")
+        if "high" in sub.columns and "low" in sub.columns:
+            high = pd.to_numeric(sub["high"], errors="coerce")
+            low = pd.to_numeric(sub["low"], errors="coerce")
+            bar_range = (high - low).abs()
+        else:
+            bar_range = close.diff().abs()
+        pct = (bar_range / close.replace(0.0, np.nan)).dropna()
+        return float(pct.mean()) if len(pct) > 0 else 0.0
+
+    def _compute_pair_leg_sizing(
+        self,
+        df_a: Optional[pd.DataFrame],
+        df_b: Optional[pd.DataFrame],
+        total_eq: float,
+        dollar_risk: float,
+    ) -> Tuple[float, float, float]:
+        """Compute volatility-scaled leg stop_pct, base_leg_notional, and total_cost cap.
+
+        Prevents low-cap/volatile legs from sizing to the full 15% equity cap on a tight 5%
+        stop where a single-bar gap can exceed intended dollar_risk by 3x+.
+        """
+        base_stop_pct = float(self.config.get("stat_arb_leg_stop_pct", 0.05))
+        max_atr_pct = max(self._recent_atr_pct(df_a), self._recent_atr_pct(df_b))
+        effective_stop_pct = min(0.25, max(base_stop_pct, 2.5 * max_atr_pct))
+
+        max_leg_cap = float(self.config.get("stat_arb_max_leg_equity_pct", 0.15))
+        if max_atr_pct >= 0.03:
+            vol_leg_cap = min(max_leg_cap, 0.07)
+        elif max_atr_pct >= 0.015:
+            vol_leg_cap = min(max_leg_cap, 0.10)
+        else:
+            vol_leg_cap = max_leg_cap
+
+        base_leg_notional = min(dollar_risk / max(0.01, effective_stop_pct), total_eq * vol_leg_cap)
+        total_cost = min(base_leg_notional * 2.0, total_eq * (vol_leg_cap * 2.0), self.account.cash * 0.90)
+        return effective_stop_pct, base_leg_notional, total_cost
 
     def _resolve_funding_state(
         self,
@@ -802,17 +899,7 @@ class PortfolioCoordinator:
                                     exit_reason=f"Partner Leg Catastrophe Stop ({pair_id_val})",
                                     fee_pct=sym_cfg.get("fee_pct", 0.0006),
                                 )
-                        if not hasattr(self, "pair_cooldown_until"):
-                            self.pair_cooldown_until = {}
-                        if not hasattr(self, "pair_stop_counts"):
-                            self.pair_stop_counts = {}
-                        now_stop = datetime.now(timezone.utc)
-                        self.pair_cooldown_until[pair_id_val] = now_stop + timedelta(
-                            hours=float(self.config.get("pair_stop_cooldown_hours", 12.0))
-                        )
-                        self.pair_stop_counts[pair_id_val] = self.pair_stop_counts.get(pair_id_val, 0) + 1
-                        if self.pair_stop_counts[pair_id_val] >= 2:
-                            self.pairs_strategy.blacklisted_pairs.add(pair_id_val)
+                        self._record_pair_stop(pair_id_val, datetime.now(timezone.utc))
                     return CoordinatorDecision(
                         symbol=symbol,
                         action="EXIT",
@@ -1679,14 +1766,7 @@ class PortfolioCoordinator:
                         )
                         executed += 1
                     if "Stop loss triggered" in psig.reason:
-                        if not hasattr(self, "pair_cooldown_until"):
-                            self.pair_cooldown_until = {}
-                        if not hasattr(self, "pair_stop_counts"):
-                            self.pair_stop_counts = {}
-                        self.pair_cooldown_until[psig.pair_id] = now + timedelta(hours=float(self.config.get("pair_stop_cooldown_hours", 12.0)))
-                        self.pair_stop_counts[psig.pair_id] = self.pair_stop_counts.get(psig.pair_id, 0) + 1
-                        if self.pair_stop_counts[psig.pair_id] >= 2:
-                            self.pairs_strategy.blacklisted_pairs.add(psig.pair_id)
+                        self._record_pair_stop(psig.pair_id, now)
                     decisions.append(CoordinatorDecision(
                         symbol=psig.pair_id,
                         action="CLOSE_PAIR",
@@ -1728,12 +1808,14 @@ class PortfolioCoordinator:
                             clamped_risk = self.risk_engine.enforce_risk_bounds(raw_risk)
                             dollar_risk = total_eq * (clamped_risk * 0.5)
 
-                            stop_pct = float(self.config.get("stat_arb_leg_stop_pct", 0.05))
+                            stop_pct, base_leg_notional, total_cost = self._compute_pair_leg_sizing(
+                                market_data.get(psig.asset_a),
+                                market_data.get(psig.asset_b),
+                                total_eq,
+                                dollar_risk,
+                            )
                             stop_a = round(pa * (1.0 - stop_pct) if side_a == "LONG" else pa * (1.0 + stop_pct), 6)
                             stop_b = round(pb * (1.0 - stop_pct) if side_b == "LONG" else pb * (1.0 + stop_pct), 6)
-
-                            base_leg_notional = min(dollar_risk / max(0.01, stop_pct), total_eq * 0.15)
-                            total_cost = min(base_leg_notional * 2.0, total_eq * 0.30, self.account.cash * 0.90)
                             beta_val = max(0.01, min(10.0, float(psig.hedge_ratio))) if psig.hedge_ratio and psig.hedge_ratio > 0 else 1.0
                             if pa > 0 and pb > 0 and total_cost > 0:
                                 units_a = total_cost / (pa + beta_val * pb)

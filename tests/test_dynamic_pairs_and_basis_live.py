@@ -148,3 +148,81 @@ def test_coordinator_basis_yield_accrual_cycle(test_setup, monkeypatch):
     assert coordinator.basis_yield_engine.total_accrued_yield > 0.0
     closed = account.state.get("closed_trades", [])
     assert any(t.get("strategy_id") == "basis_yield" for t in closed)
+
+
+def test_volatility_scaled_pair_leg_sizing(test_setup):
+    """Volatile pairs should receive wider stop_pct and tighter leg notional cap (<=7% equity)."""
+    _, _, coordinator, _ = test_setup
+    dates = pd.date_range("2026-01-01", periods=30, freq="1h", tz="UTC")
+    low_vol_df = pd.DataFrame({
+        "close": np.full(30, 100.0),
+        "high": np.full(30, 100.25),
+        "low": np.full(30, 99.75),
+    }, index=dates)
+    high_vol_df = pd.DataFrame({
+        "close": np.full(30, 0.12),
+        "high": np.full(30, 0.123),
+        "low": np.full(30, 0.118),
+    }, index=dates)
+
+    stop_low, leg_low, _ = coordinator._compute_pair_leg_sizing(low_vol_df, low_vol_df, 10000.0, 100.0)
+    assert stop_low == pytest.approx(0.05)
+    assert leg_low == pytest.approx(1500.0)  # 15% cap on calm assets
+
+    stop_high, leg_high, total_high = coordinator._compute_pair_leg_sizing(high_vol_df, low_vol_df, 10000.0, 100.0)
+    assert stop_high > 0.09  # 2.5 * ~4.17% ATR
+    assert leg_high <= 700.0 + 1e-6  # 7% equity cap on volatile >=3% ATR assets
+    assert total_high <= 1400.0 + 1e-6
+
+
+def test_pair_stop_persistence_and_two_strike_blacklist(tmp_path):
+    """Pair stop counts and cooldowns persist to PaperAccount and blacklist after 2 strikes."""
+    pfile = tmp_path / "persist_pairs.json"
+    acct1 = PaperAccount(10000.0, portfolio_file=pfile)
+    re1 = RiskEngine(default_risk_pct=0.02, max_open_positions=5)
+    cfg = {"enable_pairs_trading": True, "pair_stop_cooldown_hours": 12.0}
+    coord1 = PortfolioCoordinator(acct1, re1, cfg)
+
+    now = datetime.now(timezone.utc)
+    coord1._record_pair_stop("INIT/USDT:GRAM/USDT", now)
+    assert coord1.pair_stop_counts["INIT/USDT:GRAM/USDT"] == 1
+    assert "INIT/USDT:GRAM/USDT" not in coord1.pairs_strategy.blacklisted_pairs
+
+    # Rehydrate from disk and trigger 2nd strike
+    acct2 = PaperAccount(10000.0, portfolio_file=pfile)
+    re2 = RiskEngine(default_risk_pct=0.02, max_open_positions=5)
+    coord2 = PortfolioCoordinator(acct2, re2, cfg)
+    assert coord2.pair_stop_counts.get("INIT/USDT:GRAM/USDT") == 1
+    assert "INIT/USDT:GRAM/USDT" in coord2.pair_cooldown_until
+
+    coord2._record_pair_stop("INIT/USDT:GRAM/USDT", now + timedelta(hours=13))
+    assert coord2.pair_stop_counts["INIT/USDT:GRAM/USDT"] == 2
+    assert "INIT/USDT:GRAM/USDT" in coord2.pairs_strategy.blacklisted_pairs
+
+    # 3rd restart must keep it blacklisted automatically
+    acct3 = PaperAccount(10000.0, portfolio_file=pfile)
+    coord3 = PortfolioCoordinator(acct3, RiskEngine(default_risk_pct=0.02, max_open_positions=5), cfg)
+    assert "INIT/USDT:GRAM/USDT" in coord3.pairs_strategy.blacklisted_pairs
+
+
+def test_discover_cointegrated_pairs_filters_illiquid_microcaps():
+    """discover_cointegrated_pairs skips sub-floor price or low-dollar-volume assets when configured."""
+    from strategies.stat_arb_pairs import discover_cointegrated_pairs
+
+    dates = pd.date_range("2026-01-01", periods=100, freq="1h", tz="UTC")
+    base = 100.0 + np.sin(np.linspace(0, 15, 100)) * 5.0
+    micro = 0.02 + np.sin(np.linspace(0, 15, 100)) * 0.001
+
+    market_data = {
+        "BTC/USDT": pd.DataFrame({"close": base * 500, "high": base * 501, "low": base * 499, "volume": 50.0}, index=dates),
+        "BNB/USDT": pd.DataFrame({"close": base * 5, "high": base * 5.05, "low": base * 4.95, "volume": 500.0}, index=dates),
+        "MICRO/USDT": pd.DataFrame({"close": micro, "high": micro * 1.01, "low": micro * 0.99, "volume": 1000.0}, index=dates),
+    }
+
+    selected = discover_cointegrated_pairs(
+        ["BTC/USDT", "BNB/USDT", "MICRO/USDT"],
+        config={"min_pair_price": 0.10, "min_pair_hourly_dollar_vol": 25000.0, "min_pair_correlation": 0.70},
+        market_data=market_data,
+    )
+    flat_syms = {s for pair in selected for s in pair}
+    assert "MICRO/USDT" not in flat_syms

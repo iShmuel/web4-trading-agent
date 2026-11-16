@@ -634,8 +634,25 @@ def discover_cointegrated_pairs(
         except Exception:
             continue
 
-    cryptos = [s for s in symbols if is_crypto_symbol(s) and s in data]
-    stocks = [s for s in symbols if not is_crypto_symbol(s) and s in data]
+    min_price = float(cfg.get("min_pair_price", 0.0))
+    min_hourly_dvol = float(cfg.get("min_pair_hourly_dollar_vol", 0.0))
+
+    def _is_liquid_enough(df: pd.DataFrame) -> bool:
+        if df is None or len(df) == 0 or "close" not in df.columns:
+            return False
+        last_close = float(pd.to_numeric(df["close"], errors="coerce").iloc[-1])
+        if not np.isfinite(last_close) or (min_price > 0.0 and last_close < min_price):
+            return False
+        if min_hourly_dvol > 0.0 and "volume" in df.columns:
+            tail = df.iloc[-min(len(df), strat.lookback_period):]
+            dvol = pd.to_numeric(tail["close"], errors="coerce") * pd.to_numeric(tail["volume"], errors="coerce")
+            med_dvol = float(dvol.median()) if len(dvol.dropna()) > 0 else 0.0
+            if not np.isfinite(med_dvol) or med_dvol < min_hourly_dvol:
+                return False
+        return True
+
+    cryptos = [s for s in symbols if is_crypto_symbol(s) and s in data and _is_liquid_enough(data[s])]
+    stocks = [s for s in symbols if not is_crypto_symbol(s) and s in data and _is_liquid_enough(data[s])]
 
     def _select_top(group: List[str], limit: int) -> List[List[str]]:
         from core.backtest_engine import run_pairs_backtest
@@ -668,7 +685,7 @@ def discover_cointegrated_pairs(
                     stop_z=strat.stop_z_score,
                     min_edge_cost_ratio=max(1.5, strat.min_edge_cost_ratio),
                 )
-                if bt_full.total_trades > 0 and bt_full.total_return_pct > 0.0 and bt_oos.total_return_pct >= 0.0:
+                if sig.is_stationary and bt_full.total_trades > 0 and bt_full.total_return_pct > 0.0 and bt_oos.total_return_pct >= 0.0:
                     scored.append((bt_full.total_return_pct + bt_oos.total_return_pct + stat_score * 0.1, a, b))
                 elif sig.is_stationary and bt_full.total_trades == 0:
                     fallback_scored.append((stat_score, a, b))

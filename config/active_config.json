@@ -199,28 +199,28 @@
   "stat_arb_risk_pct": 0.02,
   "pairs_universe": [
     [
-      "AVAX/USDT",
-      "BARD/USDT"
+      "SOL/USDT",
+      "AVAX/USDT"
     ],
     [
-      "BARD/USDT",
-      "ONE/USDT"
+      "BTC/USDT",
+      "BNB/USDT"
     ],
     [
       "LINK/USDT",
-      "ONE/USDT"
+      "INJ/USDT"
+    ],
+    [
+      "NVDA",
+      "AMD"
+    ],
+    [
+      "WULF",
+      "IREN"
     ],
     [
       "MU",
       "CIFR"
-    ],
-    [
-      "NOK",
-      "CBRS"
-    ],
-    [
-      "HIMS",
-      "NOK"
     ]
   ],
   "use_asset_profiles": true,
@@ -407,5 +407,8 @@
     "LINK/USDT:AVAX/USDT"
   ],
   "allow_short": true,
-  "enable_vwap_reversion": true
+  "enable_vwap_reversion": true,
+  "min_pair_price": 0.1,
+  "min_pair_hourly_dollar_vol": 25000.0,
+  "stat_arb_max_leg_equity_pct": 0.15
 }
