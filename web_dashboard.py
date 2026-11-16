@@ -124,6 +124,10 @@ def build_dashboard_payload(
     watchlist = [s for s in cfg.get("watchlist", []) if s not in bl_set]
     rows = [_classify_watchlist_row(sym, actions.get(sym, {}), prices.get(sym)) for sym in watchlist]
 
+    pairs_stop_counts = portfolio.get("pair_stop_counts", {}) or {}
+    pairs_cooldowns = portfolio.get("pair_cooldown_until", {}) or {}
+    pairs_blacklist = list(cfg.get("pairs_Blacklist", cfg.get("blacklisted_pairs", [])))
+
     pairs_rows = []
     for p in (cfg.get("pairs_universe") or []):
         if isinstance(p, (list, tuple)) and len(p) == 2:
@@ -136,25 +140,79 @@ def build_dashboard_payload(
                 "half_life": round(float(ind.get("half_life", 0.0)), 1),
                 "z_score": round(float(ind.get("z_score", 0.0)), 2),
                 "verdict": str(p_dec.get("reason") or p_dec.get("action") or "Scanning"),
+                "strikes": int(pairs_stop_counts.get(pid, 0)),
+                "cooldown_until": pairs_cooldowns.get(pid),
             })
 
+    equity_val = float(status.get("equity", portfolio.get("cash", initial_cap)))
     open_positions = []
+    total_open_notional = 0.0
     for sym, pos in (portfolio.get("positions", {}) or {}).items():
-        cur_px = prices.get(sym, pos.get("entry_price", 0.0))
+        cur_px = float(prices.get(sym, pos.get("entry_price", 0.0)))
         ep = float(pos.get("entry_price", 0.0))
         units = float(pos.get("units", 0.0))
         side = str(pos.get("side", "LONG")).upper()
-        upnl = ((ep - float(cur_px)) * units) if side == "SHORT" else ((float(cur_px) - ep) * units)
+        notional = abs(cur_px * units)
+        total_open_notional += notional
+        upnl = ((ep - cur_px) * units) if side == "SHORT" else ((cur_px - ep) * units)
+        ret_pct = ((ep - cur_px) / ep * 100.0) if (side == "SHORT" and ep > 0) else (((cur_px - ep) / ep * 100.0) if ep > 0 else 0.0)
+        stop_px = float(pos.get("trailing_stop", 0.0))
+        stop_dist_pct = (
+            ((stop_px - cur_px) / cur_px * 100.0) if (side == "SHORT" and cur_px > 0 and stop_px > 0)
+            else (((cur_px - stop_px) / cur_px * 100.0) if (cur_px > 0 and stop_px > 0) else 0.0)
+        )
         open_positions.append({
             "symbol": sym,
             "strategy_id": pos.get("strategy_id", "default"),
             "side": side,
             "units": round(units, 4),
             "entry_price": round(ep, 4),
-            "current_price": round(float(cur_px), 4),
-            "trailing_stop": round(float(pos.get("trailing_stop", 0.0)), 4),
+            "current_price": round(cur_px, 4),
+            "trailing_stop": round(stop_px, 4),
+            "notional": round(notional, 2),
+            "exposure_pct": round((notional / equity_val * 100.0) if equity_val > 0 else 0.0, 1),
+            "return_pct": round(ret_pct, 2),
+            "stop_dist_pct": round(stop_dist_pct, 2),
             "unrealized_pnl": round(upnl, 2),
         })
+
+    strat_agg: Dict[str, Dict[str, Any]] = {}
+    gross_profit_all = 0.0
+    gross_loss_all = 0.0
+    total_fees_all = 0.0
+    for t in closed:
+        sid = str(t.get("strategy_id") or "unknown")
+        pnl_v = float(t.get("pnl", 0.0))
+        fee_v = float(t.get("fees", 0.0))
+        total_fees_all += fee_v
+        if pnl_v > 0:
+            gross_profit_all += pnl_v
+        elif pnl_v < 0:
+            gross_loss_all += abs(pnl_v)
+        bucket = strat_agg.setdefault(sid, {"strategy_id": sid, "trades": 0, "wins": 0, "gross_profit": 0.0, "gross_loss": 0.0, "net_pnl": 0.0, "fees": 0.0})
+        bucket["trades"] += 1
+        if pnl_v > 0:
+            bucket["wins"] += 1
+            bucket["gross_profit"] += pnl_v
+        elif pnl_v < 0:
+            bucket["gross_loss"] += abs(pnl_v)
+        bucket["net_pnl"] += pnl_v
+        bucket["fees"] += fee_v
+
+    strategy_breakdown = []
+    for b in strat_agg.values():
+        pf = (b["gross_profit"] / b["gross_loss"]) if b["gross_loss"] > 0 else (99.9 if b["gross_profit"] > 0 else 0.0)
+        strategy_breakdown.append({
+            "strategy_id": b["strategy_id"],
+            "trades": b["trades"],
+            "wins": b["wins"],
+            "win_rate_pct": round((b["wins"] / b["trades"] * 100.0) if b["trades"] else 0.0, 1),
+            "profit_factor": round(pf, 2),
+            "fees": round(b["fees"], 2),
+            "net_pnl": round(b["net_pnl"], 2),
+        })
+    strategy_breakdown.sort(key=lambda x: x["net_pnl"], reverse=True)
+    overall_pf = (gross_profit_all / gross_loss_all) if gross_loss_all > 0 else (99.9 if gross_profit_all > 0 else 0.0)
 
     bot_running = is_locked(lk_file)
     bot_pid = read_lock_pid(lk_file) if bot_running else None
@@ -197,6 +255,19 @@ def build_dashboard_payload(
             "next_epoch_hours": round(float(by_ind.get("hours_remaining", 0.0)), 1),
         },
         "maker_telemetry": summarize_maker_telemetry(),
+        "risk_telemetry": {
+            "open_notional": round(total_open_notional, 2),
+            "open_exposure_pct": round((total_open_notional / equity_val * 100.0) if equity_val > 0 else 0.0, 1),
+            "open_count": len(open_positions),
+            "max_open_positions": int(cfg.get("max_concurrent_positions", 5)),
+            "peak_equity": round(float(portfolio.get("peak_equity", equity_val)), 2),
+            "total_fees": round(total_fees_all, 2),
+            "profit_factor": round(overall_pf, 2),
+            "blacklisted_symbols_count": len(bl_set),
+            "blacklisted_pairs": pairs_blacklist,
+            "pair_stop_counts": pairs_stop_counts,
+        },
+        "strategy_breakdown": strategy_breakdown,
         "open_positions": open_positions,
         "watchlist": rows,
         "pairs": pairs_rows,
@@ -241,6 +312,9 @@ HTML_PAGE = """<!doctype html>
   .p-cyan { color:var(--cyan); background:rgba(56,189,248,.12); }
   .p-purple { color:var(--purple); background:rgba(167,139,250,.12); }
   .p-muted { color:var(--muted); }
+  .zbar { position:relative; display:inline-block; width:110px; height:8px; background:#1e293b; border-radius:4px; vertical-align:middle; margin-right:6px; }
+  .zbar-mid { position:absolute; left:50%; top:-2px; width:1px; height:12px; background:#475569; }
+  .zbar-dot { position:absolute; top:-1px; width:8px; height:10px; border-radius:3px; transform:translateX(-50%); }
   svg { width:100%; height:130px; display:block; }
 </style>
 </head>
@@ -259,8 +333,13 @@ HTML_PAGE = """<!doctype html>
   </div>
 
   <div class="section">
-    <div class="sec-head"><h2>Open Positions</h2></div>
-    <table><thead><tr><th>Symbol</th><th>Strategy</th><th>Side</th><th>Units</th><th>Entry</th><th>Now</th><th>Stop</th><th>Unrealized P&amp;L</th></tr></thead><tbody id="open-body"></tbody></table>
+    <div class="sec-head"><h2>Open Positions</h2><span class="sub" id="open-sub"></span></div>
+    <table><thead><tr><th>Symbol</th><th>Strategy</th><th>Side</th><th>Units</th><th>Notional</th><th>Entry</th><th>Now</th><th>Stop (Dist)</th><th>Unrealized P&amp;L</th></tr></thead><tbody id="open-body"></tbody></table>
+  </div>
+
+  <div class="section">
+    <div class="sec-head"><h2>Strategy Performance Breakdown</h2><span class="sub" id="strat-sub"></span></div>
+    <table><thead><tr><th>Strategy</th><th>Trades</th><th>Win Rate</th><th>Profit Factor</th><th>Fees Paid</th><th>Net P&amp;L</th></tr></thead><tbody id="strat-body"></tbody></table>
   </div>
 
   <div class="section">
@@ -275,13 +354,18 @@ HTML_PAGE = """<!doctype html>
   </div>
 
   <div class="section">
-    <div class="sec-head"><h2>Cointegrated Stat-Arb Pairs Desk</h2></div>
-    <table><thead><tr><th>Pair</th><th>Correlation</th><th>Half-Life</th><th>Z-Score</th><th>Status / Verdict</th></tr></thead><tbody id="pairs-body"></tbody></table>
+    <div class="sec-head"><h2>Cointegrated Stat-Arb Pairs Desk</h2><span class="sub" id="pairs-sub"></span></div>
+    <table><thead><tr><th>Pair</th><th>Correlation</th><th>Half-Life</th><th>Z-Score Divergence</th><th>Strikes / Guard</th><th>Status / Verdict</th></tr></thead><tbody id="pairs-body"></tbody></table>
   </div>
 
   <div class="section">
-    <div class="sec-head"><h2>Recent Closed Fills</h2></div>
-    <table><thead><tr><th>Symbol</th><th>Strategy</th><th>Side</th><th>Entry</th><th>Exit</th><th>Net P&amp;L</th><th>Return</th><th>Reason</th></tr></thead><tbody id="closed-body"></tbody></table>
+    <div class="sec-head">
+      <h2>Recent Closed Fills</h2>
+      <div class="controls">
+        <select id="closed-filter"><option value="">All Strategies</option><option>momentum</option><option>mean_reversion</option><option>stat_arb_pairs</option><option>basis_yield</option><option>volatility_squeeze</option><option>trend_pullback</option><option>vwap_reversion</option></select>
+      </div>
+    </div>
+    <table><thead><tr><th>Time (UTC)</th><th>Symbol</th><th>Strategy</th><th>Side</th><th>Entry</th><th>Exit</th><th>Fees</th><th>Net P&amp;L</th><th>Return</th><th>Reason</th></tr></thead><tbody id="closed-body"></tbody></table>
   </div>
 </div>
 <script>
@@ -319,33 +403,64 @@ function render(d){
     <span class="badge ok">PAPER ONLY</span>
     <span class="badge ok">VIX: ${d.bot.fred_vix_regime}</span>
     <span class="badge">${d.bot.auto_approval ? '4-Gate Auto-Approval: ON':'Manual Approval'}</span>`;
-  const a = d.account, by = d.basis_yield, mt = d.maker_telemetry;
+  const a = d.account, by = d.basis_yield, mt = d.maker_telemetry, rt = d.risk_telemetry || {};
   document.getElementById('kpi-grid').innerHTML = `
-    <div class="card"><div class="k">Total Equity</div><div class="v">$${fmt(a.equity)}</div><div class="sub">Cash: $${fmt(a.cash)}</div></div>
-    <div class="card"><div class="k">Drawdown &amp; Breaker</div><div class="v ${a.circuit_breaker==='OK'?'ok':'bad'}">${a.drawdown_pct}%</div><div class="sub">Breaker: ${a.circuit_breaker}</div></div>
-    <div class="card"><div class="k">Closed Fills (${a.closed_trades})</div><div class="v ${a.realized_pnl>=0?'ok':'bad'}">$${fmt(a.realized_pnl)}</div><div class="sub">Win Rate: ${a.win_rate_pct}%</div></div>
+    <div class="card"><div class="k">Total Equity</div><div class="v">$${fmt(a.equity)}</div><div class="sub">Cash: $${fmt(a.cash)} | Peak: $${fmt(rt.peak_equity ?? a.equity)}</div></div>
+    <div class="card"><div class="k">Open Exposure &amp; Risk</div><div class="v">${rt.open_count ?? 0}/${rt.max_open_positions ?? 5}</div><div class="sub">${fmt(rt.open_exposure_pct ?? 0, 1)}% deployed ($${fmt(rt.open_notional ?? 0)})</div></div>
+    <div class="card"><div class="k">Drawdown &amp; Breaker</div><div class="v ${a.circuit_breaker==='OK'?'ok':'bad'}">${a.drawdown_pct}%</div><div class="sub">Breaker: ${a.circuit_breaker} | Pruned: ${rt.blacklisted_symbols_count ?? 0}</div></div>
+    <div class="card"><div class="k">Closed Fills (${a.closed_trades})</div><div class="v ${a.realized_pnl>=0?'ok':'bad'}">$${fmt(a.realized_pnl)}</div><div class="sub">WR: ${a.win_rate_pct}% | PF: ${fmt(rt.profit_factor ?? 0)} | Fees: $${fmt(rt.total_fees ?? 0)}</div></div>
     <div class="card"><div class="k">Basis Yield Carry</div><div class="v ok">+$${fmt(by.total_carry_usd)}</div><div class="sub">${by.payouts} payouts | Top: ${by.top_symbol} (${fmt(by.top_apr)}% / ${by.hurdle_apr}%) | Next: ${by.next_epoch_hours}h</div></div>
     <div class="card"><div class="k">Maker Telemetry</div><div class="v">${mt.fill_rate_pct}%</div><div class="sub">${mt.filled}/${mt.total} fills | ${mt.avg_slippage_bps} bps slip</div></div>`;
   renderCurve(d.equity_curve);
+  document.getElementById('open-sub').textContent = `${d.open_positions.length} open | $${fmt(rt.open_notional ?? 0)} notional (${fmt(rt.open_exposure_pct ?? 0, 1)}% eq)`;
   document.getElementById('open-body').innerHTML = d.open_positions.map(p => `<tr>
     <td><b>${p.symbol}</b></td><td>${p.strategy_id}</td><td>${p.side}</td><td>${p.units}</td>
-    <td>$${fmt(p.entry_price)}</td><td>$${fmt(p.current_price)}</td><td>$${fmt(p.trailing_stop)}</td>
-    <td class="${p.unrealized_pnl>=0?'ok':'bad'}">$${fmt(p.unrealized_pnl)}</td>
-  </tr>`).join('') || '<tr><td colspan="8" class="p-muted">No open positions</td></tr>';
+    <td>$${fmt(p.notional)} (${fmt(p.exposure_pct,1)}%)</td>
+    <td>$${fmt(p.entry_price, p.entry_price < 1 ? 4 : 2)}</td><td>$${fmt(p.current_price, p.current_price < 1 ? 4 : 2)}</td>
+    <td>$${fmt(p.trailing_stop, p.trailing_stop < 1 ? 4 : 2)} (${fmt(p.stop_dist_pct, 1)}%)</td>
+    <td class="${p.unrealized_pnl>=0?'ok':'bad'}">$${fmt(p.unrealized_pnl)} (${p.return_pct>=0?'+':''}${fmt(p.return_pct)}%)</td>
+  </tr>`).join('') || '<tr><td colspan="9" class="p-muted">No open positions</td></tr>';
+  const sb = d.strategy_breakdown || [];
+  document.getElementById('strat-sub').textContent = `${sb.length} strategies with closed fills`;
+  document.getElementById('strat-body').innerHTML = sb.map(s => `<tr>
+    <td><b>${s.strategy_id}</b></td><td>${s.trades} (${s.wins}W)</td><td>${fmt(s.win_rate_pct,1)}%</td>
+    <td>${fmt(s.profit_factor)}</td><td>$${fmt(s.fees)}</td>
+    <td class="${s.net_pnl>=0?'ok':'bad'}">$${fmt(s.net_pnl)}</td>
+  </tr>`).join('') || '<tr><td colspan="6" class="p-muted">No strategy fills yet</td></tr>';
   renderWatchlist();
-  document.getElementById('pairs-body').innerHTML = (d.pairs || []).map(p => `<tr>
-    <td><b>${p.pair}</b></td><td>${p.correlation >= 0 ? '+':''}${fmt(p.correlation)}</td>
-    <td>${fmt(p.half_life, 1)}h</td><td>${p.z_score >= 0 ? '+':''}${fmt(p.z_score)}</td><td>${p.verdict}</td>
-  </tr>`).join('') || '<tr><td colspan="5" class="p-muted">No pairs configured</td></tr>';
-  document.getElementById('closed-body').innerHTML = d.recent_trades.map(t => `<tr>
-    <td><b>${t.symbol}</b></td><td>${t.strategy_id||'—'}</td><td>${t.side}</td>
-    <td>$${fmt(t.entry_price,4)}</td><td>$${fmt(t.exit_price,4)}</td>
-    <td class="${t.pnl>=0?'ok':'bad'}">$${fmt(t.pnl)}</td><td>${fmt(t.return_pct)}%</td><td>${t.exit_reason||''}</td>
-  </tr>`).join('') || '<tr><td colspan="8" class="p-muted">No closed trades yet</td></tr>';
+  const blPairs = rt.blacklisted_pairs || [];
+  document.getElementById('pairs-sub').textContent = `${(d.pairs||[]).length} active pairs | Blacklisted: ${blPairs.length ? blPairs.join(', ') : 'None'}`;
+  document.getElementById('pairs-body').innerHTML = (d.pairs || []).map(p => {
+    const z = Number(p.z_score || 0);
+    const pct = Math.max(4, Math.min(96, 50 + (z / 3.5) * 45));
+    const col = Math.abs(z) >= 2.5 ? 'var(--amber)' : 'var(--cyan)';
+    const guard = p.cooldown_until ? `<span class="pill warn">Cooldown</span>` : (p.strikes > 0 ? `<span class="pill warn">${p.strikes}/2 strikes</span>` : `<span class="pill p-green">Clear (0/2)</span>`);
+    return `<tr>
+      <td><b>${p.pair}</b></td><td>${p.correlation >= 0 ? '+':''}${fmt(p.correlation)}</td>
+      <td>${fmt(p.half_life, 1)}h</td>
+      <td><span class="zbar"><span class="zbar-mid"></span><span class="zbar-dot" style="left:${pct.toFixed(1)}%;background:${col}"></span></span>${z >= 0 ? '+':''}${fmt(z)}</td>
+      <td>${guard}</td><td>${p.verdict}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" class="p-muted">No pairs configured</td></tr>';
+  renderClosed();
+}
+function renderClosed(){
+  if(!lastData) return;
+  const cf = document.getElementById('closed-filter').value;
+  const rows = (lastData.recent_trades || []).filter(t => !cf || (t.strategy_id || '') === cf);
+  document.getElementById('closed-body').innerHTML = rows.map(t => {
+    const ts = t.exit_time ? String(t.exit_time).replace('T',' ').slice(0,16) : '—';
+    return `<tr>
+      <td class="p-muted">${ts}</td><td><b>${t.symbol}</b></td><td>${t.strategy_id||'—'}</td><td>${t.side}</td>
+      <td>$${fmt(t.entry_price,4)}</td><td>$${fmt(t.exit_price,4)}</td><td>$${fmt(t.fees ?? 0)}</td>
+      <td class="${t.pnl>=0?'ok':'bad'}">$${fmt(t.pnl)}</td><td>${fmt(t.return_pct)}%</td><td>${t.exit_reason||''}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="10" class="p-muted">No matching closed trades</td></tr>';
 }
 async function poll(){ try{ const r = await fetch('/api/state'); if(r.ok) render(await r.json()); }catch(e){} }
 document.getElementById('wl-search').addEventListener('input', renderWatchlist);
 document.getElementById('wl-filter').addEventListener('change', renderWatchlist);
+document.getElementById('closed-filter').addEventListener('change', renderClosed);
 poll(); setInterval(poll, 3000);
 </script>
 </body>
