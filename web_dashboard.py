@@ -119,7 +119,7 @@ def build_dashboard_payload(
         eq_curve.append(round(float(status["equity"]), 2))
 
     prices = status.get("prices", {}) or {}
-    actions = status.get("actions", {}) or {}
+    actions = status.get("assets") or status.get("actions") or {}
     bl_set = set(cfg.get("blacklisted_symbols", []))
     watchlist = [s for s in cfg.get("watchlist", []) if s not in bl_set]
     rows = [_classify_watchlist_row(sym, actions.get(sym, {}), prices.get(sym)) for sym in watchlist]

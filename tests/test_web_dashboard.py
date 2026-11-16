@@ -26,7 +26,7 @@ def test_build_dashboard_payload_handles_missing_and_valid_files(tmp_path: Path)
     st.write_text(json.dumps({
         "equity": 9500.0,
         "prices": {"PLUG": 1.11},
-        "actions": {"PLUG": {"action": "REJECTED", "reason": "Dynamic Router selected 'volatility_squeeze' for PLUG"}},
+        "assets": {"PLUG": {"action": "REJECTED", "reason": "Dynamic Router selected 'volatility_squeeze' for PLUG"}},
     }))
     pf.write_text(json.dumps({"cash": 7000.0, "closed_trades": [{"pnl": 50.0, "symbol": "PLUG", "side": "LONG", "entry_price": 1.0, "exit_price": 1.1, "return_pct": 10.0}]}))
     cfg.write_text(json.dumps({"watchlist": ["PLUG"], "blacklisted_symbols": []}))
