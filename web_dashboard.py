@@ -64,6 +64,9 @@ def _classify_watchlist_row(sym: str, action_obj: Dict[str, Any], price: Optiona
         strategy_label, trigger = "VWAP Reversion", "VWAP Reversion"
     elif "selected 'mean_reversion'" in rl:
         strategy_label, trigger = "Mean Reversion", "Mean Reversion"
+    elif "selected 'momentum'" in rl or "no breakout" in rl or "macro_bear" in rl:
+        strategy_label = "Momentum"
+        trigger = reason[:56] if reason else "Momentum"
     elif "selected 'basis_yield'" in rl:
         fr = ind.get("funding_rate_pct")
         strategy_label = "Basis Yield"
