@@ -25,6 +25,8 @@ from core.strategy import (
 from strategies.momentum import MomentumStrategy
 from strategies.mean_reversion import MeanReversionStrategy
 from strategies.stat_arb_pairs import StatArbPairsStrategy, PairTradeSignal
+from strategies.volatility_squeeze import VolatilitySqueezeStrategy
+from strategies.trend_pullback import TrendPullbackStrategy
 from core.journal import log_decision, get_gate_alpha_feedback, log_maker_telemetry
 from core.polymarket_radar import PolymarketRadar, MacroEventRisk
 from core.fred_radar import FredMacroRadar, MacroRegimeReport
@@ -133,6 +135,10 @@ class PortfolioCoordinator:
             ),
             "basis_yield": bool(config.get("enable_basis_yield", True)),
         }
+        self._custom_strategies[VolatilitySqueezeStrategy.STRATEGY_ID] = VolatilitySqueezeStrategy(config)
+        self._strategy_enabled[VolatilitySqueezeStrategy.STRATEGY_ID] = bool(config.get("enable_volatility_squeeze", True))
+        self._custom_strategies[TrendPullbackStrategy.STRATEGY_ID] = TrendPullbackStrategy(config)
+        self._strategy_enabled[TrendPullbackStrategy.STRATEGY_ID] = bool(config.get("enable_trend_pullback", True))
         if "enabled_strategies" in config and isinstance(config["enabled_strategies"], (list, set, tuple)):
             enabled_set = set(config["enabled_strategies"])
             for sid in list(self._strategy_enabled.keys()):
@@ -235,6 +241,8 @@ class PortfolioCoordinator:
                 run_backtest,
                 run_basis_yield_backtest,
                 run_mean_reversion_backtest,
+                run_volatility_squeeze_backtest,
+                run_trend_pullback_backtest,
             )
 
             r_mom = run_backtest(
@@ -271,6 +279,24 @@ class PortfolioCoordinator:
                 cands.append((r_mom.sharpe_ratio, MomentumStrategy.STRATEGY_ID))
             if r_mr.total_trades >= 2 and r_mr.profit_factor >= min_pf:
                 cands.append((r_mr.sharpe_ratio, MeanReversionStrategy.STRATEGY_ID))
+            if self.is_strategy_enabled(VolatilitySqueezeStrategy.STRATEGY_ID):
+                r_sq = run_volatility_squeeze_backtest(
+                    df_win,
+                    account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
+                    fee_pct=0.0002,
+                    slippage_pct=0.0001,
+                )
+                if r_sq.total_trades >= 2 and r_sq.profit_factor >= min_pf:
+                    cands.append((r_sq.sharpe_ratio, VolatilitySqueezeStrategy.STRATEGY_ID))
+            if self.is_strategy_enabled(TrendPullbackStrategy.STRATEGY_ID):
+                r_pb = run_trend_pullback_backtest(
+                    df_win,
+                    account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
+                    fee_pct=0.0002,
+                    slippage_pct=0.0001,
+                )
+                if r_pb.total_trades >= 2 and r_pb.profit_factor >= min_pf:
+                    cands.append((r_pb.sharpe_ratio, TrendPullbackStrategy.STRATEGY_ID))
             if r_by is not None and r_by.total_trades >= 1 and r_by.profit_factor >= 1.0:
                 cands.append((r_by.sharpe_ratio, "basis_yield"))
 
@@ -968,6 +994,9 @@ class PortfolioCoordinator:
 
         extra_signals: List[TradingSignal] = []
         for custom_id, custom_strat in self._custom_strategies.items():
+            if custom_id in (VolatilitySqueezeStrategy.STRATEGY_ID, TrendPullbackStrategy.STRATEGY_ID):
+                if dyn_route not in ("all", custom_id):
+                    continue
             if self.is_strategy_enabled(custom_id) and hasattr(custom_strat, "evaluate"):
                 csig = custom_strat.evaluate(symbol, df, existing_position=None)
                 if csig is not None:
@@ -1781,9 +1810,13 @@ class PortfolioCoordinator:
             total_eq_now = self.account.get_total_equity(current_prices)
             breaker_ok, _ = self.risk_engine.check_circuit_breakers(total_eq_now, current_time=now)
             if elapsed_hours >= 8.0 and breaker_ok:
-                max_basis_pct = float(self.config.get("max_basis_allocation_pct", 0.30))
                 total_eq = self.account.get_total_equity(current_prices)
-                basis_alloc = min(self.account.cash * 0.80, total_eq * max_basis_pct)
+                max_basis_pct = float(self.config.get("max_basis_allocation_pct", 0.30))
+                if self.config.get("enable_idle_cash_sweep", True) and total_eq > 0 and self.account.cash > total_eq * 0.40:
+                    sweep_cap = float(self.config.get("idle_cash_sweep_max_pct", 0.50))
+                    basis_alloc = min(self.account.cash * 0.75, total_eq * max(max_basis_pct, sweep_cap))
+                else:
+                    basis_alloc = min(self.account.cash * 0.80, total_eq * max_basis_pct)
                 if basis_alloc >= 50.0 and best_opp is not None and best_opp.is_profitable:
                     receipt = self.basis_yield_engine.accrue_funding_yield(
                         account=self.account,

@@ -659,7 +659,7 @@ def test_dynamic_multi_strategy_registration_beyond_two_strategies(tmp_path):
 
     coordinator.register_strategy("vol_breakout_v1", VolatilityBreakoutPlugin(), enabled=True)
     reg_after = coordinator.get_registered_strategies()
-    assert len(reg_after) == 5
+    assert len(reg_after) == len(reg) + 1
     assert "vol_breakout_v1" in reg_after
 
     # Disable momentum and mean_reversion, leaving only the 5th custom strategy active for directional signals

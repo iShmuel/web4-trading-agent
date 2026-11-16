@@ -472,6 +472,10 @@ def render() -> str:
             next_trigger = dim("Cash (PF < 1.15)")
         elif "selected 'mean_reversion'" in rl:
             next_trigger = dim("Mean Reversion")
+        elif "selected 'volatility_squeeze'" in rl:
+            next_trigger = dim("Vol Squeeze")
+        elif "selected 'trend_pullback'" in rl:
+            next_trigger = dim("Trend Pullback")
         elif "stale data" in rl:
             next_trigger = dim("Market Closed")
         elif "blacklisted" in rl or "asset pruned" in rl:
@@ -492,6 +496,10 @@ def render() -> str:
             mom_setup = dim("Dynamic: Stand Down")
         elif "selected 'mean_reversion'" in rl:
             mom_setup = "Dynamic: Mean Reversion"
+        elif "selected 'volatility_squeeze'" in rl:
+            mom_setup = green("Dynamic: Vol Squeeze")
+        elif "selected 'trend_pullback'" in rl:
+            mom_setup = green("Dynamic: Trend Pullback")
         elif "stale data" in rl:
             mom_setup = dim("Stale / Market Closed")
         elif "blacklisted" in rl or "asset pruned" in rl:

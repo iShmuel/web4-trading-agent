@@ -1060,3 +1060,153 @@ def run_basis_yield_backtest(
         trades=trades,
         equity_curve=equity_curve,
     )
+
+
+def _run_signal_array_backtest(
+    df: pd.DataFrame,
+    entries: np.ndarray,
+    atr_arr: np.ndarray,
+    initial_capital: float = 10000.0,
+    account_risk_pct: float = 0.02,
+    stop_atr_mult: float = 2.0,
+    tp_atr_mult: float = 2.5,
+    fee_pct: float = 0.0002,
+    slippage_pct: float = 0.0001,
+) -> BacktestResult:
+    """Shared causal long-only backtest simulator for boolean entry signal arrays."""
+    equity = float(initial_capital)
+    peak = equity
+    max_dd = 0.0
+    total_fees = 0.0
+    trades: List[TradeRecord] = []
+    equity_curve: List[float] = [equity]
+    pos = None
+
+    closes = df["close"].astype(float).values
+    highs = df["high"].astype(float).values
+    lows = df["low"].astype(float).values
+
+    for i in range(1, len(df)):
+        if pos is not None:
+            ep, units, stop, tp, e_time, e_fee = pos
+            hit_stop = lows[i] <= stop
+            hit_tp = highs[i] >= tp
+            if hit_stop or hit_tp:
+                xp = (stop if hit_stop else tp) * (1.0 - slippage_pct)
+                x_fee = xp * units * fee_pct
+                total_fees += x_fee
+                pnl = (xp - ep) * units - e_fee - x_fee
+                equity += pnl
+                trades.append(TradeRecord(
+                    entry_time=e_time,
+                    exit_time=df.index[i],
+                    entry_price=ep,
+                    exit_price=xp,
+                    units=units,
+                    pnl=pnl,
+                    return_pct=((xp - ep) / ep * 100.0) if ep > 0 else 0.0,
+                    exit_reason="Take Profit" if hit_tp else "Stop Loss",
+                    side="LONG",
+                    fees=e_fee + x_fee,
+                ))
+                pos = None
+
+        if pos is None and bool(entries[i - 1]) and atr_arr[i - 1] > 0:
+            ep = closes[i - 1] * (1.0 + slippage_pct)
+            dist = float(atr_arr[i - 1]) * stop_atr_mult
+            risk_clamped = max(0.01, min(0.05, float(account_risk_pct)))
+            units = (equity * risk_clamped) / dist
+            if units * ep > equity * 0.35:
+                units = (equity * 0.35) / ep
+            if units > 0:
+                e_fee = ep * units * fee_pct
+                total_fees += e_fee
+                pos = (ep, units, max(0.0, ep - dist), ep + float(atr_arr[i - 1]) * tp_atr_mult, df.index[i - 1], e_fee)
+
+        if equity > peak:
+            peak = equity
+        dd = (peak - equity) / peak if peak > 0 else 0.0
+        max_dd = max(max_dd, dd)
+        equity_curve.append(equity)
+
+    total_trades = len(trades)
+    winning = sum(1 for t in trades if t.pnl > 0)
+    gp = sum(t.pnl for t in trades if t.pnl > 0)
+    gl = abs(sum(t.pnl for t in trades if t.pnl < 0))
+    pf = (gp / gl) if gl > 0 else (99.0 if gp > 0 else 0.0)
+    t_rets = [t.pnl / initial_capital for t in trades]
+    sharpe = (
+        float(np.mean(t_rets) / np.std(t_rets) * np.sqrt(len(t_rets)))
+        if len(t_rets) > 1 and np.std(t_rets) > 0
+        else (1.0 if gp > 0 else 0.0)
+    )
+    return BacktestResult(
+        initial_capital=initial_capital,
+        final_equity=equity,
+        total_return_pct=((equity - initial_capital) / initial_capital) * 100.0,
+        total_trades=total_trades,
+        winning_trades=winning,
+        losing_trades=total_trades - winning,
+        win_rate=(winning / total_trades) if total_trades else 0.0,
+        profit_factor=pf,
+        max_drawdown_pct=max_dd * 100.0,
+        sharpe_ratio=sharpe,
+        total_fees_paid=total_fees,
+        trades=trades,
+        equity_curve=equity_curve,
+    )
+
+
+def run_volatility_squeeze_backtest(
+    df: pd.DataFrame,
+    initial_capital: float = 10000.0,
+    account_risk_pct: float = 0.02,
+    stop_atr_mult: float = 2.0,
+    tp_atr_mult: float = 2.5,
+    fee_pct: float = 0.0002,
+    slippage_pct: float = 0.0001,
+) -> BacktestResult:
+    """Backtest Volatility Squeeze Breakout strategy."""
+    from strategies.volatility_squeeze import compute_squeeze_indicators
+    if df is None or len(df) < 60:
+        return BacktestResult(initial_capital=initial_capital, final_equity=initial_capital)
+    ind = compute_squeeze_indicators(df)
+    return _run_signal_array_backtest(
+        df=df,
+        entries=ind["squeeze_breakout"].fillna(False).values,
+        atr_arr=ind["atr"].fillna(0.0).values,
+        initial_capital=initial_capital,
+        account_risk_pct=account_risk_pct,
+        stop_atr_mult=stop_atr_mult,
+        tp_atr_mult=tp_atr_mult,
+        fee_pct=fee_pct,
+        slippage_pct=slippage_pct,
+    )
+
+
+def run_trend_pullback_backtest(
+    df: pd.DataFrame,
+    initial_capital: float = 10000.0,
+    account_risk_pct: float = 0.02,
+    rsi_pullback_max: float = 44.0,
+    stop_atr_mult: float = 2.0,
+    tp_atr_mult: float = 2.5,
+    fee_pct: float = 0.0002,
+    slippage_pct: float = 0.0001,
+) -> BacktestResult:
+    """Backtest Trend Pullback continuation strategy."""
+    from strategies.trend_pullback import compute_pullback_indicators
+    if df is None or len(df) < 60:
+        return BacktestResult(initial_capital=initial_capital, final_equity=initial_capital)
+    ind = compute_pullback_indicators(df, rsi_pullback_max=rsi_pullback_max)
+    return _run_signal_array_backtest(
+        df=df,
+        entries=ind["pullback_entry"].fillna(False).values,
+        atr_arr=ind["atr"].fillna(0.0).values,
+        initial_capital=initial_capital,
+        account_risk_pct=account_risk_pct,
+        stop_atr_mult=stop_atr_mult,
+        tp_atr_mult=tp_atr_mult,
+        fee_pct=fee_pct,
+        slippage_pct=slippage_pct,
+    )
