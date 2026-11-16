@@ -5,7 +5,7 @@ This document tracks architectural, analytical, and operational items identified
 > **Status Summary (Updated November 15, 2026)**:
 > * **Items 1–4**: ✅ **IMPLEMENTED, VERIFIED & DEPLOYED** (`184/184` pytest passing).
 > * **Option B CPI Optimization (100% Dynamic Rolling Expectancy Router + 8 Paroled Assets)**: ✅ **DEPLOYED** — Official CPI Score: **`93.0 / 100`** across 27 cached assets (vs. `7.4 / 100` Single-Agent Baseline) | **Avg Return**: **`+1.61%`** | **Sharpe**: **`+8.81`** | **Avg MaxDD**: **`1.65%`** | **Profit Factor**: **`3.23`**.
-> * **Items 5–8**: Remaining planned/queued roadmap items (plus Basis Yield `5.0%` hurdle & Adaptive Maker Telemetry implemented).
+> * **Items 5–9**: Remaining planned/queued roadmap items (plus Basis Yield `5.0%` hurdle & Adaptive Maker Telemetry implemented).
 
 ---
 
@@ -143,4 +143,19 @@ This document tracks architectural, analytical, and operational items identified
 * **Implementation Plan:**
   1. Add `scripts/setup_vps.sh` to automate `.venv` creation, `pip install -r requirements.txt`, `systemd` service template generation for `live_paper_trader.py --loop --interval 60`, and an optional `--with-llm` flag that installs Ollama and runs `ollama pull phi4-mini:latest`.
   2. Update [`agent/llm_client.py`](agent/llm_client.py) to read `OLLAMA_URL` and `OLLAMA_MODEL` from environment variables (`.env`), allowing a small 4 GB VPS to either run deterministic-only or point to an external Ollama host.
+
+---
+
+### 9. Multi-Strategy Alpha Expansion Roadmap (12 Candidate Strategies)
+
+* **Status**: Planned / Research Queue (Detailed guide in [`docs/NEW_STRATEGIES_ROADMAP.md`](docs/NEW_STRATEGIES_ROADMAP.md))
+* **Suggested Priority**: Medium (P2)
+* **What is Planned:**
+  Expand beyond the current 4 active strategies (`momentum`, `mean_reversion`, `stat_arb_pairs`, `basis_yield`) with **12 non-overlapping candidate strategies** built strictly on existing OHLCV, volume, funding-rate, and FRED macro feeds (zero new paid APIs):
+  * **Volatility & Breakout:** Volatility Squeeze Breakout (*Priority #1*), US Session Open Drive, Volatility-Targeted Trend
+  * **Trend & Pullback:** Trend Pullback (*Priority #2*), Dual-Timeframe Confluence Trend
+  * **Mean Reversion & Microstructure:** VWAP Fair-Value Reversion, RSI Bull/Bear Divergence, Weekend Crypto / Opening Gap Fade
+  * **Cross-Asset & Derivatives:** Funding-Rate Contrarian Squeeze (`SHORT_SQUEEZE_PRONE`), BTC-Lead / Altcoin Lag Spillover, Cross-Sectional Relative Strength Rotation, Macro Risk-Off Defensive Hedge
+* **Validation Gate:**
+  No candidate strategy will be enabled in `config/active_config.json` without walk-forward OOS backtesting (fees + slippage), clearing `PF >= 1.15` in the Option B Dynamic Rolling Router, CPI benchmark validation (`core/cpi_benchmark.py`), and Governor approval.
 
