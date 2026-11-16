@@ -52,6 +52,8 @@ class RiskEngine:
         symbol_risk_weights: Optional[Dict[str, float]] = None,
         symbol_exposure_caps: Optional[Dict[str, float]] = None,
         account: Optional[Any] = None,
+        max_correlated_positions: int = 2,
+        correlation_threshold: float = 0.75,
     ):
         self.risk_pct = self.enforce_risk_bounds(default_risk_pct)
         self.max_total_exposure_pct = max_total_exposure_pct
@@ -59,6 +61,8 @@ class RiskEngine:
         self.max_strategy_allocation_pct = max_strategy_allocation_pct
         self.max_open_positions = max_open_positions
         self.max_crypto_positions = max_crypto_positions
+        self.max_correlated_positions = max(1, int(max_correlated_positions))
+        self.correlation_threshold = float(correlation_threshold)
         self.dynamic_scaling = dynamic_scaling
         self.daily_loss_limit_pct = daily_loss_limit_pct
         # Support both fraction (0.15) and percentage (15.0) inputs transparently
@@ -446,6 +450,7 @@ class RiskEngine:
         requested_risk_pct: Optional[float] = None,
         current_time: Optional[datetime] = None,
         risk_multiplier: float = 1.0,
+        correlation_map: Optional[Dict[str, float]] = None,
     ) -> RiskVerdict:
         """Validate an entry proposal against all portfolio-level limits."""
         # 1. Circuit breaker / kill switch check
@@ -486,6 +491,23 @@ class RiskEngine:
                 return RiskVerdict(
                     approved=False,
                     reason=f"Correlation Guard: Max crypto positions ({self.max_crypto_positions}) reached (slot reserved for equities/uncorrelated)",
+                )
+
+        # Portfolio Rolling Return-Correlation Guard (prevents sector-cluster concentration)
+        if correlation_map and strategy_id != "stat_arb_pairs":
+            correlated_syms = [
+                sym
+                for sym, pos in active_positions.items()
+                if pos.get("strategy_id") != "stat_arb_pairs"
+                and float(correlation_map.get(sym, 0.0)) >= self.correlation_threshold
+            ]
+            if len(correlated_syms) >= self.max_correlated_positions:
+                return RiskVerdict(
+                    approved=False,
+                    reason=(
+                        f"Portfolio Correlation Guard: {symbol} correlated (>= {self.correlation_threshold:.2f}) "
+                        f"with {len(correlated_syms)} open positions ({', '.join(correlated_syms[:3])})"
+                    ),
                 )
 
         # 4. Volatility sizing calculation (with per-symbol dynamic risk weighting & volatility targeting)

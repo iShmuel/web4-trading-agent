@@ -147,6 +147,7 @@ class PortfolioCoordinator:
         self._funding_cache: Dict[str, Tuple[float, Optional[float]]] = {}
         # Dynamic Rolling Expectancy Router cache: symbol -> (epoch_ts, chosen_strategy)
         self._rolling_router_cache: Dict[str, Tuple[float, str]] = {}
+        self._latest_market_data: Dict[str, pd.DataFrame] = {}
         # Timestamp of most recent crypto stop-loss exit for contagion cooldown protection
         self._last_crypto_stop_time: Optional[pd.Timestamp] = None
 
@@ -1309,6 +1310,19 @@ class PortfolioCoordinator:
                 current_time=last_ts,
             )
 
+        corr_map: Dict[str, float] = {}
+        if self.config.get("enable_correlation_guard", True) and self.account.positions and df is not None and len(df) >= 24:
+            cand_rets = df["close"].astype(float).pct_change().dropna().iloc[-168:]
+            for active_sym in self.account.positions.keys():
+                adf = self._latest_market_data.get(active_sym)
+                if adf is not None and len(adf) >= 24:
+                    act_rets = adf["close"].astype(float).pct_change().dropna().iloc[-168:]
+                    aligned = pd.concat([cand_rets, act_rets], axis=1, join="inner").dropna()
+                    if len(aligned) >= 20:
+                        corr_val = float(aligned.iloc[:, 0].corr(aligned.iloc[:, 1]))
+                        if not math.isnan(corr_val):
+                            corr_map[active_sym] = corr_val
+
         risk_verdict = self.risk_engine.validate_proposed_entry(
             symbol=symbol,
             side=chosen_sig.direction.value,
@@ -1324,6 +1338,7 @@ class PortfolioCoordinator:
             requested_risk_pct=effective_risk_pct,
             current_time=last_ts,
             risk_multiplier=combined_risk_mult,
+            correlation_map=corr_map,
         )
 
         if not risk_verdict.approved:
@@ -1521,6 +1536,7 @@ class PortfolioCoordinator:
     ) -> CycleReport:
         """Run a coordinated portfolio evaluation cycle across all symbols."""
         now = now or datetime.now(timezone.utc)
+        self._latest_market_data = market_data
         current_prices: Dict[str, float] = {}
         decisions: List[CoordinatorDecision] = []
 
