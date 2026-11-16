@@ -338,6 +338,8 @@ HTML_PAGE = """<!doctype html>
   .eq-dot { cursor:pointer; transition:r .1s; }
   .eq-dot:hover { r:5.5; }
   #eq-tip { position:fixed; display:none; pointer-events:none; background:#0f172a; border:1px solid var(--cyan); color:var(--text); padding:4px 9px; border-radius:6px; font-size:12px; font-weight:600; z-index:99; white-space:nowrap; box-shadow:0 4px 12px rgba(0,0,0,.5); }
+  .two-col { display:grid; grid-template-columns:repeat(auto-fit,minmax(460px,1fr)); gap:16px; margin-bottom:16px; }
+  .two-col .section { margin-bottom:0; }
 </style>
 </head>
 <body>
@@ -349,20 +351,21 @@ HTML_PAGE = """<!doctype html>
 
   <div class="grid" id="kpi-grid"></div>
 
-  <div class="section">
-    <div class="sec-head"><h2>Portfolio Equity Curve (Realized Ledger + Live Mark)</h2><span class="sub" id="eq-range"></span></div>
-    <div class="eq-wrap"><svg id="eq-svg" viewBox="0 0 800 130" preserveAspectRatio="none"></svg></div>
+  <div class="two-col">
+    <div class="section">
+      <div class="sec-head"><h2>Portfolio Equity Curve (Realized Ledger + Live Mark)</h2><span class="sub" id="eq-range"></span></div>
+      <div class="eq-wrap"><svg id="eq-svg" viewBox="0 0 800 130" preserveAspectRatio="none"></svg></div>
+    </div>
+    <div class="section">
+      <div class="sec-head"><h2>Strategy Performance Breakdown</h2><span class="sub" id="strat-sub"></span></div>
+      <table><thead><tr><th>Strategy</th><th>Trades</th><th>Win Rate</th><th>Profit Factor</th><th>Fees Paid</th><th>Net P&amp;L</th></tr></thead><tbody id="strat-body"></tbody></table>
+    </div>
   </div>
   <div id="eq-tip"></div>
 
   <div class="section">
     <div class="sec-head"><h2>Open Positions</h2><span class="sub" id="open-sub"></span></div>
     <table><thead><tr><th>Symbol</th><th>Strategy</th><th>Side</th><th>Units</th><th>Notional</th><th>Entry</th><th>Now</th><th>Stop (Dist)</th><th>Unrealized P&amp;L</th></tr></thead><tbody id="open-body"></tbody></table>
-  </div>
-
-  <div class="section">
-    <div class="sec-head"><h2>Strategy Performance Breakdown</h2><span class="sub" id="strat-sub"></span></div>
-    <table><thead><tr><th>Strategy</th><th>Trades</th><th>Win Rate</th><th>Profit Factor</th><th>Fees Paid</th><th>Net P&amp;L</th></tr></thead><tbody id="strat-body"></tbody></table>
   </div>
 
   <div class="section">
