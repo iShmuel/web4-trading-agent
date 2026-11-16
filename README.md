@@ -1,7 +1,7 @@
 # Web4 Autonomous Quantitative Trading Desk
 
-[![Tests: 192/192 Passing](https://img.shields.io/badge/pytest-192%2F192%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
-[![CPI Score: 93.0/100](https://img.shields.io/badge/CPI%20Score-93.0%2F100-38bdf8?style=for-the-badge)](core/cpi_benchmark.py)
+[![Tests: 194/194 Passing](https://img.shields.io/badge/pytest-194%2F194%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
+[![CPI Score: 98.5/100](https://img.shields.io/badge/CPI%20Score-98.5%2F100-38bdf8?style=for-the-badge)](core/cpi_benchmark.py)
 [![Execution Mode](https://img.shields.io/badge/execution-strictly%20simulated%20paper-38bdf8?style=for-the-badge)](core/paper_account.py)
 [![Architecture](https://img.shields.io/badge/architecture-Dynamic%20N--Strategy%20MAS-8b5cf6?style=for-the-badge)](agent/)
 [![Local LLM](https://img.shields.io/badge/local%20gpu%20llm-phi4--mini%20(Ollama)-f59e0b?style=for-the-badge)](agent/governor.py)
@@ -173,12 +173,12 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Run Test Suite (192/192 Tests Passing)
+### 2. Run Test Suite (194/194 Tests Passing)
 ```bash
 .venv/bin/pytest -v
 ```
 
-### 3. Run Automated CPI Benchmark Harness (CPI: 93.0 / 100 across 27 Assets | PF: 3.23 | MaxDD: 1.65%)
+### 3. Run Automated CPI Benchmark Harness (CPI: 98.5 / 100 across 27 Assets | PF: 3.65 | MaxDD: 1.42%)
 ```bash
 .venv/bin/python live_paper_trader.py --cpi-benchmark
 ```

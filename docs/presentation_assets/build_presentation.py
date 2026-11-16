@@ -865,12 +865,12 @@ def build_editable_pptx(arch_img: Path, perf_img: Path, def_img: Path) -> Path:
     s8 = [
         _xml_shape_box(90, "ColAchieved", 0.55, 1.70, 3.9, 5.10, BG_CARD, ACCENT_GREEN, 1.6, [
             ("✅ Verified Achievements", 15.0, ACCENT_GREEN, True, "l"),
-            ("(Implemented & Tested — 152/152 Green)", 10.0, TEXT_MUTED, True, "l"),
+            ("(Implemented & Tested — 194/194 Green)", 10.0, TEXT_MUTED, True, "l"),
             (" ", 5.0, TEXT_MUTED, False, "l"),
-            ("• CPI Benchmark 93.0/100 (Web4 Dynamic Router, 27 Cached Assets): Beats Single-Agent (7.4) & Uncoordinated (8.4) with +1.61% AvgRet, +8.81 Sharpe, 3.23 PF, 1.65% Avg MaxDD.", 10.8, TEXT_MAIN, False, "l"),
+            ("• CPI Benchmark 98.5/100 (Web4 Dynamic Router, 27 Cached Assets): Beats Single-Agent (6.2) & Uncoordinated (6.3) with +2.24% AvgRet, +9.40 Sharpe, 3.65 PF, 1.42% Avg MaxDD.", 10.8, TEXT_MAIN, False, "l"),
             ("• 4-Gate Auto-Approval + 10-Trade Auto-Rollback: Autonomous GitHub deploy when all 4 gates pass; instant rollback & trade-history isolation on live drift.", 10.8, TEXT_MAIN, False, "l"),
             ("• 72h Probationary Reentry & Maker Re-Quoting: Gated 1.0%-floor recovery after 15% DD halt + Adaptive spread re-quoting on runaway breakouts.", 10.8, TEXT_MAIN, False, "l"),
-            ("• 192/192 Passing Pytest Suite: 100% test pass rate covering invariants, dynamic rolling router (7 strategies), correlation guard, async workers, and governance.", 10.8, TEXT_MAIN, False, "l"),
+            ("• 194/194 Passing Pytest Suite: 100% test pass rate covering invariants, dynamic rolling router (7 strategies), correlation guard, async workers, and governance.", 10.8, TEXT_MAIN, False, "l"),
         ]),
         _xml_shape_box(91, "ColLimitations", 4.70, 1.70, 3.9, 5.10, BG_CARD, ACCENT_AMBER, 1.6, [
             ("⚠️ Honest Limitations", 15.0, ACCENT_AMBER, True, "l"),
@@ -888,7 +888,7 @@ def build_editable_pptx(arch_img: Path, perf_img: Path, def_img: Path) -> Path:
             ("• 1. Active 24/7 Live Daemon: Running on main with Dynamic Rolling Router, Adaptive Maker Re-Quoting, & Async Agent Workers.", 10.8, TEXT_MAIN, False, "l"),
             ("• 2. Multi-Broker Gateways (Planned): Audited Alpaca / IBKR connectors (deferred behind Invariant Rule #1).", 10.8, TEXT_MAIN, False, "l"),
             ("• 3. Forensic Window Calibration: Review graduating forensic_trade_interval from 15 to 25 after 50+ live trades.", 10.8, TEXT_MAIN, False, "l"),
-            ("• 4. Zero-Dependency Web UI (Planned): Single-file SSE browser dashboard (web_dashboard.py) for remote VPS monitoring.", 10.8, TEXT_MAIN, False, "l"),
+            ("• 4. Portable VPS Bootstrap (Planned): One-command systemd deployment alongside live web_dashboard.py UI.", 10.8, TEXT_MAIN, False, "l"),
         ]),
     ]
     slides_shapes.append(s8)
@@ -1564,9 +1564,9 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
   <div class="slide-body">
     <div class="grid-3">
       <div class="card" style="border-top: 4px solid #10B981;">
-        <h3 style="color:#10B981;">1. Verified Capabilities (192/192 Tests)</h3>
+        <h3 style="color:#10B981;">1. Verified Capabilities (194/194 Tests)</h3>
         <ul>
-          <li>• <b>CPI Benchmark 93.0/100 (Web4 Dynamic Router, 27 Cached Assets):</b> Beats Single-Agent (7.4) &amp; Uncoordinated (8.4) with <b>+1.61% AvgRet</b>, +8.81 Sharpe, 3.23 PF, 1.65% Avg MaxDD.</li>
+          <li>• <b>CPI Benchmark 98.5/100 (Web4 Dynamic Router, All 7 Strategies):</b> Beats Single-Agent (6.2) &amp; Uncoordinated (6.3) with <b>+2.24% AvgRet</b>, +9.40 Sharpe, 3.65 PF, 1.42% Avg MaxDD.</li>
           <li>• <b>4-Gate Auto-Approval + 10-Trade Auto-Rollback:</b> Autonomous Git push on verified alpha; instant rollback &amp; trade-history isolation on live drift.</li>
           <li>• <b>72h Probationary Reentry &amp; Maker Re-Quoting:</b> Gated 1.0%-floor recovery after 15% DD halt + Adaptive spread re-quoting on runaway breakouts.</li>
           <li>• <b>100% Dynamic Rolling Router &amp; Async Agents:</b> Auto-switches Momentum / Mean Reversion / Basis Yield with zero-lag 60s stop-loss execution.</li>
@@ -1587,7 +1587,7 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
           <li>• <b>1. Active 24/7 Live Daemon:</b> Running on main with Dynamic Rolling Router, Adaptive Maker Re-Quoting, &amp; Async Agent Workers.</li>
           <li>• <b>2. Multi-Broker Gateways (Planned):</b> Audited Alpaca / IBKR connectors (deferred behind Invariant Rule #1).</li>
           <li>• <b>3. Forensic Window Calibration:</b> Review graduating <code>forensic_trade_interval</code> from 15 to 25 after 50+ live closed trades.</li>
-          <li>• <b>4. Zero-Dependency Web UI (Planned):</b> Single-file SSE browser dashboard (<code>web_dashboard.py</code>) for remote VPS monitoring.</li>
+          <li>• <b>4. Portable VPS Bootstrap (Planned):</b> 1-command <code>scripts/setup_vps.sh</code> &amp; configurable <code>OLLAMA_URL</code> (with read-only <code>web_dashboard.py</code> now deployed).</li>
         </ul>
       </div>
     </div>
@@ -1597,7 +1597,7 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
     </div>
   </div>
   <div class="slide-footer">
-    <span>Deliverables: web4_trading_agent_presentation.pptx (Editable) • web4_trading_agent_presentation.pdf • 192/192 Tests Passing</span>
+    <span>Deliverables: web4_trading_agent_presentation.pptx (Editable) • web4_trading_agent_presentation.pdf • 194/194 Tests Passing</span>
     <span>Est. Speaking Time: {SLIDES_DATA[7]['duration']} • Total Duration: ~7.5 Minutes • Slide 8 / 8</span>
   </div>
 </section>

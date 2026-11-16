@@ -21,6 +21,7 @@ data/
 *.bak
 .env
 config.local.json
+config/last_deployment_snapshot.json
 .secrets/
 
 # IDE / OS
