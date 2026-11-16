@@ -167,6 +167,8 @@ def build_dashboard_payload(
         except Exception:
             scan_age_sec = None
 
+    by_status = status.get("basis_yield") or {}
+    by_ind = by_status.get("indicators", {}) or {}
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "bot": {
@@ -175,6 +177,7 @@ def build_dashboard_payload(
             "scan_age_sec": scan_age_sec,
             "auto_approval": bool(cfg.get("enable_conditional_auto_approval", False)),
             "paper_only": True,
+            "fred_vix_regime": str(status.get("fred_vix_regime", "STABLE (Crash Defense OFF)")),
         },
         "account": {
             "equity": round(float(status.get("equity", portfolio.get("cash", initial_cap))), 2),
@@ -189,6 +192,9 @@ def build_dashboard_payload(
             "total_carry_usd": round(float(portfolio.get("basis_yield_total_usd", 0.0)), 2),
             "payouts": int(portfolio.get("basis_yield_payouts", 0)),
             "hurdle_apr": float(cfg.get("basis_hurdle_apr", 5.0)),
+            "top_symbol": str(by_status.get("symbol", "—")),
+            "top_apr": round(float(by_status.get("apr", by_ind.get("apr", 0.0))), 2),
+            "next_epoch_hours": round(float(by_ind.get("hours_remaining", 0.0)), 1),
         },
         "maker_telemetry": summarize_maker_telemetry(),
         "open_positions": open_positions,
@@ -311,13 +317,14 @@ function render(d){
     <span class="badge ${d.bot.running ? 'ok':'bad'}">${d.bot.running ? 'RUNNING PID '+d.bot.pid : 'STOPPED'}</span>
     <span class="badge">Scan: ${d.bot.scan_age_sec !== null ? d.bot.scan_age_sec+'s ago' : '—'}</span>
     <span class="badge ok">PAPER ONLY</span>
+    <span class="badge ok">VIX: ${d.bot.fred_vix_regime}</span>
     <span class="badge">${d.bot.auto_approval ? '4-Gate Auto-Approval: ON':'Manual Approval'}</span>`;
   const a = d.account, by = d.basis_yield, mt = d.maker_telemetry;
   document.getElementById('kpi-grid').innerHTML = `
     <div class="card"><div class="k">Total Equity</div><div class="v">$${fmt(a.equity)}</div><div class="sub">Cash: $${fmt(a.cash)}</div></div>
     <div class="card"><div class="k">Drawdown &amp; Breaker</div><div class="v ${a.circuit_breaker==='OK'?'ok':'bad'}">${a.drawdown_pct}%</div><div class="sub">Breaker: ${a.circuit_breaker}</div></div>
     <div class="card"><div class="k">Closed Fills (${a.closed_trades})</div><div class="v ${a.realized_pnl>=0?'ok':'bad'}">$${fmt(a.realized_pnl)}</div><div class="sub">Win Rate: ${a.win_rate_pct}%</div></div>
-    <div class="card"><div class="k">Basis Yield Carry</div><div class="v ok">+$${fmt(by.total_carry_usd)}</div><div class="sub">${by.payouts} payouts | Hurdle ${by.hurdle_apr}%</div></div>
+    <div class="card"><div class="k">Basis Yield Carry</div><div class="v ok">+$${fmt(by.total_carry_usd)}</div><div class="sub">${by.payouts} payouts | Top: ${by.top_symbol} (${fmt(by.top_apr)}% / ${by.hurdle_apr}%) | Next: ${by.next_epoch_hours}h</div></div>
     <div class="card"><div class="k">Maker Telemetry</div><div class="v">${mt.fill_rate_pct}%</div><div class="sub">${mt.filled}/${mt.total} fills | ${mt.avg_slippage_bps} bps slip</div></div>`;
   renderCurve(d.equity_curve);
   document.getElementById('open-body').innerHTML = d.open_positions.map(p => `<tr>
