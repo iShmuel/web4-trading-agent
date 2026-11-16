@@ -5,7 +5,7 @@ This document tracks architectural, analytical, and operational items identified
 > **Status Summary (Updated November 15, 2026)**:
 > * **Items 1–4**: ✅ **IMPLEMENTED, VERIFIED & DEPLOYED** (`184/184` pytest passing).
 > * **Option B CPI Optimization (100% Dynamic Rolling Expectancy Router + 8 Paroled Assets)**: ✅ **DEPLOYED** — Official CPI Score: **`93.0 / 100`** across 27 cached assets (vs. `7.4 / 100` Single-Agent Baseline) | **Avg Return**: **`+1.61%`** | **Sharpe**: **`+8.81`** | **Avg MaxDD**: **`1.65%`** | **Profit Factor**: **`3.23`**.
-> * **Items 5–7**: Remaining planned/queued roadmap items.
+> * **Items 5–8**: Remaining planned/queued roadmap items (plus Basis Yield `5.0%` hurdle & Adaptive Maker Telemetry implemented).
 
 ---
 
@@ -129,4 +129,18 @@ This document tracks architectural, analytical, and operational items identified
   2. Implement an embedded modern HTML/CSS/JS single-page UI (dark theme, responsive mobile layout).
   3. Stream live updates via Server-Sent Events (SSE) or a 2-second polling REST endpoint reading `data/live_status.json` and `data/paper_portfolio.json`.
   4. Ensure 100% read-only operations using non-blocking read locks so it never interferes with the live trading daemon.
+
+---
+
+### 8. Portable Cloud / VPS Deployment Bootstrap (`scripts/setup_vps.sh`) & Configurable Ollama Endpoint
+
+* **Status**: Planned / Infrastructure Portability
+* **Suggested Priority**: Medium (P2)
+* **What is Missing:**
+  Local LLM model weights (`phi4-mini:latest`, ~2.5 GB) cannot be committed to Git (exceeds GitHub's 100 MB file limit), and [`agent/llm_client.py`](agent/llm_client.py) currently defaults to `http://localhost:11434/api/generate`. While the system gracefully falls back to deterministic logic without Ollama, migrating to a fresh cloud server or VPS requires manual setup if narrative LLM reasoning is desired.
+* **Why it Matters:**
+  Ensures 1-command reproducibility when migrating the trading desk to an EU cloud VPS (2–4 vCPU, 4 GB RAM, 10–20 GB SSD) or connecting a lightweight VPS to a remote/home GPU Ollama instance.
+* **Implementation Plan:**
+  1. Add `scripts/setup_vps.sh` to automate `.venv` creation, `pip install -r requirements.txt`, `systemd` service template generation for `live_paper_trader.py --loop --interval 60`, and an optional `--with-llm` flag that installs Ollama and runs `ollama pull phi4-mini:latest`.
+  2. Update [`agent/llm_client.py`](agent/llm_client.py) to read `OLLAMA_URL` and `OLLAMA_MODEL` from environment variables (`.env`), allowing a small 4 GB VPS to either run deterministic-only or point to an external Ollama host.
 
