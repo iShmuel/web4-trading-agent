@@ -29,6 +29,9 @@ from core.backtest_engine import (
     run_basis_yield_backtest,
     run_mean_reversion_backtest,
     run_pairs_backtest,
+    run_volatility_squeeze_backtest,
+    run_trend_pullback_backtest,
+    run_vwap_reversion_backtest,
 )
 
 
@@ -264,15 +267,38 @@ def run_cpi_benchmark(
             slippage_pct=0.0001,
         )
         r_by_opt = (
-            run_basis_yield_backtest(df.copy(), hurdle_apr=5.0, fee_pct=0.0002, slippage_pct=0.0001)
+            run_basis_yield_backtest(
+                df.copy(),
+                hurdle_apr=float(cfg.get("basis_hurdle_apr", 5.0)),
+                fee_pct=0.0002,
+                slippage_pct=0.0001,
+            )
             if is_crypto
             else None
         )
+        r_sq_opt = run_volatility_squeeze_backtest(
+            df.copy(),
+            account_risk_pct=float(sp.get("account_risk_pct", 0.02)),
+            fee_pct=0.0002,
+            slippage_pct=0.0001,
+        )
+        r_pb_opt = run_trend_pullback_backtest(
+            df.copy(),
+            account_risk_pct=float(sp.get("account_risk_pct", 0.02)),
+            fee_pct=0.0002,
+            slippage_pct=0.0001,
+        )
+        r_vw_opt = run_vwap_reversion_backtest(
+            df.copy(),
+            account_risk_pct=float(sp.get("account_risk_pct", 0.02)),
+            fee_pct=0.0002,
+            slippage_pct=0.0001,
+        )
         cands = []
-        if r_mom_opt.total_trades >= 2 and r_mom_opt.profit_factor >= 1.15:
-            cands.append((r_mom_opt.sharpe_ratio, r_mom_opt))
-        if r_mr_opt.total_trades >= 2 and r_mr_opt.profit_factor >= 1.15:
-            cands.append((r_mr_opt.sharpe_ratio, r_mr_opt))
+        min_pf = float(cfg.get("dynamic_router_min_pf", 1.15))
+        for r_cand in (r_mom_opt, r_mr_opt, r_sq_opt, r_pb_opt, r_vw_opt):
+            if r_cand.total_trades >= 2 and r_cand.profit_factor >= min_pf:
+                cands.append((r_cand.sharpe_ratio, r_cand))
         if r_by_opt is not None and r_by_opt.total_trades >= 1 and r_by_opt.profit_factor >= 1.0:
             cands.append((r_by_opt.sharpe_ratio, r_by_opt))
         if not cands:

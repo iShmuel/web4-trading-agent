@@ -76,6 +76,19 @@ BASIS_YIELD_GRID: Dict[str, List[Any]] = {
     "basis_hurdle_apr": [6.0, 8.0, 10.0, 12.0, 15.0],
     "max_basis_allocation_pct": [0.20, 0.25, 0.30, 0.35],
 }
+VOLATILITY_SQUEEZE_GRID: Dict[str, List[Any]] = {
+    "squeeze_atr_stop_mult": [1.5, 2.0, 2.5],
+    "squeeze_tp_atr_mult": [2.0, 2.5, 3.0],
+}
+TREND_PULLBACK_GRID: Dict[str, List[Any]] = {
+    "pullback_rsi_max": [38.0, 42.0, 44.0, 48.0],
+    "pullback_atr_stop_mult": [1.5, 2.0, 2.5],
+}
+VWAP_REVERSION_GRID: Dict[str, List[Any]] = {
+    "vwap_window": [18, 24, 36],
+    "vwap_std_mult": [1.6, 1.8, 2.0, 2.2],
+    "vwap_rsi_max": [34.0, 38.0, 42.0],
+}
 
 
 @dataclass
@@ -168,6 +181,15 @@ def build_optimization_tasks(cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
     # 4. Delta-Neutral Basis / Funding Yield (all active crypto perpetuals)
     if crypto_all:
         tasks.append({"strategy": "basis_yield", "scope": "global", "symbols": crypto_all[:MAX_SYMBOLS_PER_TASK]})
+
+    # 4B. New Directional Engines (Volatility Squeeze, Trend Pullback, VWAP Reversion)
+    if mixed_basket:
+        if cfg.get("enable_volatility_squeeze", True):
+            tasks.append({"strategy": "volatility_squeeze", "scope": "global", "symbols": mixed_basket})
+        if cfg.get("enable_trend_pullback", True):
+            tasks.append({"strategy": "trend_pullback", "scope": "global", "symbols": mixed_basket})
+        if cfg.get("enable_vwap_reversion", True):
+            tasks.append({"strategy": "vwap_reversion", "scope": "global", "symbols": mixed_basket})
 
     # 5. Per-Asset-Profile Momentum AND Mean Reversion (all active symbols in each profile)
     for name, prof in (cfg.get("asset_profiles") or {}).items():
@@ -295,6 +317,45 @@ def _make_evaluator(task: Dict[str, Any], cfg: Dict[str, Any], cache: Dict[str, 
 
         return evaluator
 
+    if strategy in ("volatility_squeeze", "trend_pullback", "vwap_reversion"):
+        from core.backtest_engine import (
+            run_volatility_squeeze_backtest,
+            run_trend_pullback_backtest,
+            run_vwap_reversion_backtest,
+        )
+        data = {s: _load_split(s, timeframe, cache) for s in task["symbols"]}
+        data = {s: d for s, d in data.items() if d is not None}
+        if not data:
+            return None
+        task["symbols_used"] = list(data.keys())
+
+        def evaluator(full_cfg: Dict[str, Any], split: str) -> AggregateResult:
+            idx = 0 if split == "train" else 1
+            results = []
+            for d in data.values():
+                if strategy == "volatility_squeeze":
+                    results.append(run_volatility_squeeze_backtest(
+                        d[idx],
+                        stop_atr_mult=float(full_cfg.get("squeeze_atr_stop_mult", 2.0)),
+                        tp_atr_mult=float(full_cfg.get("squeeze_tp_atr_mult", 2.5)),
+                    ))
+                elif strategy == "trend_pullback":
+                    results.append(run_trend_pullback_backtest(
+                        d[idx],
+                        rsi_pullback_max=float(full_cfg.get("pullback_rsi_max", 44.0)),
+                        stop_atr_mult=float(full_cfg.get("pullback_atr_stop_mult", 2.0)),
+                    ))
+                else:
+                    results.append(run_vwap_reversion_backtest(
+                        d[idx],
+                        vwap_window=int(full_cfg.get("vwap_window", 24)),
+                        std_mult=float(full_cfg.get("vwap_std_mult", 1.8)),
+                        rsi_max=float(full_cfg.get("vwap_rsi_max", 38.0)),
+                    ))
+            return _aggregate(results)
+
+        return evaluator
+
     return None
 
 
@@ -317,6 +378,9 @@ def optimize_task(
         "mean_reversion": MEAN_REVERSION_GRID,
         "stat_arb_pairs": PAIRS_GRID,
         "basis_yield": BASIS_YIELD_GRID,
+        "volatility_squeeze": VOLATILITY_SQUEEZE_GRID,
+        "trend_pullback": TREND_PULLBACK_GRID,
+        "vwap_reversion": VWAP_REVERSION_GRID,
     }[strategy]
 
     print("=" * 65)
