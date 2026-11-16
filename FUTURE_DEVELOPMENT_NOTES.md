@@ -80,3 +80,68 @@ This document tracks **only unbuilt and queued items** for the **Web4 Autonomous
   * **Cross-Asset & Derivatives:** Funding-Rate Contrarian Squeeze (`SHORT_SQUEEZE_PRONE`), BTC-Lead / Altcoin Lag Spillover, Cross-Sectional Relative Strength Rotation, Macro Risk-Off Defensive Hedge
 * **Validation Gate:**
   No candidate strategy will be enabled in `config/active_config.json` without walk-forward OOS backtesting (fees + slippage), clearing `PF >= 1.15` in the Option B Dynamic Rolling Router, CPI benchmark validation (`core/cpi_benchmark.py`), and Governor approval.
+
+---
+
+### 6. Portfolio Correlation & Sector-Cluster Risk Guard (`core/risk_engine.py`)
+
+* **Status**: Planned / Risk & Capital Protection
+* **Suggested Priority**: High (P1)
+* **What is Missing:**
+  `RiskEngine` currently enforces `max_crypto_positions` and per-symbol exposure caps, but does not yet enforce a rolling return-correlation cap across active positions (e.g., opening `NVDA`, `AMD`, `SMCI`, and `MU` together creates 4× concentrated semiconductor exposure).
+* **Why it Matters:**
+  During sector-wide selloffs, apparently separate positions with `> 0.75` correlation move as a single oversized bet, amplifying drawdowns.
+* **Implementation Plan:**
+  Add a rolling 30-day return-correlation check inside `RiskEngine.validate_proposed_entry()` that blocks or scales down new entries highly correlated with existing open positions (strictly preserving `[1%, 5%]` risk bounds).
+
+---
+
+### 7. Idle-Cash Dynamic Capital Sweep (`Basis Yield` Carry Allocation)
+
+* **Status**: Planned / Capital Efficiency
+* **Suggested Priority**: Medium (P2)
+* **What is Missing:**
+  When Option B's Dynamic Rolling Router places directional assets into `cash` (`PF < 1.15`), idle cash earns `0%`.
+* **Why it Matters:**
+  Sweeping idle capital above a safety liquidity reserve into qualified delta-neutral `Basis Yield` (`>= 5.0%` APR) improves capital utilization during choppy directional regimes without adding directional risk.
+* **Implementation Plan:**
+  Route excess idle cash automatically into the highest-APR qualified carry opportunity when directional desks stand down, with instant liquidity release when a directional signal triggers.
+
+---
+
+### 8. Live-vs-Backtest Execution Drift Monitor (`core/journal.py`)
+
+* **Status**: Planned / Execution Quality & Decay Detection
+* **Suggested Priority**: Medium (P2)
+* **What is Missing:**
+  `data/paper_portfolio.json` and `data/maker_telemetry.jsonl` record live fills, but there is no automated weekly report comparing realized live win rate, Profit Factor, and slippage bps against backtest expectations.
+* **Why it Matters:**
+  Detects strategy decay, regime shift, or worsening spread/fill friction early — before a `15%` drawdown occurs.
+* **Implementation Plan:**
+  Add a rolling drift audit in `core/journal.py` that compares live 14–30 day metrics vs. baseline backtest benchmarks and flags anomalies in the Governor / forensic pipeline.
+
+---
+
+### 9. Automated Data Retention, Log Rotation & Parquet/SQLite Storage
+
+* **Status**: Planned / Long-Running VPS Hygiene
+* **Suggested Priority**: Low-Medium (P3)
+* **What is Missing:**
+  Over multi-month 24/7 VPS runs, `data/*.csv` candle caches, `decision_journal.jsonl`, `maker_telemetry.jsonl`, and `live_trader.log` grow continuously as flat files.
+* **Why it Matters:**
+  Prevents unbounded disk growth and keeps read/query latency fast over months of continuous operation.
+* **Implementation Plan:**
+  Add scheduled cleanup/archival of expired candle caches, `RotatingFileHandler` for `live_trader.log`, and optional SQLite or Parquet storage for historical telemetry.
+
+---
+
+### 10. Realized Tax-Lot & Fee-Tier Savings Ledger Export
+
+* **Status**: Planned / Accounting & Broker Readiness
+* **Suggested Priority**: Low (P3)
+* **What is Missing:**
+  Closed trades are logged in `data/paper_portfolio.json`, but there is no dedicated FIFO / specific-lot realized gain/loss, holding-period, wash-sale, and maker-vs-taker fee savings export.
+* **Why it Matters:**
+  Provides institutional-grade accounting and prepares the ledger for any future live-broker transition.
+* **Implementation Plan:**
+  Add an export utility generating clean CSV/JSON tax-lot and fee-savings audit ledgers from `closed_trades` and `maker_telemetry.jsonl`.
