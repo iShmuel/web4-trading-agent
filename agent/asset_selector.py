@@ -42,6 +42,9 @@ from core.backtest_engine import (
     compute_mean_reversion_indicators,
     run_backtest,
     run_mean_reversion_backtest,
+    run_volatility_squeeze_backtest,
+    run_trend_pullback_backtest,
+    run_vwap_reversion_backtest,
     BacktestResult,
 )
 from core.coordinator import resolve_symbol_config
@@ -341,48 +344,51 @@ def evaluate_candidate_asset(
     train_mr = run_mean_reversion_backtest(train_df, **mr_kwargs)
     test_mr = run_mean_reversion_backtest(test_df, **mr_kwargs)
 
-    # Full period evaluation
+    # Full period evaluation across all 5 directional engines
+    # (Basis Yield is intentionally excluded here so ~100%-WR carry ticks do not mask directional quality)
     full_mom = run_backtest(raw_df, **mom_kwargs)
     full_mr = run_mean_reversion_backtest(raw_df, **mr_kwargs)
 
     mom_ret = round(full_mom.total_return_pct, 2)
     mr_ret = round(full_mr.total_return_pct, 2)
 
-    # Select the optimal primary directional strategy engine for this symbol
-    # (Basis Yield is intentionally excluded here so ~100%-WR carry ticks do not mask directional quality)
+    ext_kwargs = dict(
+        initial_capital=10_000.0,
+        account_risk_pct=float(scfg.get("account_risk_pct", 0.02)),
+        fee_pct=fee_pct,
+        slippage_pct=slip_pct,
+    )
+    candidates = [
+        ("MOMENTUM", train_mom, test_mom, full_mom),
+        ("MEAN_REVERSION", train_mr, test_mr, full_mr),
+    ]
+    for label, fn, flag in [
+        ("VOLATILITY_SQUEEZE", run_volatility_squeeze_backtest, "enable_volatility_squeeze"),
+        ("TREND_PULLBACK", run_trend_pullback_backtest, "enable_trend_pullback"),
+        ("VWAP_REVERSION", run_vwap_reversion_backtest, "enable_vwap_reversion"),
+    ]:
+        if cfg.get(flag, True):
+            candidates.append((
+                label,
+                fn(train_df, **ext_kwargs),
+                fn(test_df, **ext_kwargs),
+                fn(raw_df, **ext_kwargs),
+            ))
+
     use_dynamic_router = bool(cfg.get("enable_dynamic_rolling_router", False))
     if use_dynamic_router:
         min_pf = float(cfg.get("dynamic_router_min_pf", 1.15))
-        mom_ok = full_mom.total_trades >= 2 and full_mom.profit_factor >= min_pf
-        mr_ok = full_mr.total_trades >= 2 and full_mr.profit_factor >= min_pf
-        if mom_ok and (not mr_ok or full_mom.sharpe_ratio >= full_mr.sharpe_ratio):
-            chosen_full, is_return, oos_return, primary_strat = (
-                full_mom, train_mom.total_return_pct, test_mom.total_return_pct, "MOMENTUM"
-            )
-        elif mr_ok:
-            chosen_full, is_return, oos_return, primary_strat = (
-                full_mr, train_mr.total_return_pct, test_mr.total_return_pct, "MEAN_REVERSION"
-            )
-        elif full_mom.sharpe_ratio >= full_mr.sharpe_ratio:
-            chosen_full, is_return, oos_return, primary_strat = (
-                full_mom, train_mom.total_return_pct, test_mom.total_return_pct, "MOMENTUM"
-            )
-        else:
-            chosen_full, is_return, oos_return, primary_strat = (
-                full_mr, train_mr.total_return_pct, test_mr.total_return_pct, "MEAN_REVERSION"
-            )
-    elif full_mom.total_return_pct >= full_mr.total_return_pct:
-        chosen_full = full_mom
-        is_return = train_mom.total_return_pct
-        oos_return = test_mom.total_return_pct
-        primary_strat = "MOMENTUM"
+        qualified = [c for c in candidates if c[3].total_trades >= 2 and c[3].profit_factor >= min_pf]
+        pool = qualified if qualified else candidates
+        best = max(pool, key=lambda c: c[3].sharpe_ratio)
     else:
-        chosen_full = full_mr
-        is_return = train_mr.total_return_pct
-        oos_return = test_mr.total_return_pct
-        primary_strat = "MEAN_REVERSION"
+        best = max(candidates, key=lambda c: c[3].total_return_pct)
 
-    if mom_ret > 0 and mr_ret > 0:
+    primary_strat, best_train, best_test, chosen_full = best
+    is_return = best_train.total_return_pct
+    oos_return = best_test.total_return_pct
+
+    if mom_ret > 0 and mr_ret > 0 and primary_strat in ("MOMENTUM", "MEAN_REVERSION"):
         primary_strat = "DUAL_HYBRID"
 
     total_trades = chosen_full.total_trades
