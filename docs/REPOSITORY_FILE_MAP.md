@@ -153,9 +153,21 @@ web4-trading-agent/
 │   │                                     # USED BY: coordinator.py and backtest_engine.py
 │   │                                     # WHY NEEDED: Generates steady returns during ranging markets where trend strategies suffer chop
 │   │
-│   └── stat_arb_pairs.py                 # WHAT: Cointegrated statistical arbitrage pairs bot (e.g. GLD:SLV spread)
-│                                         # USED BY: coordinator.py to execute hedged dual-leg pair trades
-│                                         # WHY NEEDED: Provides pure market-neutral alpha by trading mean-reverting valuation spreads
+│   ├── stat_arb_pairs.py                 # WHAT: Cointegrated statistical arbitrage pairs bot (e.g. GLD:SLV spread)
+│   │                                     # USED BY: coordinator.py to execute hedged dual-leg pair trades
+│   │                                     # WHY NEEDED: Provides pure market-neutral alpha by trading mean-reverting valuation spreads
+│   │
+│   ├── volatility_squeeze.py             # WHAT: Bollinger-inside-Keltner volatility compression breakout bot
+│   │                                     # USED BY: coordinator.py and backtest_engine.py
+│   │                                     # WHY NEEDED: Captures early trend expansions out of quiet consolidation boxes
+│   │
+│   ├── trend_pullback.py                 # WHAT: Confirmed-uptrend EMA20/RSI pullback continuation bot
+│   │                                     # USED BY: coordinator.py and backtest_engine.py
+│   │                                     # WHY NEEDED: Enters healthy dips inside macro uptrends with tight ATR stops
+│   │
+│   └── vwap_reversion.py                 # WHAT: 24-bar Rolling VWAP fair-value reversion bot
+│                                         # USED BY: coordinator.py and backtest_engine.py
+│                                         # WHY NEEDED: Fades extreme volume-weighted stretches back toward institutional fair value
 │
 ├── agent/
 │   ├── governor.py                       # WHAT: 4-Gate auto-approval constitutional gatekeeper
@@ -568,6 +580,9 @@ web4-trading-agent/
     │                                     # USED BY: pytest runner
     │                                     # WHY NEEDED: Verifies all 4 deployed roadmap enhancements and 1%-5% risk bounds
     │
+    ├── test_squeeze_and_pullback.py      # WHAT: Tests for Volatility Squeeze, Trend Pullback, & Idle-Cash Sweep
+    ├── test_correlation_guard.py         # WHAT: Tests for Portfolio Rolling Return-Correlation Guard (>= 0.75)
+    ├── test_vwap_reversion.py            # WHAT: Tests for Rolling VWAP Fair-Value Reversion strategy
     └── test_web4_self_improvement.py     # WHAT: Tests the end-to-end self-improvement loop (optimizer -> validator -> governor)
                                           # USED BY: pytest runner
                                           # WHY NEEDED: Proves that the complete autonomous self-tuning cycle operates safely without errors

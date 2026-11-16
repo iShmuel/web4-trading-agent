@@ -360,7 +360,7 @@ The repository includes a cognitive agent harness that autonomously tunes strate
 flowchart TD
     Candidate["New Parameter Proposal"] --> G1{"Gate 1: Safety Invariants?<br/>1%-5% Risk, Paper Mode"}
     G1 -- Fail --> Reject["REJECTED"]
-    G1 -- Pass --> G2{"Gate 2: Unit Test Suite?<br/>184/184 Pytests Pass"}
+    G1 -- Pass --> G2{"Gate 2: Unit Test Suite?<br/>192/192 Pytests Pass"}
     G2 -- Fail --> Reject
     G2 -- Pass --> G3{"Gate 3: Governor Confidence?<br/>Confidence >= 0.85 (Configurable)"}
     G3 -- Fail --> Reject
@@ -388,7 +388,7 @@ flowchart TD
 ### 8.3 Constitutional Governor & Hot-Reload Gatekeeper (`agent/governor.py`)
 * **Role**: Autonomous executive and safety gatekeeper.
 * **Invariant Enforcer**: Audits all proposals against the immutable risk bounds ($1.0\% \le \text{risk} \le 5.0\%$, paper-trading mode).
-* **Automated Test Harness**: Executes all 184 regression tests via subprocess `pytest`. If even one test fails, the proposal is rejected immediately.
+* **Automated Test Harness**: Executes all 192 regression tests via subprocess `pytest`. If even one test fails, the proposal is rejected immediately.
 * **Cryptographic Deployment**: Upon clearing all 4 gates, the Governor computes the SHA-256 hash of the configuration, merges the changes into [`config/active_config.json`](config/active_config.json), appends the audit trail to `governance_audit.jsonl`, and Git-commits the verified patch.
 
 ### 8.4 Autonomous Asset Universe Screener & Toxic Drag Pruning (`agent/asset_selector.py`)
@@ -523,7 +523,10 @@ web4-trading-agent/
 ├── strategies/
 │   ├── momentum.py            # Donchian channel breakout trend bot
 │   ├── mean_reversion.py      # Bollinger / RSI oversold/overbought swing bot
-│   └── stat_arb_pairs.py      # Cointegrated statistical arbitrage pairs bot
+│   ├── stat_arb_pairs.py      # Cointegrated statistical arbitrage pairs bot
+│   ├── volatility_squeeze.py  # Bollinger-inside-Keltner squeeze breakout bot
+│   ├── trend_pullback.py      # Confirmed-uptrend EMA20/RSI pullback bot
+│   └── vwap_reversion.py      # Rolling VWAP fair-value reversion bot
 ├── agent/
 │   ├── governor.py            # 4-Gate auto-approval constitutional gatekeeper
 │   ├── optimizer.py           # In-sample parameter exploration engine
@@ -542,7 +545,7 @@ web4-trading-agent/
 ├── docs/
 │   ├── SYSTEM_WALKTHROUGH.md  # THIS MASTER DETAILED GUIDE
 │   └── web4-autonomous-levels.md # Web4 autonomy level specification
-└── tests/                     # 184 automated regression tests (including Items 1-4 & Audit Fixes)
+└── tests/                     # 192 automated regression tests (including 7 strategies, Correlation Guard & Audit Fixes)
 ```
 
 > [!NOTE]
