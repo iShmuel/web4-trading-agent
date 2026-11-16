@@ -187,7 +187,7 @@
   "enable_volatility_targeting": true,
   "target_atr_pct": 0.025,
   "enable_basis_yield": true,
-  "basis_hurdle_apr": 6.0,
+  "basis_hurdle_apr": 5.0,
   "max_basis_allocation_pct": 0.25,
   "enable_pairs_trading": true,
   "stat_arb_lookback": 48,

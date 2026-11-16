@@ -21,6 +21,61 @@ import requests
 from core.data_loader import get_data_dir, is_crypto_symbol
 
 JOURNAL_FILE = get_data_dir() / "decision_journal.jsonl"
+MAKER_TELEMETRY_FILE = get_data_dir() / "maker_telemetry.jsonl"
+
+
+def log_maker_telemetry(
+    symbol: str,
+    side: str,
+    execution_mode: str,
+    filled: bool,
+    quote_price: float,
+    exec_price: float,
+    effective_fee_pct: float,
+    telemetry_path: Optional[Path] = None,
+) -> None:
+    """Append adaptive maker fill/re-quote telemetry to JSONL for empirical execution auditing."""
+    path = telemetry_path or MAKER_TELEMETRY_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    slip_bps = (abs(exec_price - quote_price) / quote_price * 10000.0) if quote_price > 0 else 0.0
+    record = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "symbol": symbol,
+        "side": side,
+        "execution_mode": execution_mode,
+        "filled": bool(filled),
+        "quote_price": round(float(quote_price), 8),
+        "exec_price": round(float(exec_price), 8),
+        "slippage_bps": round(slip_bps, 4),
+        "fee_bps": round(float(effective_fee_pct) * 10000.0, 4),
+    }
+    try:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(record) + "\n")
+    except Exception:
+        pass
+
+
+def summarize_maker_telemetry(telemetry_path: Optional[Path] = None) -> Dict[str, Any]:
+    """Summarize adaptive maker fill rate, re-quote frequency, and average slippage/fee bps."""
+    path = telemetry_path or MAKER_TELEMETRY_FILE
+    if not path.exists():
+        return {"total": 0, "filled": 0, "fill_rate_pct": 0.0, "requoted": 0, "avg_slippage_bps": 0.0, "avg_fee_bps": 0.0}
+    rows = list(_iter_jsonl(path))
+    if not rows:
+        return {"total": 0, "filled": 0, "fill_rate_pct": 0.0, "requoted": 0, "avg_slippage_bps": 0.0, "avg_fee_bps": 0.0}
+    filled_rows = [r for r in rows if r.get("filled")]
+    requoted = sum(1 for r in rows if "REQUOTE" in str(r.get("execution_mode", "")).upper())
+    avg_slip = float(np.mean([float(r.get("slippage_bps", 0.0)) for r in filled_rows])) if filled_rows else 0.0
+    avg_fee = float(np.mean([float(r.get("fee_bps", 0.0)) for r in filled_rows])) if filled_rows else 0.0
+    return {
+        "total": len(rows),
+        "filled": len(filled_rows),
+        "fill_rate_pct": round(len(filled_rows) / len(rows) * 100.0, 1),
+        "requoted": requoted,
+        "avg_slippage_bps": round(avg_slip, 2),
+        "avg_fee_bps": round(avg_fee, 2),
+    }
 
 
 def generate_llm_reflection(
@@ -494,6 +549,14 @@ def generate_journal_report(journal_path: Optional[Path] = None) -> str:
         lines.append(f"{cat:<30} {cnt:<7} {eff_str:<12} {mean_alpha:>+6.2f}%     {mean_ret:>+6.2f}%")
 
     lines.append("=" * 70)
+    m_tel = summarize_maker_telemetry()
+    if m_tel["total"] > 0:
+        lines.append(
+            f"Adaptive Maker Telemetry: {m_tel['filled']}/{m_tel['total']} filled "
+            f"({m_tel['fill_rate_pct']:.1f}%) | Requoted: {m_tel['requoted']} | "
+            f"Avg Slip: {m_tel['avg_slippage_bps']:.2f} bps | Avg Fee: {m_tel['avg_fee_bps']:.2f} bps"
+        )
+        lines.append("=" * 70)
     return "\n".join(lines)
 
 

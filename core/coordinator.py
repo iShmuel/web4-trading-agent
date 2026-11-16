@@ -25,7 +25,7 @@ from core.strategy import (
 from strategies.momentum import MomentumStrategy
 from strategies.mean_reversion import MeanReversionStrategy
 from strategies.stat_arb_pairs import StatArbPairsStrategy, PairTradeSignal
-from core.journal import log_decision, get_gate_alpha_feedback
+from core.journal import log_decision, get_gate_alpha_feedback, log_maker_telemetry
 from core.polymarket_radar import PolymarketRadar, MacroEventRisk
 from core.fred_radar import FredMacroRadar, MacroRegimeReport
 from core.basis_yield import BasisYieldEngine, BasisOpportunity
@@ -1413,6 +1413,21 @@ class PortfolioCoordinator:
                     taker_fee_pct=float(chosen_sig.estimated_fee_pct),
                 )
                 merged_ind["maker_queue_mode"] = mq_res["execution_mode"]
+                merged_ind["maker_filled"] = bool(mq_res["filled"])
+                merged_ind["maker_fee_bps"] = round(float(mq_res["effective_fee_pct"]) * 10000.0, 4)
+                merged_ind["maker_slippage_bps"] = round(
+                    (abs(float(mq_res["exec_price"]) - cur_price) / cur_price * 10000.0) if cur_price > 0 else 0.0,
+                    4,
+                )
+                log_maker_telemetry(
+                    symbol=symbol,
+                    side=chosen_sig.direction.value,
+                    execution_mode=str(mq_res["execution_mode"]),
+                    filled=bool(mq_res["filled"]),
+                    quote_price=cur_price,
+                    exec_price=float(mq_res["exec_price"]),
+                    effective_fee_pct=float(mq_res["effective_fee_pct"]),
+                )
                 if not mq_res["filled"]:
                     return CoordinatorDecision(
                         symbol=symbol,
