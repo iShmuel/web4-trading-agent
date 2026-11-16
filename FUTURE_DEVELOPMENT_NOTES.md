@@ -1,88 +1,10 @@
-# Future Development Notes (Post-Review Roadmap)
+# Future Development Notes (Unbuilt / Queued Roadmap)
 
-This document tracks architectural, analytical, and operational items identified during the institutional review of the **Web4 Autonomous Trading Desk**.
-
-> **Status Summary (Updated November 15, 2026)**:
-> * **Items 1–4**: ✅ **IMPLEMENTED, VERIFIED & DEPLOYED** (`184/184` pytest passing).
-> * **Option B CPI Optimization (100% Dynamic Rolling Expectancy Router + 8 Paroled Assets)**: ✅ **DEPLOYED** — Official CPI Score: **`93.0 / 100`** across 27 cached assets (vs. `7.4 / 100` Single-Agent Baseline) | **Avg Return**: **`+1.61%`** | **Sharpe**: **`+8.81`** | **Avg MaxDD**: **`1.65%`** | **Profit Factor**: **`3.23`**.
-> * **Items 5–9**: Remaining planned/queued roadmap items (plus Basis Yield `5.0%` hurdle & Adaptive Maker Telemetry implemented).
+This document tracks **only unbuilt and queued items** for the **Web4 Autonomous Trading Desk**. *(Already implemented and deployed features — Option B Dynamic Rolling Router, CPI Benchmark Harness, 72h Probationary Reentry, Adaptive Maker Re-Quoting & Telemetry, Async Agent Runner, and Basis Yield 5.0% Hurdle — are documented in [`PROJECT_CURRENT_STATE_AUDIT.md`](PROJECT_CURRENT_STATE_AUDIT.md).)*
 
 ---
 
-### 1. Automated Central Performance Index (CPI) Benchmark Harness
-
-* **Status**: ✅ IMPLEMENTED & VERIFIED (`core/cpi_benchmark.py`, `live_paper_trader.py --cpi-benchmark`) — Official CPI: **`93.0 / 100`** across 27 cached assets (`Web4 Option B Dynamic Router + Items 1-4`) vs. `7.4 / 100` (Baseline 1) and `8.4 / 100` (Baseline 2)
-* **Suggested Priority**: Medium (P2)
-* **What is Missing:**
-  The Central Performance Index (CPI) is formalized in the presentation as a **conceptual and mathematical evaluation framework** for comparing our multi-agent architecture against two theoretical baselines:
-  1. *Baseline 1: Conventional Single-Agent System* (monolithic, single-strategy, single-asset bot).
-  2. *Baseline 2: Centralized Multi-Strategy Agent* (monolithic multi-asset script without independent risk governance or conflict arbitration).
-  An automated simulation script executing these theoretical baselines side-by-side with our system does not currently exist in `research/`.
-* **Why it Matters:**
-  While historical backtests prove our system's standalone performance (+66.4% net return, Sharpe 2.03, Max DD 13.4%), having an empirical comparative execution harness would provide quantitative benchmark proof of multi-agent superiority over monolithic architectures under identical market candles and cost models.
-* **Expected Benefit:**
-  Empirically validates the thesis that decoupled agent arbitration reduces maximum drawdown by over 50% compared to monolithic single-strategy or uncoordinated multi-strategy systems.
-* **Implementation Plan:**
-  Develop `research/benchmark_cpi.py` that implements mock baseline harnesses, simulates all three architectural topologies over the identical 180-day 21-asset dataset, and outputs an automated CPI comparative scorecard.
-
----
-
-### 2. Dynamic Kill-Switch Half-Step Recovery Protocol (Probationary Reentry)
-
-* **Status**: ✅ IMPLEMENTED & VERIFIED (`core/risk_engine.py`, `core/coordinator.py` — 72h cooldown + VIX/EMA200/PF gate @ 1.0% risk floor per Invariant Rule #3)
-* **Suggested Priority**: High (P1)
-* **What is Missing:**
-  In `core/risk_engine.py`, when portfolio drawdown reaches the 15% maximum limit, the circuit breaker triggers a hard latch (`self._is_halted = True`). In the current implementation, this halt is permanent until an engineer manually clears it via `reset_kill_switch()`.
-* **Why it Matters:**
-  In automated production operations, locking the portfolio in 100% cash defense guarantees capital preservation (protecting 85% of equity), but leaves the system unable to autonomously re-enter the market when a multi-month bear market transitions back into a bull expansion wave without manual operator intervention.
-* **Expected Benefit:**
-  Allows continuous autonomous operations without human intervention while preserving strict capital safety guarantees.
-* **Implementation Plan:**
-  Implement an automated, staged **Probationary Reentry Protocol**:
-  1. Mandatory 72-hour macro cooldown following a kill switch event.
-  2. Reentry condition: FRED VIX must return to `STABLE` ($<20$) and 200 EMA Macro Gate must confirm structural reclaim.
-  3. Risk throttle: Capital risk is clamped to an ultra-conservative $0.5\%$ micro-pilot allocation.
-  4. Gradual scaling: Normal $2.0\%$ risk sizing is only restored after 3 consecutive winning trades.
-
----
-
-### 3. Maker Order Queue Tracking & Adaptive Re-Quoting Engine
-
-* **Status**: ✅ IMPLEMENTED & VERIFIED (`core/paper_account.py`, `core/coordinator.py`)
-* **Suggested Priority**: High (P1)
-* **What is Missing:**
-  The current maker model in `core/paper_account.py` applies a passive $0.02\%$ maker fee and $0.00\%$ slippage under next-open execution. However, it assumes passive limit orders are filled at the opening quote without modeling real-world order book queue depth, partial fills, or adverse selection during violent market gaps.
-* **Why it Matters:**
-  In real-world limit order execution, when price gaps violently upward during an impulsive breakout candle, a passive bid posted at the previous close or mid-spread may be left unfilled as the market runs away, leading to missed trades on high-velocity runners.
-* **Expected Benefit:**
-  Eliminates execution slippage estimation errors and provides 100% realistic fill probabilities for high-frequency or high-volatility breakout setups.
-* **Implementation Plan:**
-  Develop an asynchronous limit order queue simulator:
-  1. Ingest L2 order book depth (bid/ask volume levels) via CCXT WebSocket.
-  2. Implement an adaptive re-quoting loop that cancels and replaces unfilled limit orders closer to the inside spread if unfilled after 30 seconds.
-  3. Model partial fills and fill-or-kill (FOK) constraints.
-
----
-
-### 4. Decentralized Multi-Process Agent Distribution (Microservices / RPC)
-
-* **Status**: ✅ IMPLEMENTED & VERIFIED (`core/async_agent_runner.py`, `live_paper_trader.py`)
-* **Suggested Priority**: Low (P3)
-* **What is Missing:**
-  All 8 agents currently execute as modular Python classes within a single sequential process loop (`live_paper_trader.py`). They run within one operating system thread on the local host.
-* **Why it Matters:**
-  If an external REST call in Agent 1 (e.g. Binance API latency spike) or a heavy GPU tensor generation in Agent 8 (local LLM inference) experiences a temporary delay, the 60-second cycle can be extended. In an institutional production environment, decoupling agents into independent services ensures zero cross-thread blocking.
-* **Expected Benefit:**
-  Guarantees strict sub-second loop execution determinism and allows agents to be horizontally scaled across separate physical machines or cloud instances.
-* **Implementation Plan:**
-  Refactor the 8 agents into decoupled microservices:
-  1. Run each agent as an independent OS service / Docker container.
-  2. Inter-agent communication via high-throughput ZeroMQ, Redis Pub/Sub, or gRPC message queues.
-  3. Asynchronous heartbeat monitoring with automatic service restart capabilities.
-
----
-
-### 5. Multi-Broker Live Execution Gateways (Alpaca / Interactive Brokers)
+### 1. Multi-Broker Live Execution Gateways (Alpaca / Interactive Brokers)
 
 * **Status**: Planned / Institutional Deployment
 * **Suggested Priority**: Medium (P2 - Dependent on Live Capital Authorization)
@@ -100,7 +22,7 @@ This document tracks architectural, analytical, and operational items identified
 
 ---
 
-### 6. Forensic Audit Sample Window Calibration (Operator Reminder: Review in 1–2 Weeks)
+### 2. Forensic Audit Sample Window Calibration (Operator Reminder: Review in 1–2 Weeks)
 
 * **Status**: Queued for Operator Review (Target: Mid/Late November 2026)
 * **Suggested Priority**: Medium (P2)
@@ -113,7 +35,7 @@ This document tracks architectural, analytical, and operational items identified
 
 ---
 
-### 7. Zero-Dependency Single-File Web Dashboard (`web_dashboard.py`)
+### 3. Zero-Dependency Single-File Web Dashboard (`web_dashboard.py`)
 
 * **Status**: Planned / Operator Interface
 * **Suggested Priority**: Medium (P2)
@@ -132,7 +54,7 @@ This document tracks architectural, analytical, and operational items identified
 
 ---
 
-### 8. Portable Cloud / VPS Deployment Bootstrap (`scripts/setup_vps.sh`) & Configurable Ollama Endpoint
+### 4. Portable Cloud / VPS Deployment Bootstrap (`scripts/setup_vps.sh`) & Configurable Ollama Endpoint
 
 * **Status**: Planned / Infrastructure Portability
 * **Suggested Priority**: Medium (P2)
@@ -146,7 +68,7 @@ This document tracks architectural, analytical, and operational items identified
 
 ---
 
-### 9. Multi-Strategy Alpha Expansion Roadmap (12 Candidate Strategies)
+### 5. Multi-Strategy Alpha Expansion Roadmap (12 Candidate Strategies)
 
 * **Status**: Planned / Research Queue (Detailed guide in [`docs/NEW_STRATEGIES_ROADMAP.md`](docs/NEW_STRATEGIES_ROADMAP.md))
 * **Suggested Priority**: Medium (P2)
@@ -158,4 +80,3 @@ This document tracks architectural, analytical, and operational items identified
   * **Cross-Asset & Derivatives:** Funding-Rate Contrarian Squeeze (`SHORT_SQUEEZE_PRONE`), BTC-Lead / Altcoin Lag Spillover, Cross-Sectional Relative Strength Rotation, Macro Risk-Off Defensive Hedge
 * **Validation Gate:**
   No candidate strategy will be enabled in `config/active_config.json` without walk-forward OOS backtesting (fees + slippage), clearing `PF >= 1.15` in the Option B Dynamic Rolling Router, CPI benchmark validation (`core/cpi_benchmark.py`), and Governor approval.
-
