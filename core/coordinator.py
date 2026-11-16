@@ -206,7 +206,7 @@ class PortfolioCoordinator:
         df: pd.DataFrame,
         sym_cfg: Dict[str, Any],
     ) -> str:
-        """100% Dynamic Rolling Expectancy & Regime Router (Option B).
+        """100% Dynamic Rolling Expectancy & Regime Router.
 
         Evaluates Momentum, Mean Reversion, and Crypto Basis Yield over a rolling
         historical window (cached for 6h per symbol) and dynamically selects the

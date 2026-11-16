@@ -240,7 +240,7 @@ def run_cpi_benchmark(
         w4_pfs.append(c_pf)
         w4_trades += r_mom_w4.total_trades + r_mr_w4.total_trades + by_trades
 
-        # Tier 4: Option B Dynamic Rolling Router + Maker Fee (0.02%) + Basis Yield Fallback
+        # Tier 4: Web4 Dynamic Rolling Router + Maker Fee (0.02%) + Basis Yield Fallback
         r_mom_opt = run_backtest(
             df.copy(),
             breakout_lookback=int(sp.get("breakout_lookback", cfg.get("breakout_lookback", 36))),
@@ -334,7 +334,7 @@ def run_cpi_benchmark(
     )
     tier_w4_full = TierBenchmarkMetrics(
         tier_id="web4_full_items_1_to_4",
-        label="Web4 Option B (Dynamic Router + Items 1-4)",
+        label="Web4 Dynamic Router (Items 1-4)",
         assets_evaluated=n_assets,
         total_trades=opt_trades,
         **m_w4_enh,

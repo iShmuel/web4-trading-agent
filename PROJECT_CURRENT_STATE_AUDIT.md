@@ -1,11 +1,11 @@
 # FULL PROJECT AUDIT & TECHNICAL DISCOVERY
 ## Web4 Quantitative Trading Desk (`web4-trading-agent`) — Current State Assessment
 
-**Document Version:** 1.0.0  
-**Audit Date:** November 9, 2026  
+**Document Version:** 2.0.0  
+**Audit Date:** November 16, 2026  
 **Auditor:** Antigravity Autonomous Systems & Quantitative Engineering  
 **Project Path:** `<repo_root>`  
-**Git Commit Baseline:** `861f98ea12095787545e610b09b35110390035a5` (`main`, synchronized with `origin/main`)  
+**Git Commit Baseline:** `fcdf436` (`main`, synchronized with `origin/main` — updated from Nov 9 `861f98e`)  
 
 ---
 
@@ -25,9 +25,9 @@ The system solves three fundamental failure modes in automated quantitative trad
 - **Execution Mode**: Strictly simulated paper trading ([`PaperAccount`](core/paper_account.py)). Zero real capital is connected or at risk.
 - **Implemented Strategies**: **4 operational quantitative strategies** ([`MomentumStrategy`](strategies/momentum.py), [`MeanReversionStrategy`](strategies/mean_reversion.py), [`StatArbPairsStrategy`](strategies/stat_arb_pairs.py), and [`BasisYieldEngine`](core/basis_yield.py)), orchestrated dynamically by a centralized [`PortfolioCoordinator`](core/coordinator.py).
 - **Test Suite Status**: **184/184 tests passing** (100% green in ~18.8s).
-- **Active Watchlist (Option B + 8 Paroled)**: 30 assets (`LINK/USDT`, `BNB/USDT`, `AVAX/USDT`, `SOL/USDT`, `INJ/USDT`, `INIT/USDT`, `SMCI`, `SNAP`, `HIMS`, `MCHP`, `BMT/USDT`, `AAPL`, `XLE`, `WULF`, `IREN`, `KDP`, `MU`, `CIFR`, `NU`, `NVDA`, `PEPE/USDT`, `ONE/USDT`, plus paroled `AMD`, `BTC/USDT`, `DOGE/USDT`, `ENA/USDT`, `ONDS`, `PLUG`, `SUI/USDT`, `TRUMP/USDT`; note `MCHP`, `BMT/USDT`, `PEPE/USDT` remain quarantined in `blacklisted_symbols`).
-- **Official CPI Benchmark (Option B + Items 1–4, 27 Cached Assets)**: **93.0 / 100 CPI** (vs. `7.4 / 100` Single-Agent Baseline) | **Avg Return**: **+1.61%** | **Sharpe**: **+8.81** | **Profit Factor**: **3.23** | **Avg MaxDD**: **1.65%**.
-- **New Production Modules**: `core/cpi_benchmark.py` (CPI Harness), `core/async_agent_runner.py` (Non-Blocking Agent Workers), `core/coordinator.py` (100% Dynamic Rolling Expectancy Router), `core/risk_engine.py` (72h Probationary Reentry @ 1.0% floor), `core/paper_account.py` (Adaptive Maker Re-Quoting), `agent/governor.py` (10-Trade Post-Deployment Auto-Rollback & Single-Relevant-Proposal Queue).
+- **Active Watchlist (Web4 Dynamic Router + 8 Paroled)**: 30 assets (`LINK/USDT`, `BNB/USDT`, `AVAX/USDT`, `SOL/USDT`, `INJ/USDT`, `INIT/USDT`, `SMCI`, `SNAP`, `HIMS`, `MCHP`, `BMT/USDT`, `AAPL`, `XLE`, `WULF`, `IREN`, `KDP`, `MU`, `CIFR`, `NU`, `NVDA`, `PEPE/USDT`, `ONE/USDT`, plus paroled `AMD`, `BTC/USDT`, `DOGE/USDT`, `ENA/USDT`, `ONDS`, `PLUG`, `SUI/USDT`, `TRUMP/USDT`; note `MCHP`, `BMT/USDT`, `PEPE/USDT` remain quarantined in `blacklisted_symbols`).
+- **Official CPI Benchmark (Web4 Dynamic Router + Items 1–4, 27 Cached Assets)**: **93.0 / 100 CPI** (vs. `7.4 / 100` Single-Agent Baseline) | **Avg Return**: **+1.61%** | **Sharpe**: **+8.81** | **Profit Factor**: **3.23** | **Avg MaxDD**: **1.65%**.
+- **New Production Modules**: `core/cpi_benchmark.py` (CPI Harness), `core/async_agent_runner.py` (Non-Blocking Agent Workers), `core/coordinator.py` (100% Dynamic Rolling Expectancy Router), `core/risk_engine.py` (72h Probationary Reentry @ 1.0% floor), `core/paper_account.py` (Adaptive Maker Re-Quoting), `core/journal.py` (Adaptive Maker Telemetry `maker_telemetry.jsonl`), `agent/governor.py` (Thread-Safe `RLock` Deployment, 10-Trade Auto-Rollback & Single-Relevant-Proposal Queue).
 
 ---
 
@@ -251,18 +251,17 @@ The system models transaction frictions across two execution profiles:
 ## 6. Profitability & Trading Performance Analysis
 
 ### 6.1 Recorded Live Paper Trading Portfolio (`data/paper_portfolio.json`)
-The live paper trading account started with $\$10,000.00$ in virtual cash. As of the audit timestamp:
+The live paper trading account started with $\$10,000.00$ in virtual cash (plus $\$700.00$ in explicit operator paper deposits on Nov 16, 2026). As of the Nov 16, 2026 audit snapshot:
 
 ```
-Initial Starting Capital:     $10,000.00
-Current Available Cash:       $8,919.67
-Active Open Positions:        0 open (100% in cash)
-Total Closed Trades:          35
-Winning Trades:               11 (31.4% Win Rate)
-Losing Trades:                24 (68.6% Loss Rate)
-Total Gross PnL:              -$1,080.32
-Total Broker / Taker Fees:    $61.32
-Net Realized PnL (After Fees): -$1,141.64 (-11.42%)
+Initial Starting Capital:     $10,000.00 (+$700.00 operator deposits)
+Current Portfolio Equity:     $9,165.84
+Current Available Cash:       $6,966.84
+Active Open Positions:        2 open (LINK/USDT SHORT, AVAX/USDT LONG)
+Current Drawdown / Breaker:   8.35% (Circuit Breaker: OK)
+Total Closed Fills:           106 (50% TP scale-outs count as fills)
+Winning Fills:                30 (28.3% Win Rate — mostly pre-Dynamic-Router history)
+Net Realized PnL (Ledger):    -$1,532.70 (Live PF: 0.08)
 ```
 
 #### Asset-by-Asset Performance Attribution (35 Closed Trades)
@@ -322,16 +321,15 @@ The system was benchmarked across synthetic symbol universes to measure mathemat
 | **500 Symbols** | 5 | **1,299.9 ms** | 1,281.8 ms | 1,350.8 ms | 1,360.0 ms | **384.6 / sec** |
 | **1,000 Symbols** | 5 | **2,539.7 ms** | 2,544.5 ms | 2,615.7 ms | 2,620.2 ms | **393.7 / sec** |
 
-### 7.2 Component-by-Component Latency Breakdown (Live 60s Tick)
+### 7.2 Measured Current Tick & Component Latency (Nov 16, 2026)
 
 ```
-Total Live Tick Duration: ~2.8s to 4.5s
-├── 1. Data Ingestion (Serial HTTP CCXT + yfinance):  2.1s - 3.8s  (85% of total time)
-├── 2. Indicator Computation (Pandas / NumPy):         35ms - 75ms  (2% of total time)
-├── 3. Strategy Evaluation (Mom + MR + Pairs + Yield): 12ms - 25ms  (<1% of total time)
-├── 4. Skill Intelligence Gates (NYSE, SEC, Wash):     45ms - 85ms  (2% of total time)
-├── 5. Pre-Flight Devil's Advocate (phi4-mini):        460ms - 700ms (10% of total time, when active)
-└── 6. Ledger Write & Sync (fsync to disk):            5ms - 15ms   (<1% of total time)
+Observed Live Tick Duration (27 active assets + 6 pairs): ~14s (with 60s loop sleep)
+├── 1. Parallel Data Ingestion (fetch_ohlcv_batch):  Majority of tick time (when cache > 2h)
+├── 2. Cached 30d OHLCV Load (720 bars):             5.98 ms / symbol
+├── 3. Dynamic Rolling Router:                       82.48 ms cold (6h TTL) / 0.00 ms cached
+├── 4. Full 27-Asset 4-Tier CPI Benchmark:           32.58 s wall-clock (1,222.4 MB peak RSS)
+└── 5. Full Pytest Suite (184 tests):                21.34 s
 ```
 
 ### 7.3 Identified Computational Bottlenecks
@@ -398,14 +396,14 @@ The system is confirmed to be operating in **strictly simulated paper trading mo
 ## 11. Testing & Validation Status
 
 ### 11.1 Test Suite Inventory
-The project maintains a test suite of **26 test files**. All **184 tests pass** without errors or warnings:
+The project maintains a test suite of **31 test files**. All **184 tests pass** without errors or warnings:
 
 ```bash
 $ .venv/bin/pytest -q
 ........................................................................ [ 39%]
 ........................................................................ [ 78%]
 ........................................                                 [100%]
-184 passed in 18.79s
+184 passed in 21.34s
 ```
 
 #### Coverage by Functional Area
@@ -432,10 +430,8 @@ $ .venv/bin/pytest -q
 ## 12. Git & Repository Integrity
 
 - **Active Branch**: `main`
-- **Head Commit Hash**: `861f98ea12095787545e610b09b35110390035a5`
-- **Commit Message**: `feat(remediation): multi-strategy dynamic registry, 20-proposal LLM governance benchmark, shifted 90d OOS validation, and persistent drawdown circuit breaker`
-- **Remote Synchronization**: Fully synchronized with `origin/main` and `origin/fix/web4-engineering-remediation`.
-- **Working Tree**: Completely clean (`nothing to commit, working tree clean`).
+- **Audit Baseline**: Updated November 16, 2026 (`fcdf436` + subsequent `Web4 Dynamic Rolling Router` naming sync)
+- **Remote Synchronization**: Fully synchronized with `origin/main`.
 - **Secrets Audit**: Zero API keys, private tokens, or passwords exist in the tracked repository files.
 
 ---

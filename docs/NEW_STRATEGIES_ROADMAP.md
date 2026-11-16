@@ -2,7 +2,7 @@
 
 > **Status:** Planned / Research Queue (Zero strategies activated without walk-forward OOS + `PF >= 1.15` + CPI benchmark validation).
 >
-> All 12 strategies below use **existing data feeds** (1h OHLCV, volume, crypto perpetual funding rates, and FRED macro data) with **zero new paid APIs**, and plug into the **Option B Dynamic Rolling Router** (`core/coordinator.py`) under `RiskEngine` `1%–5%` bounds (`core/risk_engine.py`).
+> All 12 strategies below use **existing data feeds** (1h OHLCV, volume, crypto perpetual funding rates, and FRED macro data) with **zero new paid APIs**, and plug into the **Web4 Dynamic Rolling Router** (`core/coordinator.py`) under `RiskEngine` `1%–5%` bounds (`core/risk_engine.py`).
 
 ---
 

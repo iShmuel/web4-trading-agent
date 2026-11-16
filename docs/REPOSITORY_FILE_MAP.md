@@ -128,7 +128,7 @@ web4-trading-agent/
 │   │
 │   ├── cpi_benchmark.py                  # WHAT: 4-tier Automated Central Performance Index (CPI) Benchmark Harness
 │   │                                     # USED BY: live_paper_trader.py --cpi-benchmark & tests/test_roadmap_items_1_to_4.py
-│   │                                     # WHY NEEDED: Empirically scores Web4 Coordinated & Option B vs. Single-Agent & Uncoordinated baselines
+│   │                                     # WHY NEEDED: Empirically scores Web4 Coordinated & Dynamic Router vs. Single-Agent & Uncoordinated baselines
 │   │
 │   ├── async_agent_runner.py             # WHAT: Non-blocking ThreadPoolExecutor worker pool for heavy Agent 9/10/11 tasks
 │   │                                     # USED BY: live_paper_trader.py --loop

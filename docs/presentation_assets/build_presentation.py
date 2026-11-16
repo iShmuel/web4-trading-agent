@@ -867,7 +867,7 @@ def build_editable_pptx(arch_img: Path, perf_img: Path, def_img: Path) -> Path:
             ("✅ Verified Achievements", 15.0, ACCENT_GREEN, True, "l"),
             ("(Implemented & Tested — 152/152 Green)", 10.0, TEXT_MUTED, True, "l"),
             (" ", 5.0, TEXT_MUTED, False, "l"),
-            ("• CPI Benchmark 93.0/100 (Option B, 27 Cached Assets): Beats Single-Agent (7.4) & Uncoordinated (8.4) with +1.61% AvgRet, +8.81 Sharpe, 3.23 PF, 1.65% Avg MaxDD.", 10.8, TEXT_MAIN, False, "l"),
+            ("• CPI Benchmark 93.0/100 (Web4 Dynamic Router, 27 Cached Assets): Beats Single-Agent (7.4) & Uncoordinated (8.4) with +1.61% AvgRet, +8.81 Sharpe, 3.23 PF, 1.65% Avg MaxDD.", 10.8, TEXT_MAIN, False, "l"),
             ("• 4-Gate Auto-Approval + 10-Trade Auto-Rollback: Autonomous GitHub deploy when all 4 gates pass; instant rollback & trade-history isolation on live drift.", 10.8, TEXT_MAIN, False, "l"),
             ("• 72h Probationary Reentry & Maker Re-Quoting: Gated 1.0%-floor recovery after 15% DD halt + Adaptive spread re-quoting on runaway breakouts.", 10.8, TEXT_MAIN, False, "l"),
             ("• 184/184 Passing Pytest Suite: 100% test pass rate in ~18s covering invariants, dynamic rolling router, async workers, and governance.", 10.8, TEXT_MAIN, False, "l"),
@@ -1566,7 +1566,7 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
       <div class="card" style="border-top: 4px solid #10B981;">
         <h3 style="color:#10B981;">1. Verified Capabilities (184/184 Tests)</h3>
         <ul>
-          <li>• <b>CPI Benchmark 93.0/100 (Option B, 27 Cached Assets):</b> Beats Single-Agent (7.4) &amp; Uncoordinated (8.4) with <b>+1.61% AvgRet</b>, +8.81 Sharpe, 3.23 PF, 1.65% Avg MaxDD.</li>
+          <li>• <b>CPI Benchmark 93.0/100 (Web4 Dynamic Router, 27 Cached Assets):</b> Beats Single-Agent (7.4) &amp; Uncoordinated (8.4) with <b>+1.61% AvgRet</b>, +8.81 Sharpe, 3.23 PF, 1.65% Avg MaxDD.</li>
           <li>• <b>4-Gate Auto-Approval + 10-Trade Auto-Rollback:</b> Autonomous Git push on verified alpha; instant rollback &amp; trade-history isolation on live drift.</li>
           <li>• <b>72h Probationary Reentry &amp; Maker Re-Quoting:</b> Gated 1.0%-floor recovery after 15% DD halt + Adaptive spread re-quoting on runaway breakouts.</li>
           <li>• <b>100% Dynamic Rolling Router &amp; Async Agents:</b> Auto-switches Momentum / Mean Reversion / Basis Yield with zero-lag 60s stop-loss execution.</li>

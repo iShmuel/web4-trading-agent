@@ -1,6 +1,6 @@
 # Future Development Notes (Unbuilt / Queued Roadmap)
 
-This document tracks **only unbuilt and queued items** for the **Web4 Autonomous Trading Desk**. *(Already implemented and deployed features — Option B Dynamic Rolling Router, CPI Benchmark Harness, 72h Probationary Reentry, Adaptive Maker Re-Quoting & Telemetry, Async Agent Runner, and Basis Yield 5.0% Hurdle — are documented in [`PROJECT_CURRENT_STATE_AUDIT.md`](PROJECT_CURRENT_STATE_AUDIT.md).)*
+This document tracks **only unbuilt and queued items** for the **Web4 Autonomous Trading Desk**. *(Already implemented and deployed features — Web4 Dynamic Rolling Router, CPI Benchmark Harness, 72h Probationary Reentry, Adaptive Maker Re-Quoting & Telemetry, Async Agent Runner, and Basis Yield 5.0% Hurdle — are documented in [`PROJECT_CURRENT_STATE_AUDIT.md`](PROJECT_CURRENT_STATE_AUDIT.md).)*
 
 ---
 
@@ -79,7 +79,7 @@ This document tracks **only unbuilt and queued items** for the **Web4 Autonomous
   * **Mean Reversion & Microstructure:** VWAP Fair-Value Reversion, RSI Bull/Bear Divergence, Weekend Crypto / Opening Gap Fade
   * **Cross-Asset & Derivatives:** Funding-Rate Contrarian Squeeze (`SHORT_SQUEEZE_PRONE`), BTC-Lead / Altcoin Lag Spillover, Cross-Sectional Relative Strength Rotation, Macro Risk-Off Defensive Hedge
 * **Validation Gate:**
-  No candidate strategy will be enabled in `config/active_config.json` without walk-forward OOS backtesting (fees + slippage), clearing `PF >= 1.15` in the Option B Dynamic Rolling Router, CPI benchmark validation (`core/cpi_benchmark.py`), and Governor approval.
+  No candidate strategy will be enabled in `config/active_config.json` without walk-forward OOS backtesting (fees + slippage), clearing `PF >= 1.15` in the Web4 Dynamic Rolling Router, CPI benchmark validation (`core/cpi_benchmark.py`), and Governor approval.
 
 ---
 
@@ -101,7 +101,7 @@ This document tracks **only unbuilt and queued items** for the **Web4 Autonomous
 * **Status**: Planned / Capital Efficiency
 * **Suggested Priority**: Medium (P2)
 * **What is Missing:**
-  When Option B's Dynamic Rolling Router places directional assets into `cash` (`PF < 1.15`), idle cash earns `0%`.
+  When the Web4 Dynamic Rolling Router places directional assets into `cash` (`PF < 1.15`), idle cash earns `0%`.
 * **Why it Matters:**
   Sweeping idle capital above a safety liquidity reserve into qualified delta-neutral `Basis Yield` (`>= 5.0%` APR) improves capital utilization during choppy directional regimes without adding directional risk.
 * **Implementation Plan:**

@@ -397,7 +397,7 @@ flowchart TD
 * **Composite Alpha Score (CAS)**:
   $$\text{CAS} = (\text{Sharpe} \times 0.40) + (\text{Profit Factor} \times 0.30) + (\text{Win Rate} \times 0.30) - (\text{Drawdown Penalty})$$
 * **Toxic Drag Elimination**: Automatically identifies assets with persistent negative alpha or excessive drawdown, removing them from the active watchlist to protect total portfolio return.
-* **Blacklist Rehabilitation Audit**: Periodically re-evaluates blacklisted assets over the past 60 days using Option B's Dynamic Rolling Router directional criteria (`profit_factor >= dynamic_router_min_pf`, ranked by Sharpe ratio, with Basis Yield intentionally excluded so ~100%-WR carry ticks do not mask directional quality) to reinstate passing assets via Governor.
+* **Blacklist Rehabilitation Audit**: Periodically re-evaluates blacklisted assets over the past 60 days using the Web4 Dynamic Rolling Router directional criteria (`profit_factor >= dynamic_router_min_pf`, ranked by Sharpe ratio, with Basis Yield intentionally excluded so ~100%-WR carry ticks do not mask directional quality) to reinstate passing assets via Governor.
 
 ---
 
