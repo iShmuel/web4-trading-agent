@@ -1215,3 +1215,34 @@ def run_trend_pullback_backtest(
         fee_pct=fee_pct,
         slippage_pct=slippage_pct,
     )
+
+
+def run_vwap_reversion_backtest(
+    df: pd.DataFrame,
+    initial_capital: float = 10000.0,
+    account_risk_pct: float = 0.02,
+    vwap_window: int = 24,
+    std_mult: float = 1.8,
+    rsi_max: float = 38.0,
+    stop_atr_mult: float = 2.0,
+    tp_atr_mult: float = 2.5,
+    fee_pct: float = 0.0002,
+    slippage_pct: float = 0.0001,
+) -> BacktestResult:
+    """Backtest Rolling VWAP Fair-Value Reversion strategy."""
+    from strategies.vwap_reversion import compute_vwap_indicators
+    if df is None or len(df) < 60:
+        return BacktestResult(initial_capital=initial_capital, final_equity=initial_capital)
+    ind = compute_vwap_indicators(df, vwap_window=vwap_window, std_mult=std_mult, rsi_max=rsi_max)
+    return _run_signal_array_backtest(
+        df=df,
+        entries=ind["vwap_entry"].fillna(False).values,
+        atr_arr=ind["atr"].fillna(0.0).values,
+        strategy_id="vwap_reversion",
+        initial_capital=initial_capital,
+        account_risk_pct=account_risk_pct,
+        stop_atr_mult=stop_atr_mult,
+        tp_atr_mult=tp_atr_mult,
+        fee_pct=fee_pct,
+        slippage_pct=slippage_pct,
+    )

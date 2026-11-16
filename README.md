@@ -1,6 +1,6 @@
 # Web4 Autonomous Quantitative Trading Desk
 
-[![Tests: 184/184 Passing](https://img.shields.io/badge/pytest-184%2F184%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
+[![Tests: 192/192 Passing](https://img.shields.io/badge/pytest-192%2F192%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
 [![CPI Score: 93.0/100](https://img.shields.io/badge/CPI%20Score-93.0%2F100-38bdf8?style=for-the-badge)](core/cpi_benchmark.py)
 [![Execution Mode](https://img.shields.io/badge/execution-strictly%20simulated%20paper-38bdf8?style=for-the-badge)](core/paper_account.py)
 [![Architecture](https://img.shields.io/badge/architecture-Dynamic%20N--Strategy%20MAS-8b5cf6?style=for-the-badge)](agent/)
@@ -173,7 +173,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Run Test Suite (184/184 Tests Passing)
+### 2. Run Test Suite (192/192 Tests Passing)
 ```bash
 .venv/bin/pytest -v
 ```

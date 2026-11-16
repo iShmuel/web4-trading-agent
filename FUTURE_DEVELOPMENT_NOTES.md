@@ -1,6 +1,6 @@
 # Future Development Notes (Unbuilt / Queued Roadmap)
 
-This document tracks **only unbuilt and queued items** for the **Web4 Autonomous Trading Desk**. *(Already implemented and deployed features — Web4 Dynamic Rolling Router, CPI Benchmark Harness, 72h Probationary Reentry, Adaptive Maker Re-Quoting & Telemetry, Async Agent Runner, and Basis Yield 5.0% Hurdle — are documented in [`PROJECT_CURRENT_STATE_AUDIT.md`](PROJECT_CURRENT_STATE_AUDIT.md).)*
+This document tracks **only unbuilt and queued items** for the **Web4 Autonomous Trading Desk**. *(Already implemented and deployed features — Web4 Dynamic Rolling Router, CPI Benchmark Harness, 72h Probationary Reentry, Adaptive Maker Re-Quoting & Telemetry, Async Agent Runner, Basis Yield 5.0% Hurdle, Volatility Squeeze, Trend Pullback, VWAP Fair-Value Reversion, Idle-Cash Dynamic Sweep, Portfolio Correlation Guard, Bear-Gated Shorts, and Selective 3% Leader Risk — are documented in [`PROJECT_CURRENT_STATE_AUDIT.md`](PROJECT_CURRENT_STATE_AUDIT.md).)*
 
 ---
 
@@ -24,12 +24,10 @@ This document tracks **only unbuilt and queued items** for the **Web4 Autonomous
 
 ### 2. Forensic Audit Sample Window Calibration (Operator Reminder: Review in 1–2 Weeks)
 
-* **Status**: Queued for Operator Review (Target: Mid/Late November 2026)
+* **Status**: Queued for Operator Review (Target: Late November 2026)
 * **Suggested Priority**: Medium (P2)
 * **What is Slated for Review:**
   Currently, `forensic_trade_interval` is kept at `15` trades in `config/active_config.json`. We evaluated increasing this parameter to `25` or `30` trades to align with the Central Limit Theorem ($N \ge 30$) and provide a richer statistical sample of losing trades (5–6 losses vs. 2–3 losses) for `Agent 10 (TradeAnalyst)` and local LLM root-cause diagnosis.
-* **Why it Matters:**
-  Running forensic audits too frequently ($N < 15$) can be susceptible to short-term market noise, potentially triggering premature parameter adjustments. Expanding to $N = 25$ provides robust statistical confidence while maintaining responsive agility.
 * **Action Item for Operator:**
   After accumulating 1–2 weeks of forward live paper trading history (50+ closed trades across active regimes), review `data/trade_forensic_report.json` and decide whether to graduate `forensic_trade_interval` from `15` to `25`.
 
@@ -40,17 +38,9 @@ This document tracks **only unbuilt and queued items** for the **Web4 Autonomous
 * **Status**: Planned / Operator Interface
 * **Suggested Priority**: Medium (P2)
 * **What is Missing:**
-  The current monitoring dashboard (`dashboard.py`) is a terminal-based ANSI curses interface. While ultra-fast, lightweight, and zero-dependency, it requires terminal access (SSH or local console) and cannot be viewed directly from a smartphone or web browser on a local network.
-* **Why it Matters:**
-  When deploying the bot to a cloud VPS or remote headless server, having an optional browser-based UI enables remote monitoring without keeping an active SSH session or tmux window attached.
-* **Expected Benefit:**
-  Allows real-time monitoring of portfolio equity, open positions, cointegrated pairs Z-scores, and live execution logs from any web browser or mobile phone on the local network/VPN with zero cloud costs.
+  The current monitoring dashboard (`dashboard.py`) is a terminal-based ANSI interface requiring SSH or local console access.
 * **Implementation Plan:**
-  Develop a single-file, zero-external-dependency web server (`web_dashboard.py`):
-  1. Use standard Python `http.server` or lightweight ASGI/FastAPI.
-  2. Implement an embedded modern HTML/CSS/JS single-page UI (dark theme, responsive mobile layout).
-  3. Stream live updates via Server-Sent Events (SSE) or a 2-second polling REST endpoint reading `data/live_status.json` and `data/paper_portfolio.json`.
-  4. Ensure 100% read-only operations using non-blocking read locks so it never interferes with the live trading daemon.
+  Develop a single-file, zero-external-dependency web server (`web_dashboard.py`) using standard Python `http.server` with a read-only SSE/JSON endpoint reading `data/live_status.json` and `data/paper_portfolio.json`.
 
 ---
 
@@ -59,89 +49,44 @@ This document tracks **only unbuilt and queued items** for the **Web4 Autonomous
 * **Status**: Planned / Infrastructure Portability
 * **Suggested Priority**: Medium (P2)
 * **What is Missing:**
-  Local LLM model weights (`phi4-mini:latest`, ~2.5 GB) cannot be committed to Git (exceeds GitHub's 100 MB file limit), and [`agent/llm_client.py`](agent/llm_client.py) currently defaults to `http://localhost:11434/api/generate`. While the system gracefully falls back to deterministic logic without Ollama, migrating to a fresh cloud server or VPS requires manual setup if narrative LLM reasoning is desired.
-* **Why it Matters:**
-  Ensures 1-command reproducibility when migrating the trading desk to an EU cloud VPS (2–4 vCPU, 4 GB RAM, 10–20 GB SSD) or connecting a lightweight VPS to a remote/home GPU Ollama instance.
+  Local LLM model weights (`phi4-mini:latest`, ~2.5 GB) cannot be committed to Git, and [`agent/llm_client.py`](agent/llm_client.py) defaults to `http://localhost:11434/api/generate`.
 * **Implementation Plan:**
-  1. Add `scripts/setup_vps.sh` to automate `.venv` creation, `pip install -r requirements.txt`, `systemd` service template generation for `live_paper_trader.py --loop --interval 60`, and an optional `--with-llm` flag that installs Ollama and runs `ollama pull phi4-mini:latest`.
-  2. Update [`agent/llm_client.py`](agent/llm_client.py) to read `OLLAMA_URL` and `OLLAMA_MODEL` from environment variables (`.env`), allowing a small 4 GB VPS to either run deterministic-only or point to an external Ollama host.
+  1. Add `scripts/setup_vps.sh` to automate `.venv`, `requirements.txt`, `systemd` service template, and optional `--with-llm` Ollama setup.
+  2. Update [`agent/llm_client.py`](agent/llm_client.py) to read `OLLAMA_URL` and `OLLAMA_MODEL` from `.env`.
 
 ---
 
-### 5. Multi-Strategy Alpha Expansion Roadmap (12 Candidate Strategies)
+### 5. Remaining Multi-Strategy Alpha Expansion Candidates (9 Unbuilt Strategies)
 
 * **Status**: Planned / Research Queue (Detailed guide in [`docs/NEW_STRATEGIES_ROADMAP.md`](docs/NEW_STRATEGIES_ROADMAP.md))
 * **Suggested Priority**: Medium (P2)
 * **What is Planned:**
-  Expand beyond the current 4 active strategies (`momentum`, `mean_reversion`, `stat_arb_pairs`, `basis_yield`) with **12 non-overlapping candidate strategies** built strictly on existing OHLCV, volume, funding-rate, and FRED macro feeds (zero new paid APIs):
-  * **Volatility & Breakout:** Volatility Squeeze Breakout (*Priority #1*), US Session Open Drive, Volatility-Targeted Trend
-  * **Trend & Pullback:** Trend Pullback (*Priority #2*), Dual-Timeframe Confluence Trend
-  * **Mean Reversion & Microstructure:** VWAP Fair-Value Reversion, RSI Bull/Bear Divergence, Weekend Crypto / Opening Gap Fade
-  * **Cross-Asset & Derivatives:** Funding-Rate Contrarian Squeeze (`SHORT_SQUEEZE_PRONE`), BTC-Lead / Altcoin Lag Spillover, Cross-Sectional Relative Strength Rotation, Macro Risk-Off Defensive Hedge
-* **Validation Gate:**
-  No candidate strategy will be enabled in `config/active_config.json` without walk-forward OOS backtesting (fees + slippage), clearing `PF >= 1.15` in the Web4 Dynamic Rolling Router, CPI benchmark validation (`core/cpi_benchmark.py`), and Governor approval.
+  *(Note: Volatility Squeeze, Trend Pullback, and VWAP Reversion are now **IMPLEMENTED**; BTC Lead-Lag was **REJECTED** after empirical 90D/180D backtest showed 0% gain.)*
+  Remaining unbuilt candidates: Funding-Rate Contrarian Squeeze (`SHORT_SQUEEZE_PRONE`), Cross-Sectional Relative Strength Rotation, US Session Open Drive, Macro Risk-Off Defensive Hedge, RSI Bull/Bear Divergence, Weekend Crypto / Opening Gap Fade, Dual-Timeframe Confluence Trend, and Volatility-Targeted Trend.
 
 ---
 
-### 6. Portfolio Correlation & Sector-Cluster Risk Guard (`core/risk_engine.py`)
-
-* **Status**: Planned / Risk & Capital Protection
-* **Suggested Priority**: High (P1)
-* **What is Missing:**
-  `RiskEngine` currently enforces `max_crypto_positions` and per-symbol exposure caps, but does not yet enforce a rolling return-correlation cap across active positions (e.g., opening `NVDA`, `AMD`, `SMCI`, and `MU` together creates 4× concentrated semiconductor exposure).
-* **Why it Matters:**
-  During sector-wide selloffs, apparently separate positions with `> 0.75` correlation move as a single oversized bet, amplifying drawdowns.
-* **Implementation Plan:**
-  Add a rolling 30-day return-correlation check inside `RiskEngine.validate_proposed_entry()` that blocks or scales down new entries highly correlated with existing open positions (strictly preserving `[1%, 5%]` risk bounds).
-
----
-
-### 7. Idle-Cash Dynamic Capital Sweep (`Basis Yield` Carry Allocation)
-
-* **Status**: Planned / Capital Efficiency
-* **Suggested Priority**: Medium (P2)
-* **What is Missing:**
-  When the Web4 Dynamic Rolling Router places directional assets into `cash` (`PF < 1.15`), idle cash earns `0%`.
-* **Why it Matters:**
-  Sweeping idle capital above a safety liquidity reserve into qualified delta-neutral `Basis Yield` (`>= 5.0%` APR) improves capital utilization during choppy directional regimes without adding directional risk.
-* **Implementation Plan:**
-  Route excess idle cash automatically into the highest-APR qualified carry opportunity when directional desks stand down, with instant liquidity release when a directional signal triggers.
-
----
-
-### 8. Live-vs-Backtest Execution Drift Monitor (`core/journal.py`)
+### 6. Live-vs-Backtest Execution Drift Monitor (`core/journal.py`)
 
 * **Status**: Planned / Execution Quality & Decay Detection
 * **Suggested Priority**: Medium (P2)
 * **What is Missing:**
-  `data/paper_portfolio.json` and `data/maker_telemetry.jsonl` record live fills, but there is no automated weekly report comparing realized live win rate, Profit Factor, and slippage bps against backtest expectations.
-* **Why it Matters:**
-  Detects strategy decay, regime shift, or worsening spread/fill friction early — before a `15%` drawdown occurs.
-* **Implementation Plan:**
-  Add a rolling drift audit in `core/journal.py` that compares live 14–30 day metrics vs. baseline backtest benchmarks and flags anomalies in the Governor / forensic pipeline.
+  Automated weekly comparison between actual live fills (`data/paper_portfolio.json` + `data/maker_telemetry.jsonl`) and backtest expectations (win rate, PF, slippage bps).
 
 ---
 
-### 9. Automated Data Retention, Log Rotation & Parquet/SQLite Storage
+### 7. Automated Data Retention, Log Rotation & Parquet/SQLite Storage
 
 * **Status**: Planned / Long-Running VPS Hygiene
 * **Suggested Priority**: Low-Medium (P3)
 * **What is Missing:**
-  Over multi-month 24/7 VPS runs, `data/*.csv` candle caches, `decision_journal.jsonl`, `maker_telemetry.jsonl`, and `live_trader.log` grow continuously as flat files.
-* **Why it Matters:**
-  Prevents unbounded disk growth and keeps read/query latency fast over months of continuous operation.
-* **Implementation Plan:**
-  Add scheduled cleanup/archival of expired candle caches, `RotatingFileHandler` for `live_trader.log`, and optional SQLite or Parquet storage for historical telemetry.
+  Scheduled cleanup/archival of expired `data/*.csv` caches, `RotatingFileHandler` for `live_trader.log`, and optional SQLite/Parquet storage for `decision_journal.jsonl` and `maker_telemetry.jsonl`.
 
 ---
 
-### 10. Realized Tax-Lot & Fee-Tier Savings Ledger Export
+### 8. Realized Tax-Lot & Fee-Tier Savings Ledger Export
 
 * **Status**: Planned / Accounting & Broker Readiness
 * **Suggested Priority**: Low (P3)
 * **What is Missing:**
-  Closed trades are logged in `data/paper_portfolio.json`, but there is no dedicated FIFO / specific-lot realized gain/loss, holding-period, wash-sale, and maker-vs-taker fee savings export.
-* **Why it Matters:**
-  Provides institutional-grade accounting and prepares the ledger for any future live-broker transition.
-* **Implementation Plan:**
-  Add an export utility generating clean CSV/JSON tax-lot and fee-savings audit ledgers from `closed_trades` and `maker_telemetry.jsonl`.
+  FIFO / specific-lot realized gain/loss, holding-period, wash-sale, and cumulative maker-vs-taker fee savings CSV/JSON export from `closed_trades` and `maker_telemetry.jsonl`.

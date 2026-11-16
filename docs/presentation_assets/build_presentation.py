@@ -870,7 +870,7 @@ def build_editable_pptx(arch_img: Path, perf_img: Path, def_img: Path) -> Path:
             ("• CPI Benchmark 93.0/100 (Web4 Dynamic Router, 27 Cached Assets): Beats Single-Agent (7.4) & Uncoordinated (8.4) with +1.61% AvgRet, +8.81 Sharpe, 3.23 PF, 1.65% Avg MaxDD.", 10.8, TEXT_MAIN, False, "l"),
             ("• 4-Gate Auto-Approval + 10-Trade Auto-Rollback: Autonomous GitHub deploy when all 4 gates pass; instant rollback & trade-history isolation on live drift.", 10.8, TEXT_MAIN, False, "l"),
             ("• 72h Probationary Reentry & Maker Re-Quoting: Gated 1.0%-floor recovery after 15% DD halt + Adaptive spread re-quoting on runaway breakouts.", 10.8, TEXT_MAIN, False, "l"),
-            ("• 184/184 Passing Pytest Suite: 100% test pass rate in ~18s covering invariants, dynamic rolling router, async workers, and governance.", 10.8, TEXT_MAIN, False, "l"),
+            ("• 192/192 Passing Pytest Suite: 100% test pass rate covering invariants, dynamic rolling router (7 strategies), correlation guard, async workers, and governance.", 10.8, TEXT_MAIN, False, "l"),
         ]),
         _xml_shape_box(91, "ColLimitations", 4.70, 1.70, 3.9, 5.10, BG_CARD, ACCENT_AMBER, 1.6, [
             ("⚠️ Honest Limitations", 15.0, ACCENT_AMBER, True, "l"),
@@ -1564,7 +1564,7 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
   <div class="slide-body">
     <div class="grid-3">
       <div class="card" style="border-top: 4px solid #10B981;">
-        <h3 style="color:#10B981;">1. Verified Capabilities (184/184 Tests)</h3>
+        <h3 style="color:#10B981;">1. Verified Capabilities (192/192 Tests)</h3>
         <ul>
           <li>• <b>CPI Benchmark 93.0/100 (Web4 Dynamic Router, 27 Cached Assets):</b> Beats Single-Agent (7.4) &amp; Uncoordinated (8.4) with <b>+1.61% AvgRet</b>, +8.81 Sharpe, 3.23 PF, 1.65% Avg MaxDD.</li>
           <li>• <b>4-Gate Auto-Approval + 10-Trade Auto-Rollback:</b> Autonomous Git push on verified alpha; instant rollback &amp; trade-history isolation on live drift.</li>
@@ -1597,7 +1597,7 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
     </div>
   </div>
   <div class="slide-footer">
-    <span>Deliverables: web4_trading_agent_presentation.pptx (Editable) • web4_trading_agent_presentation.pdf • 184/184 Tests Passing</span>
+    <span>Deliverables: web4_trading_agent_presentation.pptx (Editable) • web4_trading_agent_presentation.pdf • 192/192 Tests Passing</span>
     <span>Est. Speaking Time: {SLIDES_DATA[7]['duration']} • Total Duration: ~7.5 Minutes • Slide 8 / 8</span>
   </div>
 </section>

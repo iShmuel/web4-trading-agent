@@ -476,6 +476,8 @@ def render() -> str:
             next_trigger = dim("Vol Squeeze")
         elif "selected 'trend_pullback'" in rl:
             next_trigger = dim("Trend Pullback")
+        elif "selected 'vwap_reversion'" in rl:
+            next_trigger = dim("VWAP Reversion")
         elif "stale data" in rl:
             next_trigger = dim("Market Closed")
         elif "blacklisted" in rl or "asset pruned" in rl:
@@ -500,6 +502,8 @@ def render() -> str:
             mom_setup = green("Dynamic: Vol Squeeze")
         elif "selected 'trend_pullback'" in rl:
             mom_setup = green("Dynamic: Trend Pullback")
+        elif "selected 'vwap_reversion'" in rl:
+            mom_setup = green("Dynamic: VWAP Reversion")
         elif "stale data" in rl:
             mom_setup = dim("Stale / Market Closed")
         elif "blacklisted" in rl or "asset pruned" in rl:

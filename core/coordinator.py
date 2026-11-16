@@ -27,6 +27,7 @@ from strategies.mean_reversion import MeanReversionStrategy
 from strategies.stat_arb_pairs import StatArbPairsStrategy, PairTradeSignal
 from strategies.volatility_squeeze import VolatilitySqueezeStrategy
 from strategies.trend_pullback import TrendPullbackStrategy
+from strategies.vwap_reversion import VwapReversionStrategy
 from core.journal import log_decision, get_gate_alpha_feedback, log_maker_telemetry
 from core.polymarket_radar import PolymarketRadar, MacroEventRisk
 from core.fred_radar import FredMacroRadar, MacroRegimeReport
@@ -139,6 +140,8 @@ class PortfolioCoordinator:
         self._strategy_enabled[VolatilitySqueezeStrategy.STRATEGY_ID] = bool(config.get("enable_volatility_squeeze", True))
         self._custom_strategies[TrendPullbackStrategy.STRATEGY_ID] = TrendPullbackStrategy(config)
         self._strategy_enabled[TrendPullbackStrategy.STRATEGY_ID] = bool(config.get("enable_trend_pullback", True))
+        self._custom_strategies[VwapReversionStrategy.STRATEGY_ID] = VwapReversionStrategy(config)
+        self._strategy_enabled[VwapReversionStrategy.STRATEGY_ID] = bool(config.get("enable_vwap_reversion", True))
         if "enabled_strategies" in config and isinstance(config["enabled_strategies"], (list, set, tuple)):
             enabled_set = set(config["enabled_strategies"])
             for sid in list(self._strategy_enabled.keys()):
@@ -244,6 +247,7 @@ class PortfolioCoordinator:
                 run_mean_reversion_backtest,
                 run_volatility_squeeze_backtest,
                 run_trend_pullback_backtest,
+                run_vwap_reversion_backtest,
             )
 
             r_mom = run_backtest(
@@ -298,6 +302,15 @@ class PortfolioCoordinator:
                 )
                 if r_pb.total_trades >= 2 and r_pb.profit_factor >= min_pf:
                     cands.append((r_pb.sharpe_ratio, TrendPullbackStrategy.STRATEGY_ID))
+            if self.is_strategy_enabled(VwapReversionStrategy.STRATEGY_ID):
+                r_vw = run_vwap_reversion_backtest(
+                    df_win,
+                    account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
+                    fee_pct=0.0002,
+                    slippage_pct=0.0001,
+                )
+                if r_vw.total_trades >= 2 and r_vw.profit_factor >= min_pf:
+                    cands.append((r_vw.sharpe_ratio, VwapReversionStrategy.STRATEGY_ID))
             if r_by is not None and r_by.total_trades >= 1 and r_by.profit_factor >= 1.0:
                 cands.append((r_by.sharpe_ratio, "basis_yield"))
 
@@ -995,7 +1008,7 @@ class PortfolioCoordinator:
 
         extra_signals: List[TradingSignal] = []
         for custom_id, custom_strat in self._custom_strategies.items():
-            if custom_id in (VolatilitySqueezeStrategy.STRATEGY_ID, TrendPullbackStrategy.STRATEGY_ID):
+            if custom_id in (VolatilitySqueezeStrategy.STRATEGY_ID, TrendPullbackStrategy.STRATEGY_ID, VwapReversionStrategy.STRATEGY_ID):
                 if dyn_route not in ("all", custom_id):
                     continue
             if self.is_strategy_enabled(custom_id) and hasattr(custom_strat, "evaluate"):

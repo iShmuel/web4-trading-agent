@@ -16,15 +16,15 @@
 
 ## 12 Proposed New Strategies (Plain-English Guide)
 
-### 1. Volatility Squeeze Breakout (`strategies/volatility_squeeze.py`) — *Priority #1*
+### 1. Volatility Squeeze Breakout (`strategies/volatility_squeeze.py`) — ✅ *IMPLEMENTED & ACTIVE*
 * **Simple Explanation:** When an asset gets abnormally quiet (Bollinger Bands squeeze inside Keltner Channels like a coiled spring) and then breaks out on strong volume, it often starts a fast new trend.
 * **Why It Helps:** Catches the exact transition from calm compression to expansion earlier than 36-bar Momentum.
 
-### 2. Trend Pullback ("Buy the Dip in an Uptrend") (`strategies/trend_pullback.py`) — *Priority #2*
+### 2. Trend Pullback ("Buy the Dip in an Uptrend") (`strategies/trend_pullback.py`) — ✅ *IMPLEMENTED & ACTIVE*
 * **Simple Explanation:** Waits for a confirmed uptrend (`price > EMA 200`), waits for a healthy short-term dip (`RSI 38–45` near `EMA 20/50`), and buys the bounce at a better price with a tighter stop.
 * **Why It Helps:** Bridges the gap between Momentum (chases highs) and Mean Reversion (sideways-only).
 
-### 3. VWAP Fair-Value Reversion (`strategies/vwap_reversion.py`)
+### 3. VWAP Fair-Value Reversion (`strategies/vwap_reversion.py`) — ✅ *IMPLEMENTED & ACTIVE*
 * **Simple Explanation:** Anchors fair value to **Rolling VWAP** (Volume-Weighted Average Price) and fades extreme stretches on fading volume back toward institutional fair value.
 
 ### 4. Funding-Rate Contrarian Squeeze (`strategies/funding_contrarian.py`)
@@ -40,7 +40,7 @@
 ### 7. Macro Risk-Off Defensive Hedge (`strategies/macro_hedge.py`)
 * **Simple Explanation:** When `FredMacroRadar` / broad equities signal `RISK_OFF`, shifts defensive allocation toward macro hedges (`XLE`, `KDP`, etc.) instead of sitting 100% idle in cash.
 
-### 8. BTC-Lead / Altcoin Lag Spillover (`strategies/btc_lead_lag.py`)
+### 8. BTC-Lead / Altcoin Lag Spillover (`strategies/btc_lead_lag.py`) — ❌ *TESTED & REJECTED (`0` Router Picks, `0.00%` Edge)*
 * **Simple Explanation:** Trades catch-up moves in correlated altcoins (`SOL/USDT`, `AVAX/USDT`, `DOGE/USDT`, `SUI/USDT`, `ENA/USDT`) 1–3 hours after `BTC/USDT` makes a high-volume breakout.
 
 ### 9. RSI Bull/Bear Divergence (`strategies/rsi_divergence.py`)

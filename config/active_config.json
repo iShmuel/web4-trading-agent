@@ -49,8 +49,8 @@
     "BTC/USDT": 0.01,
     "BNB/USDT": 0.015,
     "NVDA": 0.01,
-    "AMD": 0.01,
-    "AAPL": 0.02,
+    "AMD": 0.03,
+    "AAPL": 0.03,
     "PLTR": 0.01,
     "TSLA": 0.025,
     "SPY": 0.02,
@@ -63,11 +63,11 @@
     "HYPE/USDT": 0.02,
     "XRP/USDT": 0.02,
     "ZEC/USDT": 0.02,
-    "MU": 0.02,
+    "MU": 0.03,
     "SNAP": 0.01,
     "NOK": 0.02,
     "CRWV": 0.02,
-    "IREN": 0.02,
+    "IREN": 0.03,
     "INTC": 0.02,
     "SOFI": 0.02,
     "NU": 0.02,
@@ -83,7 +83,7 @@
     "HIMS": 0.02,
     "JHX": 0.02,
     "BARD/USDT": 0.02,
-    "SMCI": 0.02,
+    "SMCI": 0.03,
     "CBRS": 0.02,
     "KDP": 0.02,
     "GRAM/USDT": 0.01,
@@ -405,5 +405,7 @@
   "pairs_Blacklist": [
     "INIT/USDT:GRAM/USDT",
     "LINK/USDT:AVAX/USDT"
-  ]
+  ],
+  "allow_short": true,
+  "enable_vwap_reversion": true
 }
