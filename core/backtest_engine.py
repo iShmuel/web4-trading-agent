@@ -1066,6 +1066,7 @@ def _run_signal_array_backtest(
     df: pd.DataFrame,
     entries: np.ndarray,
     atr_arr: np.ndarray,
+    strategy_id: str = "custom",
     initial_capital: float = 10000.0,
     account_risk_pct: float = 0.02,
     stop_atr_mult: float = 2.0,
@@ -1088,7 +1089,7 @@ def _run_signal_array_backtest(
 
     for i in range(1, len(df)):
         if pos is not None:
-            ep, units, stop, tp, e_time, e_fee = pos
+            ep, units, stop, tp, e_time, e_fee, d_risk = pos
             hit_stop = lows[i] <= stop
             hit_tp = highs[i] >= tp
             if hit_stop or hit_tp:
@@ -1103,11 +1104,12 @@ def _run_signal_array_backtest(
                     entry_price=ep,
                     exit_price=xp,
                     units=units,
+                    dollar_risk=d_risk,
                     pnl=pnl,
                     return_pct=((xp - ep) / ep * 100.0) if ep > 0 else 0.0,
                     exit_reason="Take Profit" if hit_tp else "Stop Loss",
                     side="LONG",
-                    fees=e_fee + x_fee,
+                    strategy_id=strategy_id,
                 ))
                 pos = None
 
@@ -1115,13 +1117,14 @@ def _run_signal_array_backtest(
             ep = closes[i - 1] * (1.0 + slippage_pct)
             dist = float(atr_arr[i - 1]) * stop_atr_mult
             risk_clamped = max(0.01, min(0.05, float(account_risk_pct)))
-            units = (equity * risk_clamped) / dist
+            d_risk = equity * risk_clamped
+            units = d_risk / dist
             if units * ep > equity * 0.35:
                 units = (equity * 0.35) / ep
             if units > 0:
                 e_fee = ep * units * fee_pct
                 total_fees += e_fee
-                pos = (ep, units, max(0.0, ep - dist), ep + float(atr_arr[i - 1]) * tp_atr_mult, df.index[i - 1], e_fee)
+                pos = (ep, units, max(0.0, ep - dist), ep + float(atr_arr[i - 1]) * tp_atr_mult, df.index[i - 1], e_fee, d_risk)
 
         if equity > peak:
             peak = equity
@@ -1175,6 +1178,7 @@ def run_volatility_squeeze_backtest(
         df=df,
         entries=ind["squeeze_breakout"].fillna(False).values,
         atr_arr=ind["atr"].fillna(0.0).values,
+        strategy_id="volatility_squeeze",
         initial_capital=initial_capital,
         account_risk_pct=account_risk_pct,
         stop_atr_mult=stop_atr_mult,
@@ -1203,6 +1207,7 @@ def run_trend_pullback_backtest(
         df=df,
         entries=ind["pullback_entry"].fillna(False).values,
         atr_arr=ind["atr"].fillna(0.0).values,
+        strategy_id="trend_pullback",
         initial_capital=initial_capital,
         account_risk_pct=account_risk_pct,
         stop_atr_mult=stop_atr_mult,
