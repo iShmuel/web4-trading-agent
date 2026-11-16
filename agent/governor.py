@@ -18,6 +18,7 @@ import os
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
@@ -40,6 +41,7 @@ logger = logging.getLogger(__name__)
 CONFIG_PATH = PROJECT_ROOT / "config" / "active_config.json"
 PENDING_PROPOSALS_PATH = PROJECT_ROOT / "config" / "pending_proposals.json"
 AUDIT_LOG_FILE = PROJECT_ROOT / "data" / "agent_governance_audit.log"
+_GOVERNOR_DEPLOY_LOCK = threading.RLock()
 
 VALID_GOVERNOR_VERDICTS = {"APPROVE", "DISAPPROVE", "NEEDS_HUMAN_REVIEW"}
 
@@ -914,6 +916,40 @@ def auto_approve_pending_proposals(
 
 
 def review_and_deploy_proposal(
+    proposed_changes: Dict[str, Any],
+    rationale: Optional[str] = None,
+    empirical_proof: Optional[Dict[str, Any]] = None,
+    config_path: Optional[Path] = None,
+    verify_tests: bool = True,
+    use_llm: bool = True,
+    model: str = "phi4-mini:latest",
+    auto_commit: Optional[bool] = None,
+    require_human_approval: bool = True,
+    human_approved: bool = False,
+    pending_proposals_path: Optional[Path] = None,
+    analyst_proposal: Optional[Dict[str, Any]] = None,
+    proposal_id: Optional[str] = None,
+) -> GovernorApprovalResult:
+    """Thread-safe entrypoint serializing concurrent background agent deployments."""
+    with _GOVERNOR_DEPLOY_LOCK:
+        return _review_and_deploy_proposal_unlocked(
+            proposed_changes=proposed_changes,
+            rationale=rationale,
+            empirical_proof=empirical_proof,
+            config_path=config_path,
+            verify_tests=verify_tests,
+            use_llm=use_llm,
+            model=model,
+            auto_commit=auto_commit,
+            require_human_approval=require_human_approval,
+            human_approved=human_approved,
+            pending_proposals_path=pending_proposals_path,
+            analyst_proposal=analyst_proposal,
+            proposal_id=proposal_id,
+        )
+
+
+def _review_and_deploy_proposal_unlocked(
     proposed_changes: Dict[str, Any],
     rationale: Optional[str] = None,
     empirical_proof: Optional[Dict[str, Any]] = None,
