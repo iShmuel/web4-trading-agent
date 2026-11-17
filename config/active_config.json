@@ -248,7 +248,11 @@
       "allow_long": true,
       "allow_short": false,
       "mr_allow_short": true,
-      "rsi_overbought": 75.0
+      "rsi_overbought": 75.0,
+      "bb_std": 1.6,
+      "bb_period": 30,
+      "rsi_oversold": 25,
+      "mr_atr_stop_mult": 2.0
     },
     "crypto_range_mean_reversion": {
       "symbols": [],
