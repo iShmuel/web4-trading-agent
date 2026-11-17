@@ -411,5 +411,7 @@
   "enable_vwap_reversion": true,
   "min_pair_price": 0.1,
   "min_pair_hourly_dollar_vol": 25000.0,
-  "stat_arb_max_leg_equity_pct": 0.15
+  "stat_arb_max_leg_equity_pct": 0.15,
+  "pullback_rsi_max": 38.0,
+  "pullback_atr_stop_mult": 2.0
 }
