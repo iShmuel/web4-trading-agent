@@ -435,6 +435,6 @@
   "enable_hurst_gate": true,
   "hurst_mr_max": 0.52,
   "enable_nr7_breakout": true,
-  "nr7_lookback": 7,
-  "nr7_atr_stop_mult": 2.0
+  "nr7_lookback": 9,
+  "nr7_atr_stop_mult": 1.5
 }
