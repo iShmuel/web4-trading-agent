@@ -65,6 +65,7 @@ MEAN_REVERSION_GRID: Dict[str, List[Any]] = {
     "bb_period": [20, 30],
     "rsi_oversold": [25, 30, 35],
     "mr_atr_stop_mult": [1.5, 2.0, 2.5],
+    "hurst_mr_max": [0.48, 0.52, 0.58, 0.65],
 }
 PAIRS_GRID: Dict[str, List[Any]] = {
     "stat_arb_entry_z": [2.0, 2.25, 2.5, 2.75, 3.0],
@@ -88,6 +89,10 @@ VWAP_REVERSION_GRID: Dict[str, List[Any]] = {
     "vwap_window": [18, 24, 36],
     "vwap_std_mult": [1.6, 1.8, 2.0, 2.2],
     "vwap_rsi_max": [34.0, 38.0, 42.0],
+}
+NR7_BREAKOUT_GRID: Dict[str, List[Any]] = {
+    "nr7_lookback": [5, 7, 9, 12],
+    "nr7_atr_stop_mult": [1.5, 2.0, 2.5],
 }
 
 
@@ -190,6 +195,8 @@ def build_optimization_tasks(cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
             tasks.append({"strategy": "trend_pullback", "scope": "global", "symbols": mixed_basket})
         if cfg.get("enable_vwap_reversion", True):
             tasks.append({"strategy": "vwap_reversion", "scope": "global", "symbols": mixed_basket})
+        if cfg.get("enable_nr7_breakout", True):
+            tasks.append({"strategy": "nr7_breakout", "scope": "global", "symbols": mixed_basket})
 
     # 5. Per-Asset-Profile Momentum AND Mean Reversion (all active symbols in each profile)
     for name, prof in (cfg.get("asset_profiles") or {}).items():
@@ -322,6 +329,7 @@ def _make_evaluator(task: Dict[str, Any], cfg: Dict[str, Any], cache: Dict[str, 
             run_volatility_squeeze_backtest,
             run_trend_pullback_backtest,
             run_vwap_reversion_backtest,
+            run_nr7_breakout_backtest,
         )
         data = {s: _load_split(s, timeframe, cache) for s in task["symbols"]}
         data = {s: d for s, d in data.items() if d is not None}
@@ -344,6 +352,12 @@ def _make_evaluator(task: Dict[str, Any], cfg: Dict[str, Any], cache: Dict[str, 
                         d[idx],
                         rsi_pullback_max=float(full_cfg.get("pullback_rsi_max", 44.0)),
                         stop_atr_mult=float(full_cfg.get("pullback_atr_stop_mult", 2.0)),
+                    ))
+                elif strategy == "nr7_breakout":
+                    results.append(run_nr7_breakout_backtest(
+                        d[idx],
+                        nr7_lookback=int(full_cfg.get("nr7_lookback", 7)),
+                        stop_atr_mult=float(full_cfg.get("nr7_atr_stop_mult", 2.0)),
                     ))
                 else:
                     results.append(run_vwap_reversion_backtest(
@@ -381,6 +395,7 @@ def optimize_task(
         "volatility_squeeze": VOLATILITY_SQUEEZE_GRID,
         "trend_pullback": TREND_PULLBACK_GRID,
         "vwap_reversion": VWAP_REVERSION_GRID,
+        "nr7_breakout": NR7_BREAKOUT_GRID,
     }[strategy]
 
     print("=" * 65)

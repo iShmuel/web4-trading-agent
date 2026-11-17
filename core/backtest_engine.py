@@ -1246,3 +1246,32 @@ def run_vwap_reversion_backtest(
         fee_pct=fee_pct,
         slippage_pct=slippage_pct,
     )
+
+
+def run_nr7_breakout_backtest(
+    df: pd.DataFrame,
+    initial_capital: float = 10000.0,
+    account_risk_pct: float = 0.02,
+    nr7_lookback: int = 7,
+    stop_atr_mult: float = 2.0,
+    tp_atr_mult: float = 2.5,
+    fee_pct: float = 0.0002,
+    slippage_pct: float = 0.0001,
+) -> BacktestResult:
+    """Backtest NR7 Compression Breakout strategy."""
+    from strategies.nr7_breakout import compute_nr7_indicators
+    if df is None or len(df) < 60:
+        return BacktestResult(initial_capital=initial_capital, final_equity=initial_capital)
+    ind = compute_nr7_indicators(df, nr7_lookback=nr7_lookback)
+    return _run_signal_array_backtest(
+        df=df,
+        entries=ind["nr7_breakout"].fillna(False).values,
+        atr_arr=ind["atr"].fillna(0.0).values,
+        strategy_id="nr7_breakout",
+        initial_capital=initial_capital,
+        account_risk_pct=account_risk_pct,
+        stop_atr_mult=stop_atr_mult,
+        tp_atr_mult=tp_atr_mult,
+        fee_pct=fee_pct,
+        slippage_pct=slippage_pct,
+    )

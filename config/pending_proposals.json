@@ -423,5 +423,60 @@
     },
     "target_config_path": "<repo_root>/config/active_config.json",
     "created_at": "2026-11-15T03:17:43.087660+00:00"
+  },
+  {
+    "proposal_id": "PROP-902F9B3B",
+    "status": "PENDING_HUMAN_APPROVAL",
+    "governor_verdict": "APPROVE",
+    "governor_confidence": 1.0,
+    "governor_rationale": "Rule-only governance verification passed.",
+    "risk_assessment": "Deterministic invariant and parameter bounds check passed.",
+    "invariants_passed": true,
+    "tests_passed": true,
+    "human_approved": false,
+    "auto_gate_evaluation": {
+      "auto_approved": false,
+      "reason": "Gate 4 Failed: Candidate Out-of-Sample MaxDD (4.1%) exceeds baseline MaxDD (3.3% + 0.5% tolerance).",
+      "details": {
+        "gate_1_invariants": true,
+        "gate_2_tests": true,
+        "gate_3_governor_verdict": "APPROVE",
+        "gate_3_governor_confidence": 1.0,
+        "gate_3_min_confidence": 0.85,
+        "gate_4_superiority": false,
+        "reasons": [
+          "Gate 4 Failed: Candidate Out-of-Sample MaxDD (4.1%) exceeds baseline MaxDD (3.3% + 0.5% tolerance)."
+        ],
+        "test_return_delta": 0.053896253229586355,
+        "test_sharpe_delta": 0.9388073870881355,
+        "test_max_dd": 4.134951560832032,
+        "base_test_max_dd": 3.327506283316088
+      }
+    },
+    "proposed_changes": {
+      "squeeze_atr_stop_mult": 2.5,
+      "squeeze_tp_atr_mult": 2.0
+    },
+    "rationale": "Multi-strategy walk-forward winner for volatility_squeeze:global on AVAX/USDT, BNB/USDT, SMCI, MU: IS Sharpe 3.24 (+0.12%), OOS Sharpe -7.71 vs base -8.65 (+0.05%)",
+    "empirical_proof": {
+      "target": "volatility_squeeze:global",
+      "universe": [
+        "AVAX/USDT",
+        "BNB/USDT",
+        "SMCI",
+        "MU"
+      ],
+      "train_sharpe": 3.241499505469164,
+      "test_sharpe": -7.706205061124762,
+      "train_return_delta": 0.12047122486194928,
+      "test_return_delta": 0.053896253229586355,
+      "test_max_dd": 4.134951560832032,
+      "base_test_sharpe": -8.645012448212897,
+      "base_test_max_dd": 3.327506283316088,
+      "test_sharpe_delta": 0.9388073870881355
+    },
+    "analyst_proposal": null,
+    "target_config_path": "<repo_root>/config/active_config.json",
+    "created_at": "2026-11-17T04:51:30.038515+00:00"
   }
 ]

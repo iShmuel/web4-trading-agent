@@ -307,3 +307,33 @@ def calculate_statistical_regime(
     else:
         return "STATIONARY_CHOP", round(er, 3)
 
+
+def compute_hurst_exponent(series: pd.Series, max_lag: int = 20) -> float:
+    """Estimate Hurst exponent H on price series: H < 0.5 mean-reverting, ~0.5 random, > 0.5 trending."""
+    vals = np.asarray(series.dropna().values, dtype=float)
+    if len(vals) < max(30, max_lag * 2):
+        return 0.5
+    lags = np.arange(2, max_lag + 1)
+    tau = []
+    valid_lags = []
+    for lag in lags:
+        diffs = vals[lag:] - vals[:-lag]
+        rms = float(np.sqrt(np.mean(diffs ** 2)))
+        if rms > 1e-12:
+            tau.append(rms)
+            valid_lags.append(float(lag))
+    if len(valid_lags) < 4:
+        return 0.5
+    poly = np.polyfit(np.log(valid_lags), np.log(tau), 1)
+    h = float(poly[0])
+    return round(max(0.0, min(1.0, h)), 3)
+
+
+def compute_lag1_autocorrelation(series: pd.Series, window: int = 48) -> float:
+    """Compute lag-1 return autocorrelation over the trailing window (>0 momentum, <0 mean-reversion)."""
+    rets = series.pct_change().dropna().iloc[-window:]
+    if len(rets) < 12 or float(rets.std()) <= 1e-12:
+        return 0.0
+    ac = float(rets.autocorr(lag=1))
+    return 0.0 if np.isnan(ac) else round(ac, 3)
+

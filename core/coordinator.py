@@ -20,6 +20,7 @@ from core.data_loader import fetch_funding_rate, is_crypto_symbol
 from core.strategy import (
     calculate_multi_timeframe_confluence,
     calculate_relative_strength,
+    compute_hurst_exponent,
     detect_liquidation_absorption,
 )
 from strategies.momentum import MomentumStrategy
@@ -28,6 +29,7 @@ from strategies.stat_arb_pairs import StatArbPairsStrategy, PairTradeSignal
 from strategies.volatility_squeeze import VolatilitySqueezeStrategy
 from strategies.trend_pullback import TrendPullbackStrategy
 from strategies.vwap_reversion import VwapReversionStrategy
+from strategies.nr7_breakout import Nr7BreakoutStrategy
 from core.journal import log_decision, get_gate_alpha_feedback, log_maker_telemetry
 from core.polymarket_radar import PolymarketRadar, MacroEventRisk
 from core.fred_radar import FredMacroRadar, MacroRegimeReport
@@ -142,6 +144,8 @@ class PortfolioCoordinator:
         self._strategy_enabled[TrendPullbackStrategy.STRATEGY_ID] = bool(config.get("enable_trend_pullback", True))
         self._custom_strategies[VwapReversionStrategy.STRATEGY_ID] = VwapReversionStrategy(config)
         self._strategy_enabled[VwapReversionStrategy.STRATEGY_ID] = bool(config.get("enable_vwap_reversion", True))
+        self._custom_strategies[Nr7BreakoutStrategy.STRATEGY_ID] = Nr7BreakoutStrategy(config)
+        self._strategy_enabled[Nr7BreakoutStrategy.STRATEGY_ID] = bool(config.get("enable_nr7_breakout", True))
         if "enabled_strategies" in config and isinstance(config["enabled_strategies"], (list, set, tuple)):
             enabled_set = set(config["enabled_strategies"])
             for sid in list(self._strategy_enabled.keys()):
@@ -252,6 +256,7 @@ class PortfolioCoordinator:
                 run_volatility_squeeze_backtest,
                 run_trend_pullback_backtest,
                 run_vwap_reversion_backtest,
+                run_nr7_breakout_backtest,
             )
 
             r_mom = run_backtest(
@@ -315,6 +320,17 @@ class PortfolioCoordinator:
                 )
                 if r_vw.total_trades >= 2 and r_vw.profit_factor >= min_pf:
                     cands.append((r_vw.sharpe_ratio, VwapReversionStrategy.STRATEGY_ID))
+            if self.is_strategy_enabled(Nr7BreakoutStrategy.STRATEGY_ID):
+                r_nr7 = run_nr7_breakout_backtest(
+                    df_win,
+                    account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
+                    nr7_lookback=int(sym_cfg.get("nr7_lookback", 7)),
+                    stop_atr_mult=float(sym_cfg.get("nr7_atr_stop_mult", 2.0)),
+                    fee_pct=0.0002,
+                    slippage_pct=0.0001,
+                )
+                if r_nr7.total_trades >= 2 and r_nr7.profit_factor >= min_pf:
+                    cands.append((r_nr7.sharpe_ratio, Nr7BreakoutStrategy.STRATEGY_ID))
             if cands:
                 cands.sort(key=lambda x: x[0], reverse=True)
                 choice = cands[0][1]
@@ -1070,6 +1086,9 @@ class PortfolioCoordinator:
         # Altcoin Strategy Specialization: Restrict high-beta crypto altcoins to Momentum only
         is_altcoin = is_crypto_symbol(symbol) and symbol.upper() not in ("BTC/USDT", "ETH/USDT")
         suppress_mr = is_altcoin and self.config.get("crypto_altcoin_momentum_only", False)
+        hurst_gate_on = bool(self.config.get("enable_hurst_gate", False))
+        hurst_mr_max = float(self.config.get("hurst_mr_max", 0.52))
+        hurst_val = compute_hurst_exponent(df["close"], max_lag=20) if hurst_gate_on else None
 
         if not self.is_strategy_enabled(MeanReversionStrategy.STRATEGY_ID) or not allow_mr_dyn:
             mr_sig = create_no_trade_signal(
@@ -1089,12 +1108,19 @@ class PortfolioCoordinator:
                 price=cur_price,
                 reason="Altcoin Mean-Reversion Suppressed (Momentum Only)",
             )
+        elif hurst_gate_on and hurst_val is not None and hurst_val >= hurst_mr_max:
+            mr_sig = create_no_trade_signal(
+                strategy_id=MeanReversionStrategy.STRATEGY_ID,
+                symbol=symbol,
+                price=cur_price,
+                reason=f"Blocked by Hurst Gate (H={hurst_val:.3f} >= {hurst_mr_max:.2f})",
+            )
         else:
             mr_sig = mean_reversion_strategy.evaluate(symbol, df, existing_position=None)
 
         extra_signals: List[TradingSignal] = []
         for custom_id, custom_strat in self._custom_strategies.items():
-            if custom_id in (VolatilitySqueezeStrategy.STRATEGY_ID, TrendPullbackStrategy.STRATEGY_ID, VwapReversionStrategy.STRATEGY_ID):
+            if custom_id in (VolatilitySqueezeStrategy.STRATEGY_ID, TrendPullbackStrategy.STRATEGY_ID, VwapReversionStrategy.STRATEGY_ID, Nr7BreakoutStrategy.STRATEGY_ID):
                 if dyn_route not in ("all", custom_id):
                     continue
             if self.is_strategy_enabled(custom_id) and hasattr(custom_strat, "evaluate"):
@@ -1170,6 +1196,8 @@ class PortfolioCoordinator:
         else:
             regime = "TRANSITION"
         merged_ind["regime"] = regime
+        if hurst_val is not None:
+            merged_ind["hurst"] = hurst_val
 
         chosen_sig, reason = self.reconcile_signals(
             symbol, mom_sig, mr_sig, extra_signals=extra_signals, context=merged_ind

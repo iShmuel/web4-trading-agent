@@ -12,6 +12,7 @@ from core.backtest_engine import (
     run_pairs_backtest,
 )
 from core.risk_engine import MIN_ALLOWED_RISK_PCT, MAX_ALLOWED_RISK_PCT
+from core.strategy import compute_hurst_exponent
 
 
 @dataclass
@@ -61,6 +62,24 @@ def evaluate_parameters(df: pd.DataFrame, params: Dict[str, Any]) -> BacktestRes
 
 def evaluate_mean_reversion_parameters(df: pd.DataFrame, params: Dict[str, Any]) -> BacktestResult:
     """Run a Mean Reversion (Bollinger + RSI + ADX) backtest using the same config keys as the live strategy."""
+    if params.get("enable_hurst_gate", False) or "hurst_mr_max" in params:
+        hurst_max = float(params.get("hurst_mr_max", 0.52))
+        if len(df) >= 30 and compute_hurst_exponent(df["close"], max_lag=20) >= hurst_max:
+            return BacktestResult(
+                strategy_name="mean_reversion",
+                initial_capital=10000.0,
+                final_equity=10000.0,
+                total_return_pct=0.0,
+                total_trades=0,
+                winning_trades=0,
+                losing_trades=0,
+                win_rate=0.0,
+                profit_factor=0.0,
+                max_drawdown_pct=0.0,
+                sharpe_ratio=0.0,
+                trades=[],
+                equity_curve=[10000.0],
+            )
     return run_mean_reversion_backtest(
         df=df,
         initial_capital=10000.0,

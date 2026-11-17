@@ -1,15 +1,16 @@
 {
   "watchlist": [
     "AVAX/USDT",
-    "BNB/USDT",
-    "BARD/USDT",
-    "INIT/USDT",
-    "LINK/USDT",
-    "RARE/USDT",
     "SOL/USDT",
-    "ENA/USDT",
+    "BNB/USDT",
+    "INJ/USDT",
+    "SUI/USDT",
+    "INIT/USDT",
+    "BARD/USDT",
+    "LINK/USDT",
     "SMCI",
     "MU",
+    "INTC",
     "AMD",
     "SNAP",
     "CIFR",
@@ -19,8 +20,13 @@
     "HIMS",
     "AAPL",
     "WULF",
-    "VALE",
-    "XLE"
+    "NVDA",
+    "CBRS",
+    "DKNG",
+    "NEAR/USDT",
+    "PEPE/USDT",
+    "PLTR",
+    "TSLA"
   ],
   "timeframe": "1h",
   "max_concurrent_positions": 5,
@@ -38,7 +44,7 @@
     "SUI/USDT": 0.01,
     "TAO/USDT": 0.025,
     "DOGE/USDT": 0.01,
-    "NEAR/USDT": 0.025,
+    "NEAR/USDT": 0.01,
     "LINK/USDT": 0.02,
     "BTC/USDT": 0.01,
     "BNB/USDT": 0.015,
@@ -46,7 +52,7 @@
     "AMD": 0.03,
     "AAPL": 0.03,
     "PLTR": 0.01,
-    "TSLA": 0.025,
+    "TSLA": 0.01,
     "SPY": 0.02,
     "QQQ": 0.02,
     "GLD": 0.025,
@@ -62,7 +68,7 @@
     "NOK": 0.02,
     "CRWV": 0.02,
     "IREN": 0.03,
-    "INTC": 0.02,
+    "INTC": 0.01,
     "SOFI": 0.02,
     "NU": 0.02,
     "CIFR": 0.02,
@@ -78,7 +84,7 @@
     "JHX": 0.02,
     "BARD/USDT": 0.02,
     "SMCI": 0.03,
-    "CBRS": 0.02,
+    "CBRS": 0.01,
     "KDP": 0.02,
     "GRAM/USDT": 0.01,
     "ONE/USDT": 0.01,
@@ -86,14 +92,16 @@
     "ONDS": 0.01,
     "TRUMP/USDT": 0.01,
     "RARE/USDT": 0.02,
-    "VALE": 0.02
+    "VALE": 0.02,
+    "DKNG": 0.01,
+    "PEPE/USDT": 0.01
   },
   "symbol_exposure_caps": {
     "SOL/USDT": 0.4,
     "SUI/USDT": 0.2,
     "TAO/USDT": 0.35,
     "DOGE/USDT": 0.2,
-    "NEAR/USDT": 0.35,
+    "NEAR/USDT": 0.2,
     "LINK/USDT": 0.3,
     "BTC/USDT": 0.2,
     "BNB/USDT": 0.25,
@@ -101,7 +109,7 @@
     "AMD": 0.2,
     "AAPL": 0.35,
     "PLTR": 0.2,
-    "TSLA": 0.35,
+    "TSLA": 0.2,
     "SPY": 0.35,
     "QQQ": 0.35,
     "GLD": 0.35,
@@ -117,7 +125,7 @@
     "NOK": 0.35,
     "CRWV": 0.35,
     "IREN": 0.35,
-    "INTC": 0.35,
+    "INTC": 0.2,
     "SOFI": 0.35,
     "NU": 0.35,
     "CIFR": 0.35,
@@ -133,7 +141,7 @@
     "JHX": 0.35,
     "BARD/USDT": 0.35,
     "SMCI": 0.35,
-    "CBRS": 0.35,
+    "CBRS": 0.2,
     "KDP": 0.35,
     "GRAM/USDT": 0.2,
     "ONE/USDT": 0.2,
@@ -141,7 +149,9 @@
     "ONDS": 0.2,
     "TRUMP/USDT": 0.2,
     "RARE/USDT": 0.35,
-    "VALE": 0.35
+    "VALE": 0.35,
+    "DKNG": 0.2,
+    "PEPE/USDT": 0.2
   },
   "fee_pct": 0.0006,
   "slippage_pct": 0.0004,
@@ -197,28 +207,24 @@
   "stat_arb_risk_pct": 0.02,
   "pairs_universe": [
     [
-      "SOL/USDT",
-      "AVAX/USDT"
+      "SUI/USDT",
+      "LINK/USDT"
     ],
     [
-      "BTC/USDT",
+      "AVAX/USDT",
       "BNB/USDT"
     ],
     [
-      "LINK/USDT",
-      "INJ/USDT"
+      "CRWV",
+      "INTC"
     ],
     [
-      "NVDA",
-      "AMD"
-    ],
-    [
-      "WULF",
-      "IREN"
-    ],
-    [
-      "MU",
+      "CRWV",
       "CIFR"
+    ],
+    [
+      "SMCI",
+      "IREN"
     ]
   ],
   "use_asset_profiles": true,
@@ -236,7 +242,9 @@
         "ENA/USDT",
         "SUI/USDT",
         "TRUMP/USDT",
-        "RARE/USDT"
+        "RARE/USDT",
+        "NEAR/USDT",
+        "PEPE/USDT"
       ],
       "timeframe": "1h",
       "breakout_lookback": 48,
@@ -302,7 +310,11 @@
         "AMD",
         "ONDS",
         "PLUG",
-        "VALE"
+        "INTC",
+        "NVDA",
+        "DKNG",
+        "PLTR",
+        "TSLA"
       ],
       "timeframe": "1h",
       "breakout_lookback": 48,
@@ -323,7 +335,8 @@
     "macro_hedges": {
       "symbols": [
         "XLE",
-        "KDP"
+        "KDP",
+        "CBRS"
       ],
       "timeframe": "1h",
       "breakout_lookback": 48,
@@ -341,43 +354,37 @@
     "AAL",
     "AMZN",
     "BMT/USDT",
-    "CBRS",
     "CRWV",
-    "DKNG",
     "ETH/USDT",
     "FOXA",
     "GLD",
     "GRAB",
     "GRAM/USDT",
     "HYPE/USDT",
-    "INTC",
     "JHX",
     "KVUE",
     "MARA",
     "MCHP",
     "NBIS",
-    "NEAR/USDT",
     "NIO",
     "NOK",
     "NU",
-    "NVDA",
-    "PEPE/USDT",
     "PFE",
-    "PLTR",
     "QQQ",
     "RWUSD/USDT",
     "SLV",
     "SOFI",
     "SPCX",
     "SPY",
+    "STLA",
     "TAO/USDT",
     "TLT",
     "TRX/USDT",
-    "TSLA",
     "TTD",
     "TU",
     "U/USDT",
     "UNI/USDT",
+    "VALE",
     "XRP/USDT",
     "ZEC/USDT"
   ],
@@ -424,5 +431,10 @@
   "pullback_atr_stop_mult": 2.0,
   "vwap_window": 36,
   "vwap_std_mult": 2.2,
-  "vwap_rsi_max": 34.0
+  "vwap_rsi_max": 34.0,
+  "enable_hurst_gate": true,
+  "hurst_mr_max": 0.52,
+  "enable_nr7_breakout": true,
+  "nr7_lookback": 7,
+  "nr7_atr_stop_mult": 2.0
 }

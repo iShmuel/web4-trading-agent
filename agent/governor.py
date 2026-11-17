@@ -66,6 +66,7 @@ PARAMETER_BOUNDS: Dict[str, Tuple[float, float]] = {
     "adx_threshold": (12.0, 40.0),
     "adx_chop_threshold": (12.0, 32.0),
     "adx_trend_threshold": (18.0, 45.0),
+    "hurst_mr_max": (0.40, 0.70),
     "stat_arb_z_entry": (1.2, 4.0),
     "stat_arb_z_exit": (0.0, 1.5),
     "stat_arb_entry_z": (1.2, 4.0),
@@ -75,6 +76,15 @@ PARAMETER_BOUNDS: Dict[str, Tuple[float, float]] = {
     "mr_atr_stop_mult": (1.0, 5.0),
     "basis_hurdle_apr": (2.0, 40.0),
     "max_basis_allocation_pct": (0.05, 0.45),
+    "squeeze_atr_stop_mult": (1.0, 4.0),
+    "squeeze_tp_atr_mult": (1.2, 6.0),
+    "pullback_rsi_max": (25.0, 55.0),
+    "pullback_atr_stop_mult": (1.0, 4.0),
+    "vwap_window": (10.0, 72.0),
+    "vwap_std_mult": (1.0, 3.5),
+    "vwap_rsi_max": (20.0, 50.0),
+    "nr7_lookback": (4.0, 14.0),
+    "nr7_atr_stop_mult": (1.0, 4.0),
 }
 
 

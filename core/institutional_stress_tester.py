@@ -355,6 +355,19 @@ def calculate_underwater_and_streak_metrics(
     ann_ret_pct = (total_ret_pct * (365.25 / days)) if days > 0 else 0.0
     calmar = (ann_ret_pct / max_dd_pct) if max_dd_pct > 0 else 0.0
 
+    # Sortino Ratio & CVaR (95% Expected Shortfall) on bar returns
+    bar_rets = np.diff(eq_arr) / np.maximum(eq_arr[:-1], 1e-9)
+    downside = bar_rets[bar_rets < 0.0]
+    down_std = float(np.sqrt(np.mean(downside ** 2))) if len(downside) > 0 else 0.0
+    bars_per_year = (365.25 * 24.0) / max(hours_per_bar, 1e-6)
+    sortino = (float(np.mean(bar_rets)) / down_std) * math.sqrt(bars_per_year) if down_std > 1e-12 else 0.0
+
+    cvar_95_pct = 0.0
+    if len(bar_rets) >= 20:
+        q5 = float(np.quantile(bar_rets, 0.05))
+        tail = bar_rets[bar_rets <= q5]
+        cvar_95_pct = float(np.mean(tail)) * 100.0 if len(tail) > 0 else q5 * 100.0
+
     return {
         "max_drawdown_pct": round(max_dd_pct, 2),
         "max_underwater_hours": round(max_underwater_hours, 1),
@@ -364,6 +377,8 @@ def calculate_underwater_and_streak_metrics(
         "max_consecutive_wins": max_consecutive_wins,
         "ulcer_index": round(ulcer_index, 2),
         "calmar_ratio": round(calmar, 2),
+        "sortino_ratio": round(sortino, 2),
+        "cvar_95_pct": round(cvar_95_pct, 3),
     }
 
 

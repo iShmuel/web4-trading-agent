@@ -708,3 +708,31 @@ def discover_cointegrated_pairs(
 
     selected = _select_top(cryptos, max_crypto_pairs) + _select_top(stocks, max_stock_pairs)
     return selected
+
+
+def kalman_hedge_ratio_series(
+    series_a: pd.Series,
+    series_b: pd.Series,
+    delta: float = 1e-4,
+    vt: float = 1e-3,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Online 2-state Kalman Filter tracking dynamic hedge ratio (beta) and spread z-score."""
+    a = np.asarray(series_a.values, dtype=float)
+    b = np.asarray(series_b.values, dtype=float)
+    n = min(len(a), len(b))
+    betas = np.ones(n, dtype=float)
+    z_scores = np.zeros(n, dtype=float)
+    theta = np.array([1.0, 0.0], dtype=float)  # [beta, intercept]
+    P = np.eye(2, dtype=float)
+    Vw = (delta / (1.0 - delta)) * np.eye(2, dtype=float)
+    for t in range(n):
+        F = np.array([b[t], 1.0], dtype=float)
+        P = P + Vw
+        e = a[t] - float(np.dot(F, theta))
+        Q = float(np.dot(F, np.dot(P, F))) + vt
+        K = np.dot(P, F) / max(Q, 1e-12)
+        theta = theta + K * e
+        P = P - np.outer(K, F).dot(P)
+        betas[t] = float(theta[0])
+        z_scores[t] = e / float(np.sqrt(max(Q, 1e-12)))
+    return betas, z_scores
