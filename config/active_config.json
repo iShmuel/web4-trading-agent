@@ -315,7 +315,7 @@
       "allow_short": false,
       "mr_allow_short": true,
       "rsi_overbought": 75.0,
-      "bb_std": 1.8,
+      "bb_std": 1.6,
       "bb_period": 20,
       "rsi_oversold": 30,
       "mr_atr_stop_mult": 2.5
