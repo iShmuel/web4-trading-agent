@@ -364,7 +364,7 @@ SLIDES_DATA = [
         "num": 1,
         "tag": "SLIDE 1 OF 8 • EXECUTIVE OVERVIEW",
         "title": "Web4 Autonomous Multi-Strategy Trading Desk",
-        "subtitle": "A self-governing multi-agent paper trading system running 4 strategies across Crypto & US Stocks with 4-gate auto-approval, strict risk bounds, and autonomous GitHub deployment.",
+        "subtitle": "A self-governing multi-agent paper trading system running 8 strategies across Crypto & US Stocks with 4-gate auto-approval, strict risk bounds, and autonomous GitHub deployment.",
         "duration": "50 seconds",
         "notes": (
             "Welcome everyone. Today I am presenting the Web4 Autonomous Trading Desk. "
@@ -471,11 +471,11 @@ SLIDES_DATA = [
         "num": 8,
         "tag": "SLIDE 8 OF 8 • ACHIEVEMENTS, LIMITATIONS & CURRENT STATUS",
         "title": "Verified Capabilities, Honest Limitations & Current Operational Status",
-        "subtitle": "152/152 tests green, approved PROP-A15F08C2 active on main, live paper trader running 24/7 with 4-gate autonomous self-evolution.",
+        "subtitle": "202/202 tests green, 8 strategies + Hurst Gate active on main, live paper trader & 2-page web dashboard running 24/7.",
         "duration": "50 seconds",
         "notes": (
             "To conclude, let's clearly separate what has been verified today from current limitations and next steps. "
-            "What is 100% implemented and verified: all 4 strategies active on main with approved proposal PROP-A15F08C2, the 4-Gate Conditional Auto-Approval Engine live with autonomous Git deployment, our full test suite expanded to 152-for-152 passing tests, and the live paper trading daemon actively running in background mode. "
+            "What is 100% implemented and verified: all 8 strategies active on main with approved proposals (including PROP-02960125) and Hurst Exponent Gate (<= 0.52), the 4-Gate Conditional Auto-Approval Engine live with autonomous Git deployment, our full test suite expanded to 202-for-202 passing tests, and the live paper trading daemon + 2-page web dashboard actively running in background mode. "
             "What limitations remain: all execution is strictly simulated paper trading in PaperAccount—real money trading is permanently disabled. Live paper trading reflects an honest -$1,080.07 historical baseline from early pre-remediation trades. "
             "Our immediate next steps are running live forward paper observation with the new 4-gate auto-approval loop, expanding cointegrated ETF pairs, and persisting fundamental caches to disk. Thank you!"
         ),
@@ -807,7 +807,7 @@ def build_editable_pptx(arch_img: Path, perf_img: Path, def_img: Path) -> Path:
     # SLIDE 5: The Main Building Blocks (WHAT / WHY / HOW)
     blocks = [
         ("1. Strategy Playbooks", ACCENT_CYAN,
-         "WHAT: 4 math engines (Momentum, Mean Rev, Pairs, Basis Yield).",
+         "WHAT: 8 math engines (Momentum, Mean Rev, Pairs, Basis Yield, Vol Squeeze, Trend Pullback, VWAP Rev, NR7 Breakout).",
          "WHY: Markets only trend ~30% of the time; we need bounce & yield engines for the other 70%.",
          "HOW: Generates strictly causal entry/exit signals with zero lookahead bias."),
         ("2. Skill Intelligence Gate", ACCENT_AMBER,
@@ -1564,9 +1564,9 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
   <div class="slide-body">
     <div class="grid-3">
       <div class="card" style="border-top: 4px solid #10B981;">
-        <h3 style="color:#10B981;">1. Verified Capabilities (194/194 Tests)</h3>
+        <h3 style="color:#10B981;">1. Verified Capabilities (202/202 Tests)</h3>
         <ul>
-          <li>• <b>CPI Benchmark 98.5/100 (Web4 Dynamic Router, All 7 Strategies):</b> Beats Single-Agent (6.2) &amp; Uncoordinated (6.3) with <b>+2.24% AvgRet</b>, +9.40 Sharpe, 3.65 PF, 1.42% Avg MaxDD.</li>
+          <li>• <b>CPI Benchmark 95.3/100 (Web4 Dynamic Router, All 8 Strategies):</b> Beats Single-Agent (7.8) &amp; Uncoordinated (7.8) with <b>+2.48% AvgRet</b>, +7.90 Sharpe, 3.23 PF, 2.15% MaxDD.</li>
           <li>• <b>4-Gate Auto-Approval + 10-Trade Auto-Rollback:</b> Autonomous Git push on verified alpha; instant rollback &amp; trade-history isolation on live drift.</li>
           <li>• <b>72h Probationary Reentry &amp; Maker Re-Quoting:</b> Gated 1.0%-floor recovery after 15% DD halt + Adaptive spread re-quoting on runaway breakouts.</li>
           <li>• <b>100% Dynamic Rolling Router &amp; Async Agents:</b> Auto-switches Momentum / Mean Reversion / Basis Yield with zero-lag 60s stop-loss execution.</li>
@@ -1597,7 +1597,7 @@ def build_html_and_pdf(arch_img: Path, perf_img: Path, def_img: Path) -> Tuple[P
     </div>
   </div>
   <div class="slide-footer">
-    <span>Deliverables: web4_trading_agent_presentation.pptx (Editable) • web4_trading_agent_presentation.pdf • 194/194 Tests Passing</span>
+    <span>Deliverables: web4_trading_agent_presentation.pptx (Editable) • web4_trading_agent_presentation.pdf • 202/202 Tests Passing</span>
     <span>Est. Speaking Time: {SLIDES_DATA[7]['duration']} • Total Duration: ~7.5 Minutes • Slide 8 / 8</span>
   </div>
 </section>
