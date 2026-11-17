@@ -324,7 +324,7 @@ def _make_evaluator(task: Dict[str, Any], cfg: Dict[str, Any], cache: Dict[str, 
 
         return evaluator
 
-    if strategy in ("volatility_squeeze", "trend_pullback", "vwap_reversion"):
+    if strategy in ("volatility_squeeze", "trend_pullback", "vwap_reversion", "nr7_breakout"):
         from core.backtest_engine import (
             run_volatility_squeeze_backtest,
             run_trend_pullback_backtest,

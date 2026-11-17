@@ -66,7 +66,6 @@ def evaluate_mean_reversion_parameters(df: pd.DataFrame, params: Dict[str, Any])
         hurst_max = float(params.get("hurst_mr_max", 0.52))
         if len(df) >= 30 and compute_hurst_exponent(df["close"], max_lag=20) >= hurst_max:
             return BacktestResult(
-                strategy_name="mean_reversion",
                 initial_capital=10000.0,
                 final_equity=10000.0,
                 total_return_pct=0.0,
