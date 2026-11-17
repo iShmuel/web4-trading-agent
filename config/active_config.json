@@ -283,7 +283,11 @@
       "take_profit_ratio": 0.5,
       "allow_long": true,
       "allow_short": false,
-      "mr_allow_short": false
+      "mr_allow_short": false,
+      "bb_std": 1.6,
+      "bb_period": 20,
+      "rsi_oversold": 30,
+      "mr_atr_stop_mult": 2.0
     },
     "stocks_growth": {
       "symbols": [
