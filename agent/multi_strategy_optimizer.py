@@ -94,6 +94,11 @@ NR7_BREAKOUT_GRID: Dict[str, List[Any]] = {
     "nr7_lookback": [5, 7, 9, 12],
     "nr7_atr_stop_mult": [1.5, 2.0, 2.5],
 }
+RANGE_ENVELOPE_GRID: Dict[str, List[Any]] = {
+    "range_window": [24, 36, 48],
+    "range_rsi_oversold": [28.0, 30.0, 32.0],
+    "range_min_net_profit_usd": [10.0, 15.0],
+}
 
 
 @dataclass
@@ -197,6 +202,8 @@ def build_optimization_tasks(cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
             tasks.append({"strategy": "vwap_reversion", "scope": "global", "symbols": mixed_basket})
         if cfg.get("enable_nr7_breakout", True):
             tasks.append({"strategy": "nr7_breakout", "scope": "global", "symbols": mixed_basket})
+        if cfg.get("enable_range_envelope", True):
+            tasks.append({"strategy": "range_envelope", "scope": "global", "symbols": mixed_basket})
 
     # 5. Per-Asset-Profile Momentum AND Mean Reversion (all active symbols in each profile)
     for name, prof in (cfg.get("asset_profiles") or {}).items():
@@ -324,12 +331,13 @@ def _make_evaluator(task: Dict[str, Any], cfg: Dict[str, Any], cache: Dict[str, 
 
         return evaluator
 
-    if strategy in ("volatility_squeeze", "trend_pullback", "vwap_reversion", "nr7_breakout"):
+    if strategy in ("volatility_squeeze", "trend_pullback", "vwap_reversion", "nr7_breakout", "range_envelope"):
         from core.backtest_engine import (
             run_volatility_squeeze_backtest,
             run_trend_pullback_backtest,
             run_vwap_reversion_backtest,
             run_nr7_breakout_backtest,
+            run_range_envelope_backtest,
         )
         data = {s: _load_split(s, timeframe, cache) for s in task["symbols"]}
         data = {s: d for s, d in data.items() if d is not None}
@@ -358,6 +366,13 @@ def _make_evaluator(task: Dict[str, Any], cfg: Dict[str, Any], cache: Dict[str, 
                         d[idx],
                         nr7_lookback=int(full_cfg.get("nr7_lookback", 7)),
                         stop_atr_mult=float(full_cfg.get("nr7_atr_stop_mult", 2.0)),
+                    ))
+                elif strategy == "range_envelope":
+                    results.append(run_range_envelope_backtest(
+                        d[idx],
+                        range_window=int(full_cfg.get("range_window", 36)),
+                        rsi_oversold=float(full_cfg.get("range_rsi_oversold", 30.0)),
+                        min_net_profit_usd=float(full_cfg.get("range_min_net_profit_usd", 10.0)),
                     ))
                 else:
                     results.append(run_vwap_reversion_backtest(
@@ -396,6 +411,7 @@ def optimize_task(
         "trend_pullback": TREND_PULLBACK_GRID,
         "vwap_reversion": VWAP_REVERSION_GRID,
         "nr7_breakout": NR7_BREAKOUT_GRID,
+        "range_envelope": RANGE_ENVELOPE_GRID,
     }[strategy]
 
     print("=" * 65)

@@ -32,6 +32,8 @@ from core.backtest_engine import (
     run_volatility_squeeze_backtest,
     run_trend_pullback_backtest,
     run_vwap_reversion_backtest,
+    run_nr7_breakout_backtest,
+    run_range_envelope_backtest,
 )
 
 
@@ -294,9 +296,21 @@ def run_cpi_benchmark(
             fee_pct=0.0002,
             slippage_pct=0.0001,
         )
+        r_nr7_opt = run_nr7_breakout_backtest(
+            df.copy(),
+            account_risk_pct=float(sp.get("account_risk_pct", 0.02)),
+            fee_pct=0.0002,
+            slippage_pct=0.0001,
+        )
+        r_re_opt = run_range_envelope_backtest(
+            df.copy(),
+            account_risk_pct=float(sp.get("account_risk_pct", 0.02)),
+            fee_pct=0.0002,
+            slippage_pct=0.0001,
+        )
         cands = []
         min_pf = float(cfg.get("dynamic_router_min_pf", 1.15))
-        for r_cand in (r_mom_opt, r_mr_opt, r_sq_opt, r_pb_opt, r_vw_opt):
+        for r_cand in (r_mom_opt, r_mr_opt, r_sq_opt, r_pb_opt, r_vw_opt, r_nr7_opt, r_re_opt):
             if r_cand.total_trades >= 2 and r_cand.profit_factor >= min_pf:
                 cands.append((r_cand.sharpe_ratio, r_cand))
         if r_by_opt is not None and r_by_opt.total_trades >= 1 and r_by_opt.profit_factor >= 1.0:

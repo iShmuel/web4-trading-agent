@@ -64,6 +64,8 @@ def _classify_watchlist_row(sym: str, action_obj: Dict[str, Any], price: Optiona
         strategy_label, trigger = "VWAP Reversion", "VWAP Reversion"
     elif "selected 'nr7_breakout'" in rl:
         strategy_label, trigger = "NR7 Breakout", "NR7 Breakout"
+    elif "selected 'range_envelope'" in rl:
+        strategy_label, trigger = "Range Envelope", "Range Envelope"
     elif "selected 'mean_reversion'" in rl:
         strategy_label, trigger = "Mean Reversion", "Mean Reversion"
     elif "selected 'momentum'" in rl or "no breakout" in rl or "macro_bear" in rl:
@@ -485,6 +487,22 @@ def build_dashboard_payload(
                     "atr_period": cfg.get("atr_period", 14),
                 },
             },
+            "range_envelope": {
+                "name": "Rolling Range Envelope (Average Down/Top + Net Dollar Floor)",
+                "enabled": bool(cfg.get("enable_range_envelope", True)),
+                "description": "Enters at rolling Average Down (q10) or Average Top (q90) when range covers fees + minimum net dollar floor, scaling out 50% at midpoint/floor (+Break-Even lock) and exiting at opposite boundary.",
+                "params": {
+                    "timeframe": cfg.get("timeframe", "1h"),
+                    "range_window": cfg.get("range_window", 36),
+                    "range_low_quantile": cfg.get("range_low_quantile", 0.10),
+                    "range_high_quantile": cfg.get("range_high_quantile", 0.90),
+                    "range_rsi_oversold": cfg.get("range_rsi_oversold", 30.0),
+                    "range_rsi_overbought": cfg.get("range_rsi_overbought", 70.0),
+                    "range_adx_max": cfg.get("range_adx_max", 24.0),
+                    "range_min_net_profit_usd": cfg.get("range_min_net_profit_usd", 10.0),
+                    "range_allow_short": cfg.get("range_allow_short", True),
+                },
+            },
         },
         "equity_curve": eq_curve[-120:],
         "equity_points": eq_points[-120:],
@@ -584,6 +602,7 @@ HTML_PAGE = """<!doctype html>
             <a class="nav-item" href="/strategies/trend_pullback" data-strat="trend_pullback" onclick="return selectStrategy(event,'trend_pullback')">Trend Pullback</a>
             <a class="nav-item" href="/strategies/vwap_reversion" data-strat="vwap_reversion" onclick="return selectStrategy(event,'vwap_reversion')">VWAP Reversion</a>
             <a class="nav-item" href="/strategies/nr7_breakout" data-strat="nr7_breakout" onclick="return selectStrategy(event,'nr7_breakout')">NR7 Breakout</a>
+            <a class="nav-item" href="/strategies/range_envelope" data-strat="range_envelope" onclick="return selectStrategy(event,'range_envelope')">Range Envelope</a>
           </div>
         </div>
       </nav>
@@ -616,7 +635,7 @@ HTML_PAGE = """<!doctype html>
           <div class="sec-head">
             <h2>All Closed Fills <span class="sub" id="closed-sub" style="font-weight:400;margin-left:8px"></span></h2>
             <div class="controls">
-              <select id="closed-filter"><option value="">All Strategies</option><option>momentum</option><option>mean_reversion</option><option>stat_arb_pairs</option><option>basis_yield</option><option>volatility_squeeze</option><option>trend_pullback</option><option>vwap_reversion</option><option>nr7_breakout</option></select>
+              <select id="closed-filter"><option value="">All Strategies</option><option>momentum</option><option>mean_reversion</option><option>stat_arb_pairs</option><option>basis_yield</option><option>volatility_squeeze</option><option>trend_pullback</option><option>vwap_reversion</option><option>nr7_breakout</option><option>range_envelope</option></select>
             </div>
           </div>
           <div class="closed-wrap">
@@ -644,7 +663,7 @@ HTML_PAGE = """<!doctype html>
         <h2>Live Watchlist (Web4 Dynamic Rolling Router)</h2>
         <div class="controls">
           <input id="wl-search" placeholder="Search symbol..." />
-          <select id="wl-filter"><option value="">All Strategies</option><option>Vol Squeeze</option><option>Trend Pullback</option><option>VWAP Reversion</option><option>NR7 Breakout</option><option>Mean Reversion</option><option>Momentum</option><option>Basis Yield</option><option>Stand Down</option><option>Market Closed</option></select>
+          <select id="wl-filter"><option value="">All Strategies</option><option>Vol Squeeze</option><option>Trend Pullback</option><option>VWAP Reversion</option><option>NR7 Breakout</option><option>Range Envelope</option><option>Mean Reversion</option><option>Momentum</option><option>Basis Yield</option><option>Stand Down</option><option>Market Closed</option></select>
         </div>
       </div>
       <table><thead><tr><th>Symbol</th><th>Price</th><th>Status</th><th>Regime</th><th>Active Strategy</th><th>Trigger / Info</th></tr></thead><tbody id="wl-body"></tbody></table>
@@ -681,11 +700,12 @@ const STRAT_WL_MAP = {
   trend_pullback: 'Trend Pullback',
   vwap_reversion: 'VWAP Reversion',
   nr7_breakout: 'NR7 Breakout',
+  range_envelope: 'Range Envelope',
   basis_yield: 'Basis Yield',
 };
 const fmt = (n, d=2) => (n === null || n === undefined) ? '—' : Number(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
 function stratPill(s){
-  if(['Vol Squeeze','Trend Pullback','VWAP Reversion','NR7 Breakout'].includes(s)) return `<span class="pill p-green">${s}</span>`;
+  if(['Vol Squeeze','Trend Pullback','VWAP Reversion','NR7 Breakout','Range Envelope'].includes(s)) return `<span class="pill p-green">${s}</span>`;
   if(s==='Basis Yield') return `<span class="pill p-cyan">${s}</span>`;
   if(['Mean Reversion','Momentum'].includes(s)) return `<span class="pill p-purple">${s}</span>`;
   return `<span class="pill p-muted">${s}</span>`;
@@ -923,6 +943,7 @@ const STRAT_LABELS = {
   trend_pullback: 'Trend Pullback',
   vwap_reversion: 'VWAP Reversion',
   nr7_breakout: 'NR7 Breakout',
+  range_envelope: 'Range Envelope',
 };
 function setPage(page, strat, push){
   const isStrat = page === 'strategies';

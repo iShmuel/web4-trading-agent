@@ -478,6 +478,10 @@ def render() -> str:
             next_trigger = dim("Trend Pullback")
         elif "selected 'vwap_reversion'" in rl:
             next_trigger = dim("VWAP Reversion")
+        elif "selected 'nr7_breakout'" in rl:
+            next_trigger = dim("NR7 Breakout")
+        elif "selected 'range_envelope'" in rl:
+            next_trigger = dim("Range Envelope")
         elif "stale data" in rl:
             next_trigger = dim("Market Closed")
         elif "blacklisted" in rl or "asset pruned" in rl:
@@ -504,6 +508,10 @@ def render() -> str:
             mom_setup = green("Dynamic: Trend Pullback")
         elif "selected 'vwap_reversion'" in rl:
             mom_setup = green("Dynamic: VWAP Reversion")
+        elif "selected 'nr7_breakout'" in rl:
+            mom_setup = green("Dynamic: NR7 Breakout")
+        elif "selected 'range_envelope'" in rl:
+            mom_setup = green("Dynamic: Range Envelope")
         elif "stale data" in rl:
             mom_setup = dim("Stale / Market Closed")
         elif "blacklisted" in rl or "asset pruned" in rl:

@@ -55,6 +55,11 @@ STRATEGY_NAMES = {
     "mean_reversion": "Bollinger/RSI Mean Reversion",
     "stat_arb_pairs": "Cointegrated Statistical Arbitrage Pairs",
     "basis_yield": "Delta-Neutral Perpetual Basis Yield",
+    "volatility_squeeze": "Volatility Squeeze Breakout",
+    "trend_pullback": "Trend Pullback Continuation",
+    "vwap_reversion": "Rolling VWAP Fair-Value Reversion",
+    "nr7_breakout": "NR7 Compression Breakout",
+    "range_envelope": "Rolling Range Envelope (Average Down/Top)",
     "portfolio_coordinator": "Multi-Strategy Portfolio Coordinator",
 }
 

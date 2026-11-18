@@ -85,6 +85,14 @@ PARAMETER_BOUNDS: Dict[str, Tuple[float, float]] = {
     "vwap_rsi_max": (20.0, 50.0),
     "nr7_lookback": (4.0, 14.0),
     "nr7_atr_stop_mult": (1.0, 4.0),
+    "range_window": (12.0, 96.0),
+    "range_low_quantile": (0.05, 0.25),
+    "range_high_quantile": (0.75, 0.95),
+    "range_rsi_oversold": (15.0, 45.0),
+    "range_rsi_overbought": (55.0, 85.0),
+    "range_adx_max": (15.0, 35.0),
+    "range_atr_stop_mult": (1.0, 4.0),
+    "range_min_net_profit_usd": (5.0, 100.0),
 }
 
 

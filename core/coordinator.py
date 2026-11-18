@@ -30,6 +30,7 @@ from strategies.volatility_squeeze import VolatilitySqueezeStrategy
 from strategies.trend_pullback import TrendPullbackStrategy
 from strategies.vwap_reversion import VwapReversionStrategy
 from strategies.nr7_breakout import Nr7BreakoutStrategy
+from strategies.range_envelope import RangeEnvelopeStrategy
 from core.journal import log_decision, get_gate_alpha_feedback, log_maker_telemetry
 from core.polymarket_radar import PolymarketRadar, MacroEventRisk
 from core.fred_radar import FredMacroRadar, MacroRegimeReport
@@ -146,6 +147,8 @@ class PortfolioCoordinator:
         self._strategy_enabled[VwapReversionStrategy.STRATEGY_ID] = bool(config.get("enable_vwap_reversion", True))
         self._custom_strategies[Nr7BreakoutStrategy.STRATEGY_ID] = Nr7BreakoutStrategy(config)
         self._strategy_enabled[Nr7BreakoutStrategy.STRATEGY_ID] = bool(config.get("enable_nr7_breakout", True))
+        self._custom_strategies[RangeEnvelopeStrategy.STRATEGY_ID] = RangeEnvelopeStrategy(config)
+        self._strategy_enabled[RangeEnvelopeStrategy.STRATEGY_ID] = bool(config.get("enable_range_envelope", True))
         if "enabled_strategies" in config and isinstance(config["enabled_strategies"], (list, set, tuple)):
             enabled_set = set(config["enabled_strategies"])
             for sid in list(self._strategy_enabled.keys()):
@@ -257,6 +260,7 @@ class PortfolioCoordinator:
                 run_trend_pullback_backtest,
                 run_vwap_reversion_backtest,
                 run_nr7_breakout_backtest,
+                run_range_envelope_backtest,
             )
 
             r_mom = run_backtest(
@@ -331,6 +335,24 @@ class PortfolioCoordinator:
                 )
                 if r_nr7.total_trades >= 2 and r_nr7.profit_factor >= min_pf:
                     cands.append((r_nr7.sharpe_ratio, Nr7BreakoutStrategy.STRATEGY_ID))
+            if self.is_strategy_enabled(RangeEnvelopeStrategy.STRATEGY_ID):
+                r_re = run_range_envelope_backtest(
+                    df_win,
+                    account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
+                    range_window=int(sym_cfg.get("range_window", 36)),
+                    low_quantile=float(sym_cfg.get("range_low_quantile", 0.10)),
+                    high_quantile=float(sym_cfg.get("range_high_quantile", 0.90)),
+                    rsi_oversold=float(sym_cfg.get("range_rsi_oversold", 30.0)),
+                    rsi_overbought=float(sym_cfg.get("range_rsi_overbought", 70.0)),
+                    adx_max=float(sym_cfg.get("range_adx_max", 24.0)),
+                    stop_atr_mult=float(sym_cfg.get("range_atr_stop_mult", 2.0)),
+                    min_net_profit_usd=float(sym_cfg.get("range_min_net_profit_usd", 10.0)),
+                    allow_short=bool(sym_cfg.get("range_allow_short", True)),
+                    fee_pct=0.0002,
+                    slippage_pct=0.0001,
+                )
+                if r_re.total_trades >= 2 and r_re.profit_factor >= min_pf:
+                    cands.append((r_re.sharpe_ratio, RangeEnvelopeStrategy.STRATEGY_ID))
             if cands:
                 cands.sort(key=lambda x: x[0], reverse=True)
                 choice = cands[0][1]
@@ -425,6 +447,16 @@ class PortfolioCoordinator:
         self.momentum_strategy = MomentumStrategy(config)
         self.mean_reversion_strategy = MeanReversionStrategy(config)
         self.pairs_strategy = StatArbPairsStrategy(config)
+        if VolatilitySqueezeStrategy.STRATEGY_ID in self._custom_strategies:
+            self._custom_strategies[VolatilitySqueezeStrategy.STRATEGY_ID] = VolatilitySqueezeStrategy(config)
+        if TrendPullbackStrategy.STRATEGY_ID in self._custom_strategies:
+            self._custom_strategies[TrendPullbackStrategy.STRATEGY_ID] = TrendPullbackStrategy(config)
+        if VwapReversionStrategy.STRATEGY_ID in self._custom_strategies:
+            self._custom_strategies[VwapReversionStrategy.STRATEGY_ID] = VwapReversionStrategy(config)
+        if Nr7BreakoutStrategy.STRATEGY_ID in self._custom_strategies:
+            self._custom_strategies[Nr7BreakoutStrategy.STRATEGY_ID] = Nr7BreakoutStrategy(config)
+        if RangeEnvelopeStrategy.STRATEGY_ID in self._custom_strategies:
+            self._custom_strategies[RangeEnvelopeStrategy.STRATEGY_ID] = RangeEnvelopeStrategy(config)
         self._symbol_engines.clear()
         self._rolling_router_cache.clear()
         self.llm_screener.enabled = bool(config.get("enable_local_llm_preflight", self.llm_screener.enabled))
@@ -1120,7 +1152,13 @@ class PortfolioCoordinator:
 
         extra_signals: List[TradingSignal] = []
         for custom_id, custom_strat in self._custom_strategies.items():
-            if custom_id in (VolatilitySqueezeStrategy.STRATEGY_ID, TrendPullbackStrategy.STRATEGY_ID, VwapReversionStrategy.STRATEGY_ID, Nr7BreakoutStrategy.STRATEGY_ID):
+            if custom_id in (
+                VolatilitySqueezeStrategy.STRATEGY_ID,
+                TrendPullbackStrategy.STRATEGY_ID,
+                VwapReversionStrategy.STRATEGY_ID,
+                Nr7BreakoutStrategy.STRATEGY_ID,
+                RangeEnvelopeStrategy.STRATEGY_ID,
+            ):
                 if dyn_route not in ("all", custom_id):
                     continue
             if self.is_strategy_enabled(custom_id) and hasattr(custom_strat, "evaluate"):

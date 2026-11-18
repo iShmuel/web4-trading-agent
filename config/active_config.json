@@ -5,12 +5,13 @@
     "BNB/USDT",
     "INJ/USDT",
     "SUI/USDT",
+    "NEAR/USDT",
+    "PEPE/USDT",
     "INIT/USDT",
-    "BARD/USDT",
-    "LINK/USDT",
     "SMCI",
-    "MU",
     "INTC",
+    "MU",
+    "NKE",
     "AMD",
     "SNAP",
     "CIFR",
@@ -18,15 +19,7 @@
     "ONDS",
     "IREN",
     "HIMS",
-    "AAPL",
-    "WULF",
-    "NVDA",
-    "CBRS",
-    "DKNG",
-    "NEAR/USDT",
-    "PEPE/USDT",
-    "PLTR",
-    "TSLA"
+    "AAPL"
   ],
   "timeframe": "1h",
   "max_concurrent_positions": 5,
@@ -94,7 +87,8 @@
     "RARE/USDT": 0.02,
     "VALE": 0.02,
     "DKNG": 0.01,
-    "PEPE/USDT": 0.01
+    "PEPE/USDT": 0.01,
+    "NKE": 0.02
   },
   "symbol_exposure_caps": {
     "SOL/USDT": 0.4,
@@ -151,7 +145,8 @@
     "RARE/USDT": 0.35,
     "VALE": 0.35,
     "DKNG": 0.2,
-    "PEPE/USDT": 0.2
+    "PEPE/USDT": 0.2,
+    "NKE": 0.35
   },
   "fee_pct": 0.0006,
   "slippage_pct": 0.0004,
@@ -206,14 +201,6 @@
   "max_pair_half_life_hours": 72.0,
   "stat_arb_risk_pct": 0.02,
   "pairs_universe": [
-    [
-      "SUI/USDT",
-      "LINK/USDT"
-    ],
-    [
-      "AVAX/USDT",
-      "BNB/USDT"
-    ],
     [
       "CRWV",
       "INTC"
@@ -314,7 +301,8 @@
         "NVDA",
         "DKNG",
         "PLTR",
-        "TSLA"
+        "TSLA",
+        "NKE"
       ],
       "timeframe": "1h",
       "breakout_lookback": 48,
@@ -335,8 +323,7 @@
     "macro_hedges": {
       "symbols": [
         "XLE",
-        "KDP",
-        "CBRS"
+        "KDP"
       ],
       "timeframe": "1h",
       "breakout_lookback": 48,
@@ -354,6 +341,7 @@
     "AAL",
     "AMZN",
     "BMT/USDT",
+    "CBRS",
     "CRWV",
     "ETH/USDT",
     "FOXA",
@@ -420,7 +408,9 @@
   "pair_stop_cooldown_hours": 12.0,
   "pairs_Blacklist": [
     "INIT/USDT:GRAM/USDT",
-    "LINK/USDT:AVAX/USDT"
+    "LINK/USDT:AVAX/USDT",
+    "SUI/USDT:LINK/USDT",
+    "AVAX/USDT:BNB/USDT"
   ],
   "allow_short": true,
   "enable_vwap_reversion": true,
@@ -436,5 +426,16 @@
   "hurst_mr_max": 0.52,
   "enable_nr7_breakout": true,
   "nr7_lookback": 9,
-  "nr7_atr_stop_mult": 1.5
+  "nr7_atr_stop_mult": 1.5,
+  "enable_range_envelope": true,
+  "range_window": 36,
+  "range_low_quantile": 0.10,
+  "range_high_quantile": 0.90,
+  "range_rsi_oversold": 30.0,
+  "range_rsi_overbought": 70.0,
+  "range_adx_max": 24.0,
+  "range_atr_stop_mult": 2.0,
+  "range_min_net_profit_usd": 10.0,
+  "range_allow_long": true,
+  "range_allow_short": true
 }

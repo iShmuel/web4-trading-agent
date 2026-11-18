@@ -45,6 +45,8 @@ from core.backtest_engine import (
     run_volatility_squeeze_backtest,
     run_trend_pullback_backtest,
     run_vwap_reversion_backtest,
+    run_nr7_breakout_backtest,
+    run_range_envelope_backtest,
     BacktestResult,
 )
 from core.coordinator import resolve_symbol_config
@@ -366,6 +368,8 @@ def evaluate_candidate_asset(
         ("VOLATILITY_SQUEEZE", run_volatility_squeeze_backtest, "enable_volatility_squeeze"),
         ("TREND_PULLBACK", run_trend_pullback_backtest, "enable_trend_pullback"),
         ("VWAP_REVERSION", run_vwap_reversion_backtest, "enable_vwap_reversion"),
+        ("NR7_BREAKOUT", run_nr7_breakout_backtest, "enable_nr7_breakout"),
+        ("RANGE_ENVELOPE", run_range_envelope_backtest, "enable_range_envelope"),
     ]:
         if cfg.get(flag, True):
             candidates.append((

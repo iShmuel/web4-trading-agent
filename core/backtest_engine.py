@@ -1275,3 +1275,204 @@ def run_nr7_breakout_backtest(
         fee_pct=fee_pct,
         slippage_pct=slippage_pct,
     )
+
+
+def run_range_envelope_backtest(
+    df: pd.DataFrame,
+    initial_capital: float = 10000.0,
+    account_risk_pct: float = 0.02,
+    range_window: int = 36,
+    low_quantile: float = 0.10,
+    high_quantile: float = 0.90,
+    rsi_oversold: float = 30.0,
+    rsi_overbought: float = 70.0,
+    adx_max: float = 24.0,
+    stop_atr_mult: float = 2.0,
+    min_net_profit_usd: float = 10.0,
+    min_rr_ratio: float = 0.8,
+    scale_out_ratio: float = 0.5,
+    max_hold_bars: int = 48,
+    allow_long: bool = True,
+    allow_short: bool = True,
+    fee_pct: float = 0.0006,
+    slippage_pct: float = 0.0004,
+) -> BacktestResult:
+    """Backtest Rolling Range Envelope (Average Down <-> Average Top with Net Dollar Floor)."""
+    from strategies.range_envelope import compute_range_envelope_indicators
+
+    min_req = max(60, int(range_window) + 10)
+    if df is None or len(df) < min_req:
+        return BacktestResult(initial_capital=initial_capital, final_equity=initial_capital)
+
+    ind = compute_range_envelope_indicators(
+        df,
+        range_window=range_window,
+        low_quantile=low_quantile,
+        high_quantile=high_quantile,
+    )
+    closes = ind["close"].astype(float).values
+    highs = ind["high"].astype(float).values
+    lows = ind["low"].astype(float).values
+    atrs = ind["atr"].astype(float).values
+    adxs = ind["adx"].astype(float).values
+    rsis = ind["rsi"].astype(float).values
+    avg_downs = ind["avg_down"].astype(float).values
+    avg_tops = ind["avg_top"].astype(float).values
+
+    re = RiskEngine(default_risk_pct=max(0.01, min(0.05, float(account_risk_pct))))
+    eq = float(initial_capital)
+    peak = eq
+    max_dd = 0.0
+    total_fees = 0.0
+    trades: List[TradeRecord] = []
+    equity_curve: List[float] = [eq]
+
+    in_pos = False
+    side = "LONG"
+    ep = units = stop = tp1 = tp2 = d_risk = 0.0
+    e_time = None
+    tp1_hit = False
+    holds = 0
+    trade_pnl_acc = 0.0
+
+    for i in range(int(range_window) + 5, len(ind)):
+        c, h, l = closes[i], highs[i], lows[i]
+        atr, adx, rsi = atrs[i], adxs[i], rsis[i]
+        ad, at = avg_downs[i], avg_tops[i]
+        if np.isnan(atr) or np.isnan(ad) or np.isnan(at) or atr <= 0:
+            equity_curve.append(eq)
+            continue
+
+        if not in_pos:
+            if allow_long and adx <= adx_max and c <= ad and rsi < rsi_oversold:
+                exec_ep = c * (1.0 + slippage_pct)
+                u, st, dr = re.calculate_position(eq, exec_ep, atr, stop_atr_mult, account_risk_pct, False)
+                u = min(u, (eq * 0.95) / exec_ep)
+                if u > 0:
+                    notional = u * exec_ep
+                    req_pct = (min_net_profit_usd / notional) + (2.0 * fee_pct) + slippage_pct
+                    tp_net = exec_ep * (1.0 + req_pct)
+                    if at >= tp_net and (at - exec_ep) >= min_rr_ratio * (exec_ep - st):
+                        ef = notional * fee_pct
+                        total_fees += ef
+                        eq -= ef
+                        in_pos, side, ep, units, stop, d_risk = True, "LONG", exec_ep, u, st, dr
+                        e_time = ind.index[i]
+                        tp1 = max(tp_net, exec_ep + 0.5 * (at - exec_ep))
+                        tp2 = at
+                        tp1_hit, holds, trade_pnl_acc = False, 0, -ef
+            elif allow_short and adx <= adx_max and c >= at and rsi > rsi_overbought:
+                exec_ep = c * (1.0 - slippage_pct)
+                u, st, dr = re.calculate_position(eq, exec_ep, atr, stop_atr_mult, account_risk_pct, True)
+                u = min(u, (eq * 0.95) / exec_ep)
+                if u > 0:
+                    notional = u * exec_ep
+                    req_pct = (min_net_profit_usd / notional) + (2.0 * fee_pct) + slippage_pct
+                    tp_net = exec_ep * (1.0 - req_pct)
+                    if ad <= tp_net and (exec_ep - ad) >= min_rr_ratio * (st - exec_ep):
+                        ef = notional * fee_pct
+                        total_fees += ef
+                        eq -= ef
+                        in_pos, side, ep, units, stop, d_risk = True, "SHORT", exec_ep, u, st, dr
+                        e_time = ind.index[i]
+                        tp1 = min(tp_net, exec_ep - 0.5 * (exec_ep - ad))
+                        tp2 = ad
+                        tp1_hit, holds, trade_pnl_acc = False, 0, -ef
+        else:
+            holds += 1
+            exit_p = None
+            exit_reason = ""
+            if side == "LONG":
+                if not tp1_hit and scale_out_ratio > 0 and h >= tp1:
+                    exec_p1 = tp1 * (1.0 - slippage_pct)
+                    u1 = units * scale_out_ratio
+                    f1 = u1 * exec_p1 * fee_pct
+                    total_fees += f1
+                    eq += (exec_p1 - ep) * u1 - f1
+                    trade_pnl_acc += (exec_p1 - ep) * u1 - f1
+                    units -= u1
+                    tp1_hit = True
+                    stop = max(stop, ep * (1.0 + 2.0 * fee_pct + slippage_pct))
+                if l <= stop:
+                    exit_p, exit_reason = stop * (1.0 - slippage_pct), "Stop Loss"
+                elif h >= tp2:
+                    exit_p, exit_reason = tp2 * (1.0 - slippage_pct), "Average Top Target"
+                elif holds >= max_hold_bars:
+                    exit_p, exit_reason = c * (1.0 - slippage_pct), "Max Hold Exit"
+                if exit_p is not None:
+                    f2 = units * exit_p * fee_pct
+                    total_fees += f2
+                    eq += (exit_p - ep) * units - f2
+                    trade_pnl_acc += (exit_p - ep) * units - f2
+            else:
+                if not tp1_hit and scale_out_ratio > 0 and l <= tp1:
+                    exec_p1 = tp1 * (1.0 + slippage_pct)
+                    u1 = units * scale_out_ratio
+                    f1 = u1 * exec_p1 * fee_pct
+                    total_fees += f1
+                    eq += (ep - exec_p1) * u1 - f1
+                    trade_pnl_acc += (ep - exec_p1) * u1 - f1
+                    units -= u1
+                    tp1_hit = True
+                    stop = min(stop, ep * (1.0 - 2.0 * fee_pct - slippage_pct))
+                if h >= stop:
+                    exit_p, exit_reason = stop * (1.0 + slippage_pct), "Stop Loss"
+                elif l <= tp2:
+                    exit_p, exit_reason = tp2 * (1.0 + slippage_pct), "Average Down Target"
+                elif holds >= max_hold_bars:
+                    exit_p, exit_reason = c * (1.0 + slippage_pct), "Max Hold Exit"
+                if exit_p is not None:
+                    f2 = units * exit_p * fee_pct
+                    total_fees += f2
+                    eq += (ep - exit_p) * units - f2
+                    trade_pnl_acc += (ep - exit_p) * units - f2
+
+            if exit_p is not None:
+                trades.append(TradeRecord(
+                    entry_time=e_time,
+                    exit_time=ind.index[i],
+                    entry_price=ep,
+                    exit_price=exit_p,
+                    units=units,
+                    dollar_risk=d_risk,
+                    pnl=trade_pnl_acc,
+                    return_pct=(trade_pnl_acc / max(1.0, d_risk)) * 2.0,
+                    exit_reason=exit_reason,
+                    side=side,
+                    strategy_id="range_envelope",
+                ))
+                in_pos = False
+
+        if eq > peak:
+            peak = eq
+        dd = (peak - eq) / peak if peak > 0 else 0.0
+        max_dd = max(max_dd, dd)
+        equity_curve.append(eq)
+
+    total_trades = len(trades)
+    winning = sum(1 for t in trades if t.pnl > 0)
+    gp = sum(t.pnl for t in trades if t.pnl > 0)
+    gl = abs(sum(t.pnl for t in trades if t.pnl < 0))
+    pf = (gp / gl) if gl > 0 else (99.0 if gp > 0 else 0.0)
+    t_rets = [t.pnl / initial_capital for t in trades]
+    sharpe = (
+        float(np.mean(t_rets) / np.std(t_rets) * np.sqrt(len(t_rets)))
+        if len(t_rets) > 1 and np.std(t_rets) > 0
+        else (1.0 if gp > 0 else 0.0)
+    )
+    return BacktestResult(
+        initial_capital=initial_capital,
+        final_equity=eq,
+        total_return_pct=((eq - initial_capital) / initial_capital) * 100.0,
+        total_trades=total_trades,
+        winning_trades=winning,
+        losing_trades=total_trades - winning,
+        win_rate=(winning / total_trades) if total_trades else 0.0,
+        profit_factor=pf,
+        max_drawdown_pct=max_dd * 100.0,
+        sharpe_ratio=sharpe,
+        total_fees_paid=total_fees,
+        trades=trades,
+        equity_curve=equity_curve,
+    )
+
