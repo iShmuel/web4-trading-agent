@@ -79,3 +79,17 @@ This document tracks **only unbuilt and queued items** for the **Web4 Autonomous
 * **Suggested Priority**: Low (P3)
 * **What is Missing:**
   FIFO / specific-lot realized gain/loss, holding-period, wash-sale, and cumulative maker-vs-taker fee savings CSV/JSON export from `closed_trades` and `maker_telemetry.jsonl`.
+
+---
+
+### 8. Automatic Strategy-Level OOS Quarantine & Rehabilitation Gate (Agent 11 / Agent 12)
+
+* **Status**: Planned / Autonomous Portfolio Defense
+* **Suggested Priority**: High (P1)
+* **What is Missing:**
+  Currently, Agent 9 prunes/rehabilitates individual *assets*, while Agent 10 and Agent 11 tune *parameters inside* each strategy — but no agent automatically evaluates all 9 strategies in a **zero-lookahead rolling walk-forward Out-of-Sample (OOS) portfolio tournament** with authority to toggle `enable_<strategy>` flags on or off.
+* **Why it Matters:**
+  In our November 2026 strict zero-lookahead OOS audit (75.5 unseen days, full `0.06%` fee + `0.04%` slippage), keeping all 9 strategies enabled under a 14-day router lost `-36.27%` (primarily due to `vwap_reversion` `-$2,151.79`, `momentum` `-$679.29`, and `nr7_breakout` `-$585.02`), whereas quarantining OOS-negative engines and running only the 4 OOS-proven engines (`mean_reversion`, `range_envelope`, `basis_yield`, and equity `stat_arb_pairs`) with a 30-day router (`min_trades >= 3`, `min_pf >= 1.4`) turned the exact same OOS period into **`+24.12%` (`$12,412` in 63.8d / `$13,566` 90-day pace, `4.53%` MaxDD)**.
+* **Implementation Plan:**
+  1. Add a weekly non-blocking OOS strategy-level tournament in `agent/multi_strategy_optimizer.py` that replays each enabled and disabled strategy strictly out-of-sample across the active watchlist.
+  2. Submit a structured governance proposal to Agent 12 (`agent/governor.py`) to set `enable_<strategy>: false` for any strategy with negative rolling OOS Net PnL or OOS Profit Factor `< 1.15`, and automatically rehabilitate (`enable_<strategy>: true`) when its rolling OOS turns profitable (`OOS Net PnL > 0`, `OOS PF >= 1.30`, `MaxDD <= 10%`) for two consecutive checks.
