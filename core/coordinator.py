@@ -1056,7 +1056,8 @@ class PortfolioCoordinator:
                     tp_hit = existing_pos.get("tp_hit", False)
                     if not is_short:
                         be_stop = ep * 1.0015
-                        if tp_hit or (cur_price - ep) >= (be_atr_mult * atr):
+                        peak_px = max(cur_price, float(existing_pos.get("highest_price", cur_price)))
+                        if tp_hit or (peak_px - ep) >= (be_atr_mult * atr):
                             new_stop = max(new_stop, be_stop)
                     else:
                         be_stop = ep * 0.9985
@@ -1670,8 +1671,8 @@ class PortfolioCoordinator:
             strategy_id=chosen_sig.strategy_id,
         )
 
-        # Persist the momentum take-profit level so the exit logic can scale out later.
-        if chosen_sig.suggested_take_profit > 0 and chosen_sig.take_profit_ratio > 0:
+        # Persist the take-profit level so the exit logic can exit / scale out later.
+        if chosen_sig.suggested_take_profit > 0:
             self.account.set_position_fields(
                 symbol,
                 tp_target=chosen_sig.suggested_take_profit,

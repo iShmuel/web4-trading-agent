@@ -105,6 +105,9 @@ class VwapReversionStrategy:
 
         if existing_position is not None:
             stop = float(existing_position.get("trailing_stop", 0.0))
+            ep = float(existing_position.get("entry_price", price))
+            tp = float(existing_position.get("tp_target", 0.0)) or (ep + self.take_profit_atr_mult * atr)
+            high_px = float(last["high"])
             if float(last["low"]) <= stop:
                 return TradingSignal(
                     strategy_id=self.STRATEGY_ID,
@@ -117,7 +120,22 @@ class VwapReversionStrategy:
                     suggested_stop=stop,
                     exit_reason=f"VWAP Reversion trailing stop hit (${stop:.2f})",
                 )
+            if tp > ep and high_px >= tp:
+                return TradingSignal(
+                    strategy_id=self.STRATEGY_ID,
+                    symbol=symbol,
+                    timestamp=datetime.now(timezone.utc),
+                    direction=SignalDirection.FLAT,
+                    status=SignalStatus.EXIT,
+                    reference_price=max(price, tp),
+                    atr=atr,
+                    suggested_stop=stop,
+                    exit_reason=f"VWAP Reversion take-profit target hit (${tp:.2f})",
+                )
+            peak_px = max(price, high_px, float(existing_position.get("highest_price", price)))
             new_stop = max(stop, price - self.atr_multiplier * atr)
+            if (peak_px - ep) >= (1.2 * atr):
+                new_stop = max(new_stop, ep * 1.0015)
             return TradingSignal(
                 strategy_id=self.STRATEGY_ID,
                 symbol=symbol,

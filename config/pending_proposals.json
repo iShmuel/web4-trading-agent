@@ -545,7 +545,7 @@
   },
   {
     "proposal_id": "PROP-2E111AF2",
-    "status": "PENDING_HUMAN_APPROVAL",
+    "status": "SUPERSEDED",
     "governor_verdict": "APPROVE",
     "governor_confidence": 1.0,
     "governor_rationale": "Rule-only governance verification passed.",
@@ -601,6 +601,67 @@
     },
     "analyst_proposal": null,
     "target_config_path": "<repo_root>/config/active_config.json",
-    "created_at": "2026-11-18T04:18:55.463080+00:00"
+    "created_at": "2026-11-18T04:18:55.463080+00:00",
+    "superseded_by": "PROP-2F5541B9",
+    "superseded_at": "2026-11-19T11:46:13.505757+00:00"
+  },
+  {
+    "proposal_id": "PROP-2F5541B9",
+    "status": "PENDING_HUMAN_APPROVAL",
+    "governor_verdict": "APPROVE",
+    "governor_confidence": 1.0,
+    "governor_rationale": "Rule-only governance verification passed.",
+    "risk_assessment": "Deterministic invariant and parameter bounds check passed.",
+    "invariants_passed": true,
+    "tests_passed": true,
+    "human_approved": false,
+    "auto_gate_evaluation": {
+      "auto_approved": false,
+      "reason": "Gate 4 Failed: Candidate Out-of-Sample MaxDD (4.9%) exceeds baseline MaxDD (2.5% + 0.5% tolerance).",
+      "details": {
+        "gate_1_invariants": true,
+        "gate_2_tests": true,
+        "gate_3_governor_verdict": "APPROVE",
+        "gate_3_governor_confidence": 1.0,
+        "gate_3_min_confidence": 0.85,
+        "gate_4_superiority": false,
+        "reasons": [
+          "Gate 4 Failed: Candidate Out-of-Sample MaxDD (4.9%) exceeds baseline MaxDD (2.5% + 0.5% tolerance)."
+        ],
+        "test_return_delta": 0.24833768794550454,
+        "test_sharpe_delta": 1.367105132476699,
+        "test_sharpe": 1.7638923048902848,
+        "base_test_sharpe": 0.39678717241358585,
+        "test_max_dd": 4.918967770671152,
+        "base_test_max_dd": 2.5195885730685585
+      }
+    },
+    "proposed_changes": {
+      "bb_std": 2.5,
+      "bb_period": 30,
+      "rsi_oversold": 25,
+      "mr_atr_stop_mult": 2.5
+    },
+    "rationale": "Multi-strategy walk-forward winner for mean_reversion:global on AVAX/USDT, SOL/USDT, HIMS, INTC: IS Sharpe 5.99 (+0.50%), OOS Sharpe 1.76 vs base 0.40 (+0.25%)",
+    "empirical_proof": {
+      "target": "mean_reversion:global",
+      "universe": [
+        "AVAX/USDT",
+        "SOL/USDT",
+        "HIMS",
+        "INTC"
+      ],
+      "train_sharpe": 5.989670953468282,
+      "test_sharpe": 1.7638923048902848,
+      "train_return_delta": 0.5037688305424175,
+      "test_return_delta": 0.24833768794550454,
+      "test_max_dd": 4.918967770671152,
+      "base_test_sharpe": 0.39678717241358585,
+      "base_test_max_dd": 2.5195885730685585,
+      "test_sharpe_delta": 1.367105132476699
+    },
+    "analyst_proposal": null,
+    "target_config_path": "<repo_root>/config/active_config.json",
+    "created_at": "2026-11-19T11:45:49.095167+00:00"
   }
 ]

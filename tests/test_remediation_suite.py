@@ -129,7 +129,7 @@ def test_multi_strategy_registry_and_conflict_resolution(tmp_path):
 
     coord.register_strategy("custom_long", CustomLongStrategy(), enabled=True)
     coord.register_strategy("custom_short", CustomShortStrategy(), enabled=True)
-    assert len(coord.get_registered_strategies()) == 10
+    assert len(coord.get_registered_strategies()) == 11
 
     no_mom = create_no_trade_signal("momentum", "BTC/USDT", 100.0, "none")
     no_mr = create_no_trade_signal("mean_reversion", "BTC/USDT", 100.0, "none")
