@@ -406,7 +406,7 @@ def build_dashboard_payload(
             },
             "momentum": {
                 "name": "Momentum / Trend Following",
-                "enabled": True,
+                "enabled": bool(cfg.get("enable_momentum", True)),
                 "description": "Breakout trend-following gated by macro EMA, ATR trailing stops, and breakeven/chandelier ratchets.",
                 "params": {
                     "timeframe": cfg.get("timeframe", "1h"),
@@ -423,7 +423,7 @@ def build_dashboard_payload(
             },
             "mean_reversion": {
                 "name": "Mean Reversion",
-                "enabled": True,
+                "enabled": bool(cfg.get("enable_mean_reversion", True)),
                 "description": "Fades stretched Bollinger/RSI extremes in range-bound or choppy regimes.",
                 "params": {
                     "timeframe": cfg.get("timeframe", "1h"),
@@ -439,7 +439,7 @@ def build_dashboard_payload(
             },
             "volatility_squeeze": {
                 "name": "Volatility Squeeze",
-                "enabled": True,
+                "enabled": bool(cfg.get("enable_volatility_squeeze", True)),
                 "description": "Captures expansion breakouts out of low-volatility compression bands.",
                 "params": {
                     "timeframe": cfg.get("timeframe", "1h"),
@@ -452,7 +452,7 @@ def build_dashboard_payload(
             },
             "trend_pullback": {
                 "name": "Trend Pullback",
-                "enabled": True,
+                "enabled": bool(cfg.get("enable_trend_pullback", True)),
                 "description": "Enters pullbacks in established trends when ADX confirms directional strength.",
                 "params": {
                     "timeframe": cfg.get("timeframe", "1h"),
