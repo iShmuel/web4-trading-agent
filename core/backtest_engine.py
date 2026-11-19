@@ -1062,6 +1062,24 @@ def run_basis_yield_backtest(
     )
 
 
+def compute_dynamic_tp_mult_series(
+    df: pd.DataFrame,
+    atr_arr: np.ndarray,
+    default_mult: float = 2.5,
+    scale: float = 0.70,
+    lo: float = 1.8,
+    hi: float = 3.2,
+) -> np.ndarray:
+    """Compute per-bar dynamic Take-Profit ATR multiplier X from trailing 36h observed 12h swings."""
+    h = df["high"].astype(float)
+    l = df["low"].astype(float)
+    atr_s = pd.Series(atr_arr, index=df.index).replace(0.0, np.nan)
+    up_12h = (h.rolling(12).max() - l.rolling(12).min()) / atr_s
+    obs_q75 = up_12h.rolling(36).quantile(0.75)
+    scaled = (obs_q75 * scale).clip(lower=lo, upper=hi).fillna(default_mult)
+    return scaled.values
+
+
 def _run_signal_array_backtest(
     df: pd.DataFrame,
     entries: np.ndarray,
@@ -1073,6 +1091,9 @@ def _run_signal_array_backtest(
     tp_atr_mult: float = 2.5,
     fee_pct: float = 0.0002,
     slippage_pct: float = 0.0001,
+    dynamic_tp: bool = True,
+    lock_profit_atr: float = 1.0,
+    lock_profit_net_usd: float = 12.0,
 ) -> BacktestResult:
     """Shared causal long-only backtest simulator for boolean entry signal arrays."""
     equity = float(initial_capital)
@@ -1086,10 +1107,16 @@ def _run_signal_array_backtest(
     closes = df["close"].astype(float).values
     highs = df["high"].astype(float).values
     lows = df["low"].astype(float).values
+    dyn_tp_arr = (
+        compute_dynamic_tp_mult_series(df, atr_arr, default_mult=tp_atr_mult)
+        if dynamic_tp
+        else np.full(len(df), float(tp_atr_mult))
+    )
+    rt_cost = (2.0 * fee_pct) + slippage_pct
 
     for i in range(1, len(df)):
         if pos is not None:
-            ep, units, stop, tp, e_time, e_fee, d_risk = pos
+            ep, units, stop, tp, trig_px, locked, e_time, e_fee, d_risk = pos
             hit_stop = lows[i] <= stop
             hit_tp = highs[i] >= tp
             if hit_stop or hit_tp:
@@ -1112,10 +1139,16 @@ def _run_signal_array_backtest(
                     strategy_id=strategy_id,
                 ))
                 pos = None
+            elif not locked and lock_profit_atr > 0 and highs[i] >= trig_px:
+                notional = max(1.0, units * ep)
+                lock_pct = (lock_profit_net_usd / notional) + rt_cost
+                new_stop = max(stop, ep * (1.0 + lock_pct))
+                pos = (ep, units, new_stop, tp, trig_px, True, e_time, e_fee, d_risk)
 
         if pos is None and bool(entries[i - 1]) and atr_arr[i - 1] > 0:
+            atr_val = float(atr_arr[i - 1])
             ep = closes[i - 1] * (1.0 + slippage_pct)
-            dist = float(atr_arr[i - 1]) * stop_atr_mult
+            dist = atr_val * stop_atr_mult
             risk_clamped = max(0.01, min(0.05, float(account_risk_pct)))
             d_risk = equity * risk_clamped
             units = d_risk / dist
@@ -1124,7 +1157,18 @@ def _run_signal_array_backtest(
             if units > 0:
                 e_fee = ep * units * fee_pct
                 total_fees += e_fee
-                pos = (ep, units, max(0.0, ep - dist), ep + float(atr_arr[i - 1]) * tp_atr_mult, df.index[i - 1], e_fee, d_risk)
+                x_mult = float(dyn_tp_arr[i - 1])
+                pos = (
+                    ep,
+                    units,
+                    max(0.0, ep - dist),
+                    ep + atr_val * x_mult,
+                    ep + atr_val * lock_profit_atr,
+                    False,
+                    df.index[i - 1],
+                    e_fee,
+                    d_risk,
+                )
 
         if equity > peak:
             peak = equity

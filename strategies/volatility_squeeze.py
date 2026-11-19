@@ -141,8 +141,11 @@ class VolatilitySqueezeStrategy:
                 )
             peak_px = max(price, high_px, float(existing_position.get("highest_price", price)))
             new_stop = max(stop, price - self.atr_multiplier * atr)
-            if (peak_px - ep) >= (1.2 * atr):
-                new_stop = max(new_stop, ep * 1.0015)
+            if (peak_px - ep) >= (1.0 * atr):
+                units = float(existing_position.get("units", 0.0))
+                notional = max(1.0, units * ep) if units > 0 else 2500.0
+                lock_pct = (12.0 / notional) + (2.0 * self.fee_pct) + self.slippage_pct
+                new_stop = max(new_stop, ep * (1.0 + lock_pct))
             return TradingSignal(
                 strategy_id=self.STRATEGY_ID,
                 symbol=symbol,
@@ -155,8 +158,10 @@ class VolatilitySqueezeStrategy:
             )
 
         if bool(last.get("squeeze_breakout", False)):
+            from core.backtest_engine import compute_dynamic_tp_mult_series
+            dyn_x = float(compute_dynamic_tp_mult_series(closed_df, ind["atr"].fillna(0.0).values, default_mult=self.take_profit_atr_mult)[-1])
             stop_loss = max(0.0, price - self.atr_multiplier * atr)
-            take_profit = price + self.take_profit_atr_mult * atr
+            take_profit = price + dyn_x * atr
             return TradingSignal(
                 strategy_id=self.STRATEGY_ID,
                 symbol=symbol,

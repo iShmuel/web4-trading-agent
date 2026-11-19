@@ -248,7 +248,8 @@ class PortfolioCoordinator:
         if df is None or len(df) < min_bars:
             return "all"
 
-        lookback_bars = 336 if is_crypto else min(280, len(df))
+        cfg_lb = int(self.config.get("dynamic_router_lookback_hours", 720))
+        lookback_bars = min(cfg_lb, len(df)) if is_crypto else min(280, len(df))
         df_win = df.iloc[-lookback_bars:].copy()
 
         try:
@@ -292,10 +293,11 @@ class PortfolioCoordinator:
             )
 
             min_pf = float(self.config.get("dynamic_router_min_pf", 1.15))
+            min_tr = int(self.config.get("dynamic_router_min_trades", 2))
             cands = []
-            if r_mom.total_trades >= 2 and r_mom.profit_factor >= min_pf:
+            if self.is_strategy_enabled(MomentumStrategy.STRATEGY_ID) and r_mom.total_trades >= min_tr and r_mom.profit_factor >= min_pf:
                 cands.append((r_mom.sharpe_ratio, MomentumStrategy.STRATEGY_ID))
-            if r_mr.total_trades >= 2 and r_mr.profit_factor >= min_pf:
+            if self.is_strategy_enabled(MeanReversionStrategy.STRATEGY_ID) and r_mr.total_trades >= min_tr and r_mr.profit_factor >= min_pf:
                 cands.append((r_mr.sharpe_ratio, MeanReversionStrategy.STRATEGY_ID))
             if self.is_strategy_enabled(VolatilitySqueezeStrategy.STRATEGY_ID):
                 r_sq = run_volatility_squeeze_backtest(
@@ -304,7 +306,7 @@ class PortfolioCoordinator:
                     fee_pct=0.0002,
                     slippage_pct=0.0001,
                 )
-                if r_sq.total_trades >= 2 and r_sq.profit_factor >= min_pf:
+                if r_sq.total_trades >= min_tr and r_sq.profit_factor >= min_pf:
                     cands.append((r_sq.sharpe_ratio, VolatilitySqueezeStrategy.STRATEGY_ID))
             if self.is_strategy_enabled(TrendPullbackStrategy.STRATEGY_ID):
                 r_pb = run_trend_pullback_backtest(
@@ -313,7 +315,7 @@ class PortfolioCoordinator:
                     fee_pct=0.0002,
                     slippage_pct=0.0001,
                 )
-                if r_pb.total_trades >= 2 and r_pb.profit_factor >= min_pf:
+                if r_pb.total_trades >= min_tr and r_pb.profit_factor >= min_pf:
                     cands.append((r_pb.sharpe_ratio, TrendPullbackStrategy.STRATEGY_ID))
             if self.is_strategy_enabled(VwapReversionStrategy.STRATEGY_ID):
                 r_vw = run_vwap_reversion_backtest(
@@ -322,7 +324,7 @@ class PortfolioCoordinator:
                     fee_pct=0.0002,
                     slippage_pct=0.0001,
                 )
-                if r_vw.total_trades >= 2 and r_vw.profit_factor >= min_pf:
+                if r_vw.total_trades >= min_tr and r_vw.profit_factor >= min_pf:
                     cands.append((r_vw.sharpe_ratio, VwapReversionStrategy.STRATEGY_ID))
             if self.is_strategy_enabled(Nr7BreakoutStrategy.STRATEGY_ID):
                 r_nr7 = run_nr7_breakout_backtest(
@@ -333,7 +335,7 @@ class PortfolioCoordinator:
                     fee_pct=0.0002,
                     slippage_pct=0.0001,
                 )
-                if r_nr7.total_trades >= 2 and r_nr7.profit_factor >= min_pf:
+                if r_nr7.total_trades >= min_tr and r_nr7.profit_factor >= min_pf:
                     cands.append((r_nr7.sharpe_ratio, Nr7BreakoutStrategy.STRATEGY_ID))
             if self.is_strategy_enabled(RangeEnvelopeStrategy.STRATEGY_ID):
                 r_re = run_range_envelope_backtest(
@@ -351,7 +353,7 @@ class PortfolioCoordinator:
                     fee_pct=0.0002,
                     slippage_pct=0.0001,
                 )
-                if r_re.total_trades >= 2 and r_re.profit_factor >= min_pf:
+                if r_re.total_trades >= min_tr and r_re.profit_factor >= min_pf:
                     cands.append((r_re.sharpe_ratio, RangeEnvelopeStrategy.STRATEGY_ID))
             if cands:
                 cands.sort(key=lambda x: x[0], reverse=True)
@@ -1055,9 +1057,12 @@ class PortfolioCoordinator:
                     be_atr_mult = sym_cfg.get("breakeven_atr_mult", self.config.get("breakeven_atr_mult", 1.2))
                     tp_hit = existing_pos.get("tp_hit", False)
                     if not is_short:
-                        be_stop = ep * 1.0015
+                        units_held = float(existing_pos.get("units", 0.0))
+                        notional_held = max(1.0, units_held * ep) if units_held > 0 else 2500.0
+                        fee_lock_pct = (12.0 / notional_held) + 0.0016
+                        be_stop = ep * max(1.0015, 1.0 + fee_lock_pct)
                         peak_px = max(cur_price, float(existing_pos.get("highest_price", cur_price)))
-                        if tp_hit or (peak_px - ep) >= (be_atr_mult * atr):
+                        if tp_hit or (peak_px - ep) >= (min(1.0, be_atr_mult) * atr):
                             new_stop = max(new_stop, be_stop)
                     else:
                         be_stop = ep * 0.9985
