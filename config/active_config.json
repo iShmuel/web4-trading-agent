@@ -435,7 +435,7 @@
   "enable_nr7_breakout": false,
   "nr7_lookback": 9,
   "nr7_atr_stop_mult": 1.5,
-  "enable_range_envelope": true,
+  "enable_range_envelope": false,
   "range_window": 36,
   "range_low_quantile": 0.1,
   "range_high_quantile": 0.9,
