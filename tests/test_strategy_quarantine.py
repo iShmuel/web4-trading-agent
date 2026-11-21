@@ -63,3 +63,43 @@ def test_auto_return_requires_two_consecutive_passing_oos_checks(tmp_path):
     assert by_id2["range_envelope"].action == "REHABILITATE"
     assert upd2 == {"enable_range_envelope": True}
     assert state2["rehab_streaks"]["range_envelope"] == 0
+
+
+def test_progressive_drawdown_throttle_halves_risk_at_10pct_dd():
+    from core.risk_engine import RiskEngine
+
+    risk = RiskEngine(
+        default_risk_pct=0.025,
+        max_single_asset_exposure_pct=0.90,
+        dynamic_scaling=False,
+        enable_drawdown_throttle=True,
+        drawdown_throttle_pct=0.10,
+        drawdown_throttle_mult=0.50,
+    )
+    risk._peak_equity = 10_000.0
+
+    from datetime import datetime, timezone
+    # At 5% DD -> full 1.0x risk (2.5%)
+    assert risk.get_drawdown_risk_multiplier(9500.0) == 1.0
+    v_normal = risk.validate_proposed_entry(
+        symbol="AAPL", side="LONG", strategy_id="volatility_squeeze",
+        entry_price=200.0, suggested_stop=190.0, atr=5.0, atr_multiplier=2.0,
+        equity=9500.0, cash=9500.0, active_positions={},
+        current_time=datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc),
+    )
+    assert v_normal.approved
+    assert abs((v_normal.dollar_risk / 9500.0) - 0.025) < 1e-4
+
+    # Next day at 10.5% cumulative DD -> throttled 0.5x risk (1.25%, still inside 1%-5% bounds!)
+    assert risk.get_drawdown_risk_multiplier(8950.0) == 0.5
+    v_throttled = risk.validate_proposed_entry(
+        symbol="AAPL", side="LONG", strategy_id="volatility_squeeze",
+        entry_price=200.0, suggested_stop=190.0, atr=5.0, atr_multiplier=2.0,
+        equity=8950.0, cash=8950.0, active_positions={},
+        current_time=datetime(2026, 1, 2, 12, 0, tzinfo=timezone.utc),
+    )
+    assert v_throttled.approved
+    assert abs((v_throttled.dollar_risk / 8950.0) - 0.0125) < 1e-4
+
+    # Recovery back to 8% DD -> back to 1.0x
+    assert risk.get_drawdown_risk_multiplier(9200.0) == 1.0

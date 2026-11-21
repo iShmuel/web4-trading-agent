@@ -54,6 +54,9 @@ class RiskEngine:
         account: Optional[Any] = None,
         max_correlated_positions: int = 2,
         correlation_threshold: float = 0.75,
+        enable_drawdown_throttle: bool = True,
+        drawdown_throttle_pct: float = 0.10,
+        drawdown_throttle_mult: float = 0.50,
     ):
         self.risk_pct = self.enforce_risk_bounds(default_risk_pct)
         self.max_total_exposure_pct = max_total_exposure_pct
@@ -69,6 +72,12 @@ class RiskEngine:
         self.max_drawdown_limit_pct = (
             max_drawdown_limit_pct / 100.0 if max_drawdown_limit_pct > 1.0 else max_drawdown_limit_pct
         )
+        # Progressive Drawdown Throttle: cut position risk in half once DD >= 10% off peak
+        self.enable_drawdown_throttle: bool = bool(enable_drawdown_throttle)
+        self.drawdown_throttle_pct: float = (
+            drawdown_throttle_pct / 100.0 if drawdown_throttle_pct > 1.0 else float(drawdown_throttle_pct)
+        )
+        self.drawdown_throttle_mult: float = max(0.25, min(1.0, float(drawdown_throttle_mult)))
         # Per-symbol dynamic capital weighting (strictly bounded between 1% and 5%)
         self.symbol_risk_weights: Dict[str, float] = {
             k: self.enforce_risk_bounds(v) for k, v in (symbol_risk_weights or {}).items()
@@ -356,6 +365,18 @@ class RiskEngine:
         self._persist_risk_state()
         return True, "Circuit breakers healthy"
 
+    def get_drawdown_risk_multiplier(self, current_equity: float) -> float:
+        """Return progressive drawdown risk multiplier (e.g. 0.5x when DD >= 10% off peak)."""
+        if not self.enable_drawdown_throttle:
+            return 1.0
+        peak = float(getattr(self, "_peak_equity", 0.0) or 0.0)
+        if peak <= 0.0 or current_equity <= 0.0:
+            return 1.0
+        dd = (peak - current_equity) / peak
+        if dd >= self.drawdown_throttle_pct:
+            return self.drawdown_throttle_mult
+        return 1.0
+
     def compute_volatility_adjusted_risk(
         self,
         base_risk_pct: float,
@@ -510,10 +531,12 @@ class RiskEngine:
                     ),
                 )
 
-        # 4. Volatility sizing calculation (with per-symbol dynamic risk weighting & volatility targeting)
+        # 4. Volatility sizing calculation (with per-symbol dynamic risk weighting,
+        #    progressive drawdown throttling, & volatility targeting)
+        dd_throttle_mult = self.get_drawdown_risk_multiplier(equity)
         base_risk = self.symbol_risk_weights.get(
             symbol, requested_risk_pct if requested_risk_pct is not None else self.risk_pct
-        ) * float(risk_multiplier)
+        ) * float(risk_multiplier) * dd_throttle_mult
         if self.in_probation:
             # Item 2: During Probationary Reentry, lock risk to the 1.0% floor (Invariant Rule #3)
             effective_risk_pct = MIN_ALLOWED_RISK_PCT
@@ -536,7 +559,6 @@ class RiskEngine:
             return RiskVerdict(
                 approved=False,
                 reason=f"Rejected: non-positive ATR/stop distance on {symbol}",
-                effective_risk_pct=effective_risk_pct,
             )
         eff_atr_mult = (
             abs(entry_price - suggested_stop) / eff_atr

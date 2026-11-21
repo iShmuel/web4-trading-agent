@@ -32,6 +32,9 @@
   "auto_approve_min_governor_confidence": 0.85,
   "max_strategy_allocation_pct": 0.85,
   "account_risk_pct": 0.025,
+  "enable_drawdown_throttle": true,
+  "drawdown_throttle_pct": 0.1,
+  "drawdown_throttle_mult": 0.5,
   "symbol_risk_weights": {
     "SOL/USDT": 0.03,
     "SUI/USDT": 0.01,

@@ -133,6 +133,13 @@ class PortfolioCoordinator:
             if "max_drawdown_limit_pct" in config:
                 dd_cfg = float(config["max_drawdown_limit_pct"])
                 self.risk_engine.max_drawdown_limit_pct = dd_cfg / 100.0 if dd_cfg > 1.0 else dd_cfg
+            if "enable_drawdown_throttle" in config:
+                self.risk_engine.enable_drawdown_throttle = bool(config["enable_drawdown_throttle"])
+            if "drawdown_throttle_pct" in config:
+                t_pct = float(config["drawdown_throttle_pct"])
+                self.risk_engine.drawdown_throttle_pct = t_pct / 100.0 if t_pct > 1.0 else t_pct
+            if "drawdown_throttle_mult" in config:
+                self.risk_engine.drawdown_throttle_mult = max(0.25, min(1.0, float(config["drawdown_throttle_mult"])))
             self.risk_engine.bind_account(self.account)
 
         # Default strategy engines (top-level config)
