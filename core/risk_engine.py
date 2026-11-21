@@ -529,15 +529,24 @@ class RiskEngine:
             (not is_short and 0.0 < suggested_stop < entry_price)
             or (is_short and suggested_stop > entry_price)
         )
+        eff_atr = float(atr or 0.0)
+        if eff_atr <= 0.0 and valid_suggested_stop:
+            eff_atr = abs(entry_price - suggested_stop) / max(0.1, float(atr_multiplier or 1.0))
+        if eff_atr <= 0.0:
+            return RiskVerdict(
+                approved=False,
+                reason=f"Rejected: non-positive ATR/stop distance on {symbol}",
+                effective_risk_pct=effective_risk_pct,
+            )
         eff_atr_mult = (
-            abs(entry_price - suggested_stop) / atr
-            if (valid_suggested_stop and atr > 0)
+            abs(entry_price - suggested_stop) / eff_atr
+            if valid_suggested_stop
             else atr_multiplier
         )
         units, initial_stop, dollar_risk = self.calculate_position(
             equity=equity,
             entry_price=entry_price,
-            atr=atr,
+            atr=eff_atr,
             atr_multiplier=eff_atr_mult,
             risk_pct=effective_risk_pct,
             is_short=is_short,
