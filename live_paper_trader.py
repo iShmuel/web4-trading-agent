@@ -156,8 +156,42 @@ def run_portfolio_tick(
         except Exception as e:
             log(f"   ⚠️ Warning validating {symbol}: {e}")
 
+    # Fetch dedicated Macro Regime Playbook B benchmarks (read-only thermometer; never traded unless in watchlist)
+    macro_bench_data: Dict[str, Any] = {}
+    if config.get("enable_macro_regime_playbook", False):
+        bench_syms = list(config.get("macro_regime_benchmarks", ["BTC/USDT", "SPY"]))
+        if not hasattr(run_live_cycle, "_macro_bench_cache"):
+            run_live_cycle._macro_bench_cache = {}
+        now_ts = time.time()
+        to_fetch = []
+        for bsym in bench_syms:
+            if bsym in market_data:
+                macro_bench_data[bsym] = market_data[bsym]
+                continue
+            cached_b = run_live_cycle._macro_bench_cache.get(bsym)
+            if cached_b is not None and (now_ts - cached_b[0]) < 3600.0:
+                macro_bench_data[bsym] = cached_b[1]
+            else:
+                to_fetch.append(bsym)
+        if to_fetch:
+            b_params = {
+                bsym: {
+                    "timeframe": "1h",
+                    "days": 30 if is_crypto_symbol(bsym) else 45,
+                    "force_refresh": is_crypto_symbol(bsym) or (not is_weekend),
+                    "closed_only": True,
+                }
+                for bsym in to_fetch
+            }
+            fetched_b = fetch_ohlcv_batch(to_fetch, symbol_params=b_params)
+            for bsym in to_fetch:
+                bdf = fetched_b.get(bsym)
+                if bdf is not None and not bdf.empty:
+                    macro_bench_data[bsym] = bdf
+                    run_live_cycle._macro_bench_cache[bsym] = (now_ts, bdf)
+
     # Run cycle through the authoritative Coordinator
-    cycle_report = coordinator.run_cycle(market_data)
+    cycle_report = coordinator.run_cycle(market_data, benchmark_data=macro_bench_data)
 
     # Settle past decisions once their forward window has traded
     try:
@@ -205,7 +239,8 @@ def run_portfolio_tick(
             if cycle_report.macro_return_pct is not None
             else "n/a"
         )
-        log(f"   Macro Regime Playbook B: {cycle_report.macro_regime} (20d 50/50 BNB+AAPL = {ret_str})")
+        bench_lbl = "+".join(config.get("macro_regime_benchmarks", ["BTC/USDT", "SPY"]))
+        log(f"   Macro Regime Playbook B: {cycle_report.macro_regime} (20d 50/50 {bench_lbl} = {ret_str})")
     log(f"   Portfolio Equity: ${cycle_report.portfolio_equity:,.2f} | Cash: ${cycle_report.available_cash:,.2f} | Open: {cycle_report.open_positions}")
     write_live_status(account, cycle_report, current_prices, watchlist)
     return current_prices

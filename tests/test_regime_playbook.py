@@ -72,28 +72,28 @@ def test_macro_playbook_regime_classification_and_causality(tmp_path):
 
     # BULL: +12% over 30d (~+8% over 20d), even if today's incomplete day crashes -30%
     bull_data = {
-        "BNB/USDT": _make_daily_ohlcv(500.0, 560.0, days=30, last_day_spike=0.70),
-        "AAPL": _make_daily_ohlcv(200.0, 224.0, days=30, last_day_spike=0.70),
+        "BTC/USDT": _make_daily_ohlcv(50000.0, 56000.0, days=30, last_day_spike=0.70),
+        "SPY": _make_daily_ohlcv(500.0, 560.0, days=30, last_day_spike=0.70),
     }
-    regime, ret = coord.get_macro_playbook_regime(market_data=bull_data, force_refresh=True)
+    regime, ret = coord.get_macro_playbook_regime(benchmark_data=bull_data, force_refresh=True)
     assert regime == "BULL"
     assert ret >= 4.0
 
     # CHOPPY: +1% over 30d
     chop_data = {
-        "BNB/USDT": _make_daily_ohlcv(500.0, 505.0, days=30),
-        "AAPL": _make_daily_ohlcv(200.0, 202.0, days=30),
+        "BTC/USDT": _make_daily_ohlcv(50000.0, 50500.0, days=30),
+        "SPY": _make_daily_ohlcv(500.0, 505.0, days=30),
     }
-    regime, ret = coord.get_macro_playbook_regime(market_data=chop_data, force_refresh=True)
+    regime, ret = coord.get_macro_playbook_regime(benchmark_data=chop_data, force_refresh=True)
     assert regime == "CHOPPY"
     assert -4.0 < ret < 4.0
 
     # BEAR: -15% over 30d (~-10% over 20d), even if today's incomplete day spikes +40%
     bear_data = {
-        "BNB/USDT": _make_daily_ohlcv(500.0, 425.0, days=30, last_day_spike=1.40),
-        "AAPL": _make_daily_ohlcv(200.0, 170.0, days=30, last_day_spike=1.40),
+        "BTC/USDT": _make_daily_ohlcv(50000.0, 42500.0, days=30, last_day_spike=1.40),
+        "SPY": _make_daily_ohlcv(500.0, 425.0, days=30, last_day_spike=1.40),
     }
-    regime, ret = coord.get_macro_playbook_regime(market_data=bear_data, force_refresh=True)
+    regime, ret = coord.get_macro_playbook_regime(benchmark_data=bear_data, force_refresh=True)
     assert regime == "BEAR"
     assert ret <= -4.0
 
@@ -117,30 +117,34 @@ def test_playbook_b_allowed_strategies(tmp_path):
 
 def test_router_respects_playbook_b_in_bull_regime(tmp_path):
     coord = _make_coordinator(tmp_path)
-    bull_data = {
-        "BNB/USDT": _make_daily_ohlcv(500.0, 580.0, days=30),
-        "AAPL": _make_daily_ohlcv(200.0, 232.0, days=30),
+    bull_bench = {
+        "BTC/USDT": _make_daily_ohlcv(50000.0, 58000.0, days=30),
+        "SPY": _make_daily_ohlcv(500.0, 580.0, days=30),
     }
-    coord._latest_market_data = bull_data
-    coord.get_macro_playbook_regime(market_data=bull_data, force_refresh=True)
+    coord._latest_benchmark_data = bull_bench
+    coord.get_macro_playbook_regime(benchmark_data=bull_bench, force_refresh=True)
 
     # In BULL, directional MR & VolSqueeze are paused -> crypto routes to basis_yield, stocks to cash
+    aapl_df = _make_daily_ohlcv(200.0, 232.0, days=30)
+    bnb_df = _make_daily_ohlcv(500.0, 580.0, days=30)
     sym_cfg = coord.symbol_config("AAPL")
-    assert coord._resolve_dynamic_rolling_strategy("AAPL", bull_data["AAPL"], sym_cfg) == "cash"
+    assert coord._resolve_dynamic_rolling_strategy("AAPL", aapl_df, sym_cfg) == "cash"
     sym_cfg_bnb = coord.symbol_config("BNB/USDT")
-    assert coord._resolve_dynamic_rolling_strategy("BNB/USDT", bull_data["BNB/USDT"], sym_cfg_bnb) == "basis_yield"
+    assert coord._resolve_dynamic_rolling_strategy("BNB/USDT", bnb_df, sym_cfg_bnb) == "basis_yield"
 
 
 def test_stat_arb_pairs_paused_in_choppy_but_close_pair_still_executes(tmp_path):
     coord = _make_coordinator(tmp_path)
+    chop_bench = {
+        "BTC/USDT": _make_daily_ohlcv(50000.0, 50400.0, days=30),
+        "SPY": _make_daily_ohlcv(500.0, 502.5, days=30),
+    }
     chop_data = {
-        "BNB/USDT": _make_daily_ohlcv(500.0, 504.0, days=30),
-        "AAPL": _make_daily_ohlcv(200.0, 201.0, days=30),
         "SMCI": _make_daily_ohlcv(40.0, 41.0, days=30),
         "IREN": _make_daily_ohlcv(10.0, 10.2, days=30),
     }
 
-    # 1. New entry signal in CHOPPY must be REJECTED by Playbook B
+    # 1. New entry signal in CHOPPY must be REJECTED by Playbook B, and BTC/SPY are never evaluated/traded
     entry_sig = PairTradeSignal(
         pair_id="SMCI:IREN",
         asset_a="SMCI",
@@ -155,9 +159,15 @@ def test_stat_arb_pairs_paused_in_choppy_but_close_pair_still_executes(tmp_path)
         reason="Test entry",
     )
     with patch.object(coord.pairs_strategy, "scan_dynamic_pairs", return_value=[entry_sig]):
-        report = coord.run_cycle(chop_data, now=datetime(2025, 2, 1, 12, 0, tzinfo=timezone.utc))
+        report = coord.run_cycle(
+            chop_data,
+            now=datetime(2025, 2, 1, 12, 0, tzinfo=timezone.utc),
+            benchmark_data=chop_bench,
+        )
 
     assert report.macro_regime == "CHOPPY"
+    assert report.symbols_evaluated == 2
+    assert not any(d.symbol in ("BTC/USDT", "SPY") for d in report.decisions)
     pair_decisions = [d for d in report.decisions if d.strategy_id == "stat_arb_pairs"]
     assert len(pair_decisions) == 1
     assert pair_decisions[0].action == "REJECTED"
@@ -199,7 +209,11 @@ def test_stat_arb_pairs_paused_in_choppy_but_close_pair_still_executes(tmp_path)
         reason="Mean reversion target reached",
     )
     with patch.object(coord.pairs_strategy, "scan_dynamic_pairs", return_value=[close_sig]):
-        close_report = coord.run_cycle(chop_data, now=datetime(2025, 2, 1, 13, 0, tzinfo=timezone.utc))
+        close_report = coord.run_cycle(
+            chop_data,
+            now=datetime(2025, 2, 1, 13, 0, tzinfo=timezone.utc),
+            benchmark_data=chop_bench,
+        )
 
     close_decisions = [d for d in close_report.decisions if d.strategy_id == "stat_arb_pairs"]
     assert any(d.action == "CLOSE_PAIR" for d in close_decisions)

@@ -164,6 +164,7 @@ class PortfolioCoordinator:
         self.last_macro_regime: str = "CHOPPY"
         self.last_macro_return_pct: float = 0.0
         self._latest_market_data: Dict[str, pd.DataFrame] = {}
+        self._latest_benchmark_data: Dict[str, pd.DataFrame] = {}
         # Timestamp of most recent crypto stop-loss exit for contagion cooldown protection
         self._last_crypto_stop_time: Optional[pd.Timestamp] = None
 
@@ -287,8 +288,13 @@ class PortfolioCoordinator:
         self,
         symbol: str,
         market_data: Optional[Dict[str, pd.DataFrame]] = None,
+        benchmark_data: Optional[Dict[str, pd.DataFrame]] = None,
     ) -> Optional[pd.DataFrame]:
         """Locate benchmark OHLCV DataFrame in memory or fall back to cached data CSVs."""
+        if benchmark_data and symbol in benchmark_data and benchmark_data[symbol] is not None:
+            return benchmark_data[symbol]
+        if self._latest_benchmark_data and symbol in self._latest_benchmark_data:
+            return self._latest_benchmark_data[symbol]
         if market_data and symbol in market_data and market_data[symbol] is not None:
             return market_data[symbol]
         if self._latest_market_data and symbol in self._latest_market_data:
@@ -314,12 +320,14 @@ class PortfolioCoordinator:
         self,
         market_data: Optional[Dict[str, pd.DataFrame]] = None,
         force_refresh: bool = False,
+        benchmark_data: Optional[Dict[str, pd.DataFrame]] = None,
     ) -> Tuple[str, float]:
-        """Compute causal macro regime ('BULL', 'CHOPPY', 'BEAR') and 20-day 50/50 BNB+AAPL return (%)."""
+        """Compute causal macro regime ('BULL', 'CHOPPY', 'BEAR') and 20-day 50/50 benchmark return (%)."""
         now_epoch = time.time()
         ttl = float(self.config.get("macro_regime_cache_seconds", 3600.0))
         if (
             market_data is None
+            and benchmark_data is None
             and not force_refresh
             and self._macro_regime_cache is not None
             and (now_epoch - self._macro_regime_cache[0]) < ttl
@@ -330,11 +338,11 @@ class PortfolioCoordinator:
         lookback_days = int(self.config.get("macro_regime_lookback_days", 20))
         bull_pct = float(self.config.get("macro_regime_bull_pct", 4.0))
         bear_pct = float(self.config.get("macro_regime_bear_pct", -4.0))
-        benchmarks = self.config.get("macro_regime_benchmarks", ["BNB/USDT", "AAPL"])
+        benchmarks = self.config.get("macro_regime_benchmarks", ["BTC/USDT", "SPY"])
 
         rets: List[float] = []
         for sym in benchmarks:
-            bdf = self._load_macro_benchmark_df(sym, market_data=market_data)
+            bdf = self._load_macro_benchmark_df(sym, market_data=market_data, benchmark_data=benchmark_data)
             r = self._extract_causal_daily_return_pct(bdf, lookback_days)
             if r is not None:
                 rets.append(r)
@@ -1877,16 +1885,19 @@ class PortfolioCoordinator:
         self,
         market_data: Dict[str, pd.DataFrame],
         now: Optional[datetime] = None,
+        benchmark_data: Optional[Dict[str, pd.DataFrame]] = None,
     ) -> CycleReport:
         """Run a coordinated portfolio evaluation cycle across all symbols."""
         now = now or datetime.now(timezone.utc)
         self._latest_market_data = market_data
+        self._latest_benchmark_data = benchmark_data or {}
         macro_regime: Optional[str] = None
         macro_ret_pct: Optional[float] = None
         if self.config.get("enable_macro_regime_playbook", False):
             macro_regime, macro_ret_pct = self.get_macro_playbook_regime(
                 market_data=market_data,
                 force_refresh=True,
+                benchmark_data=benchmark_data,
             )
         current_prices: Dict[str, float] = {}
         decisions: List[CoordinatorDecision] = []

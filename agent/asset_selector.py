@@ -360,10 +360,11 @@ def evaluate_candidate_asset(
         fee_pct=fee_pct,
         slippage_pct=slip_pct,
     )
-    candidates = [
-        ("MOMENTUM", train_mom, test_mom, full_mom),
-        ("MEAN_REVERSION", train_mr, test_mr, full_mr),
-    ]
+    candidates = []
+    if cfg.get("enable_momentum", True):
+        candidates.append(("MOMENTUM", train_mom, test_mom, full_mom))
+    if cfg.get("enable_mean_reversion", True):
+        candidates.append(("MEAN_REVERSION", train_mr, test_mr, full_mr))
     for label, fn, flag in [
         ("VOLATILITY_SQUEEZE", run_volatility_squeeze_backtest, "enable_volatility_squeeze"),
         ("TREND_PULLBACK", run_trend_pullback_backtest, "enable_trend_pullback"),
@@ -378,6 +379,8 @@ def evaluate_candidate_asset(
                 fn(test_df, **ext_kwargs),
                 fn(raw_df, **ext_kwargs),
             ))
+    if not candidates:
+        candidates = [("MEAN_REVERSION", train_mr, test_mr, full_mr)]
 
     use_dynamic_router = bool(cfg.get("enable_dynamic_rolling_router", False))
     if use_dynamic_router:
