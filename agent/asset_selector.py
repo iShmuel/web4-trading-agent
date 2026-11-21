@@ -48,6 +48,7 @@ from core.backtest_engine import (
     run_nr7_breakout_backtest,
     run_range_envelope_backtest,
     run_supertrend_cta_backtest,
+    run_donchian_range_fade_backtest,
     BacktestResult,
 )
 from core.coordinator import resolve_symbol_config
@@ -373,6 +374,7 @@ def evaluate_candidate_asset(
         ("NR7_BREAKOUT", run_nr7_breakout_backtest, "enable_nr7_breakout"),
         ("RANGE_ENVELOPE", run_range_envelope_backtest, "enable_range_envelope"),
         ("SUPERTREND_CTA", run_supertrend_cta_backtest, "enable_supertrend_cta"),
+        ("DONCHIAN_RANGE_FADE", run_donchian_range_fade_backtest, "enable_donchian_range_fade"),
     ]:
         if cfg.get(flag, True):
             candidates.append((

@@ -460,5 +460,16 @@
   "supertrend_equity_mult": 2.5,
   "supertrend_stop_atr_mult": 3.0,
   "supertrend_allow_long": true,
-  "supertrend_allow_short": true
+  "supertrend_allow_short": true,
+  "enable_donchian_range_fade": true,
+  "donchian_fade_window": 20,
+  "donchian_fade_rsi_period": 2,
+  "donchian_fade_rsi_low": 10.0,
+  "donchian_fade_rsi_high": 90.0,
+  "donchian_fade_width_lookback": 100,
+  "donchian_fade_width_quantile": 0.5,
+  "donchian_fade_stop_atr_mult": 2.0,
+  "donchian_fade_tp_atr_mult": 2.0,
+  "donchian_fade_allow_long": true,
+  "donchian_fade_allow_short": true
 }

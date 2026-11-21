@@ -1681,3 +1681,185 @@ def run_supertrend_cta_backtest(
         trades=trades,
         equity_curve=equity_curve,
     )
+
+
+def run_donchian_range_fade_backtest(
+    df: pd.DataFrame,
+    initial_capital: float = 10000.0,
+    account_risk_pct: float = 0.02,
+    window: int = 20,
+    rsi_period: int = 2,
+    rsi_low: float = 10.0,
+    rsi_high: float = 90.0,
+    width_lookback: int = 100,
+    width_quantile: float = 0.50,
+    stop_atr_mult: float = 2.0,
+    tp_atr_mult: float = 2.0,
+    allow_long: bool = True,
+    allow_short: bool = True,
+    fee_pct: float = 0.0006,
+    slippage_pct: float = 0.0004,
+) -> BacktestResult:
+    """Strict causal next-bar-open Donchian Range Fade + RSI(2) backtest."""
+    from strategies.donchian_range_fade import compute_donchian_range_fade_indicators
+
+    min_req = max(125, int(window) + int(width_lookback) + 5)
+    if df is None or len(df) < min_req:
+        return BacktestResult(
+            initial_capital=initial_capital,
+            final_equity=initial_capital,
+            total_return_pct=0.0,
+            total_trades=0,
+            winning_trades=0,
+            losing_trades=0,
+            win_rate=0.0,
+            profit_factor=0.0,
+            max_drawdown_pct=0.0,
+            sharpe_ratio=0.0,
+            total_fees_paid=0.0,
+        )
+
+    ind = compute_donchian_range_fade_indicators(
+        df,
+        window=window,
+        rsi_period=rsi_period,
+        width_lookback=width_lookback,
+        width_quantile=width_quantile,
+    )
+    o = ind["open"].astype(float).values
+    h = ind["high"].astype(float).values
+    l = ind["low"].astype(float).values
+    c = ind["close"].astype(float).values
+    atr = ind["atr"].astype(float).values
+    rsi2 = ind["rsi2"].astype(float).values
+    d_hi = ind["donch_high"].astype(float).values
+    d_lo = ind["donch_low"].astype(float).values
+    d_mid = ind["donch_mid"].astype(float).values
+    narrow = ind["donch_narrow"].values
+
+    risk_pct = max(0.01, min(0.05, float(account_risk_pct)))
+    eq = float(initial_capital)
+    peak = eq
+    max_dd = 0.0
+    total_fees = 0.0
+    trades: List[TradeRecord] = []
+    equity_curve: List[float] = [eq]
+
+    in_pos = False
+    side = "LONG"
+    ep = 0.0
+    units = 0.0
+    stop = 0.0
+    tp = 0.0
+    d_risk = 0.0
+    e_time = None
+    n = len(ind)
+
+    for i in range(int(window) + int(width_lookback), n - 1):
+        if in_pos:
+            hit_exit = False
+            exit_p = o[i + 1]
+            exit_reason = ""
+            if side == "LONG":
+                if l[i] <= stop:
+                    exit_p = stop * (1.0 - slippage_pct)
+                    exit_reason = "Donchian fade stop hit"
+                    hit_exit = True
+                elif tp > 0 and h[i] >= tp:
+                    exit_p = tp * (1.0 - slippage_pct)
+                    exit_reason = "Donchian fade TP hit"
+                    hit_exit = True
+                elif np.isfinite(d_mid[i]) and c[i] >= d_mid[i]:
+                    exit_p = o[i + 1] * (1.0 - slippage_pct)
+                    exit_reason = "Donchian midline reversion"
+                    hit_exit = True
+            else:
+                if h[i] >= stop:
+                    exit_p = stop * (1.0 + slippage_pct)
+                    exit_reason = "Donchian fade short stop hit"
+                    hit_exit = True
+                elif tp > 0 and l[i] <= tp:
+                    exit_p = tp * (1.0 + slippage_pct)
+                    exit_reason = "Donchian fade short TP hit"
+                    hit_exit = True
+                elif np.isfinite(d_mid[i]) and c[i] <= d_mid[i]:
+                    exit_p = o[i + 1] * (1.0 + slippage_pct)
+                    exit_reason = "Donchian midline reversion"
+                    hit_exit = True
+
+            if hit_exit:
+                gross = (exit_p - ep) * units if side == "LONG" else (ep - exit_p) * units
+                fees = (ep * units + exit_p * units) * fee_pct
+                net = gross - fees
+                total_fees += fees
+                eq += net
+                trades.append(TradeRecord(
+                    entry_time=e_time,
+                    exit_time=ind.index[i],
+                    entry_price=ep,
+                    exit_price=exit_p,
+                    units=units,
+                    dollar_risk=d_risk,
+                    pnl=net,
+                    return_pct=(net / max(1.0, eq - net)) * 100.0,
+                    exit_reason=exit_reason,
+                    side=side,
+                    strategy_id="donchian_range_fade",
+                ))
+                in_pos = False
+        else:
+            a = atr[i]
+            if narrow[i] and np.isfinite(a) and a > 0 and np.isfinite(d_lo[i]) and np.isfinite(d_hi[i]):
+                if allow_long and c[i] <= d_lo[i] * 1.002 and rsi2[i] < rsi_low:
+                    ep = o[i + 1] * (1.0 + slippage_pct)
+                    stop = max(ep - stop_atr_mult * a, ep * 0.5)
+                    tp = ep + tp_atr_mult * a
+                    d_risk = eq * risk_pct
+                    units = min(d_risk / max(ep - stop, 1e-8), (eq * 0.35) / max(ep, 1e-8))
+                    if units > 0:
+                        side = "LONG"
+                        e_time = ind.index[i + 1]
+                        in_pos = True
+                elif allow_short and c[i] >= d_hi[i] * 0.998 and rsi2[i] > rsi_high:
+                    ep = o[i + 1] * (1.0 - slippage_pct)
+                    stop = ep + stop_atr_mult * a
+                    tp = max(ep - tp_atr_mult * a, ep * 0.1)
+                    d_risk = eq * risk_pct
+                    units = min(d_risk / max(stop - ep, 1e-8), (eq * 0.35) / max(ep, 1e-8))
+                    if units > 0:
+                        side = "SHORT"
+                        e_time = ind.index[i + 1]
+                        in_pos = True
+
+        if eq > peak:
+            peak = eq
+        dd = (peak - eq) / peak if peak > 0 else 0.0
+        max_dd = max(max_dd, dd)
+        equity_curve.append(eq)
+
+    total_trades = len(trades)
+    winning = sum(1 for t in trades if t.pnl > 0)
+    gp = sum(t.pnl for t in trades if t.pnl > 0)
+    gl = abs(sum(t.pnl for t in trades if t.pnl < 0))
+    pf = (gp / gl) if gl > 0 else (99.0 if gp > 0 else 0.0)
+    t_rets = [t.pnl / initial_capital for t in trades]
+    sharpe = (
+        float(np.mean(t_rets) / np.std(t_rets) * np.sqrt(len(t_rets)))
+        if len(t_rets) > 1 and np.std(t_rets) > 0
+        else (1.0 if gp > 0 else 0.0)
+    )
+    return BacktestResult(
+        initial_capital=initial_capital,
+        final_equity=eq,
+        total_return_pct=((eq - initial_capital) / initial_capital) * 100.0,
+        total_trades=total_trades,
+        winning_trades=winning,
+        losing_trades=total_trades - winning,
+        win_rate=(winning / total_trades) if total_trades else 0.0,
+        profit_factor=pf,
+        max_drawdown_pct=max_dd * 100.0,
+        sharpe_ratio=sharpe,
+        total_fees_paid=total_fees,
+        trades=trades,
+        equity_curve=equity_curve,
+    )

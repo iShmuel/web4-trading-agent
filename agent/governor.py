@@ -97,6 +97,12 @@ PARAMETER_BOUNDS: Dict[str, Tuple[float, float]] = {
     "supertrend_crypto_mult": (1.5, 5.0),
     "supertrend_equity_mult": (1.5, 5.0),
     "supertrend_stop_atr_mult": (1.5, 5.0),
+    "donchian_fade_window": (10.0, 60.0),
+    "donchian_fade_rsi_low": (2.0, 25.0),
+    "donchian_fade_rsi_high": (75.0, 98.0),
+    "donchian_fade_width_quantile": (0.20, 0.80),
+    "donchian_fade_stop_atr_mult": (1.0, 4.0),
+    "donchian_fade_tp_atr_mult": (1.0, 4.0),
 }
 
 

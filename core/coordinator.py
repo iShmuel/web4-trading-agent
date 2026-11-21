@@ -32,6 +32,7 @@ from strategies.vwap_reversion import VwapReversionStrategy
 from strategies.nr7_breakout import Nr7BreakoutStrategy
 from strategies.range_envelope import RangeEnvelopeStrategy
 from strategies.supertrend_cta import SupertrendCtaStrategy
+from strategies.donchian_range_fade import DonchianRangeFadeStrategy
 from core.journal import log_decision, get_gate_alpha_feedback, log_maker_telemetry
 from core.polymarket_radar import PolymarketRadar, MacroEventRisk
 from core.fred_radar import FredMacroRadar, MacroRegimeReport
@@ -154,6 +155,8 @@ class PortfolioCoordinator:
         self._strategy_enabled[RangeEnvelopeStrategy.STRATEGY_ID] = bool(config.get("enable_range_envelope", True))
         self._custom_strategies[SupertrendCtaStrategy.STRATEGY_ID] = SupertrendCtaStrategy(config)
         self._strategy_enabled[SupertrendCtaStrategy.STRATEGY_ID] = bool(config.get("enable_supertrend_cta", True))
+        self._custom_strategies[DonchianRangeFadeStrategy.STRATEGY_ID] = DonchianRangeFadeStrategy(config)
+        self._strategy_enabled[DonchianRangeFadeStrategy.STRATEGY_ID] = bool(config.get("enable_donchian_range_fade", True))
         if "enabled_strategies" in config and isinstance(config["enabled_strategies"], (list, set, tuple)):
             enabled_set = set(config["enabled_strategies"])
             for sid in list(self._strategy_enabled.keys()):
@@ -246,6 +249,7 @@ class PortfolioCoordinator:
         if r == "BEAR":
             return {
                 MeanReversionStrategy.STRATEGY_ID,
+                DonchianRangeFadeStrategy.STRATEGY_ID,
                 StatArbPairsStrategy.STRATEGY_ID,
                 "basis_yield",
             }
@@ -430,6 +434,7 @@ class PortfolioCoordinator:
                 run_nr7_breakout_backtest,
                 run_range_envelope_backtest,
                 run_supertrend_cta_backtest,
+                run_donchian_range_fade_backtest,
             )
 
             r_by = (
@@ -544,6 +549,25 @@ class PortfolioCoordinator:
                 )
                 if r_st.total_trades >= min_tr and r_st.profit_factor >= min_pf:
                     cands.append((r_st.sharpe_ratio, SupertrendCtaStrategy.STRATEGY_ID))
+            if _dir_allowed(DonchianRangeFadeStrategy.STRATEGY_ID):
+                r_df = run_donchian_range_fade_backtest(
+                    df_win,
+                    account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
+                    window=int(sym_cfg.get("donchian_fade_window", 20)),
+                    rsi_period=int(sym_cfg.get("donchian_fade_rsi_period", 2)),
+                    rsi_low=float(sym_cfg.get("donchian_fade_rsi_low", 10.0)),
+                    rsi_high=float(sym_cfg.get("donchian_fade_rsi_high", 90.0)),
+                    width_lookback=int(sym_cfg.get("donchian_fade_width_lookback", 100)),
+                    width_quantile=float(sym_cfg.get("donchian_fade_width_quantile", 0.50)),
+                    stop_atr_mult=float(sym_cfg.get("donchian_fade_stop_atr_mult", 2.0)),
+                    tp_atr_mult=float(sym_cfg.get("donchian_fade_tp_atr_mult", 2.0)),
+                    allow_long=bool(sym_cfg.get("donchian_fade_allow_long", True)),
+                    allow_short=bool(sym_cfg.get("donchian_fade_allow_short", True)),
+                    fee_pct=0.0002,
+                    slippage_pct=0.0001,
+                )
+                if r_df.total_trades >= min_tr and r_df.profit_factor >= min_pf:
+                    cands.append((r_df.sharpe_ratio, DonchianRangeFadeStrategy.STRATEGY_ID))
             if cands:
                 cands.sort(key=lambda x: x[0], reverse=True)
                 choice = cands[0][1]
@@ -1373,6 +1397,7 @@ class PortfolioCoordinator:
                 Nr7BreakoutStrategy.STRATEGY_ID,
                 RangeEnvelopeStrategy.STRATEGY_ID,
                 SupertrendCtaStrategy.STRATEGY_ID,
+                DonchianRangeFadeStrategy.STRATEGY_ID,
             ):
                 if dyn_route not in ("all", custom_id):
                     continue
