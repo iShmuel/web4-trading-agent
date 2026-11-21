@@ -403,6 +403,14 @@
   "dynamic_router_min_trades": 3,
   "dynamic_router_lookback_hours": 720,
   "dynamic_router_cache_seconds": 21600,
+  "enable_macro_regime_playbook": true,
+  "macro_regime_lookback_days": 20,
+  "macro_regime_bull_pct": 4.0,
+  "macro_regime_bear_pct": -4.0,
+  "macro_regime_benchmarks": [
+    "BNB/USDT",
+    "AAPL"
+  ],
   "bb_std": 2.1,
   "rsi_oversold": 28.0,
   "adx_threshold": 24.0,
@@ -419,7 +427,7 @@
   "allow_short": true,
   "enable_momentum": false,
   "enable_mean_reversion": true,
-  "enable_volatility_squeeze": false,
+  "enable_volatility_squeeze": true,
   "enable_trend_pullback": false,
   "enable_vwap_reversion": false,
   "min_pair_price": 0.1,

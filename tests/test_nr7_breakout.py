@@ -62,5 +62,7 @@ def test_nr7_wired_into_coordinator_agent11_and_governor(tmp_path):
     assert not bad_ok
 
     from agent.multi_strategy_optimizer import load_active_config
-    tasks = build_optimization_tasks(load_active_config())
+    cfg = dict(load_active_config())
+    cfg["enable_nr7_breakout"] = True
+    tasks = build_optimization_tasks(cfg)
     assert any(t["strategy"] == "nr7_breakout" for t in tasks)

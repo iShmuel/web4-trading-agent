@@ -78,6 +78,8 @@ class CycleReport:
     portfolio_equity: float = 0.0
     available_cash: float = 0.0
     open_positions: int = 0
+    macro_regime: Optional[str] = None
+    macro_return_pct: Optional[float] = None
 
 
 def resolve_symbol_config(config: Dict[str, Any], symbol: str) -> Dict[str, Any]:
@@ -157,6 +159,10 @@ class PortfolioCoordinator:
         self._funding_cache: Dict[str, Tuple[float, Optional[float]]] = {}
         # Dynamic Rolling Expectancy Router cache: symbol -> (epoch_ts, chosen_strategy)
         self._rolling_router_cache: Dict[str, Tuple[float, str]] = {}
+        # Macro Regime Playbook B cache: (epoch_ts, regime_label, return_pct)
+        self._macro_regime_cache: Optional[Tuple[float, str, float]] = None
+        self.last_macro_regime: str = "CHOPPY"
+        self.last_macro_return_pct: float = 0.0
         self._latest_market_data: Dict[str, pd.DataFrame] = {}
         # Timestamp of most recent crypto stop-loss exit for contagion cooldown protection
         self._last_crypto_stop_time: Optional[pd.Timestamp] = None
@@ -221,6 +227,134 @@ class PortfolioCoordinator:
     def symbol_config(self, symbol: str) -> Dict[str, Any]:
         return self._engines_for(symbol)[0]
 
+    def get_playbook_allowed_strategies(self, regime: str) -> set:
+        """Return the set of strategy IDs permitted for new entries under Regime Playbook B.
+
+        Empirically verified on 720d (2-year) native 1h strict zero-lookahead OOS:
+        - BULL (>= +4% 20d 50/50 BNB+AAPL): stat_arb_pairs + basis_yield (no directional MR/VolSqueeze)
+        - CHOPPY (-4%..+4%): volatility_squeeze + basis_yield (pause new stat_arb_pairs & mean_reversion)
+        - BEAR (<= -4%): mean_reversion + stat_arb_pairs + basis_yield (pause volatility_squeeze)
+        """
+        r = str(regime or "CHOPPY").upper()
+        if r == "BULL":
+            return {StatArbPairsStrategy.STRATEGY_ID, "basis_yield"}
+        if r == "BEAR":
+            return {
+                MeanReversionStrategy.STRATEGY_ID,
+                StatArbPairsStrategy.STRATEGY_ID,
+                "basis_yield",
+            }
+        # Default / CHOPPY
+        return {VolatilitySqueezeStrategy.STRATEGY_ID, "basis_yield"}
+
+    @staticmethod
+    def _extract_causal_daily_return_pct(df: Optional[pd.DataFrame], lookback_days: int) -> Optional[float]:
+        """Compute strictly causal trailing N-day return (%) from daily-resampled closes.
+
+        Uses shift(1) on daily closes so an incomplete current day's bar is never used.
+        """
+        if df is None or len(df) < 2 or "close" not in df.columns:
+            return None
+        try:
+            series = df["close"].astype(float)
+            if isinstance(df.index, pd.DatetimeIndex):
+                s = series.sort_index()
+            elif "timestamp" in df.columns:
+                idx = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
+                s = pd.Series(series.values, index=idx).dropna().sort_index()
+            else:
+                return None
+
+            daily = s.resample("1D").last().dropna()
+            if len(daily) >= lookback_days + 2:
+                # Strictly causal: prior completed day vs lookback_days before that
+                shifted = daily.shift(1).dropna()
+                prev_close = float(shifted.iloc[-1])
+                base_close = float(shifted.iloc[-1 - lookback_days])
+            elif len(daily) >= lookback_days + 1:
+                prev_close = float(daily.iloc[-1])
+                base_close = float(daily.iloc[-1 - lookback_days])
+            else:
+                return None
+
+            if base_close <= 0.0 or not math.isfinite(prev_close) or not math.isfinite(base_close):
+                return None
+            return (prev_close / base_close - 1.0) * 100.0
+        except Exception:
+            return None
+
+    def _load_macro_benchmark_df(
+        self,
+        symbol: str,
+        market_data: Optional[Dict[str, pd.DataFrame]] = None,
+    ) -> Optional[pd.DataFrame]:
+        """Locate benchmark OHLCV DataFrame in memory or fall back to cached data CSVs."""
+        if market_data and symbol in market_data and market_data[symbol] is not None:
+            return market_data[symbol]
+        if self._latest_market_data and symbol in self._latest_market_data:
+            return self._latest_market_data[symbol]
+
+        from pathlib import Path
+
+        data_dir = Path("data")
+        safe = symbol.replace("/", "_")
+        prefix = "crypto" if is_crypto_symbol(symbol) else "stock"
+        for suffix in ("1h_90d.csv", "1h_365d.csv", "1h_720d.csv", "1d_1825d.csv"):
+            path = data_dir / f"{prefix}_{safe}_{suffix}"
+            if path.exists():
+                try:
+                    df = pd.read_csv(path, parse_dates=["timestamp"], index_col="timestamp")
+                    if len(df) >= 25:
+                        return df
+                except Exception:
+                    continue
+        return None
+
+    def get_macro_playbook_regime(
+        self,
+        market_data: Optional[Dict[str, pd.DataFrame]] = None,
+        force_refresh: bool = False,
+    ) -> Tuple[str, float]:
+        """Compute causal macro regime ('BULL', 'CHOPPY', 'BEAR') and 20-day 50/50 BNB+AAPL return (%)."""
+        now_epoch = time.time()
+        ttl = float(self.config.get("macro_regime_cache_seconds", 3600.0))
+        if (
+            market_data is None
+            and not force_refresh
+            and self._macro_regime_cache is not None
+            and (now_epoch - self._macro_regime_cache[0]) < ttl
+        ):
+            _, cached_regime, cached_ret = self._macro_regime_cache
+            return cached_regime, cached_ret
+
+        lookback_days = int(self.config.get("macro_regime_lookback_days", 20))
+        bull_pct = float(self.config.get("macro_regime_bull_pct", 4.0))
+        bear_pct = float(self.config.get("macro_regime_bear_pct", -4.0))
+        benchmarks = self.config.get("macro_regime_benchmarks", ["BNB/USDT", "AAPL"])
+
+        rets: List[float] = []
+        for sym in benchmarks:
+            bdf = self._load_macro_benchmark_df(sym, market_data=market_data)
+            r = self._extract_causal_daily_return_pct(bdf, lookback_days)
+            if r is not None:
+                rets.append(r)
+
+        if not rets:
+            regime, macro_ret = "CHOPPY", 0.0
+        else:
+            macro_ret = float(sum(rets) / len(rets))
+            if macro_ret >= bull_pct:
+                regime = "BULL"
+            elif macro_ret <= bear_pct:
+                regime = "BEAR"
+            else:
+                regime = "CHOPPY"
+
+        self.last_macro_regime = regime
+        self.last_macro_return_pct = round(macro_ret, 3)
+        self._macro_regime_cache = (now_epoch, regime, self.last_macro_return_pct)
+        return regime, self.last_macro_return_pct
+
     def _resolve_dynamic_rolling_strategy(
         self,
         symbol: str,
@@ -229,17 +363,26 @@ class PortfolioCoordinator:
     ) -> str:
         """100% Dynamic Rolling Expectancy & Regime Router.
 
-        Evaluates Momentum, Mean Reversion, and Crypto Basis Yield over a rolling
-        historical window (cached for 6h per symbol) and dynamically selects the
-        highest-Sharpe strategy with PF >= 1.15, or parks choppy crypto in
-        `basis_yield` until a directional trend re-emerges.
+        Evaluates enabled strategies over a rolling historical window (cached for 6h per
+        symbol) and dynamically selects the highest-Sharpe strategy with PF >= threshold,
+        or parks choppy crypto in `basis_yield` until a directional trend re-emerges.
+        When `enable_macro_regime_playbook` is enabled, restricts directional candidates
+        to the Regime Playbook B whitelist for the current causal macro regime.
         """
+        playbook_on = bool(self.config.get("enable_macro_regime_playbook", False))
+        macro_regime = "ALL"
+        allowed_playbook: Optional[set] = None
+        if playbook_on:
+            macro_regime, _ = self.get_macro_playbook_regime()
+            allowed_playbook = self.get_playbook_allowed_strategies(macro_regime)
+
         if not self.config.get("enable_dynamic_rolling_router", False):
             return "all"
 
         now_epoch = time.time()
         ttl = float(self.config.get("dynamic_router_cache_seconds", 21600.0))
-        cached = self._rolling_router_cache.get(symbol)
+        cache_key = f"{symbol}:{macro_regime}" if playbook_on else symbol
+        cached = self._rolling_router_cache.get(cache_key)
         if cached is not None and (now_epoch - cached[0]) < ttl:
             return cached[1]
 
@@ -251,6 +394,13 @@ class PortfolioCoordinator:
         cfg_lb = int(self.config.get("dynamic_router_lookback_hours", 720))
         lookback_bars = min(cfg_lb, len(df)) if is_crypto else min(280, len(df))
         df_win = df.iloc[-lookback_bars:].copy()
+
+        def _dir_allowed(sid: str) -> bool:
+            if not self.is_strategy_enabled(sid):
+                return False
+            if allowed_playbook is not None and sid not in allowed_playbook:
+                return False
+            return True
 
         try:
             from core.backtest_engine import (
@@ -264,28 +414,6 @@ class PortfolioCoordinator:
                 run_range_envelope_backtest,
             )
 
-            r_mom = run_backtest(
-                df_win,
-                breakout_lookback=int(sym_cfg.get("breakout_lookback", 36)),
-                ema_trend_filter=int(sym_cfg.get("ema_trend_filter", 200)),
-                atr_multiplier=float(sym_cfg.get("atr_multiplier", 2.5)),
-                take_profit_atr_mult=float(sym_cfg.get("take_profit_atr_mult", 2.0)),
-                allow_long=bool(sym_cfg.get("allow_long", True)),
-                allow_short=bool(sym_cfg.get("allow_short", False)),
-                fee_pct=0.0002,
-                slippage_pct=0.0001,
-            )
-            r_mr = run_mean_reversion_backtest(
-                df_win,
-                bb_period=int(sym_cfg.get("bb_period", 20)),
-                bb_std=float(sym_cfg.get("bb_std", 2.1)),
-                rsi_oversold=float(sym_cfg.get("rsi_oversold", 28.0)),
-                rsi_overbought=float(sym_cfg.get("rsi_overbought", 72.0)),
-                adx_threshold=float(sym_cfg.get("adx_threshold", 24.0)),
-                allow_short=bool(sym_cfg.get("mr_allow_short", False)),
-                fee_pct=0.0002,
-                slippage_pct=0.0001,
-            )
             r_by = (
                 run_basis_yield_backtest(df_win, hurdle_apr=5.0, fee_pct=0.0002, slippage_pct=0.0001)
                 if is_crypto
@@ -295,11 +423,35 @@ class PortfolioCoordinator:
             min_pf = float(self.config.get("dynamic_router_min_pf", 1.15))
             min_tr = int(self.config.get("dynamic_router_min_trades", 2))
             cands = []
-            if self.is_strategy_enabled(MomentumStrategy.STRATEGY_ID) and r_mom.total_trades >= min_tr and r_mom.profit_factor >= min_pf:
-                cands.append((r_mom.sharpe_ratio, MomentumStrategy.STRATEGY_ID))
-            if self.is_strategy_enabled(MeanReversionStrategy.STRATEGY_ID) and r_mr.total_trades >= min_tr and r_mr.profit_factor >= min_pf:
-                cands.append((r_mr.sharpe_ratio, MeanReversionStrategy.STRATEGY_ID))
-            if self.is_strategy_enabled(VolatilitySqueezeStrategy.STRATEGY_ID):
+            if _dir_allowed(MomentumStrategy.STRATEGY_ID):
+                r_mom = run_backtest(
+                    df_win,
+                    breakout_lookback=int(sym_cfg.get("breakout_lookback", 36)),
+                    ema_trend_filter=int(sym_cfg.get("ema_trend_filter", 200)),
+                    atr_multiplier=float(sym_cfg.get("atr_multiplier", 2.5)),
+                    take_profit_atr_mult=float(sym_cfg.get("take_profit_atr_mult", 2.0)),
+                    allow_long=bool(sym_cfg.get("allow_long", True)),
+                    allow_short=bool(sym_cfg.get("allow_short", False)),
+                    fee_pct=0.0002,
+                    slippage_pct=0.0001,
+                )
+                if r_mom.total_trades >= min_tr and r_mom.profit_factor >= min_pf:
+                    cands.append((r_mom.sharpe_ratio, MomentumStrategy.STRATEGY_ID))
+            if _dir_allowed(MeanReversionStrategy.STRATEGY_ID):
+                r_mr = run_mean_reversion_backtest(
+                    df_win,
+                    bb_period=int(sym_cfg.get("bb_period", 20)),
+                    bb_std=float(sym_cfg.get("bb_std", 2.1)),
+                    rsi_oversold=float(sym_cfg.get("rsi_oversold", 28.0)),
+                    rsi_overbought=float(sym_cfg.get("rsi_overbought", 72.0)),
+                    adx_threshold=float(sym_cfg.get("adx_threshold", 24.0)),
+                    allow_short=bool(sym_cfg.get("mr_allow_short", False)),
+                    fee_pct=0.0002,
+                    slippage_pct=0.0001,
+                )
+                if r_mr.total_trades >= min_tr and r_mr.profit_factor >= min_pf:
+                    cands.append((r_mr.sharpe_ratio, MeanReversionStrategy.STRATEGY_ID))
+            if _dir_allowed(VolatilitySqueezeStrategy.STRATEGY_ID):
                 r_sq = run_volatility_squeeze_backtest(
                     df_win,
                     account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
@@ -308,7 +460,7 @@ class PortfolioCoordinator:
                 )
                 if r_sq.total_trades >= min_tr and r_sq.profit_factor >= min_pf:
                     cands.append((r_sq.sharpe_ratio, VolatilitySqueezeStrategy.STRATEGY_ID))
-            if self.is_strategy_enabled(TrendPullbackStrategy.STRATEGY_ID):
+            if _dir_allowed(TrendPullbackStrategy.STRATEGY_ID):
                 r_pb = run_trend_pullback_backtest(
                     df_win,
                     account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
@@ -317,7 +469,7 @@ class PortfolioCoordinator:
                 )
                 if r_pb.total_trades >= min_tr and r_pb.profit_factor >= min_pf:
                     cands.append((r_pb.sharpe_ratio, TrendPullbackStrategy.STRATEGY_ID))
-            if self.is_strategy_enabled(VwapReversionStrategy.STRATEGY_ID):
+            if _dir_allowed(VwapReversionStrategy.STRATEGY_ID):
                 r_vw = run_vwap_reversion_backtest(
                     df_win,
                     account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
@@ -326,7 +478,7 @@ class PortfolioCoordinator:
                 )
                 if r_vw.total_trades >= min_tr and r_vw.profit_factor >= min_pf:
                     cands.append((r_vw.sharpe_ratio, VwapReversionStrategy.STRATEGY_ID))
-            if self.is_strategy_enabled(Nr7BreakoutStrategy.STRATEGY_ID):
+            if _dir_allowed(Nr7BreakoutStrategy.STRATEGY_ID):
                 r_nr7 = run_nr7_breakout_backtest(
                     df_win,
                     account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
@@ -337,7 +489,7 @@ class PortfolioCoordinator:
                 )
                 if r_nr7.total_trades >= min_tr and r_nr7.profit_factor >= min_pf:
                     cands.append((r_nr7.sharpe_ratio, Nr7BreakoutStrategy.STRATEGY_ID))
-            if self.is_strategy_enabled(RangeEnvelopeStrategy.STRATEGY_ID):
+            if _dir_allowed(RangeEnvelopeStrategy.STRATEGY_ID):
                 r_re = run_range_envelope_backtest(
                     df_win,
                     account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
@@ -365,7 +517,7 @@ class PortfolioCoordinator:
         except Exception:
             choice = "all"
 
-        self._rolling_router_cache[symbol] = (now_epoch, choice)
+        self._rolling_router_cache[cache_key] = (now_epoch, choice)
         return choice
 
     def register_strategy(self, strategy_id: str, strategy: Any, enabled: bool = True) -> None:
@@ -1103,9 +1255,20 @@ class PortfolioCoordinator:
                 )
 
         # 2. No open position: generate signals from all enabled directional strategies
+        playbook_on = bool(self.config.get("enable_macro_regime_playbook", False))
+        playbook_regime = ""
+        playbook_allowed: Optional[set] = None
+        if playbook_on:
+            playbook_regime, _ = self.get_macro_playbook_regime()
+            playbook_allowed = self.get_playbook_allowed_strategies(playbook_regime)
+
         dyn_route = self._resolve_dynamic_rolling_strategy(symbol, df, sym_cfg)
-        allow_mom_dyn = dyn_route in ("all", MomentumStrategy.STRATEGY_ID)
-        allow_mr_dyn = dyn_route in ("all", MeanReversionStrategy.STRATEGY_ID)
+        allow_mom_dyn = dyn_route in ("all", MomentumStrategy.STRATEGY_ID) and (
+            playbook_allowed is None or MomentumStrategy.STRATEGY_ID in playbook_allowed
+        )
+        allow_mr_dyn = dyn_route in ("all", MeanReversionStrategy.STRATEGY_ID) and (
+            playbook_allowed is None or MeanReversionStrategy.STRATEGY_ID in playbook_allowed
+        )
 
         if self.is_strategy_enabled(MomentumStrategy.STRATEGY_ID) and allow_mom_dyn:
             mom_sig = momentum_strategy.evaluate(symbol, df, existing_position=None)
@@ -1115,9 +1278,13 @@ class PortfolioCoordinator:
                 symbol=symbol,
                 price=cur_price,
                 reason=(
-                    f"Dynamic Router selected '{dyn_route}' for {symbol}"
-                    if not allow_mom_dyn
-                    else "Momentum strategy disabled"
+                    f"Paused by Regime Playbook B (Macro={playbook_regime})"
+                    if playbook_allowed is not None and MomentumStrategy.STRATEGY_ID not in playbook_allowed
+                    else (
+                        f"Dynamic Router selected '{dyn_route}' for {symbol}"
+                        if not allow_mom_dyn
+                        else "Momentum strategy disabled"
+                    )
                 ),
             )
 
@@ -1134,9 +1301,13 @@ class PortfolioCoordinator:
                 symbol=symbol,
                 price=cur_price,
                 reason=(
-                    f"Dynamic Router selected '{dyn_route}' for {symbol}"
-                    if not allow_mr_dyn
-                    else "Mean-Reversion strategy disabled"
+                    f"Paused by Regime Playbook B (Macro={playbook_regime})"
+                    if playbook_allowed is not None and MeanReversionStrategy.STRATEGY_ID not in playbook_allowed
+                    else (
+                        f"Dynamic Router selected '{dyn_route}' for {symbol}"
+                        if not allow_mr_dyn
+                        else "Mean-Reversion strategy disabled"
+                    )
                 ),
             )
         elif suppress_mr:
@@ -1166,6 +1337,8 @@ class PortfolioCoordinator:
                 RangeEnvelopeStrategy.STRATEGY_ID,
             ):
                 if dyn_route not in ("all", custom_id):
+                    continue
+                if playbook_allowed is not None and custom_id not in playbook_allowed:
                     continue
             if self.is_strategy_enabled(custom_id) and hasattr(custom_strat, "evaluate"):
                 csig = custom_strat.evaluate(symbol, df, existing_position=None)
@@ -1708,6 +1881,13 @@ class PortfolioCoordinator:
         """Run a coordinated portfolio evaluation cycle across all symbols."""
         now = now or datetime.now(timezone.utc)
         self._latest_market_data = market_data
+        macro_regime: Optional[str] = None
+        macro_ret_pct: Optional[float] = None
+        if self.config.get("enable_macro_regime_playbook", False):
+            macro_regime, macro_ret_pct = self.get_macro_playbook_regime(
+                market_data=market_data,
+                force_refresh=True,
+            )
         current_prices: Dict[str, float] = {}
         decisions: List[CoordinatorDecision] = []
 
@@ -1847,6 +2027,21 @@ class PortfolioCoordinator:
                         indicators={"z_score": psig.z_score, "beta": psig.hedge_ratio, "half_life": psig.half_life, "correlation": psig.correlation},
                     ))
                 elif psig.action in ("LONG_A_SHORT_B", "SHORT_A_LONG_B"):
+                    if self.config.get("enable_macro_regime_playbook", False):
+                        cur_macro = macro_regime or self.get_macro_playbook_regime(market_data=market_data)[0]
+                        cur_macro_ret = macro_ret_pct if macro_ret_pct is not None else self.last_macro_return_pct
+                        if StatArbPairsStrategy.STRATEGY_ID not in self.get_playbook_allowed_strategies(cur_macro):
+                            decisions.append(CoordinatorDecision(
+                                symbol=psig.pair_id,
+                                action="REJECTED",
+                                strategy_id="stat_arb_pairs",
+                                price=current_prices.get(psig.asset_a, 0.0),
+                                reason=(
+                                    f"Paused by Regime Playbook B "
+                                    f"(Macro={cur_macro}, 20d={cur_macro_ret:+.2f}%)"
+                                ),
+                            ))
+                            continue
                     cd_until = getattr(self, "pair_cooldown_until", {}).get(psig.pair_id)
                     if cd_until is not None and now < cd_until:
                         decisions.append(CoordinatorDecision(
@@ -2076,4 +2271,6 @@ class PortfolioCoordinator:
             portfolio_equity=total_equity,
             available_cash=self.account.cash,
             open_positions=len(self.account.positions),
+            macro_regime=macro_regime,
+            macro_return_pct=macro_ret_pct,
         )

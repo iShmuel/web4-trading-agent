@@ -199,6 +199,13 @@ def run_portfolio_tick(
         else:
             log(f"   SCANNING {sym:<8} Price: ${price:>9.2f} | {regime_badge}{d.reason}")
 
+    if getattr(cycle_report, "macro_regime", None):
+        ret_str = (
+            f"{cycle_report.macro_return_pct:+.2f}%"
+            if cycle_report.macro_return_pct is not None
+            else "n/a"
+        )
+        log(f"   Macro Regime Playbook B: {cycle_report.macro_regime} (20d 50/50 BNB+AAPL = {ret_str})")
     log(f"   Portfolio Equity: ${cycle_report.portfolio_equity:,.2f} | Cash: ${cycle_report.available_cash:,.2f} | Open: {cycle_report.open_positions}")
     write_live_status(account, cycle_report, current_prices, watchlist)
     return current_prices
@@ -240,6 +247,8 @@ def write_live_status(account: PaperAccount, cycle_report, current_prices: Dict[
             "equity": cycle_report.portfolio_equity,
             "cash": cycle_report.available_cash,
             "open_positions": cycle_report.open_positions,
+            "macro_regime": getattr(cycle_report, "macro_regime", None),
+            "macro_return_pct": getattr(cycle_report, "macro_return_pct", None),
             "prices": current_prices,
             "assets": assets,
             "basis_yield": basis_opportunity,
