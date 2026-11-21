@@ -100,6 +100,18 @@ RANGE_ENVELOPE_GRID: Dict[str, List[Any]] = {
     "range_min_net_profit_usd": [10.0, 15.0],
 }
 
+SUPERTREND_CTA_GRID: Dict[str, List[Any]] = {
+    "supertrend_atr_period": [8, 10, 14],
+    "supertrend_crypto_mult": [2.5, 3.0, 3.5],
+    "supertrend_equity_mult": [2.0, 2.5, 3.0],
+}
+
+DONCHIAN_RANGE_FADE_GRID: Dict[str, List[Any]] = {
+    "donchian_fade_window": [15, 20, 30],
+    "donchian_fade_rsi_low": [8.0, 10.0, 15.0],
+    "donchian_fade_rsi_high": [85.0, 90.0, 92.0],
+}
+
 
 @dataclass
 class AggregateResult:
@@ -204,6 +216,10 @@ def build_optimization_tasks(cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
             tasks.append({"strategy": "nr7_breakout", "scope": "global", "symbols": mixed_basket})
         if cfg.get("enable_range_envelope", True):
             tasks.append({"strategy": "range_envelope", "scope": "global", "symbols": mixed_basket})
+        if cfg.get("enable_supertrend_cta", True):
+            tasks.append({"strategy": "supertrend_cta", "scope": "global", "symbols": mixed_basket})
+        if cfg.get("enable_donchian_range_fade", True):
+            tasks.append({"strategy": "donchian_range_fade", "scope": "global", "symbols": mixed_basket})
 
     # 5. Per-Asset-Profile Momentum AND Mean Reversion (all active symbols in each profile)
     for name, prof in (cfg.get("asset_profiles") or {}).items():
@@ -331,14 +347,17 @@ def _make_evaluator(task: Dict[str, Any], cfg: Dict[str, Any], cache: Dict[str, 
 
         return evaluator
 
-    if strategy in ("volatility_squeeze", "trend_pullback", "vwap_reversion", "nr7_breakout", "range_envelope"):
+    if strategy in ("volatility_squeeze", "trend_pullback", "vwap_reversion", "nr7_breakout", "range_envelope", "supertrend_cta", "donchian_range_fade"):
         from core.backtest_engine import (
             run_volatility_squeeze_backtest,
             run_trend_pullback_backtest,
             run_vwap_reversion_backtest,
             run_nr7_breakout_backtest,
             run_range_envelope_backtest,
+            run_supertrend_cta_backtest,
+            run_donchian_range_fade_backtest,
         )
+        from core.data_loader import is_crypto_symbol as _is_crypto
         data = {s: _load_split(s, timeframe, cache) for s in task["symbols"]}
         data = {s: d for s, d in data.items() if d is not None}
         if not data:
@@ -348,7 +367,7 @@ def _make_evaluator(task: Dict[str, Any], cfg: Dict[str, Any], cache: Dict[str, 
         def evaluator(full_cfg: Dict[str, Any], split: str) -> AggregateResult:
             idx = 0 if split == "train" else 1
             results = []
-            for d in data.values():
+            for sym_k, d in data.items():
                 if strategy == "volatility_squeeze":
                     results.append(run_volatility_squeeze_backtest(
                         d[idx],
@@ -373,6 +392,25 @@ def _make_evaluator(task: Dict[str, Any], cfg: Dict[str, Any], cache: Dict[str, 
                         range_window=int(full_cfg.get("range_window", 36)),
                         rsi_oversold=float(full_cfg.get("range_rsi_oversold", 30.0)),
                         min_net_profit_usd=float(full_cfg.get("range_min_net_profit_usd", 10.0)),
+                    ))
+                elif strategy == "supertrend_cta":
+                    st_mult = (
+                        float(full_cfg.get("supertrend_crypto_mult", 3.0))
+                        if _is_crypto(sym_k)
+                        else float(full_cfg.get("supertrend_equity_mult", 2.5))
+                    )
+                    results.append(run_supertrend_cta_backtest(
+                        d[idx],
+                        atr_period=int(full_cfg.get("supertrend_atr_period", 10)),
+                        mult=st_mult,
+                        stop_atr_mult=float(full_cfg.get("supertrend_stop_atr_mult", 3.0)),
+                    ))
+                elif strategy == "donchian_range_fade":
+                    results.append(run_donchian_range_fade_backtest(
+                        d[idx],
+                        window=int(full_cfg.get("donchian_fade_window", 20)),
+                        rsi_low=float(full_cfg.get("donchian_fade_rsi_low", 10.0)),
+                        rsi_high=float(full_cfg.get("donchian_fade_rsi_high", 90.0)),
                     ))
                 else:
                     results.append(run_vwap_reversion_backtest(
@@ -412,6 +450,8 @@ def optimize_task(
         "vwap_reversion": VWAP_REVERSION_GRID,
         "nr7_breakout": NR7_BREAKOUT_GRID,
         "range_envelope": RANGE_ENVELOPE_GRID,
+        "supertrend_cta": SUPERTREND_CTA_GRID,
+        "donchian_range_fade": DONCHIAN_RANGE_FADE_GRID,
     }[strategy]
 
     print("=" * 65)

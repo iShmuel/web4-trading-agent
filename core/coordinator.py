@@ -439,8 +439,10 @@ class PortfolioCoordinator:
                 run_donchian_range_fade_backtest,
             )
 
+            router_fee = float(self.config.get("fee_pct", 0.0006))
+            router_slip = float(self.config.get("slippage_pct", 0.0004))
             r_by = (
-                run_basis_yield_backtest(df_win, hurdle_apr=5.0, fee_pct=0.0002, slippage_pct=0.0001)
+                run_basis_yield_backtest(df_win, hurdle_apr=5.0, fee_pct=router_fee, slippage_pct=router_slip)
                 if is_crypto
                 else None
             )
@@ -457,8 +459,8 @@ class PortfolioCoordinator:
                     take_profit_atr_mult=float(sym_cfg.get("take_profit_atr_mult", 2.0)),
                     allow_long=bool(sym_cfg.get("allow_long", True)),
                     allow_short=bool(sym_cfg.get("allow_short", False)),
-                    fee_pct=0.0002,
-                    slippage_pct=0.0001,
+                    fee_pct=router_fee,
+                    slippage_pct=router_slip,
                 )
                 if r_mom.total_trades >= min_tr and r_mom.profit_factor >= min_pf:
                     cands.append((r_mom.sharpe_ratio, MomentumStrategy.STRATEGY_ID))
@@ -471,8 +473,8 @@ class PortfolioCoordinator:
                     rsi_overbought=float(sym_cfg.get("rsi_overbought", 72.0)),
                     adx_threshold=float(sym_cfg.get("adx_threshold", 24.0)),
                     allow_short=bool(sym_cfg.get("mr_allow_short", False)),
-                    fee_pct=0.0002,
-                    slippage_pct=0.0001,
+                    fee_pct=router_fee,
+                    slippage_pct=router_slip,
                 )
                 if r_mr.total_trades >= min_tr and r_mr.profit_factor >= min_pf:
                     cands.append((r_mr.sharpe_ratio, MeanReversionStrategy.STRATEGY_ID))
@@ -480,8 +482,8 @@ class PortfolioCoordinator:
                 r_sq = run_volatility_squeeze_backtest(
                     df_win,
                     account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
-                    fee_pct=0.0002,
-                    slippage_pct=0.0001,
+                    fee_pct=router_fee,
+                    slippage_pct=router_slip,
                 )
                 if r_sq.total_trades >= min_tr and r_sq.profit_factor >= min_pf:
                     cands.append((r_sq.sharpe_ratio, VolatilitySqueezeStrategy.STRATEGY_ID))
@@ -489,8 +491,8 @@ class PortfolioCoordinator:
                 r_pb = run_trend_pullback_backtest(
                     df_win,
                     account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
-                    fee_pct=0.0002,
-                    slippage_pct=0.0001,
+                    fee_pct=router_fee,
+                    slippage_pct=router_slip,
                 )
                 if r_pb.total_trades >= min_tr and r_pb.profit_factor >= min_pf:
                     cands.append((r_pb.sharpe_ratio, TrendPullbackStrategy.STRATEGY_ID))
@@ -498,8 +500,8 @@ class PortfolioCoordinator:
                 r_vw = run_vwap_reversion_backtest(
                     df_win,
                     account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
-                    fee_pct=0.0002,
-                    slippage_pct=0.0001,
+                    fee_pct=router_fee,
+                    slippage_pct=router_slip,
                 )
                 if r_vw.total_trades >= min_tr and r_vw.profit_factor >= min_pf:
                     cands.append((r_vw.sharpe_ratio, VwapReversionStrategy.STRATEGY_ID))
@@ -509,8 +511,8 @@ class PortfolioCoordinator:
                     account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
                     nr7_lookback=int(sym_cfg.get("nr7_lookback", 7)),
                     stop_atr_mult=float(sym_cfg.get("nr7_atr_stop_mult", 2.0)),
-                    fee_pct=0.0002,
-                    slippage_pct=0.0001,
+                    fee_pct=router_fee,
+                    slippage_pct=router_slip,
                 )
                 if r_nr7.total_trades >= min_tr and r_nr7.profit_factor >= min_pf:
                     cands.append((r_nr7.sharpe_ratio, Nr7BreakoutStrategy.STRATEGY_ID))
@@ -527,8 +529,8 @@ class PortfolioCoordinator:
                     stop_atr_mult=float(sym_cfg.get("range_atr_stop_mult", 2.0)),
                     min_net_profit_usd=float(sym_cfg.get("range_min_net_profit_usd", 10.0)),
                     allow_short=bool(sym_cfg.get("range_allow_short", True)),
-                    fee_pct=0.0002,
-                    slippage_pct=0.0001,
+                    fee_pct=router_fee,
+                    slippage_pct=router_slip,
                 )
                 if r_re.total_trades >= min_tr and r_re.profit_factor >= min_pf:
                     cands.append((r_re.sharpe_ratio, RangeEnvelopeStrategy.STRATEGY_ID))
@@ -546,8 +548,8 @@ class PortfolioCoordinator:
                     stop_atr_mult=float(sym_cfg.get("supertrend_stop_atr_mult", 3.0)),
                     allow_long=bool(sym_cfg.get("supertrend_allow_long", True)),
                     allow_short=bool(sym_cfg.get("supertrend_allow_short", True)),
-                    fee_pct=0.0002,
-                    slippage_pct=0.0001,
+                    fee_pct=router_fee,
+                    slippage_pct=router_slip,
                 )
                 if r_st.total_trades >= min_tr and r_st.profit_factor >= min_pf:
                     cands.append((r_st.sharpe_ratio, SupertrendCtaStrategy.STRATEGY_ID))
@@ -565,8 +567,8 @@ class PortfolioCoordinator:
                     tp_atr_mult=float(sym_cfg.get("donchian_fade_tp_atr_mult", 2.0)),
                     allow_long=bool(sym_cfg.get("donchian_fade_allow_long", True)),
                     allow_short=bool(sym_cfg.get("donchian_fade_allow_short", True)),
-                    fee_pct=0.0002,
-                    slippage_pct=0.0001,
+                    fee_pct=router_fee,
+                    slippage_pct=router_slip,
                 )
                 if r_df.total_trades >= min_tr and r_df.profit_factor >= min_pf:
                     cands.append((r_df.sharpe_ratio, DonchianRangeFadeStrategy.STRATEGY_ID))
@@ -674,8 +676,33 @@ class PortfolioCoordinator:
             self._custom_strategies[Nr7BreakoutStrategy.STRATEGY_ID] = Nr7BreakoutStrategy(config)
         if RangeEnvelopeStrategy.STRATEGY_ID in self._custom_strategies:
             self._custom_strategies[RangeEnvelopeStrategy.STRATEGY_ID] = RangeEnvelopeStrategy(config)
+        if SupertrendCtaStrategy.STRATEGY_ID in self._custom_strategies:
+            self._custom_strategies[SupertrendCtaStrategy.STRATEGY_ID] = SupertrendCtaStrategy(config)
+        if DonchianRangeFadeStrategy.STRATEGY_ID in self._custom_strategies:
+            self._custom_strategies[DonchianRangeFadeStrategy.STRATEGY_ID] = DonchianRangeFadeStrategy(config)
+
+        # Refresh strategy enable flags dynamically on hot-reload
+        self._strategy_enabled[MomentumStrategy.STRATEGY_ID] = bool(config.get("enable_momentum", True))
+        self._strategy_enabled[MeanReversionStrategy.STRATEGY_ID] = bool(config.get("enable_mean_reversion", True))
+        self._strategy_enabled[StatArbPairsStrategy.STRATEGY_ID] = bool(
+            config.get("enable_pairs_trading", config.get("enable_stat_arb_pairs", True))
+        )
+        self._strategy_enabled["basis_yield"] = bool(config.get("enable_basis_yield", True))
+        self._strategy_enabled[VolatilitySqueezeStrategy.STRATEGY_ID] = bool(config.get("enable_volatility_squeeze", True))
+        self._strategy_enabled[TrendPullbackStrategy.STRATEGY_ID] = bool(config.get("enable_trend_pullback", True))
+        self._strategy_enabled[VwapReversionStrategy.STRATEGY_ID] = bool(config.get("enable_vwap_reversion", True))
+        self._strategy_enabled[Nr7BreakoutStrategy.STRATEGY_ID] = bool(config.get("enable_nr7_breakout", True))
+        self._strategy_enabled[RangeEnvelopeStrategy.STRATEGY_ID] = bool(config.get("enable_range_envelope", True))
+        self._strategy_enabled[SupertrendCtaStrategy.STRATEGY_ID] = bool(config.get("enable_supertrend_cta", True))
+        self._strategy_enabled[DonchianRangeFadeStrategy.STRATEGY_ID] = bool(config.get("enable_donchian_range_fade", True))
+        if "enabled_strategies" in config and isinstance(config["enabled_strategies"], (list, set, tuple)):
+            enabled_set = set(config["enabled_strategies"])
+            for sid in list(self._strategy_enabled.keys()):
+                self._strategy_enabled[sid] = sid in enabled_set
+
         self._symbol_engines.clear()
         self._rolling_router_cache.clear()
+        self._macro_regime_cache = None
         self.llm_screener.enabled = bool(config.get("enable_local_llm_preflight", self.llm_screener.enabled))
         self.llm_screener.model = config.get("local_llm_model", self.llm_screener.model)
         self.basis_yield_engine.hurdle_apr = float(config.get("basis_hurdle_apr", self.basis_yield_engine.hurdle_apr))
@@ -1019,14 +1046,15 @@ class PortfolioCoordinator:
                     )
 
             # Rule 5: Macro Crash Defense Gate (VIX Panic & Credit Spread Radar)
-            macro_report = self.fred_radar.evaluate()
-            if enable_regime_filter and not macro_report.allow_long_breakouts and mom_entry and momentum_sig.direction == SignalDirection.LONG:
-                mom_entry = False
-                momentum_sig = create_no_trade_signal(
-                    "momentum", symbol, cur_price,
-                    f"Blocked by Macro Crash Defense ({macro_report.reason})",
-                    indicators=mom_ind,
-                )
+            if self.config.get("enable_vix_regime_filter", False):
+                macro_report = self.fred_radar.evaluate()
+                if enable_regime_filter and not macro_report.allow_long_breakouts and mom_entry and momentum_sig.direction == SignalDirection.LONG:
+                    mom_entry = False
+                    momentum_sig = create_no_trade_signal(
+                        "momentum", symbol, cur_price,
+                        f"Blocked by Macro Crash Defense ({macro_report.reason})",
+                        indicators=mom_ind,
+                    )
 
         # Also apply funding gate to any extra registered strategy signals
         filtered_extra: List[TradingSignal] = []
@@ -1255,10 +1283,39 @@ class PortfolioCoordinator:
                     signal=sig,
                 )
             else:
-                # Ratchet trailing stop if applicable
-                atr = sig.atr if sig.atr > 0 else (cur_price * 0.02)
-                atr_mult = sym_cfg.get("atr_multiplier", 2.5)
+                # Respect native stop management for Supertrend CTA and Donchian Range Fade
                 is_short = (existing_pos.get("side", "LONG") == "SHORT")
+                if pos_strategy == SupertrendCtaStrategy.STRATEGY_ID and sig.suggested_stop > 0:
+                    cur_stop = float(existing_pos.get("trailing_stop", sig.suggested_stop))
+                    new_stop = min(cur_stop, sig.suggested_stop) if is_short else max(cur_stop, sig.suggested_stop)
+                    self.account.update_trailing_stop(symbol, new_stop, cur_price)
+                    return CoordinatorDecision(
+                        symbol=symbol,
+                        action="HOLD",
+                        strategy_id=pos_strategy,
+                        units=existing_pos["units"],
+                        price=cur_price,
+                        stop_loss=new_stop,
+                        reason="Position active, Supertrend line stop updated",
+                        signal=sig,
+                    )
+                if pos_strategy == DonchianRangeFadeStrategy.STRATEGY_ID:
+                    fixed_stop = float(existing_pos.get("trailing_stop", sig.suggested_stop or 0.0))
+                    return CoordinatorDecision(
+                        symbol=symbol,
+                        action="HOLD",
+                        strategy_id=pos_strategy,
+                        units=existing_pos["units"],
+                        price=cur_price,
+                        stop_loss=fixed_stop,
+                        reason="Position active, targeting Donchian midline",
+                        signal=sig,
+                    )
+
+                # Ratchet trailing stop if applicable
+                ind_atr = float((sig.indicators or {}).get("atr", 0.0) or 0.0)
+                atr = sig.atr if sig.atr > 0 else (ind_atr if ind_atr > 0 else (cur_price * 0.02))
+                atr_mult = sym_cfg.get("atr_multiplier", 2.5)
                 new_stop = self.risk_engine.update_trailing_stop(
                     current_price=cur_price,
                     current_atr=atr,

@@ -60,6 +60,8 @@ STRATEGY_NAMES = {
     "vwap_reversion": "Rolling VWAP Fair-Value Reversion",
     "nr7_breakout": "NR7 Compression Breakout",
     "range_envelope": "Rolling Range Envelope (Average Down/Top)",
+    "supertrend_cta": "ATR Supertrend CTA (Long/Short Trend Rider)",
+    "donchian_range_fade": "Donchian Range Fade + RSI(2)",
     "portfolio_coordinator": "Multi-Strategy Portfolio Coordinator",
 }
 
