@@ -20,6 +20,10 @@ web4-trading-agent/
 │                                         # USED BY: Terminal monitor run by the user; reads live_status.json & portfolio
 │                                         # WHY NEEDED: Visualizes P&L, open positions & pairs gauges with zero risk of database locks
 │
+├── web_dashboard.py                      # WHAT: Live browser dashboard (HTTP server on port 8080, /api/state JSON feed)
+│                                         # USED BY: Browser UI; reads live_status.json, paper_portfolio.json, active_config.json
+│                                         # WHY NEEDED: Real-time equity curve, regime status, watchlist, and all 13 strategy tabs
+│
 ├── AGENTS.md                             # WHAT: Constitutional safety rulebook for autonomous AI agents
 │                                         # USED BY: Read by AI coding agents (Antigravity/Claude/Gemini) before running any tasks
 │                                         # WHY NEEDED: Enforces immutable laws: paper-only trading, 1%-5% sizing, and data preservation
@@ -40,7 +44,7 @@ web4-trading-agent/
 │                                         # USED BY: Anyone cloning or onboarding to the repository
 │                                         # WHY NEEDED: First entry point explaining installation, startup flags, and safety limits
 │
-├── requirements.txt                      # WHAT: Python dependencies (CCXT, pandas, numpy, scipy, statsmodels, tabulate)
+├── requirements.txt                      # WHAT: Python dependencies (numpy, pandas, ccxt, yfinance, requests, matplotlib, pytest)
 │                                         # USED BY: pip install when provisioning environments or Docker containers
 │                                         # WHY NEEDED: Ensures deterministic environment setups without dependency mismatch
 │
@@ -130,11 +134,17 @@ web4-trading-agent/
 │   │                                     # USED BY: live_paper_trader.py --cpi-benchmark & tests/test_roadmap_items_1_to_4.py
 │   │                                     # WHY NEEDED: Empirically scores Web4 Coordinated & Dynamic Router vs. Single-Agent & Uncoordinated baselines
 │   │
-│   ├── async_agent_runner.py             # WHAT: Non-blocking ThreadPoolExecutor worker pool for heavy Agent 9/10/11 tasks
+│   ├── async_agent_runner.py             # WHAT: Non-blocking ThreadPoolExecutor worker pool for heavy Agent 9/10/11 & quarantine tasks
 │   │                                     # USED BY: live_paper_trader.py --loop
 │   │                                     # WHY NEEDED: Prevents 20s-35s LLM/Optimizer jobs from stalling the 60s stop-loss loop
-│   │                                     # USED BY: Acquired by live_paper_trader.py; checked by dashboard.py
-│   │                                     # WHY NEEDED: Prevents duplicate bot instances from running simultaneously and doubling risk
+│   │
+│   ├── regime_playbook.py                # WHAT: Causal 20d 50/50 BTC/USDT + SPY Macro Regime Thermometer & Variant H Playbook
+│   │                                     # USED BY: core/coordinator.py on every tick
+│   │                                     # WHY NEEDED: Routes only regime-proven strategies for BULL (>=+4%), CHOPPY, and BEAR (<=-4%)
+│   │
+│   ├── dynamic_router.py                 # WHAT: 30-day rolling OOS expectancy router (PF >= 1.4, trades >= 3)
+│   │                                     # USED BY: core/coordinator.py (cached per 6h TTL)
+│   │                                     # WHY NEEDED: Selects the highest-Sharpe qualifying strategy per asset or parks in basis_yield/cash
 │   │
 │   ├── strategy.py                       # WHAT: Base abstract class defining the trading strategy interface (`BaseStrategy`)
 │   │                                     # USED BY: Inherited by all strategy bots in strategies/
@@ -165,14 +175,46 @@ web4-trading-agent/
 │   │                                     # USED BY: coordinator.py and backtest_engine.py
 │   │                                     # WHY NEEDED: Enters healthy dips inside macro uptrends with tight ATR stops
 │   │
-│   └── vwap_reversion.py                 # WHAT: 24-bar Rolling VWAP fair-value reversion bot
+│   ├── vwap_reversion.py                 # WHAT: 24-bar Rolling VWAP fair-value reversion bot (disabled by default in Variant H)
+│   │                                     # USED BY: coordinator.py and backtest_engine.py
+│   │                                     # WHY NEEDED: Fades extreme volume-weighted stretches back toward institutional fair value
+│   │
+│   ├── supertrend_cta.py                 # WHAT: ATR-band Supertrend CTA trend-follower (active in CHOPPY)
+│   │                                     # USED BY: coordinator.py, dynamic_router.py, backtest_engine.py
+│   │                                     # WHY NEEDED: Captures multi-day directional swings inside choppy/transitional markets
+│   │
+│   ├── donchian_range_fade.py            # WHAT: Compressed-Donchian RSI(2) range fade (SHORT-only in BEAR)
+│   │                                     # USED BY: coordinator.py, dynamic_router.py, backtest_engine.py
+│   │                                     # WHY NEEDED: Harvests overbought bear-market relief-rally fades without catching falling knives
+│   │
+│   ├── williams_r_reversal.py            # WHAT: Williams %R(14) + ADX<=22 reversal strategy (active in CHOPPY)
+│   │                                     # USED BY: coordinator.py, dynamic_router.py, backtest_engine.py
+│   │                                     # WHY NEEDED: Captures two-sided mean-reversion swings in low-ADX choppy markets
+│   │
+│   ├── bear_chandelier_short.py          # WHAT: Bear relief-rally Z-score short with inverted Chandelier trailing stop (active in BEAR)
+│   │                                     # USED BY: coordinator.py, dynamic_router.py, backtest_engine.py
+│   │                                     # WHY NEEDED: Shorts overextended rallies below EMA200 with trend-riding chandelier stops
+│   │
+│   ├── nr7_breakout.py                   # WHAT: Narrow Range 7 volatility expansion breakout bot (disabled by default in Variant H)
+│   │                                     # USED BY: coordinator.py and backtest_engine.py
+│   │                                     # WHY NEEDED: Optional breakout strategy retained in the dynamic registry
+│   │
+│   └── range_envelope.py                 # WHAT: Quantile range envelope mean-reversion bot (disabled by default in Variant H)
 │                                         # USED BY: coordinator.py and backtest_engine.py
-│                                         # WHY NEEDED: Fades extreme volume-weighted stretches back toward institutional fair value
+│                                         # WHY NEEDED: Optional range-fade strategy retained in the dynamic registry
 │
 ├── agent/
 │   ├── governor.py                       # WHAT: 4-Gate auto-approval constitutional gatekeeper
 │   │                                     # USED BY: Invoked after validator.py tests proposed parameter mutations
 │   │                                     # WHY NEEDED: Enables safe self-improving autonomy by strictly blocking underperforming changes
+│   │
+│   ├── multi_strategy_optimizer.py       # WHAT: Agent 11 multi-strategy self-improvement tournament
+│   │                                     # USED BY: live_paper_trader.py background loop (every 6h)
+│   │                                     # WHY NEEDED: Evaluates parameter mutations across strategies with walk-forward OOS validation
+│   │
+│   ├── strategy_quarantine.py            # WHAT: Automatic weekly OOS strategy quarantine & 2-week auto-return engine
+│   │                                     # USED BY: live_paper_trader.py background loop (weekly) & standalone CLI
+│   │                                     # WHY NEEDED: Auto-pauses chronically underperforming strategies and re-enables them after recovery
 │   │
 │   ├── optimizer.py                      # WHAT: In-sample parameter exploration engine searching for optimal settings
 │   │                                     # USED BY: Research suites & background tuning jobs; writes pending_proposals.json
