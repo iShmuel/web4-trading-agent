@@ -111,11 +111,6 @@ def test_playbook_b_allowed_strategies(tmp_path):
         "basis_yield",
     }
     assert coord.get_playbook_allowed_strategies("CHOPPY") == {
-        VolatilitySqueezeStrategy.STRATEGY_ID,
-        SupertrendCtaStrategy.STRATEGY_ID,
-        MomentumStrategy.STRATEGY_ID,
-        WilliamsRReversalStrategy.STRATEGY_ID,
-        StatArbPairsStrategy.STRATEGY_ID,
         "basis_yield",
     }
     assert coord.get_playbook_allowed_strategies("BEAR") == {

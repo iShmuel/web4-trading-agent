@@ -41,8 +41,8 @@ def select_rolling_strategy(
     if df is None or len(df) < min_bars:
         return "all"
 
-    cfg_lb = int(config.get("dynamic_router_lookback_hours", 720))
-    lookback_bars = min(cfg_lb, len(df)) if is_crypto else min(280, len(df))
+    cfg_lb = int(config.get("dynamic_router_lookback_hours", 2160))
+    lookback_bars = min(cfg_lb, len(df))
     df_win = df.iloc[-lookback_bars:].copy()
 
     def _dir_allowed(sid: str) -> bool:
@@ -114,6 +114,8 @@ def select_rolling_strategy(
             r_sq = run_volatility_squeeze_backtest(
                 df_win,
                 account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
+                stop_atr_mult=float(sym_cfg.get("squeeze_atr_stop_mult", 2.0)),
+                tp_atr_mult=float(sym_cfg.get("squeeze_tp_atr_mult", 2.5)),
                 fee_pct=router_fee,
                 slippage_pct=router_slip,
             )

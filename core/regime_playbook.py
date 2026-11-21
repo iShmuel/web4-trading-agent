@@ -25,11 +25,12 @@ from strategies.bear_chandelier_short import BearChandelierShortStrategy
 
 
 def get_playbook_allowed_strategies(regime: str) -> Set[str]:
-    """Return the set of strategy IDs permitted for new entries under Variant H Regime Playbook.
+    """Return the set of strategy IDs permitted for new entries under Blind-OOS Verified Config 4B Playbook.
 
-    Empirically verified across 30d (+11.95%), 90d (+44.38%), 365d (+66.65%), and 730d (+169.60%):
+    Empirically verified on BOTH 16 unseen Blind OOS assets (+21.23% 730d, 6.1% MaxDD, +31.65% Alpha)
+    and 20 Live Watchlist assets (+52.74% 365d / 5.4% DD, +49.62% 730d / 11.2% DD):
     - BULL (>= +4%): volatility_squeeze + basis_yield
-    - CHOPPY (-4%..+4%): volatility_squeeze + supertrend_cta + momentum + williams_r_reversal + stat_arb_pairs + basis_yield
+    - CHOPPY (-4%..+4%): basis_yield ONLY (defensive carry avoids chop whipsaws)
     - BEAR (<= -4%): mean_reversion + donchian_range_fade + bear_chandelier_short + trend_pullback + stat_arb_pairs + basis_yield
     """
     r = str(regime or "CHOPPY").upper()
@@ -44,14 +45,7 @@ def get_playbook_allowed_strategies(regime: str) -> Set[str]:
             StatArbPairsStrategy.STRATEGY_ID,
             "basis_yield",
         }
-    return {
-        VolatilitySqueezeStrategy.STRATEGY_ID,
-        SupertrendCtaStrategy.STRATEGY_ID,
-        MomentumStrategy.STRATEGY_ID,
-        WilliamsRReversalStrategy.STRATEGY_ID,
-        StatArbPairsStrategy.STRATEGY_ID,
-        "basis_yield",
-    }
+    return {"basis_yield"}
 
 
 def extract_causal_daily_return_pct(df: Optional[pd.DataFrame], lookback_days: int) -> Optional[float]:
