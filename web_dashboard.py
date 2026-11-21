@@ -66,8 +66,19 @@ def _classify_watchlist_row(sym: str, action_obj: Dict[str, Any], price: Optiona
         strategy_label, trigger = "NR7 Breakout", "NR7 Breakout"
     elif "selected 'range_envelope'" in rl:
         strategy_label, trigger = "Range Envelope", "Range Envelope"
+    elif "selected 'supertrend_cta'" in rl:
+        strategy_label, trigger = "Supertrend CTA", "Supertrend CTA"
+    elif "selected 'donchian_range_fade'" in rl:
+        strategy_label, trigger = "Donchian Fade", "Donchian Fade"
     elif "selected 'mean_reversion'" in rl:
         strategy_label, trigger = "Mean Reversion", "Mean Reversion"
+    elif "paused by regime playbook" in rl:
+        if "macro=bear" in rl:
+            strategy_label, trigger = "Playbook (BEAR)", "Scanning: MR / Donchian / Pullback"
+        elif "macro=bull" in rl:
+            strategy_label, trigger = "Playbook (BULL)", "Scanning: Vol Squeeze / Carry"
+        else:
+            strategy_label, trigger = "Playbook (CHOPPY)", "Scanning: VolSq / Supertrend / Mom"
     elif "selected 'momentum'" in rl or "no breakout" in rl or "macro_bear" in rl:
         strategy_label = "Momentum"
         trigger = reason[:56] if reason else "Momentum"
@@ -83,7 +94,7 @@ def _classify_watchlist_row(sym: str, action_obj: Dict[str, Any], price: Optiona
         strategy_label, trigger = "Blacklisted", "Quarantined"
     else:
         strategy_label = str(action_obj.get("strategy_id", "Scanning"))
-        trigger = reason[:36] if reason else "Scanning"
+        trigger = reason[:64] if reason else "Scanning"
 
     return {
         "symbol": sym,
