@@ -22,23 +22,45 @@ from core.async_agent_runner import AsyncAgentTaskRunner
 from core.cpi_benchmark import run_cpi_benchmark
 
 PROJECT_ROOT = Path(__file__).resolve().parent
+import logging
+from logging.handlers import RotatingFileHandler
+
 CONFIG_PATH = PROJECT_ROOT / "config" / "active_config.json"
 DATA_DIR = PROJECT_ROOT / "data"
 LOG_FILE = DATA_DIR / "live_trader.log"
-MAX_LOG_BYTES = 10 * 1024 * 1024  # 10 MB automatic log rotation threshold
+MAX_LOG_BYTES = 10 * 1024 * 1024  # 10 MB per file
+LOG_BACKUP_COUNT = 5              # Keep up to 5 rotated files (50 MB total cap)
 LOCK_FILE = DATA_DIR / "live_trader.lock"
 STATUS_FILE = DATA_DIR / "live_status.json"
 
+_FILE_LOGGER: Optional[logging.Logger] = None
+
+
+def _get_file_logger() -> logging.Logger:
+    global _FILE_LOGGER
+    if _FILE_LOGGER is None:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        logger = logging.getLogger("web4.live_paper_trader")
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
+        if not logger.handlers:
+            handler = RotatingFileHandler(
+                LOG_FILE,
+                maxBytes=MAX_LOG_BYTES,
+                backupCount=LOG_BACKUP_COUNT,
+                encoding="utf-8",
+            )
+            handler.setFormatter(logging.Formatter("%(message)s"))
+            logger.addHandler(handler)
+        _FILE_LOGGER = logger
+    return _FILE_LOGGER
+
 
 def log(msg: str):
-    """Print to console and append to data/live_trader.log with 10 MB rotation."""
+    """Print to console and write to data/live_trader.log via RotatingFileHandler (5x10MB cap)."""
     print(msg, flush=True)
     try:
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        if LOG_FILE.exists() and LOG_FILE.stat().st_size >= MAX_LOG_BYTES:
-            LOG_FILE.replace(LOG_FILE.with_suffix(".log.1"))
-        with open(LOG_FILE, "a") as f:
-            f.write(f"{msg}\n")
+        _get_file_logger().info(msg)
     except Exception:
         pass
 

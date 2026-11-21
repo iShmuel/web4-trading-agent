@@ -33,6 +33,13 @@ from strategies.nr7_breakout import Nr7BreakoutStrategy
 from strategies.range_envelope import RangeEnvelopeStrategy
 from strategies.supertrend_cta import SupertrendCtaStrategy
 from strategies.donchian_range_fade import DonchianRangeFadeStrategy
+from core.regime_playbook import (
+    compute_macro_regime,
+    extract_causal_daily_return_pct,
+    get_playbook_allowed_strategies as _get_playbook_allowed_strategies,
+    load_macro_benchmark_df,
+)
+from core.dynamic_router import select_rolling_strategy
 from core.journal import log_decision, get_gate_alpha_feedback, log_maker_telemetry
 from core.polymarket_radar import PolymarketRadar, MacroEventRisk
 from core.fred_radar import FredMacroRadar, MacroRegimeReport
@@ -235,69 +242,13 @@ class PortfolioCoordinator:
         return self._engines_for(symbol)[0]
 
     def get_playbook_allowed_strategies(self, regime: str) -> set:
-        """Return the set of strategy IDs permitted for new entries under the 8-Strategy Regime Playbook.
-
-        Empirically verified on 720d (2-year) native 1h strict zero-lookahead OOS (+250.39%,
-        all 3 market states positive, 50/50 BTC/USDT + SPY causal 20d thermometer):
-        - BULL (>= +4%): volatility_squeeze + basis_yield
-        - CHOPPY (-4%..+4%): volatility_squeeze + supertrend_cta + momentum + stat_arb_pairs + basis_yield
-        - BEAR (<= -4%): mean_reversion + donchian_range_fade + trend_pullback + stat_arb_pairs + basis_yield
-        """
-        r = str(regime or "CHOPPY").upper()
-        if r == "BULL":
-            return {VolatilitySqueezeStrategy.STRATEGY_ID, "basis_yield"}
-        if r == "BEAR":
-            return {
-                MeanReversionStrategy.STRATEGY_ID,
-                DonchianRangeFadeStrategy.STRATEGY_ID,
-                TrendPullbackStrategy.STRATEGY_ID,
-                StatArbPairsStrategy.STRATEGY_ID,
-                "basis_yield",
-            }
-        # CHOPPY
-        return {
-            VolatilitySqueezeStrategy.STRATEGY_ID,
-            SupertrendCtaStrategy.STRATEGY_ID,
-            MomentumStrategy.STRATEGY_ID,
-            StatArbPairsStrategy.STRATEGY_ID,
-            "basis_yield",
-        }
+        """Delegate to core.regime_playbook.get_playbook_allowed_strategies."""
+        return _get_playbook_allowed_strategies(regime)
 
     @staticmethod
     def _extract_causal_daily_return_pct(df: Optional[pd.DataFrame], lookback_days: int) -> Optional[float]:
-        """Compute strictly causal trailing N-day return (%) from daily-resampled closes.
-
-        Uses shift(1) on daily closes so an incomplete current day's bar is never used.
-        """
-        if df is None or len(df) < 2 or "close" not in df.columns:
-            return None
-        try:
-            series = df["close"].astype(float)
-            if isinstance(df.index, pd.DatetimeIndex):
-                s = series.sort_index()
-            elif "timestamp" in df.columns:
-                idx = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
-                s = pd.Series(series.values, index=idx).dropna().sort_index()
-            else:
-                return None
-
-            daily = s.resample("1D").last().dropna()
-            if len(daily) >= lookback_days + 2:
-                # Strictly causal: prior completed day vs lookback_days before that
-                shifted = daily.shift(1).dropna()
-                prev_close = float(shifted.iloc[-1])
-                base_close = float(shifted.iloc[-1 - lookback_days])
-            elif len(daily) >= lookback_days + 1:
-                prev_close = float(daily.iloc[-1])
-                base_close = float(daily.iloc[-1 - lookback_days])
-            else:
-                return None
-
-            if base_close <= 0.0 or not math.isfinite(prev_close) or not math.isfinite(base_close):
-                return None
-            return (prev_close / base_close - 1.0) * 100.0
-        except Exception:
-            return None
+        """Delegate to core.regime_playbook.extract_causal_daily_return_pct."""
+        return extract_causal_daily_return_pct(df, lookback_days)
 
     def _load_macro_benchmark_df(
         self,
@@ -305,31 +256,14 @@ class PortfolioCoordinator:
         market_data: Optional[Dict[str, pd.DataFrame]] = None,
         benchmark_data: Optional[Dict[str, pd.DataFrame]] = None,
     ) -> Optional[pd.DataFrame]:
-        """Locate benchmark OHLCV DataFrame in memory or fall back to cached data CSVs."""
-        if benchmark_data and symbol in benchmark_data and benchmark_data[symbol] is not None:
-            return benchmark_data[symbol]
-        if self._latest_benchmark_data and symbol in self._latest_benchmark_data:
-            return self._latest_benchmark_data[symbol]
-        if market_data and symbol in market_data and market_data[symbol] is not None:
-            return market_data[symbol]
-        if self._latest_market_data and symbol in self._latest_market_data:
-            return self._latest_market_data[symbol]
-
-        from pathlib import Path
-
-        data_dir = Path("data")
-        safe = symbol.replace("/", "_")
-        prefix = "crypto" if is_crypto_symbol(symbol) else "stock"
-        for suffix in ("1h_90d.csv", "1h_365d.csv", "1h_720d.csv", "1d_1825d.csv"):
-            path = data_dir / f"{prefix}_{safe}_{suffix}"
-            if path.exists():
-                try:
-                    df = pd.read_csv(path, parse_dates=["timestamp"], index_col="timestamp")
-                    if len(df) >= 25:
-                        return df
-                except Exception:
-                    continue
-        return None
+        """Delegate to core.regime_playbook.load_macro_benchmark_df."""
+        return load_macro_benchmark_df(
+            symbol,
+            benchmark_data=benchmark_data,
+            latest_benchmark_data=self._latest_benchmark_data,
+            market_data=market_data,
+            latest_market_data=self._latest_market_data,
+        )
 
     def get_macro_playbook_regime(
         self,
@@ -350,33 +284,17 @@ class PortfolioCoordinator:
             _, cached_regime, cached_ret = self._macro_regime_cache
             return cached_regime, cached_ret
 
-        lookback_days = int(self.config.get("macro_regime_lookback_days", 20))
-        bull_pct = float(self.config.get("macro_regime_bull_pct", 4.0))
-        bear_pct = float(self.config.get("macro_regime_bear_pct", -4.0))
-        benchmarks = self.config.get("macro_regime_benchmarks", ["BTC/USDT", "SPY"])
-
-        rets: List[float] = []
-        for sym in benchmarks:
-            bdf = self._load_macro_benchmark_df(sym, market_data=market_data, benchmark_data=benchmark_data)
-            r = self._extract_causal_daily_return_pct(bdf, lookback_days)
-            if r is not None:
-                rets.append(r)
-
-        if not rets:
-            regime, macro_ret = "CHOPPY", 0.0
-        else:
-            macro_ret = float(sum(rets) / len(rets))
-            if macro_ret >= bull_pct:
-                regime = "BULL"
-            elif macro_ret <= bear_pct:
-                regime = "BEAR"
-            else:
-                regime = "CHOPPY"
-
+        regime, macro_ret = compute_macro_regime(
+            self.config,
+            benchmark_data=benchmark_data,
+            latest_benchmark_data=self._latest_benchmark_data,
+            market_data=market_data,
+            latest_market_data=self._latest_market_data,
+        )
         self.last_macro_regime = regime
-        self.last_macro_return_pct = round(macro_ret, 3)
-        self._macro_regime_cache = (now_epoch, regime, self.last_macro_return_pct)
-        return regime, self.last_macro_return_pct
+        self.last_macro_return_pct = macro_ret
+        self._macro_regime_cache = (now_epoch, regime, macro_ret)
+        return regime, macro_ret
 
     def _resolve_dynamic_rolling_strategy(
         self,
@@ -409,178 +327,16 @@ class PortfolioCoordinator:
         if cached is not None and (now_epoch - cached[0]) < ttl:
             return cached[1]
 
-        is_crypto = is_crypto_symbol(symbol)
-        min_bars = 120 if not is_crypto else 250
-        if df is None or len(df) < min_bars:
+        choice = select_rolling_strategy(
+            symbol=symbol,
+            df=df,
+            sym_cfg=sym_cfg,
+            config=self.config,
+            is_strategy_enabled_fn=self.is_strategy_enabled,
+            allowed_playbook=allowed_playbook,
+        )
+        if choice == "all" and (df is None or len(df) < (120 if not is_crypto_symbol(symbol) else 250)):
             return "all"
-
-        cfg_lb = int(self.config.get("dynamic_router_lookback_hours", 720))
-        lookback_bars = min(cfg_lb, len(df)) if is_crypto else min(280, len(df))
-        df_win = df.iloc[-lookback_bars:].copy()
-
-        def _dir_allowed(sid: str) -> bool:
-            if not self.is_strategy_enabled(sid):
-                return False
-            if allowed_playbook is not None and sid not in allowed_playbook:
-                return False
-            return True
-
-        try:
-            from core.backtest_engine import (
-                run_backtest,
-                run_basis_yield_backtest,
-                run_mean_reversion_backtest,
-                run_volatility_squeeze_backtest,
-                run_trend_pullback_backtest,
-                run_vwap_reversion_backtest,
-                run_nr7_breakout_backtest,
-                run_range_envelope_backtest,
-                run_supertrend_cta_backtest,
-                run_donchian_range_fade_backtest,
-            )
-
-            router_fee = float(self.config.get("fee_pct", 0.0006))
-            router_slip = float(self.config.get("slippage_pct", 0.0004))
-            r_by = (
-                run_basis_yield_backtest(df_win, hurdle_apr=5.0, fee_pct=router_fee, slippage_pct=router_slip)
-                if is_crypto
-                else None
-            )
-
-            min_pf = float(self.config.get("dynamic_router_min_pf", 1.15))
-            min_tr = int(self.config.get("dynamic_router_min_trades", 2))
-            cands = []
-            if _dir_allowed(MomentumStrategy.STRATEGY_ID):
-                r_mom = run_backtest(
-                    df_win,
-                    breakout_lookback=int(sym_cfg.get("breakout_lookback", 36)),
-                    ema_trend_filter=int(sym_cfg.get("ema_trend_filter", 200)),
-                    atr_multiplier=float(sym_cfg.get("atr_multiplier", 2.5)),
-                    take_profit_atr_mult=float(sym_cfg.get("take_profit_atr_mult", 2.0)),
-                    allow_long=bool(sym_cfg.get("allow_long", True)),
-                    allow_short=bool(sym_cfg.get("allow_short", False)),
-                    fee_pct=router_fee,
-                    slippage_pct=router_slip,
-                )
-                if r_mom.total_trades >= min_tr and r_mom.profit_factor >= min_pf:
-                    cands.append((r_mom.sharpe_ratio, MomentumStrategy.STRATEGY_ID))
-            if _dir_allowed(MeanReversionStrategy.STRATEGY_ID):
-                r_mr = run_mean_reversion_backtest(
-                    df_win,
-                    bb_period=int(sym_cfg.get("bb_period", 20)),
-                    bb_std=float(sym_cfg.get("bb_std", 2.1)),
-                    rsi_oversold=float(sym_cfg.get("rsi_oversold", 28.0)),
-                    rsi_overbought=float(sym_cfg.get("rsi_overbought", 72.0)),
-                    adx_threshold=float(sym_cfg.get("adx_threshold", 24.0)),
-                    allow_short=bool(sym_cfg.get("mr_allow_short", False)),
-                    fee_pct=router_fee,
-                    slippage_pct=router_slip,
-                )
-                if r_mr.total_trades >= min_tr and r_mr.profit_factor >= min_pf:
-                    cands.append((r_mr.sharpe_ratio, MeanReversionStrategy.STRATEGY_ID))
-            if _dir_allowed(VolatilitySqueezeStrategy.STRATEGY_ID):
-                r_sq = run_volatility_squeeze_backtest(
-                    df_win,
-                    account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
-                    fee_pct=router_fee,
-                    slippage_pct=router_slip,
-                )
-                if r_sq.total_trades >= min_tr and r_sq.profit_factor >= min_pf:
-                    cands.append((r_sq.sharpe_ratio, VolatilitySqueezeStrategy.STRATEGY_ID))
-            if _dir_allowed(TrendPullbackStrategy.STRATEGY_ID):
-                r_pb = run_trend_pullback_backtest(
-                    df_win,
-                    account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
-                    fee_pct=router_fee,
-                    slippage_pct=router_slip,
-                )
-                if r_pb.total_trades >= min_tr and r_pb.profit_factor >= min_pf:
-                    cands.append((r_pb.sharpe_ratio, TrendPullbackStrategy.STRATEGY_ID))
-            if _dir_allowed(VwapReversionStrategy.STRATEGY_ID):
-                r_vw = run_vwap_reversion_backtest(
-                    df_win,
-                    account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
-                    fee_pct=router_fee,
-                    slippage_pct=router_slip,
-                )
-                if r_vw.total_trades >= min_tr and r_vw.profit_factor >= min_pf:
-                    cands.append((r_vw.sharpe_ratio, VwapReversionStrategy.STRATEGY_ID))
-            if _dir_allowed(Nr7BreakoutStrategy.STRATEGY_ID):
-                r_nr7 = run_nr7_breakout_backtest(
-                    df_win,
-                    account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
-                    nr7_lookback=int(sym_cfg.get("nr7_lookback", 7)),
-                    stop_atr_mult=float(sym_cfg.get("nr7_atr_stop_mult", 2.0)),
-                    fee_pct=router_fee,
-                    slippage_pct=router_slip,
-                )
-                if r_nr7.total_trades >= min_tr and r_nr7.profit_factor >= min_pf:
-                    cands.append((r_nr7.sharpe_ratio, Nr7BreakoutStrategy.STRATEGY_ID))
-            if _dir_allowed(RangeEnvelopeStrategy.STRATEGY_ID):
-                r_re = run_range_envelope_backtest(
-                    df_win,
-                    account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
-                    range_window=int(sym_cfg.get("range_window", 36)),
-                    low_quantile=float(sym_cfg.get("range_low_quantile", 0.10)),
-                    high_quantile=float(sym_cfg.get("range_high_quantile", 0.90)),
-                    rsi_oversold=float(sym_cfg.get("range_rsi_oversold", 30.0)),
-                    rsi_overbought=float(sym_cfg.get("range_rsi_overbought", 70.0)),
-                    adx_max=float(sym_cfg.get("range_adx_max", 24.0)),
-                    stop_atr_mult=float(sym_cfg.get("range_atr_stop_mult", 2.0)),
-                    min_net_profit_usd=float(sym_cfg.get("range_min_net_profit_usd", 10.0)),
-                    allow_short=bool(sym_cfg.get("range_allow_short", True)),
-                    fee_pct=router_fee,
-                    slippage_pct=router_slip,
-                )
-                if r_re.total_trades >= min_tr and r_re.profit_factor >= min_pf:
-                    cands.append((r_re.sharpe_ratio, RangeEnvelopeStrategy.STRATEGY_ID))
-            if _dir_allowed(SupertrendCtaStrategy.STRATEGY_ID):
-                st_mult = (
-                    float(sym_cfg.get("supertrend_crypto_mult", sym_cfg.get("supertrend_mult", 3.0)))
-                    if is_crypto
-                    else float(sym_cfg.get("supertrend_equity_mult", 2.5))
-                )
-                r_st = run_supertrend_cta_backtest(
-                    df_win,
-                    account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
-                    atr_period=int(sym_cfg.get("supertrend_atr_period", 10)),
-                    mult=st_mult,
-                    stop_atr_mult=float(sym_cfg.get("supertrend_stop_atr_mult", 3.0)),
-                    allow_long=bool(sym_cfg.get("supertrend_allow_long", True)),
-                    allow_short=bool(sym_cfg.get("supertrend_allow_short", True)),
-                    fee_pct=router_fee,
-                    slippage_pct=router_slip,
-                )
-                if r_st.total_trades >= min_tr and r_st.profit_factor >= min_pf:
-                    cands.append((r_st.sharpe_ratio, SupertrendCtaStrategy.STRATEGY_ID))
-            if _dir_allowed(DonchianRangeFadeStrategy.STRATEGY_ID):
-                r_df = run_donchian_range_fade_backtest(
-                    df_win,
-                    account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
-                    window=int(sym_cfg.get("donchian_fade_window", 20)),
-                    rsi_period=int(sym_cfg.get("donchian_fade_rsi_period", 2)),
-                    rsi_low=float(sym_cfg.get("donchian_fade_rsi_low", 10.0)),
-                    rsi_high=float(sym_cfg.get("donchian_fade_rsi_high", 90.0)),
-                    width_lookback=int(sym_cfg.get("donchian_fade_width_lookback", 100)),
-                    width_quantile=float(sym_cfg.get("donchian_fade_width_quantile", 0.50)),
-                    stop_atr_mult=float(sym_cfg.get("donchian_fade_stop_atr_mult", 2.0)),
-                    tp_atr_mult=float(sym_cfg.get("donchian_fade_tp_atr_mult", 2.0)),
-                    allow_long=bool(sym_cfg.get("donchian_fade_allow_long", True)),
-                    allow_short=bool(sym_cfg.get("donchian_fade_allow_short", True)),
-                    fee_pct=router_fee,
-                    slippage_pct=router_slip,
-                )
-                if r_df.total_trades >= min_tr and r_df.profit_factor >= min_pf:
-                    cands.append((r_df.sharpe_ratio, DonchianRangeFadeStrategy.STRATEGY_ID))
-            if cands:
-                cands.sort(key=lambda x: x[0], reverse=True)
-                choice = cands[0][1]
-            elif r_by is not None and r_by.total_trades >= 1 and r_by.profit_factor >= 1.0:
-                choice = "basis_yield"
-            else:
-                choice = "basis_yield" if is_crypto else "cash"
-        except Exception:
-            choice = "all"
 
         self._rolling_router_cache[cache_key] = (now_epoch, choice)
         return choice
