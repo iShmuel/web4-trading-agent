@@ -160,15 +160,15 @@ def run_portfolio_tick(
     macro_bench_data: Dict[str, Any] = {}
     if config.get("enable_macro_regime_playbook", False):
         bench_syms = list(config.get("macro_regime_benchmarks", ["BTC/USDT", "SPY"]))
-        if not hasattr(run_live_cycle, "_macro_bench_cache"):
-            run_live_cycle._macro_bench_cache = {}
+        if not hasattr(run_portfolio_tick, "_macro_bench_cache"):
+            run_portfolio_tick._macro_bench_cache = {}
         now_ts = time.time()
         to_fetch = []
         for bsym in bench_syms:
             if bsym in market_data:
                 macro_bench_data[bsym] = market_data[bsym]
                 continue
-            cached_b = run_live_cycle._macro_bench_cache.get(bsym)
+            cached_b = run_portfolio_tick._macro_bench_cache.get(bsym)
             if cached_b is not None and (now_ts - cached_b[0]) < 3600.0:
                 macro_bench_data[bsym] = cached_b[1]
             else:
@@ -188,7 +188,7 @@ def run_portfolio_tick(
                 bdf = fetched_b.get(bsym)
                 if bdf is not None and not bdf.empty:
                     macro_bench_data[bsym] = bdf
-                    run_live_cycle._macro_bench_cache[bsym] = (now_ts, bdf)
+                    run_portfolio_tick._macro_bench_cache[bsym] = (now_ts, bdf)
 
     # Run cycle through the authoritative Coordinator
     cycle_report = coordinator.run_cycle(market_data, benchmark_data=macro_bench_data)
