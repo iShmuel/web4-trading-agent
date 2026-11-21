@@ -425,10 +425,10 @@
     "AVAX/USDT:BNB/USDT"
   ],
   "allow_short": true,
-  "enable_momentum": false,
+  "enable_momentum": true,
   "enable_mean_reversion": true,
   "enable_volatility_squeeze": true,
-  "enable_trend_pullback": false,
+  "enable_trend_pullback": true,
   "enable_vwap_reversion": false,
   "min_pair_price": 0.1,
   "min_pair_hourly_dollar_vol": 25000.0,

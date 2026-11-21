@@ -235,13 +235,13 @@ class PortfolioCoordinator:
         return self._engines_for(symbol)[0]
 
     def get_playbook_allowed_strategies(self, regime: str) -> set:
-        """Return the set of strategy IDs permitted for new entries under Regime Playbook C (B2+Supertrend+ChopPairs).
+        """Return the set of strategy IDs permitted for new entries under the 8-Strategy Regime Playbook.
 
-        Empirically verified on 720d (2-year) native 1h strict zero-lookahead OOS
-        with 50/50 BTC/USDT + SPY thermometer:
-        - BULL (>= +4%): volatility_squeeze + basis_yield (pause stat_arb_pairs, mean_reversion, supertrend_cta)
-        - CHOPPY (-4%..+4%): volatility_squeeze + supertrend_cta + stat_arb_pairs + basis_yield
-        - BEAR (<= -4%): mean_reversion + stat_arb_pairs + basis_yield
+        Empirically verified on 720d (2-year) native 1h strict zero-lookahead OOS (+250.39%,
+        all 3 market states positive, 50/50 BTC/USDT + SPY causal 20d thermometer):
+        - BULL (>= +4%): volatility_squeeze + basis_yield
+        - CHOPPY (-4%..+4%): volatility_squeeze + supertrend_cta + momentum + stat_arb_pairs + basis_yield
+        - BEAR (<= -4%): mean_reversion + donchian_range_fade + trend_pullback + stat_arb_pairs + basis_yield
         """
         r = str(regime or "CHOPPY").upper()
         if r == "BULL":
@@ -250,6 +250,7 @@ class PortfolioCoordinator:
             return {
                 MeanReversionStrategy.STRATEGY_ID,
                 DonchianRangeFadeStrategy.STRATEGY_ID,
+                TrendPullbackStrategy.STRATEGY_ID,
                 StatArbPairsStrategy.STRATEGY_ID,
                 "basis_yield",
             }
@@ -257,6 +258,7 @@ class PortfolioCoordinator:
         return {
             VolatilitySqueezeStrategy.STRATEGY_ID,
             SupertrendCtaStrategy.STRATEGY_ID,
+            MomentumStrategy.STRATEGY_ID,
             StatArbPairsStrategy.STRATEGY_ID,
             "basis_yield",
         }

@@ -11,8 +11,10 @@ from core.paper_account import PaperAccount
 from core.risk_engine import RiskEngine
 from strategies.donchian_range_fade import DonchianRangeFadeStrategy
 from strategies.mean_reversion import MeanReversionStrategy
+from strategies.momentum import MomentumStrategy
 from strategies.stat_arb_pairs import PairTradeSignal, StatArbPairsStrategy
 from strategies.supertrend_cta import SupertrendCtaStrategy
+from strategies.trend_pullback import TrendPullbackStrategy
 from strategies.volatility_squeeze import VolatilitySqueezeStrategy
 
 
@@ -109,12 +111,14 @@ def test_playbook_b_allowed_strategies(tmp_path):
     assert coord.get_playbook_allowed_strategies("CHOPPY") == {
         VolatilitySqueezeStrategy.STRATEGY_ID,
         SupertrendCtaStrategy.STRATEGY_ID,
+        MomentumStrategy.STRATEGY_ID,
         StatArbPairsStrategy.STRATEGY_ID,
         "basis_yield",
     }
     assert coord.get_playbook_allowed_strategies("BEAR") == {
         MeanReversionStrategy.STRATEGY_ID,
         DonchianRangeFadeStrategy.STRATEGY_ID,
+        TrendPullbackStrategy.STRATEGY_ID,
         StatArbPairsStrategy.STRATEGY_ID,
         "basis_yield",
     }
