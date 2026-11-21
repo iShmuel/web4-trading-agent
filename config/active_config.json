@@ -439,7 +439,7 @@
   "pullback_rsi_max": 38.0,
   "pullback_rsi_short_min": 56.0,
   "pullback_allow_long": true,
-  "pullback_allow_short": true,
+  "pullback_allow_short": false,
   "pullback_atr_stop_mult": 2.0,
   "momentum_choppy_min_macro_pct": 0.0,
   "vwap_window": 36,
