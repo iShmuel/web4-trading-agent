@@ -103,6 +103,13 @@ PARAMETER_BOUNDS: Dict[str, Tuple[float, float]] = {
     "donchian_fade_width_quantile": (0.20, 0.80),
     "donchian_fade_stop_atr_mult": (1.0, 4.0),
     "donchian_fade_tp_atr_mult": (1.0, 4.0),
+    "williams_r_period": (7.0, 28.0),
+    "williams_r_adx_max": (15.0, 35.0),
+    "williams_r_stop_atr_mult": (1.0, 4.0),
+    "bear_chand_z_window": (12.0, 48.0),
+    "bear_chand_z_entry": (0.8, 3.0),
+    "bear_chand_mult": (1.5, 5.0),
+    "bear_chand_stop_atr_mult": (1.5, 4.5),
 }
 
 

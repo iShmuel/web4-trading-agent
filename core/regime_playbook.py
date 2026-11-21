@@ -20,14 +20,17 @@ from strategies.stat_arb_pairs import StatArbPairsStrategy
 from strategies.supertrend_cta import SupertrendCtaStrategy
 from strategies.trend_pullback import TrendPullbackStrategy
 from strategies.volatility_squeeze import VolatilitySqueezeStrategy
+from strategies.williams_r_reversal import WilliamsRReversalStrategy
+from strategies.bear_chandelier_short import BearChandelierShortStrategy
 
 
 def get_playbook_allowed_strategies(regime: str) -> Set[str]:
-    """Return the set of strategy IDs permitted for new entries under the 8-Strategy Regime Playbook.
+    """Return the set of strategy IDs permitted for new entries under Variant H Regime Playbook.
 
+    Empirically verified across 30d (+11.95%), 90d (+44.38%), 365d (+66.65%), and 730d (+169.60%):
     - BULL (>= +4%): volatility_squeeze + basis_yield
-    - CHOPPY (-4%..+4%): volatility_squeeze + supertrend_cta + momentum + stat_arb_pairs + basis_yield
-    - BEAR (<= -4%): mean_reversion + donchian_range_fade + trend_pullback + stat_arb_pairs + basis_yield
+    - CHOPPY (-4%..+4%): volatility_squeeze + supertrend_cta + momentum + williams_r_reversal + stat_arb_pairs + basis_yield
+    - BEAR (<= -4%): mean_reversion + donchian_range_fade + bear_chandelier_short + trend_pullback + stat_arb_pairs + basis_yield
     """
     r = str(regime or "CHOPPY").upper()
     if r == "BULL":
@@ -36,6 +39,7 @@ def get_playbook_allowed_strategies(regime: str) -> Set[str]:
         return {
             MeanReversionStrategy.STRATEGY_ID,
             DonchianRangeFadeStrategy.STRATEGY_ID,
+            BearChandelierShortStrategy.STRATEGY_ID,
             TrendPullbackStrategy.STRATEGY_ID,
             StatArbPairsStrategy.STRATEGY_ID,
             "basis_yield",
@@ -44,6 +48,7 @@ def get_playbook_allowed_strategies(regime: str) -> Set[str]:
         VolatilitySqueezeStrategy.STRATEGY_ID,
         SupertrendCtaStrategy.STRATEGY_ID,
         MomentumStrategy.STRATEGY_ID,
+        WilliamsRReversalStrategy.STRATEGY_ID,
         StatArbPairsStrategy.STRATEGY_ID,
         "basis_yield",
     }

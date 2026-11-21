@@ -33,6 +33,8 @@ from strategies.nr7_breakout import Nr7BreakoutStrategy
 from strategies.range_envelope import RangeEnvelopeStrategy
 from strategies.supertrend_cta import SupertrendCtaStrategy
 from strategies.donchian_range_fade import DonchianRangeFadeStrategy
+from strategies.williams_r_reversal import WilliamsRReversalStrategy
+from strategies.bear_chandelier_short import BearChandelierShortStrategy
 from core.regime_playbook import (
     compute_macro_regime,
     extract_causal_daily_return_pct,
@@ -171,6 +173,10 @@ class PortfolioCoordinator:
         self._strategy_enabled[SupertrendCtaStrategy.STRATEGY_ID] = bool(config.get("enable_supertrend_cta", True))
         self._custom_strategies[DonchianRangeFadeStrategy.STRATEGY_ID] = DonchianRangeFadeStrategy(config)
         self._strategy_enabled[DonchianRangeFadeStrategy.STRATEGY_ID] = bool(config.get("enable_donchian_range_fade", True))
+        self._custom_strategies[WilliamsRReversalStrategy.STRATEGY_ID] = WilliamsRReversalStrategy(config)
+        self._strategy_enabled[WilliamsRReversalStrategy.STRATEGY_ID] = bool(config.get("enable_williams_r_reversal", True))
+        self._custom_strategies[BearChandelierShortStrategy.STRATEGY_ID] = BearChandelierShortStrategy(config)
+        self._strategy_enabled[BearChandelierShortStrategy.STRATEGY_ID] = bool(config.get("enable_bear_chandelier_short", True))
         if "enabled_strategies" in config and isinstance(config["enabled_strategies"], (list, set, tuple)):
             enabled_set = set(config["enabled_strategies"])
             for sid in list(self._strategy_enabled.keys()):
@@ -443,6 +449,10 @@ class PortfolioCoordinator:
             self._custom_strategies[SupertrendCtaStrategy.STRATEGY_ID] = SupertrendCtaStrategy(config)
         if DonchianRangeFadeStrategy.STRATEGY_ID in self._custom_strategies:
             self._custom_strategies[DonchianRangeFadeStrategy.STRATEGY_ID] = DonchianRangeFadeStrategy(config)
+        if WilliamsRReversalStrategy.STRATEGY_ID in self._custom_strategies:
+            self._custom_strategies[WilliamsRReversalStrategy.STRATEGY_ID] = WilliamsRReversalStrategy(config)
+        if BearChandelierShortStrategy.STRATEGY_ID in self._custom_strategies:
+            self._custom_strategies[BearChandelierShortStrategy.STRATEGY_ID] = BearChandelierShortStrategy(config)
 
         # Refresh strategy enable flags dynamically on hot-reload
         self._strategy_enabled[MomentumStrategy.STRATEGY_ID] = bool(config.get("enable_momentum", True))
@@ -458,6 +468,8 @@ class PortfolioCoordinator:
         self._strategy_enabled[RangeEnvelopeStrategy.STRATEGY_ID] = bool(config.get("enable_range_envelope", True))
         self._strategy_enabled[SupertrendCtaStrategy.STRATEGY_ID] = bool(config.get("enable_supertrend_cta", True))
         self._strategy_enabled[DonchianRangeFadeStrategy.STRATEGY_ID] = bool(config.get("enable_donchian_range_fade", True))
+        self._strategy_enabled[WilliamsRReversalStrategy.STRATEGY_ID] = bool(config.get("enable_williams_r_reversal", True))
+        self._strategy_enabled[BearChandelierShortStrategy.STRATEGY_ID] = bool(config.get("enable_bear_chandelier_short", True))
         if "enabled_strategies" in config and isinstance(config["enabled_strategies"], (list, set, tuple)):
             enabled_set = set(config["enabled_strategies"])
             for sid in list(self._strategy_enabled.keys()):
@@ -1048,7 +1060,7 @@ class PortfolioCoordinator:
             else:
                 # Respect native stop management for Supertrend CTA and Donchian Range Fade
                 is_short = (existing_pos.get("side", "LONG") == "SHORT")
-                if pos_strategy == SupertrendCtaStrategy.STRATEGY_ID and sig.suggested_stop > 0:
+                if pos_strategy in (SupertrendCtaStrategy.STRATEGY_ID, BearChandelierShortStrategy.STRATEGY_ID) and sig.suggested_stop > 0:
                     cur_stop = float(existing_pos.get("trailing_stop", sig.suggested_stop))
                     new_stop = min(cur_stop, sig.suggested_stop) if is_short else max(cur_stop, sig.suggested_stop)
                     self.account.update_trailing_stop(symbol, new_stop, cur_price)
@@ -1059,10 +1071,10 @@ class PortfolioCoordinator:
                         units=existing_pos["units"],
                         price=cur_price,
                         stop_loss=new_stop,
-                        reason="Position active, Supertrend line stop updated",
+                        reason=f"Position active, {pos_strategy} trailing stop updated",
                         signal=sig,
                     )
-                if pos_strategy == DonchianRangeFadeStrategy.STRATEGY_ID:
+                if pos_strategy in (DonchianRangeFadeStrategy.STRATEGY_ID, WilliamsRReversalStrategy.STRATEGY_ID):
                     fixed_stop = float(existing_pos.get("trailing_stop", sig.suggested_stop or 0.0))
                     return CoordinatorDecision(
                         symbol=symbol,
@@ -1071,7 +1083,7 @@ class PortfolioCoordinator:
                         units=existing_pos["units"],
                         price=cur_price,
                         stop_loss=fixed_stop,
-                        reason="Position active, targeting Donchian midline",
+                        reason=f"Position active, targeting {pos_strategy} midpoint",
                         signal=sig,
                     )
 
@@ -1233,6 +1245,8 @@ class PortfolioCoordinator:
                 RangeEnvelopeStrategy.STRATEGY_ID,
                 SupertrendCtaStrategy.STRATEGY_ID,
                 DonchianRangeFadeStrategy.STRATEGY_ID,
+                WilliamsRReversalStrategy.STRATEGY_ID,
+                BearChandelierShortStrategy.STRATEGY_ID,
             ):
                 if dyn_route not in ("all", custom_id):
                     continue

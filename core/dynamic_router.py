@@ -20,6 +20,8 @@ from strategies.supertrend_cta import SupertrendCtaStrategy
 from strategies.trend_pullback import TrendPullbackStrategy
 from strategies.volatility_squeeze import VolatilitySqueezeStrategy
 from strategies.vwap_reversion import VwapReversionStrategy
+from strategies.williams_r_reversal import WilliamsRReversalStrategy
+from strategies.bear_chandelier_short import BearChandelierShortStrategy
 
 
 def select_rolling_strategy(
@@ -59,6 +61,8 @@ def select_rolling_strategy(
             run_trend_pullback_backtest,
             run_volatility_squeeze_backtest,
             run_vwap_reversion_backtest,
+            run_williams_r_reversal_backtest,
+            run_bear_chandelier_short_backtest,
         )
 
         router_fee = float(config.get("fee_pct", 0.0006))
@@ -203,6 +207,44 @@ def select_rolling_strategy(
             )
             if r_df.total_trades >= min_tr and r_df.profit_factor >= min_pf:
                 cands.append((r_df.sharpe_ratio, DonchianRangeFadeStrategy.STRATEGY_ID))
+
+        if _dir_allowed(WilliamsRReversalStrategy.STRATEGY_ID):
+            r_wr = run_williams_r_reversal_backtest(
+                df_win,
+                account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
+                wr_period=int(sym_cfg.get("williams_r_period", 14)),
+                adx_max=float(sym_cfg.get("williams_r_adx_max", 22.0)),
+                oversold=float(sym_cfg.get("williams_r_oversold", -85.0)),
+                oversold_confirm=float(sym_cfg.get("williams_r_oversold_confirm", -80.0)),
+                overbought=float(sym_cfg.get("williams_r_overbought", -15.0)),
+                overbought_confirm=float(sym_cfg.get("williams_r_overbought_confirm", -20.0)),
+                stop_atr_mult=float(sym_cfg.get("williams_r_stop_atr_mult", 2.0)),
+                tp_atr_mult=float(sym_cfg.get("williams_r_tp_atr_mult", 2.0)),
+                allow_long=bool(sym_cfg.get("williams_r_allow_long", True)),
+                allow_short=bool(sym_cfg.get("williams_r_allow_short", True)),
+                fee_pct=router_fee,
+                slippage_pct=router_slip,
+            )
+            if r_wr.total_trades >= min_tr and r_wr.profit_factor >= min_pf:
+                cands.append((r_wr.sharpe_ratio, WilliamsRReversalStrategy.STRATEGY_ID))
+
+        if _dir_allowed(BearChandelierShortStrategy.STRATEGY_ID):
+            r_bc = run_bear_chandelier_short_backtest(
+                df_win,
+                account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
+                ema_period=int(sym_cfg.get("bear_chand_ema_period", 200)),
+                z_window=int(sym_cfg.get("bear_chand_z_window", 24)),
+                z_entry=float(sym_cfg.get("bear_chand_z_entry", 1.5)),
+                z_exit=float(sym_cfg.get("bear_chand_z_exit", -0.5)),
+                chandelier_window=int(sym_cfg.get("bear_chand_window", 20)),
+                chandelier_mult=float(sym_cfg.get("bear_chand_mult", 3.0)),
+                stop_atr_mult=float(sym_cfg.get("bear_chand_stop_atr_mult", 2.2)),
+                tp_atr_mult=float(sym_cfg.get("bear_chand_tp_atr_mult", 2.5)),
+                fee_pct=router_fee,
+                slippage_pct=router_slip,
+            )
+            if r_bc.total_trades >= min_tr and r_bc.profit_factor >= min_pf:
+                cands.append((r_bc.sharpe_ratio, BearChandelierShortStrategy.STRATEGY_ID))
 
         if cands:
             cands.sort(key=lambda x: x[0], reverse=True)

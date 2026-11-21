@@ -9,6 +9,7 @@ import pandas as pd
 from core.coordinator import PortfolioCoordinator
 from core.paper_account import PaperAccount
 from core.risk_engine import RiskEngine
+from strategies.bear_chandelier_short import BearChandelierShortStrategy
 from strategies.donchian_range_fade import DonchianRangeFadeStrategy
 from strategies.mean_reversion import MeanReversionStrategy
 from strategies.momentum import MomentumStrategy
@@ -16,6 +17,7 @@ from strategies.stat_arb_pairs import PairTradeSignal, StatArbPairsStrategy
 from strategies.supertrend_cta import SupertrendCtaStrategy
 from strategies.trend_pullback import TrendPullbackStrategy
 from strategies.volatility_squeeze import VolatilitySqueezeStrategy
+from strategies.williams_r_reversal import WilliamsRReversalStrategy
 
 
 def _make_daily_ohlcv(start_price: float, end_price: float, days: int = 30, last_day_spike: float = 1.0) -> pd.DataFrame:
@@ -112,12 +114,14 @@ def test_playbook_b_allowed_strategies(tmp_path):
         VolatilitySqueezeStrategy.STRATEGY_ID,
         SupertrendCtaStrategy.STRATEGY_ID,
         MomentumStrategy.STRATEGY_ID,
+        WilliamsRReversalStrategy.STRATEGY_ID,
         StatArbPairsStrategy.STRATEGY_ID,
         "basis_yield",
     }
     assert coord.get_playbook_allowed_strategies("BEAR") == {
         MeanReversionStrategy.STRATEGY_ID,
         DonchianRangeFadeStrategy.STRATEGY_ID,
+        BearChandelierShortStrategy.STRATEGY_ID,
         TrendPullbackStrategy.STRATEGY_ID,
         StatArbPairsStrategy.STRATEGY_ID,
         "basis_yield",

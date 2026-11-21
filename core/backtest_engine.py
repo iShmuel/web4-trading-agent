@@ -1863,3 +1863,213 @@ def run_donchian_range_fade_backtest(
         trades=trades,
         equity_curve=equity_curve,
     )
+
+
+def run_williams_r_reversal_backtest(
+    df: pd.DataFrame,
+    initial_capital: float = 10000.0,
+    account_risk_pct: float = 0.02,
+    wr_period: int = 14,
+    adx_max: float = 22.0,
+    oversold: float = -85.0,
+    oversold_confirm: float = -80.0,
+    overbought: float = -15.0,
+    overbought_confirm: float = -20.0,
+    stop_atr_mult: float = 2.0,
+    tp_atr_mult: float = 2.0,
+    allow_long: bool = True,
+    allow_short: bool = True,
+    fee_pct: float = 0.0006,
+    slippage_pct: float = 0.0004,
+) -> BacktestResult:
+    """Strict causal next-bar-open Williams %R(14) + Low-ADX range reversal backtest."""
+    from strategies.williams_r_reversal import compute_williams_r_indicators
+
+    min_req = max(45, int(wr_period) + 25)
+    if df is None or len(df) < min_req:
+        return BacktestResult(
+            initial_capital=initial_capital, final_equity=initial_capital, total_return_pct=0.0,
+            total_trades=0, winning_trades=0, losing_trades=0, win_rate=0.0,
+            profit_factor=0.0, max_drawdown_pct=0.0, sharpe_ratio=0.0, total_fees_paid=0.0,
+        )
+
+    ind = compute_williams_r_indicators(df, wr_period=wr_period)
+    o = ind["open"].astype(float).values
+    h = ind["high"].astype(float).values
+    l = ind["low"].astype(float).values
+    c = ind["close"].astype(float).values
+    atr = ind["atr"].astype(float).values
+    adx = ind["adx"].astype(float).values
+    wr = ind["williams_r"].astype(float).values
+    mid = ind["wr_mid"].astype(float).values
+
+    risk_pct = max(0.01, min(0.05, float(account_risk_pct)))
+    eq, peak, max_dd, total_fees = float(initial_capital), float(initial_capital), 0.0, 0.0
+    trades: List[TradeRecord] = []
+    equity_curve: List[float] = [eq]
+    in_pos, side, ep, units, stop, tp, d_risk, e_time = False, "LONG", 0.0, 0.0, 0.0, 0.0, 0.0, None
+
+    for i in range(max(35, int(wr_period) + 15), len(ind) - 1):
+        if in_pos:
+            hit_exit, exit_p, exit_reason = False, o[i + 1], ""
+            if side == "LONG":
+                if l[i] <= stop:
+                    exit_p, exit_reason, hit_exit = stop * (1.0 - slippage_pct), "Williams %R stop hit", True
+                elif tp > 0 and h[i] >= tp:
+                    exit_p, exit_reason, hit_exit = tp * (1.0 - slippage_pct), "Williams %R TP hit", True
+                elif np.isfinite(mid[i]) and c[i] >= mid[i]:
+                    exit_p, exit_reason, hit_exit = o[i + 1] * (1.0 - slippage_pct), "Williams %R midpoint", True
+            else:
+                if h[i] >= stop:
+                    exit_p, exit_reason, hit_exit = stop * (1.0 + slippage_pct), "Williams %R short stop hit", True
+                elif tp > 0 and l[i] <= tp:
+                    exit_p, exit_reason, hit_exit = tp * (1.0 + slippage_pct), "Williams %R short TP hit", True
+                elif np.isfinite(mid[i]) and c[i] <= mid[i]:
+                    exit_p, exit_reason, hit_exit = o[i + 1] * (1.0 + slippage_pct), "Williams %R short midpoint", True
+            if hit_exit:
+                gross = (exit_p - ep) * units if side == "LONG" else (ep - exit_p) * units
+                fees = (ep * units + exit_p * units) * fee_pct
+                net = gross - fees
+                total_fees += fees
+                eq += net
+                trades.append(TradeRecord(
+                    entry_time=e_time, exit_time=ind.index[i], entry_price=ep, exit_price=exit_p,
+                    units=units, dollar_risk=d_risk, pnl=net, return_pct=(net / max(1.0, eq - net)) * 100.0,
+                    exit_reason=exit_reason, side=side, strategy_id="williams_r_reversal",
+                ))
+                in_pos = False
+        else:
+            a = atr[i]
+            if np.isfinite(a) and a > 0 and np.isfinite(adx[i]) and adx[i] < adx_max and np.isfinite(wr[i]) and np.isfinite(wr[i - 1]):
+                if allow_long and wr[i - 1] < oversold and wr[i] >= oversold_confirm:
+                    ep = o[i + 1] * (1.0 + slippage_pct)
+                    stop = max(ep - stop_atr_mult * a, ep * 0.5)
+                    tp = ep + tp_atr_mult * a
+                    d_risk = eq * risk_pct
+                    units = min(d_risk / max(ep - stop, 1e-8), (eq * 0.35) / max(ep, 1e-8))
+                    if units > 0:
+                        side, e_time, in_pos = "LONG", ind.index[i + 1], True
+                elif allow_short and wr[i - 1] > overbought and wr[i] <= overbought_confirm:
+                    ep = o[i + 1] * (1.0 - slippage_pct)
+                    stop = ep + stop_atr_mult * a
+                    tp = max(ep - tp_atr_mult * a, ep * 0.1)
+                    d_risk = eq * risk_pct
+                    units = min(d_risk / max(stop - ep, 1e-8), (eq * 0.35) / max(ep, 1e-8))
+                    if units > 0:
+                        side, e_time, in_pos = "SHORT", ind.index[i + 1], True
+        peak = max(peak, eq)
+        max_dd = max(max_dd, (peak - eq) / peak if peak > 0 else 0.0)
+        equity_curve.append(eq)
+
+    total_trades = len(trades)
+    winning = sum(1 for t in trades if t.pnl > 0)
+    gp = sum(t.pnl for t in trades if t.pnl > 0)
+    gl = abs(sum(t.pnl for t in trades if t.pnl < 0))
+    pf = (gp / gl) if gl > 0 else (99.0 if gp > 0 else 0.0)
+    t_rets = [t.pnl / initial_capital for t in trades]
+    sharpe = float(np.mean(t_rets) / np.std(t_rets) * np.sqrt(len(t_rets))) if len(t_rets) > 1 and np.std(t_rets) > 0 else (1.0 if gp > 0 else 0.0)
+    return BacktestResult(
+        initial_capital=initial_capital, final_equity=eq, total_return_pct=((eq - initial_capital) / initial_capital) * 100.0,
+        total_trades=total_trades, winning_trades=winning, losing_trades=total_trades - winning,
+        win_rate=(winning / total_trades) if total_trades else 0.0, profit_factor=pf,
+        max_drawdown_pct=max_dd * 100.0, sharpe_ratio=sharpe, total_fees_paid=total_fees,
+        trades=trades, equity_curve=equity_curve,
+    )
+
+
+def run_bear_chandelier_short_backtest(
+    df: pd.DataFrame,
+    initial_capital: float = 10000.0,
+    account_risk_pct: float = 0.02,
+    ema_period: int = 200,
+    z_window: int = 24,
+    z_entry: float = 1.5,
+    z_exit: float = -0.5,
+    chandelier_window: int = 20,
+    chandelier_mult: float = 3.0,
+    stop_atr_mult: float = 2.2,
+    tp_atr_mult: float = 2.5,
+    fee_pct: float = 0.0006,
+    slippage_pct: float = 0.0004,
+) -> BacktestResult:
+    """Strict causal next-bar-open Bear Relief-Rally Short + Inverted Chandelier backtest."""
+    from strategies.bear_chandelier_short import compute_bear_chandelier_indicators
+
+    min_req = max(60, int(z_window) + 25)
+    if df is None or len(df) < min_req:
+        return BacktestResult(
+            initial_capital=initial_capital, final_equity=initial_capital, total_return_pct=0.0,
+            total_trades=0, winning_trades=0, losing_trades=0, win_rate=0.0,
+            profit_factor=0.0, max_drawdown_pct=0.0, sharpe_ratio=0.0, total_fees_paid=0.0,
+        )
+
+    ind = compute_bear_chandelier_indicators(
+        df, ema_period=ema_period, z_window=z_window,
+        chandelier_window=chandelier_window, chandelier_mult=chandelier_mult,
+    )
+    o = ind["open"].astype(float).values
+    h = ind["high"].astype(float).values
+    l = ind["low"].astype(float).values
+    c = ind["close"].astype(float).values
+    atr = ind["atr"].astype(float).values
+    ema200 = ind["ema200"].astype(float).values
+    z = ind["zscore"].astype(float).values
+    chand = ind["chand_short_stop"].astype(float).values
+
+    risk_pct = max(0.01, min(0.05, float(account_risk_pct)))
+    eq, peak, max_dd, total_fees = float(initial_capital), float(initial_capital), 0.0, 0.0
+    trades: List[TradeRecord] = []
+    equity_curve: List[float] = [eq]
+    in_pos, ep, units, stop, tp, d_risk, e_time = False, 0.0, 0.0, 0.0, 0.0, 0.0, None
+
+    for i in range(max(50, int(z_window) + 15), len(ind) - 1):
+        if in_pos:
+            hit_exit, exit_p, exit_reason = False, o[i + 1], ""
+            if h[i] >= stop:
+                exit_p, exit_reason, hit_exit = stop * (1.0 + slippage_pct), "Bear Chandelier stop hit", True
+            elif tp > 0 and l[i] <= tp:
+                exit_p, exit_reason, hit_exit = tp * (1.0 + slippage_pct), "Bear Chandelier TP hit", True
+            elif (np.isfinite(chand[i]) and c[i] > chand[i]) or z[i] <= z_exit:
+                exit_p, exit_reason, hit_exit = o[i + 1] * (1.0 + slippage_pct), "Bear Chandelier exit", True
+            elif np.isfinite(atr[i]):
+                stop = min(stop, l[i] + 2.5 * atr[i])
+            if hit_exit:
+                gross = (ep - exit_p) * units
+                fees = (ep * units + exit_p * units) * fee_pct
+                net = gross - fees
+                total_fees += fees
+                eq += net
+                trades.append(TradeRecord(
+                    entry_time=e_time, exit_time=ind.index[i], entry_price=ep, exit_price=exit_p,
+                    units=units, dollar_risk=d_risk, pnl=net, return_pct=(net / max(1.0, eq - net)) * 100.0,
+                    exit_reason=exit_reason, side="SHORT", strategy_id="bear_chandelier_short",
+                ))
+                in_pos = False
+        else:
+            a = atr[i]
+            if np.isfinite(a) and a > 0 and c[i] < ema200[i] and z[i] > z_entry and c[i] < c[i - 1]:
+                ep = o[i + 1] * (1.0 - slippage_pct)
+                stop = ep + stop_atr_mult * a
+                tp = max(ep - tp_atr_mult * a, ep * 0.1)
+                d_risk = eq * risk_pct
+                units = min(d_risk / max(stop - ep, 1e-8), (eq * 0.35) / max(ep, 1e-8))
+                if units > 0:
+                    e_time, in_pos = ind.index[i + 1], True
+        peak = max(peak, eq)
+        max_dd = max(max_dd, (peak - eq) / peak if peak > 0 else 0.0)
+        equity_curve.append(eq)
+
+    total_trades = len(trades)
+    winning = sum(1 for t in trades if t.pnl > 0)
+    gp = sum(t.pnl for t in trades if t.pnl > 0)
+    gl = abs(sum(t.pnl for t in trades if t.pnl < 0))
+    pf = (gp / gl) if gl > 0 else (99.0 if gp > 0 else 0.0)
+    t_rets = [t.pnl / initial_capital for t in trades]
+    sharpe = float(np.mean(t_rets) / np.std(t_rets) * np.sqrt(len(t_rets))) if len(t_rets) > 1 and np.std(t_rets) > 0 else (1.0 if gp > 0 else 0.0)
+    return BacktestResult(
+        initial_capital=initial_capital, final_equity=eq, total_return_pct=((eq - initial_capital) / initial_capital) * 100.0,
+        total_trades=total_trades, winning_trades=winning, losing_trades=total_trades - winning,
+        win_rate=(winning / total_trades) if total_trades else 0.0, profit_factor=pf,
+        max_drawdown_pct=max_dd * 100.0, sharpe_ratio=sharpe, total_fees_paid=total_fees,
+        trades=trades, equity_curve=equity_curve,
+    )

@@ -62,6 +62,8 @@ STRATEGY_NAMES = {
     "range_envelope": "Rolling Range Envelope (Average Down/Top)",
     "supertrend_cta": "ATR Supertrend CTA (Long/Short Trend Rider)",
     "donchian_range_fade": "Donchian Range Fade + RSI(2)",
+    "williams_r_reversal": "Williams %R Extreme Range Reversal",
+    "bear_chandelier_short": "Bear Chandelier Relief-Rally Short",
     "portfolio_coordinator": "Multi-Strategy Portfolio Coordinator",
 }
 

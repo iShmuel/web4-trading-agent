@@ -70,6 +70,10 @@ def _classify_watchlist_row(sym: str, action_obj: Dict[str, Any], price: Optiona
         strategy_label, trigger = "Supertrend CTA", "Supertrend CTA"
     elif "selected 'donchian_range_fade'" in rl:
         strategy_label, trigger = "Donchian Fade", "Donchian Fade"
+    elif "selected 'williams_r_reversal'" in rl:
+        strategy_label, trigger = "Williams %R", "Williams %R"
+    elif "selected 'bear_chandelier_short'" in rl:
+        strategy_label, trigger = "Bear Chandelier", "Bear Chandelier"
     elif "selected 'mean_reversion'" in rl:
         strategy_label, trigger = "Mean Reversion", "Mean Reversion"
     elif "paused by regime playbook" in rl:
@@ -540,6 +544,28 @@ def build_dashboard_payload(
                     "donchian_fade_stop_atr_mult": cfg.get("donchian_fade_stop_atr_mult", 2.0),
                 },
             },
+            "williams_r_reversal": {
+                "name": "Williams %R Extreme Range Reversal (CHOPPY Specialist)",
+                "enabled": bool(cfg.get("enable_williams_r_reversal", True)),
+                "description": "Larry Williams %R(14) extreme tick-back (-85/-80 Long, -15/-20 Short) in low-ADX (<22) sideways markets, exiting at the 14-bar range midpoint.",
+                "params": {
+                    "timeframe": cfg.get("timeframe", "1h"),
+                    "williams_r_period": cfg.get("williams_r_period", 14),
+                    "williams_r_adx_max": cfg.get("williams_r_adx_max", 22.0),
+                    "williams_r_stop_atr_mult": cfg.get("williams_r_stop_atr_mult", 2.0),
+                },
+            },
+            "bear_chandelier_short": {
+                "name": "Bear Chandelier Relief-Rally Short (BEAR Specialist)",
+                "enabled": bool(cfg.get("enable_bear_chandelier_short", True)),
+                "description": "Shorts relief rallies below EMA200 (Z-Score(24) > +1.5 on red rejection bar) with an Inverted Chandelier trailing stop (LL(20) + 3.0*ATR).",
+                "params": {
+                    "timeframe": cfg.get("timeframe", "1h"),
+                    "bear_chand_z_window": cfg.get("bear_chand_z_window", 24),
+                    "bear_chand_z_entry": cfg.get("bear_chand_z_entry", 1.5),
+                    "bear_chand_mult": cfg.get("bear_chand_mult", 3.0),
+                },
+            },
         },
         "equity_curve": eq_curve[-120:],
         "equity_points": eq_points[-120:],
@@ -642,6 +668,8 @@ HTML_PAGE = """<!doctype html>
             <a class="nav-item" href="/strategies/range_envelope" data-strat="range_envelope" onclick="return selectStrategy(event,'range_envelope')">Range Envelope</a>
             <a class="nav-item" href="/strategies/supertrend_cta" data-strat="supertrend_cta" onclick="return selectStrategy(event,'supertrend_cta')">Supertrend CTA</a>
             <a class="nav-item" href="/strategies/donchian_range_fade" data-strat="donchian_range_fade" onclick="return selectStrategy(event,'donchian_range_fade')">Donchian Fade</a>
+            <a class="nav-item" href="/strategies/williams_r_reversal" data-strat="williams_r_reversal" onclick="return selectStrategy(event,'williams_r_reversal')">Williams %R</a>
+            <a class="nav-item" href="/strategies/bear_chandelier_short" data-strat="bear_chandelier_short" onclick="return selectStrategy(event,'bear_chandelier_short')">Bear Chandelier</a>
           </div>
         </div>
       </nav>
@@ -674,7 +702,7 @@ HTML_PAGE = """<!doctype html>
           <div class="sec-head">
             <h2>All Closed Fills <span class="sub" id="closed-sub" style="font-weight:400;margin-left:8px"></span></h2>
             <div class="controls">
-              <select id="closed-filter"><option value="">All Strategies</option><option>momentum</option><option>mean_reversion</option><option>stat_arb_pairs</option><option>basis_yield</option><option>volatility_squeeze</option><option>trend_pullback</option><option>vwap_reversion</option><option>nr7_breakout</option><option>range_envelope</option><option>supertrend_cta</option><option>donchian_range_fade</option></select>
+              <select id="closed-filter"><option value="">All Strategies</option><option>momentum</option><option>mean_reversion</option><option>stat_arb_pairs</option><option>basis_yield</option><option>volatility_squeeze</option><option>trend_pullback</option><option>vwap_reversion</option><option>nr7_breakout</option><option>range_envelope</option><option>supertrend_cta</option><option>donchian_range_fade</option><option>williams_r_reversal</option><option>bear_chandelier_short</option></select>
             </div>
           </div>
           <div class="closed-wrap">
@@ -742,6 +770,8 @@ const STRAT_WL_MAP = {
   range_envelope: 'Range Envelope',
   supertrend_cta: 'Supertrend CTA',
   donchian_range_fade: 'Donchian Fade',
+  williams_r_reversal: 'Williams %R',
+  bear_chandelier_short: 'Bear Chandelier',
   basis_yield: 'Basis Yield',
 };
 const fmt = (n, d=2) => (n === null || n === undefined) ? '—' : Number(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -987,6 +1017,8 @@ const STRAT_LABELS = {
   range_envelope: 'Range Envelope',
   supertrend_cta: 'Supertrend CTA',
   donchian_range_fade: 'Donchian Fade',
+  williams_r_reversal: 'Williams %R',
+  bear_chandelier_short: 'Bear Chandelier',
 };
 function setPage(page, strat, push){
   const isStrat = page === 'strategies';

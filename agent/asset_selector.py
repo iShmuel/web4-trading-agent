@@ -49,6 +49,8 @@ from core.backtest_engine import (
     run_range_envelope_backtest,
     run_supertrend_cta_backtest,
     run_donchian_range_fade_backtest,
+    run_williams_r_reversal_backtest,
+    run_bear_chandelier_short_backtest,
     BacktestResult,
 )
 from core.coordinator import resolve_symbol_config
@@ -375,6 +377,8 @@ def evaluate_candidate_asset(
         ("RANGE_ENVELOPE", run_range_envelope_backtest, "enable_range_envelope"),
         ("SUPERTREND_CTA", run_supertrend_cta_backtest, "enable_supertrend_cta"),
         ("DONCHIAN_RANGE_FADE", run_donchian_range_fade_backtest, "enable_donchian_range_fade"),
+        ("WILLIAMS_R_REVERSAL", run_williams_r_reversal_backtest, "enable_williams_r_reversal"),
+        ("BEAR_CHANDELIER_SHORT", run_bear_chandelier_short_backtest, "enable_bear_chandelier_short"),
     ]:
         if cfg.get(flag, True):
             candidates.append((
