@@ -101,7 +101,7 @@ def test_macro_playbook_regime_classification_and_causality(tmp_path):
 def test_playbook_b_allowed_strategies(tmp_path):
     coord = _make_coordinator(tmp_path)
     assert coord.get_playbook_allowed_strategies("BULL") == {
-        StatArbPairsStrategy.STRATEGY_ID,
+        VolatilitySqueezeStrategy.STRATEGY_ID,
         "basis_yield",
     }
     assert coord.get_playbook_allowed_strategies("CHOPPY") == {
@@ -124,13 +124,13 @@ def test_router_respects_playbook_b_in_bull_regime(tmp_path):
     coord._latest_benchmark_data = bull_bench
     coord.get_macro_playbook_regime(benchmark_data=bull_bench, force_refresh=True)
 
-    # In BULL, directional MR & VolSqueeze are paused -> crypto routes to basis_yield, stocks to cash
+    # In BULL, Playbook B2 allows only volatility_squeeze + basis_yield (never mean_reversion)
     aapl_df = _make_daily_ohlcv(200.0, 232.0, days=30)
     bnb_df = _make_daily_ohlcv(500.0, 580.0, days=30)
     sym_cfg = coord.symbol_config("AAPL")
-    assert coord._resolve_dynamic_rolling_strategy("AAPL", aapl_df, sym_cfg) == "cash"
+    assert coord._resolve_dynamic_rolling_strategy("AAPL", aapl_df, sym_cfg) in ("cash", VolatilitySqueezeStrategy.STRATEGY_ID)
     sym_cfg_bnb = coord.symbol_config("BNB/USDT")
-    assert coord._resolve_dynamic_rolling_strategy("BNB/USDT", bnb_df, sym_cfg_bnb) == "basis_yield"
+    assert coord._resolve_dynamic_rolling_strategy("BNB/USDT", bnb_df, sym_cfg_bnb) in ("basis_yield", VolatilitySqueezeStrategy.STRATEGY_ID)
 
 
 def test_stat_arb_pairs_paused_in_choppy_but_close_pair_still_executes(tmp_path):

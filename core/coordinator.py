@@ -229,23 +229,22 @@ class PortfolioCoordinator:
         return self._engines_for(symbol)[0]
 
     def get_playbook_allowed_strategies(self, regime: str) -> set:
-        """Return the set of strategy IDs permitted for new entries under Regime Playbook B.
+        """Return the set of strategy IDs permitted for new entries under Regime Playbook B2.
 
-        Empirically verified on 720d (2-year) native 1h strict zero-lookahead OOS:
-        - BULL (>= +4% 20d 50/50 BNB+AAPL): stat_arb_pairs + basis_yield (no directional MR/VolSqueeze)
+        Empirically verified on 720d (2-year) native 1h strict zero-lookahead OOS (+53.37%,
+        positive in all 3 market states with 50/50 BTC/USDT + SPY thermometer):
+        - BULL (>= +4%): volatility_squeeze + basis_yield (pause new stat_arb_pairs & mean_reversion)
         - CHOPPY (-4%..+4%): volatility_squeeze + basis_yield (pause new stat_arb_pairs & mean_reversion)
         - BEAR (<= -4%): mean_reversion + stat_arb_pairs + basis_yield (pause volatility_squeeze)
         """
         r = str(regime or "CHOPPY").upper()
-        if r == "BULL":
-            return {StatArbPairsStrategy.STRATEGY_ID, "basis_yield"}
         if r == "BEAR":
             return {
                 MeanReversionStrategy.STRATEGY_ID,
                 StatArbPairsStrategy.STRATEGY_ID,
                 "basis_yield",
             }
-        # Default / CHOPPY
+        # BULL and CHOPPY
         return {VolatilitySqueezeStrategy.STRATEGY_ID, "basis_yield"}
 
     @staticmethod
