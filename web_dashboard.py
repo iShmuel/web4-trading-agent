@@ -503,6 +503,19 @@ def build_dashboard_payload(
                     "range_allow_short": cfg.get("range_allow_short", True),
                 },
             },
+            "supertrend_cta": {
+                "name": "ATR Supertrend CTA (Long/Short Trend Rider)",
+                "enabled": bool(cfg.get("enable_supertrend_cta", True)),
+                "description": "Wilder ATR(10) Supertrend long/short CTA trend follower (3.0x crypto / 2.5x equities) that rides 2-5 day micro-trends during Choppy macro regimes.",
+                "params": {
+                    "timeframe": cfg.get("timeframe", "1h"),
+                    "supertrend_atr_period": cfg.get("supertrend_atr_period", 10),
+                    "supertrend_crypto_mult": cfg.get("supertrend_crypto_mult", 3.0),
+                    "supertrend_equity_mult": cfg.get("supertrend_equity_mult", 2.5),
+                    "supertrend_stop_atr_mult": cfg.get("supertrend_stop_atr_mult", 3.0),
+                    "supertrend_allow_short": cfg.get("supertrend_allow_short", True),
+                },
+            },
         },
         "equity_curve": eq_curve[-120:],
         "equity_points": eq_points[-120:],
@@ -603,6 +616,7 @@ HTML_PAGE = """<!doctype html>
             <a class="nav-item" href="/strategies/vwap_reversion" data-strat="vwap_reversion" onclick="return selectStrategy(event,'vwap_reversion')">VWAP Reversion</a>
             <a class="nav-item" href="/strategies/nr7_breakout" data-strat="nr7_breakout" onclick="return selectStrategy(event,'nr7_breakout')">NR7 Breakout</a>
             <a class="nav-item" href="/strategies/range_envelope" data-strat="range_envelope" onclick="return selectStrategy(event,'range_envelope')">Range Envelope</a>
+            <a class="nav-item" href="/strategies/supertrend_cta" data-strat="supertrend_cta" onclick="return selectStrategy(event,'supertrend_cta')">Supertrend CTA</a>
           </div>
         </div>
       </nav>
@@ -635,7 +649,7 @@ HTML_PAGE = """<!doctype html>
           <div class="sec-head">
             <h2>All Closed Fills <span class="sub" id="closed-sub" style="font-weight:400;margin-left:8px"></span></h2>
             <div class="controls">
-              <select id="closed-filter"><option value="">All Strategies</option><option>momentum</option><option>mean_reversion</option><option>stat_arb_pairs</option><option>basis_yield</option><option>volatility_squeeze</option><option>trend_pullback</option><option>vwap_reversion</option><option>nr7_breakout</option><option>range_envelope</option></select>
+              <select id="closed-filter"><option value="">All Strategies</option><option>momentum</option><option>mean_reversion</option><option>stat_arb_pairs</option><option>basis_yield</option><option>volatility_squeeze</option><option>trend_pullback</option><option>vwap_reversion</option><option>nr7_breakout</option><option>range_envelope</option><option>supertrend_cta</option></select>
             </div>
           </div>
           <div class="closed-wrap">
@@ -701,6 +715,7 @@ const STRAT_WL_MAP = {
   vwap_reversion: 'VWAP Reversion',
   nr7_breakout: 'NR7 Breakout',
   range_envelope: 'Range Envelope',
+  supertrend_cta: 'Supertrend CTA',
   basis_yield: 'Basis Yield',
 };
 const fmt = (n, d=2) => (n === null || n === undefined) ? '—' : Number(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -944,6 +959,7 @@ const STRAT_LABELS = {
   vwap_reversion: 'VWAP Reversion',
   nr7_breakout: 'NR7 Breakout',
   range_envelope: 'Range Envelope',
+  supertrend_cta: 'Supertrend CTA',
 };
 function setPage(page, strat, push){
   const isStrat = page === 'strategies';

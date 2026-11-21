@@ -47,6 +47,7 @@ from core.backtest_engine import (
     run_vwap_reversion_backtest,
     run_nr7_breakout_backtest,
     run_range_envelope_backtest,
+    run_supertrend_cta_backtest,
     BacktestResult,
 )
 from core.coordinator import resolve_symbol_config
@@ -371,6 +372,7 @@ def evaluate_candidate_asset(
         ("VWAP_REVERSION", run_vwap_reversion_backtest, "enable_vwap_reversion"),
         ("NR7_BREAKOUT", run_nr7_breakout_backtest, "enable_nr7_breakout"),
         ("RANGE_ENVELOPE", run_range_envelope_backtest, "enable_range_envelope"),
+        ("SUPERTREND_CTA", run_supertrend_cta_backtest, "enable_supertrend_cta"),
     ]:
         if cfg.get(flag, True):
             candidates.append((

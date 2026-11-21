@@ -1520,3 +1520,164 @@ def run_range_envelope_backtest(
         equity_curve=equity_curve,
     )
 
+
+
+def run_supertrend_cta_backtest(
+    df: pd.DataFrame,
+    initial_capital: float = 10000.0,
+    account_risk_pct: float = 0.02,
+    atr_period: int = 10,
+    mult: float = 3.0,
+    stop_atr_mult: float = 3.0,
+    allow_long: bool = True,
+    allow_short: bool = True,
+    fee_pct: float = 0.0006,
+    slippage_pct: float = 0.0004,
+) -> BacktestResult:
+    """Strict causal next-bar-open ATR Supertrend CTA long/short backtest."""
+    from strategies.supertrend_cta import compute_supertrend_indicators
+
+    if df is None or len(df) < max(40, int(atr_period) + 15):
+        return BacktestResult(
+            initial_capital=initial_capital,
+            final_equity=initial_capital,
+            total_return_pct=0.0,
+            total_trades=0,
+            winning_trades=0,
+            losing_trades=0,
+            win_rate=0.0,
+            profit_factor=0.0,
+            max_drawdown_pct=0.0,
+            sharpe_ratio=0.0,
+            total_fees_paid=0.0,
+        )
+
+    ind = compute_supertrend_indicators(df, atr_period=atr_period, mult=mult)
+    o = ind["open"].astype(float).values
+    h = ind["high"].astype(float).values
+    l = ind["low"].astype(float).values
+    atr = ind["atr"].astype(float).values
+    direction = ind["supertrend_dir"].values
+    st_line = ind["supertrend_line"].values
+
+    risk_pct = max(0.01, min(0.05, float(account_risk_pct)))
+    eq = float(initial_capital)
+    peak = eq
+    max_dd = 0.0
+    total_fees = 0.0
+    trades: List[TradeRecord] = []
+    equity_curve: List[float] = [eq]
+
+    in_pos = False
+    side = "LONG"
+    ep = 0.0
+    units = 0.0
+    stop = 0.0
+    d_risk = 0.0
+    e_time = None
+    n = len(ind)
+
+    for i in range(max(20, int(atr_period) + 5), n - 1):
+        if in_pos:
+            hit_exit = False
+            exit_p = o[i + 1]
+            exit_reason = ""
+            if side == "LONG":
+                if l[i] <= stop:
+                    exit_p = stop * (1.0 - slippage_pct)
+                    exit_reason = "Supertrend stop hit"
+                    hit_exit = True
+                elif direction[i] == -1:
+                    exit_p = o[i + 1] * (1.0 - slippage_pct)
+                    exit_reason = "Supertrend flipped BEARISH"
+                    hit_exit = True
+                elif np.isfinite(st_line[i]):
+                    stop = max(stop, float(st_line[i]))
+            else:
+                if h[i] >= stop:
+                    exit_p = stop * (1.0 + slippage_pct)
+                    exit_reason = "Supertrend short stop hit"
+                    hit_exit = True
+                elif direction[i] == 1:
+                    exit_p = o[i + 1] * (1.0 + slippage_pct)
+                    exit_reason = "Supertrend flipped BULLISH"
+                    hit_exit = True
+                elif np.isfinite(st_line[i]):
+                    stop = min(stop, float(st_line[i]))
+
+            if hit_exit:
+                gross = (exit_p - ep) * units if side == "LONG" else (ep - exit_p) * units
+                fees = (ep * units + exit_p * units) * fee_pct
+                net = gross - fees
+                total_fees += fees
+                eq += net
+                trades.append(TradeRecord(
+                    entry_time=e_time,
+                    exit_time=ind.index[i],
+                    entry_price=ep,
+                    exit_price=exit_p,
+                    units=units,
+                    dollar_risk=d_risk,
+                    pnl=net,
+                    return_pct=(net / max(1.0, eq - net)) * 100.0,
+                    exit_reason=exit_reason,
+                    side=side,
+                    strategy_id="supertrend_cta",
+                ))
+                in_pos = False
+        else:
+            a = atr[i]
+            if np.isfinite(a) and a > 0:
+                if direction[i] == 1 and direction[i - 1] == -1 and allow_long:
+                    ep = o[i + 1] * (1.0 + slippage_pct)
+                    st_val = float(st_line[i]) if np.isfinite(st_line[i]) else ep - stop_atr_mult * a
+                    stop = max(min(ep - stop_atr_mult * a, st_val), ep * 0.5)
+                    d_risk = eq * risk_pct
+                    units = min(d_risk / max(ep - stop, 1e-8), (eq * 0.35) / max(ep, 1e-8))
+                    if units > 0:
+                        side = "LONG"
+                        e_time = ind.index[i + 1]
+                        in_pos = True
+                elif direction[i] == -1 and direction[i - 1] == 1 and allow_short:
+                    ep = o[i + 1] * (1.0 - slippage_pct)
+                    st_val = float(st_line[i]) if np.isfinite(st_line[i]) else ep + stop_atr_mult * a
+                    stop = max(ep + stop_atr_mult * a, st_val)
+                    d_risk = eq * risk_pct
+                    units = min(d_risk / max(stop - ep, 1e-8), (eq * 0.35) / max(ep, 1e-8))
+                    if units > 0:
+                        side = "SHORT"
+                        e_time = ind.index[i + 1]
+                        in_pos = True
+
+        if eq > peak:
+            peak = eq
+        dd = (peak - eq) / peak if peak > 0 else 0.0
+        max_dd = max(max_dd, dd)
+        equity_curve.append(eq)
+
+    total_trades = len(trades)
+    winning = sum(1 for t in trades if t.pnl > 0)
+    gp = sum(t.pnl for t in trades if t.pnl > 0)
+    gl = abs(sum(t.pnl for t in trades if t.pnl < 0))
+    pf = (gp / gl) if gl > 0 else (99.0 if gp > 0 else 0.0)
+    t_rets = [t.pnl / initial_capital for t in trades]
+    sharpe = (
+        float(np.mean(t_rets) / np.std(t_rets) * np.sqrt(len(t_rets)))
+        if len(t_rets) > 1 and np.std(t_rets) > 0
+        else (1.0 if gp > 0 else 0.0)
+    )
+    return BacktestResult(
+        initial_capital=initial_capital,
+        final_equity=eq,
+        total_return_pct=((eq - initial_capital) / initial_capital) * 100.0,
+        total_trades=total_trades,
+        winning_trades=winning,
+        losing_trades=total_trades - winning,
+        win_rate=(winning / total_trades) if total_trades else 0.0,
+        profit_factor=pf,
+        max_drawdown_pct=max_dd * 100.0,
+        sharpe_ratio=sharpe,
+        total_fees_paid=total_fees,
+        trades=trades,
+        equity_curve=equity_curve,
+    )

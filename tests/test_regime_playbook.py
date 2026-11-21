@@ -11,6 +11,7 @@ from core.paper_account import PaperAccount
 from core.risk_engine import RiskEngine
 from strategies.mean_reversion import MeanReversionStrategy
 from strategies.stat_arb_pairs import PairTradeSignal, StatArbPairsStrategy
+from strategies.supertrend_cta import SupertrendCtaStrategy
 from strategies.volatility_squeeze import VolatilitySqueezeStrategy
 
 
@@ -106,6 +107,8 @@ def test_playbook_b_allowed_strategies(tmp_path):
     }
     assert coord.get_playbook_allowed_strategies("CHOPPY") == {
         VolatilitySqueezeStrategy.STRATEGY_ID,
+        SupertrendCtaStrategy.STRATEGY_ID,
+        StatArbPairsStrategy.STRATEGY_ID,
         "basis_yield",
     }
     assert coord.get_playbook_allowed_strategies("BEAR") == {
@@ -133,18 +136,18 @@ def test_router_respects_playbook_b_in_bull_regime(tmp_path):
     assert coord._resolve_dynamic_rolling_strategy("BNB/USDT", bnb_df, sym_cfg_bnb) in ("basis_yield", VolatilitySqueezeStrategy.STRATEGY_ID)
 
 
-def test_stat_arb_pairs_paused_in_choppy_but_close_pair_still_executes(tmp_path):
+def test_stat_arb_pairs_paused_in_bull_but_close_pair_still_executes(tmp_path):
     coord = _make_coordinator(tmp_path)
-    chop_bench = {
-        "BTC/USDT": _make_daily_ohlcv(50000.0, 50400.0, days=30),
-        "SPY": _make_daily_ohlcv(500.0, 502.5, days=30),
+    bull_bench = {
+        "BTC/USDT": _make_daily_ohlcv(50000.0, 58000.0, days=30),
+        "SPY": _make_daily_ohlcv(500.0, 580.0, days=30),
     }
-    chop_data = {
+    pair_data = {
         "SMCI": _make_daily_ohlcv(40.0, 41.0, days=30),
         "IREN": _make_daily_ohlcv(10.0, 10.2, days=30),
     }
 
-    # 1. New entry signal in CHOPPY must be REJECTED by Playbook B, and BTC/SPY are never evaluated/traded
+    # 1. New entry signal in BULL must be REJECTED by Playbook, and BTC/SPY are never evaluated/traded
     entry_sig = PairTradeSignal(
         pair_id="SMCI:IREN",
         asset_a="SMCI",
@@ -160,12 +163,12 @@ def test_stat_arb_pairs_paused_in_choppy_but_close_pair_still_executes(tmp_path)
     )
     with patch.object(coord.pairs_strategy, "scan_dynamic_pairs", return_value=[entry_sig]):
         report = coord.run_cycle(
-            chop_data,
+            pair_data,
             now=datetime(2025, 2, 1, 12, 0, tzinfo=timezone.utc),
-            benchmark_data=chop_bench,
+            benchmark_data=bull_bench,
         )
 
-    assert report.macro_regime == "CHOPPY"
+    assert report.macro_regime == "BULL"
     assert report.symbols_evaluated == 2
     assert not any(d.symbol in ("BTC/USDT", "SPY") for d in report.decisions)
     pair_decisions = [d for d in report.decisions if d.strategy_id == "stat_arb_pairs"]
@@ -174,7 +177,7 @@ def test_stat_arb_pairs_paused_in_choppy_but_close_pair_still_executes(tmp_path)
     assert "Regime Playbook B" in pair_decisions[0].reason
     assert not coord.account.has_position("SMCI")
 
-    # 2. Existing open pair position MUST still close normally in CHOPPY
+    # 2. Existing open pair position MUST still close normally in BULL
     pos_a = coord.account.open_position(
         "SMCI",
         units=10.0,
@@ -210,9 +213,9 @@ def test_stat_arb_pairs_paused_in_choppy_but_close_pair_still_executes(tmp_path)
     )
     with patch.object(coord.pairs_strategy, "scan_dynamic_pairs", return_value=[close_sig]):
         close_report = coord.run_cycle(
-            chop_data,
+            pair_data,
             now=datetime(2025, 2, 1, 13, 0, tzinfo=timezone.utc),
-            benchmark_data=chop_bench,
+            benchmark_data=bull_bench,
         )
 
     close_decisions = [d for d in close_report.decisions if d.strategy_id == "stat_arb_pairs"]

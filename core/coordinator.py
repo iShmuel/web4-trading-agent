@@ -31,6 +31,7 @@ from strategies.trend_pullback import TrendPullbackStrategy
 from strategies.vwap_reversion import VwapReversionStrategy
 from strategies.nr7_breakout import Nr7BreakoutStrategy
 from strategies.range_envelope import RangeEnvelopeStrategy
+from strategies.supertrend_cta import SupertrendCtaStrategy
 from core.journal import log_decision, get_gate_alpha_feedback, log_maker_telemetry
 from core.polymarket_radar import PolymarketRadar, MacroEventRisk
 from core.fred_radar import FredMacroRadar, MacroRegimeReport
@@ -151,6 +152,8 @@ class PortfolioCoordinator:
         self._strategy_enabled[Nr7BreakoutStrategy.STRATEGY_ID] = bool(config.get("enable_nr7_breakout", True))
         self._custom_strategies[RangeEnvelopeStrategy.STRATEGY_ID] = RangeEnvelopeStrategy(config)
         self._strategy_enabled[RangeEnvelopeStrategy.STRATEGY_ID] = bool(config.get("enable_range_envelope", True))
+        self._custom_strategies[SupertrendCtaStrategy.STRATEGY_ID] = SupertrendCtaStrategy(config)
+        self._strategy_enabled[SupertrendCtaStrategy.STRATEGY_ID] = bool(config.get("enable_supertrend_cta", True))
         if "enabled_strategies" in config and isinstance(config["enabled_strategies"], (list, set, tuple)):
             enabled_set = set(config["enabled_strategies"])
             for sid in list(self._strategy_enabled.keys()):
@@ -229,23 +232,30 @@ class PortfolioCoordinator:
         return self._engines_for(symbol)[0]
 
     def get_playbook_allowed_strategies(self, regime: str) -> set:
-        """Return the set of strategy IDs permitted for new entries under Regime Playbook B2.
+        """Return the set of strategy IDs permitted for new entries under Regime Playbook C (B2+Supertrend+ChopPairs).
 
-        Empirically verified on 720d (2-year) native 1h strict zero-lookahead OOS (+53.37%,
-        positive in all 3 market states with 50/50 BTC/USDT + SPY thermometer):
-        - BULL (>= +4%): volatility_squeeze + basis_yield (pause new stat_arb_pairs & mean_reversion)
-        - CHOPPY (-4%..+4%): volatility_squeeze + basis_yield (pause new stat_arb_pairs & mean_reversion)
-        - BEAR (<= -4%): mean_reversion + stat_arb_pairs + basis_yield (pause volatility_squeeze)
+        Empirically verified on 720d (2-year) native 1h strict zero-lookahead OOS
+        with 50/50 BTC/USDT + SPY thermometer:
+        - BULL (>= +4%): volatility_squeeze + basis_yield (pause stat_arb_pairs, mean_reversion, supertrend_cta)
+        - CHOPPY (-4%..+4%): volatility_squeeze + supertrend_cta + stat_arb_pairs + basis_yield
+        - BEAR (<= -4%): mean_reversion + stat_arb_pairs + basis_yield
         """
         r = str(regime or "CHOPPY").upper()
+        if r == "BULL":
+            return {VolatilitySqueezeStrategy.STRATEGY_ID, "basis_yield"}
         if r == "BEAR":
             return {
                 MeanReversionStrategy.STRATEGY_ID,
                 StatArbPairsStrategy.STRATEGY_ID,
                 "basis_yield",
             }
-        # BULL and CHOPPY
-        return {VolatilitySqueezeStrategy.STRATEGY_ID, "basis_yield"}
+        # CHOPPY
+        return {
+            VolatilitySqueezeStrategy.STRATEGY_ID,
+            SupertrendCtaStrategy.STRATEGY_ID,
+            StatArbPairsStrategy.STRATEGY_ID,
+            "basis_yield",
+        }
 
     @staticmethod
     def _extract_causal_daily_return_pct(df: Optional[pd.DataFrame], lookback_days: int) -> Optional[float]:
@@ -419,6 +429,7 @@ class PortfolioCoordinator:
                 run_vwap_reversion_backtest,
                 run_nr7_breakout_backtest,
                 run_range_envelope_backtest,
+                run_supertrend_cta_backtest,
             )
 
             r_by = (
@@ -514,6 +525,25 @@ class PortfolioCoordinator:
                 )
                 if r_re.total_trades >= min_tr and r_re.profit_factor >= min_pf:
                     cands.append((r_re.sharpe_ratio, RangeEnvelopeStrategy.STRATEGY_ID))
+            if _dir_allowed(SupertrendCtaStrategy.STRATEGY_ID):
+                st_mult = (
+                    float(sym_cfg.get("supertrend_crypto_mult", sym_cfg.get("supertrend_mult", 3.0)))
+                    if is_crypto
+                    else float(sym_cfg.get("supertrend_equity_mult", 2.5))
+                )
+                r_st = run_supertrend_cta_backtest(
+                    df_win,
+                    account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
+                    atr_period=int(sym_cfg.get("supertrend_atr_period", 10)),
+                    mult=st_mult,
+                    stop_atr_mult=float(sym_cfg.get("supertrend_stop_atr_mult", 3.0)),
+                    allow_long=bool(sym_cfg.get("supertrend_allow_long", True)),
+                    allow_short=bool(sym_cfg.get("supertrend_allow_short", True)),
+                    fee_pct=0.0002,
+                    slippage_pct=0.0001,
+                )
+                if r_st.total_trades >= min_tr and r_st.profit_factor >= min_pf:
+                    cands.append((r_st.sharpe_ratio, SupertrendCtaStrategy.STRATEGY_ID))
             if cands:
                 cands.sort(key=lambda x: x[0], reverse=True)
                 choice = cands[0][1]
@@ -1342,6 +1372,7 @@ class PortfolioCoordinator:
                 VwapReversionStrategy.STRATEGY_ID,
                 Nr7BreakoutStrategy.STRATEGY_ID,
                 RangeEnvelopeStrategy.STRATEGY_ID,
+                SupertrendCtaStrategy.STRATEGY_ID,
             ):
                 if dyn_route not in ("all", custom_id):
                     continue

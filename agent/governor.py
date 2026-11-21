@@ -93,6 +93,10 @@ PARAMETER_BOUNDS: Dict[str, Tuple[float, float]] = {
     "range_adx_max": (15.0, 35.0),
     "range_atr_stop_mult": (1.0, 4.0),
     "range_min_net_profit_usd": (5.0, 100.0),
+    "supertrend_atr_period": (5.0, 24.0),
+    "supertrend_crypto_mult": (1.5, 5.0),
+    "supertrend_equity_mult": (1.5, 5.0),
+    "supertrend_stop_atr_mult": (1.5, 5.0),
 }
 
 
