@@ -6,9 +6,12 @@ strategy with PF >= dynamic_router_min_pf and trades >= dynamic_router_min_trade
 (or parking crypto in `basis_yield` and equities in `cash`).
 """
 
+import logging
 from typing import Any, Callable, Dict, Optional, Set
 
 import pandas as pd
+
+logger = logging.getLogger(__name__)
 
 from core.data_loader import is_crypto_symbol
 from strategies.donchian_range_fade import DonchianRangeFadeStrategy
@@ -252,5 +255,6 @@ def select_rolling_strategy(
         if r_by is not None and r_by.total_trades >= 1 and r_by.profit_factor >= 1.0:
             return "basis_yield"
         return "basis_yield" if is_crypto else "cash"
-    except Exception:
+    except Exception as exc:
+        logger.warning("[DynamicRouter] Strategy routing failed for %s: %s (falling back to 'all')", symbol, exc)
         return "all"

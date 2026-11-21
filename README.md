@@ -1,11 +1,11 @@
 # Web4 Autonomous Quantitative Trading Desk
 
-[![Tests: 194/194 Passing](https://img.shields.io/badge/pytest-194%2F194%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
+[![Tests: 226/226 Passing](https://img.shields.io/badge/pytest-226%2F226%20passed-10b981?style=for-the-badge&logo=pytest)](tests/)
 [![CPI Score: 98.5/100](https://img.shields.io/badge/CPI%20Score-98.5%2F100-38bdf8?style=for-the-badge)](core/cpi_benchmark.py)
 [![Execution Mode](https://img.shields.io/badge/execution-strictly%20simulated%20paper-38bdf8?style=for-the-badge)](core/paper_account.py)
-[![Architecture](https://img.shields.io/badge/architecture-Dynamic%20N--Strategy%20MAS-8b5cf6?style=for-the-badge)](agent/)
+[![Architecture](https://img.shields.io/badge/architecture-Variant%20H%20Regime%20Playbook-8b5cf6?style=for-the-badge)](core/regime_playbook.py)
 [![Local LLM](https://img.shields.io/badge/local%20gpu%20llm-phi4--mini%20(Ollama)-f59e0b?style=for-the-badge)](agent/governor.py)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](#license)
 
 An institutional-grade, multi-asset quantitative trading desk inspired by the **Web4 Autonomous Economic Agency** paradigm. Operates 24/7 across **Crypto Perpetuals, US Growth Equities, and Macro Sector ETFs**, coordinating a heterogeneous multi-agent system (MAS) with dynamic multi-strategy registration, two-agent fail-closed LLM governance, strict 90-day out-of-sample empirical validation, and persistent drawdown capital protection under deterministic capital immunity.
 
@@ -23,12 +23,13 @@ An institutional-grade, multi-asset quantitative trading desk inspired by the **
 
 ## Core Remediation & Architectural Foundations
 
-### 1. Dynamic Multi-Strategy Architecture (No Hardcoded Counts)
-The Web4 trading engine does not assume or hardcode a strategy count of 2. All 4 distinct quantitative trading engines are fully integrated, active, and dynamically managed by `PortfolioCoordinator` (`core/coordinator.py`):
-1. **`MomentumStrategy`** (`strategies/momentum.py`): Donchian channel multi-timeframe breakouts with ATR trailing stop-loss ratchets.
-2. **`MeanReversionStrategy`** (`strategies/mean_reversion.py`): Bollinger Band liquidity sweep exhaustion with RSI confirmation and 50% scale-outs at the 20 SMA.
-3. **`StatArbPairsStrategy`** (`strategies/stat_arb_pairs.py`): Cointegration-tested spread mean reversion with dynamic Z-score entry/exit and paired catastrophic stop coordination.
-4. **`BasisYieldEngine`** (`core/basis_yield.py`): Delta-neutral perpetual funding rate arbitrage harvesting positive carry during non-trending regimes.
+### 1. Dynamic Multi-Strategy Architecture & Variant H Regime Playbook
+`PortfolioCoordinator` (`core/coordinator.py`) dynamically registers **13 quantitative trading engines**, routes them per macro regime via `core/regime_playbook.py` (causal 20-day 50/50 `BTC/USDT + SPY` thermometer) and `core/dynamic_router.py` (30-day rolling OOS expectancy filter, `PF >= 1.4`, `trades >= 3`), and audits them weekly via `agent/strategy_quarantine.py`:
+
+* **BULL (`20d macro >= +4%`)**: `volatility_squeeze` (`strategies/volatility_squeeze.py`), `basis_yield` (`core/basis_yield.py`)
+* **CHOPPY (`-4%` to `+4%`)**: `volatility_squeeze`, `supertrend_cta` (`strategies/supertrend_cta.py`), `williams_r_reversal` (`strategies/williams_r_reversal.py`), `momentum` (`strategies/momentum.py`, guarded by `20d macro >= 0%`), `stat_arb_pairs` (`strategies/stat_arb_pairs.py`), `basis_yield`
+* **BEAR (`20d macro <= -4%`)**: `mean_reversion` (`strategies/mean_reversion.py`), `donchian_range_fade` (`strategies/donchian_range_fade.py`, SHORT-only), `bear_chandelier_short` (`strategies/bear_chandelier_short.py`, SHORT-only), `trend_pullback` (`strategies/trend_pullback.py`, LONG-only), `stat_arb_pairs`, `basis_yield`
+* **Registered but Disabled by Default**: `vwap_reversion`, `nr7_breakout`, `range_envelope`
 
 The coordinator provides dynamic registration APIs:
 * `register_strategy(name, strategy_instance)`: Dynamically registers any new strategy adhering to `TradingStrategy` or duck-typing protocols.
@@ -173,27 +174,27 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Run Test Suite (194/194 Tests Passing)
+### 2. Run Test Suite (226/226 Tests Passing)
 ```bash
 .venv/bin/pytest -v
 ```
 
-### 3. Run Automated CPI Benchmark Harness (CPI: 98.5 / 100 across 27 Assets | PF: 3.65 | MaxDD: 1.42%)
+### 3. Run Automated CPI Benchmark Harness
 ```bash
 .venv/bin/python live_paper_trader.py --cpi-benchmark
 ```
 
-### 3. Run Shifted 90-Day Out-of-Sample Validation
+### 4. Run Shifted 90-Day Out-of-Sample Validation
 ```bash
 .venv/bin/python research/run_shifted_oos_validation.py
 ```
 
-### 4. Run Controlled 20-Proposal LLM Governance Benchmark
+### 5. Run Controlled 20-Proposal LLM Governance Benchmark
 ```bash
-.venv/bin/python research/run_governance_benchmark_20.py
+.venv/bin/python research/evaluate_llm_governance_benchmark.py
 ```
 
-### 5. Inspect and Manage Pending Human Approval Proposals
+### 6. Inspect and Manage Pending Human Approval Proposals & Strategy Quarantine
 ```bash
 # List all pending proposals awaiting human sign-off
 .venv/bin/python -m agent.governor --list-pending
@@ -203,9 +204,12 @@ pip install -r requirements.txt
 
 # Reject a pending proposal
 .venv/bin/python -m agent.governor --reject <proposal_id>
+
+# Dry-run weekly OOS strategy quarantine & auto-return audit
+.venv/bin/python -m agent.strategy_quarantine
 ```
 
-### 6. Launch Live Autonomous Paper Trader
+### 7. Launch Live Autonomous Paper Trader & Dashboards
 ```bash
 # Single portfolio scan across active assets
 .venv/bin/python live_paper_trader.py --once
@@ -213,10 +217,13 @@ pip install -r requirements.txt
 # Inspect live portfolio balances & open positions
 .venv/bin/python live_paper_trader.py --status
 
-# Launch continuous 24/7 autonomous polling loop (every 60s)
+# Launch continuous 24/7 autonomous polling loop (every 60s, rotating 5x10MB logs)
 .venv/bin/python live_paper_trader.py --loop --interval 60
 
-# Launch interactive visual dashboard
+# Launch live Web UI dashboard (http://127.0.0.1:8080)
+.venv/bin/python web_dashboard.py --port 8080
+
+# Launch terminal dashboard
 .venv/bin/python dashboard.py
 ```
 

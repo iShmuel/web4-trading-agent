@@ -4,6 +4,7 @@ Provides data validation, staleness checks, and quality assurance.
 """
 
 import os
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
@@ -15,6 +16,21 @@ import ccxt
 import yfinance as yf
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+
+_CCXT_CLIENTS: Dict[Tuple[str, int], Any] = {}
+_CCXT_LOCK = threading.Lock()
+
+
+def _get_ccxt_exchange(exchange_name: str = "binance", timeout: int = 30000) -> Any:
+    """Return a thread-safe cached CCXT exchange client to avoid reloading market metadata on every tick."""
+    key = (exchange_name, int(timeout))
+    with _CCXT_LOCK:
+        client = _CCXT_CLIENTS.get(key)
+        if client is None:
+            exchange_class = getattr(ccxt, exchange_name)
+            client = exchange_class({"enableRateLimit": True, "timeout": int(timeout)})
+            _CCXT_CLIENTS[key] = client
+        return client
 
 
 def get_data_dir() -> Path:
@@ -135,8 +151,7 @@ def fetch_funding_rate(
     if not is_crypto_symbol(symbol):
         return None
     try:
-        exchange_class = getattr(ccxt, exchange_name)
-        exchange = exchange_class({"enableRateLimit": True, "timeout": 8000})
+        exchange = _get_ccxt_exchange(exchange_name, timeout=8000)
         query_sym = symbol if ":" in symbol else f"{symbol}:USDT"
         funding = exchange.fetch_funding_rate(query_sym)
         if funding and "fundingRate" in funding and funding["fundingRate"] is not None:
@@ -155,8 +170,7 @@ def fetch_crypto_ohlcv(
 ) -> pd.DataFrame:
     """Fetch crypto candles from exchange via CCXT."""
     print(f"[DataLoader] Fetching ~{days} days of {timeframe} candles for crypto {symbol} from {exchange_name}...")
-    exchange_class = getattr(ccxt, exchange_name)
-    exchange = exchange_class({"enableRateLimit": True, "timeout": 30000})
+    exchange = _get_ccxt_exchange(exchange_name, timeout=30000)
 
     ms_per_candle = exchange.parse_timeframe(timeframe) * 1000
     total_candles_needed = int((days * 24 * 60 * 60 * 1000) / ms_per_candle)

@@ -899,14 +899,25 @@ class PortfolioCoordinator:
         if mr_entry:
             return mr_sig, "Mean Reversion entry proposed"
 
-        # Case 4: Neither proposes entry
-        if momentum_sig.no_trade_reason:
-            return None, momentum_sig.no_trade_reason
-        if mr_sig.no_trade_reason:
-            return None, mr_sig.no_trade_reason
-        for esig in filtered_extra:
-            if esig.no_trade_reason:
-                return None, esig.no_trade_reason
+        # Case 4: Neither proposes entry — prefer the reason from an actively evaluated strategy
+        # rather than a strategy that was merely paused by Regime Playbook / Dynamic Router / disabled.
+        all_no_trade = [momentum_sig, mr_sig] + list(filtered_extra)
+        _paused_prefixes = (
+            "Paused by Regime Playbook",
+            "Paused by Momentum Macro-Slope",
+            "Dynamic Router selected",
+            "Altcoin Mean-Reversion Suppressed",
+        )
+
+        def _is_paused_reason(r: str) -> bool:
+            return r.startswith(_paused_prefixes) or r.endswith("strategy disabled")
+
+        for sig in all_no_trade:
+            if sig is not None and sig.no_trade_reason and not _is_paused_reason(sig.no_trade_reason):
+                return None, sig.no_trade_reason
+        for sig in all_no_trade:
+            if sig is not None and sig.no_trade_reason:
+                return None, sig.no_trade_reason
         return None, "No entry signal proposed"
 
     def process_symbol(
@@ -1506,6 +1517,12 @@ class PortfolioCoordinator:
         else:
             effective_risk_pct = base_risk_pct
 
+        # Evaluate macro radars once per symbol, honoring config feature flags
+        if self.config.get("enable_vix_regime_filter", True):
+            fred_report = self.fred_radar.evaluate()
+        else:
+            fred_report = MacroRegimeReport(regime="STABLE", vix_level=18.0, risk_scale_factor=1.0)
+
         # Upgrade 5: Dynamic Volatility Targeting (Risk Parity)
         if self.config.get("enable_volatility_targeting", False):
             ref_atr_pct = float(self.config.get("target_atr_pct", 0.025))  # 2.5% baseline reference ATR
@@ -1513,7 +1530,6 @@ class PortfolioCoordinator:
             actual_atr_pct = (actual_atr / cur_price) if cur_price > 0 else ref_atr_pct
             vol_scale = ref_atr_pct / max(0.005, actual_atr_pct)
             vol_scale = max(0.60, min(1.40, vol_scale))
-            fred_report = self.fred_radar.evaluate()
             if fred_report.vix_level > 25.0:
                 vol_scale *= 0.80
             effective_risk_pct = max(0.01, min(0.05, effective_risk_pct * vol_scale))
@@ -1531,8 +1547,10 @@ class PortfolioCoordinator:
                 vol_risk_mult = boost_factor
 
         # Institutional Macro Radar: Polymarket Binary Event Odds + FRED VIX Regime
-        poly_risk = self.polymarket_radar.evaluate()
-        fred_report = self.fred_radar.evaluate()
+        if self.config.get("enable_macro_event_radar", True):
+            poly_risk = self.polymarket_radar.evaluate()
+        else:
+            poly_risk = MacroEventRisk(risk_level="LOW", recommended_risk_multiplier=1.0)
         macro_risk_mult = poly_risk.recommended_risk_multiplier * fred_report.risk_scale_factor
 
         merged_ind["polymarket_risk"] = poly_risk.risk_level

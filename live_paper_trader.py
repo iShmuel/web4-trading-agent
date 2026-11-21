@@ -327,6 +327,7 @@ def main():
     parser.add_argument("--interval", type=int, default=60, help="Loop interval in seconds (default: 60s)")
     parser.add_argument("--optimize-hours", type=int, default=6, help="Self-improvement tournament interval in hours (default: 6)")
     parser.add_argument("--scan-hours", type=int, default=24, help="Dynamic market universe discovery interval in hours (default: 24)")
+    parser.add_argument("--quarantine-hours", type=int, default=168, help="Weekly strategy OOS quarantine & auto-return interval in hours (default: 168)")
     parser.add_argument("--auto-approve", action="store_true", help="Enable 4-gate conditional auto-approval for self-improvement and discovery")
     parser.add_argument("--loop", action="store_true", help="Run continuous monitoring loop")
     args = parser.parse_args()
@@ -434,6 +435,7 @@ def _run(args):
         async_runner = AsyncAgentTaskRunner(max_workers=3)
         last_opt_time = time.time()
         last_scan_time = time.time()
+        last_quarantine_time = time.time()
         last_forensic_time = time.time()
         last_analyzed_trade_count = len(account.state.get("closed_trades", []))
         forensic_interval = int(config.get("forensic_trade_interval", 15))
@@ -450,6 +452,11 @@ def _run(args):
         def _bg_optimizer_task():
             from agent.multi_strategy_optimizer import run_multi_strategy_optimization
             return run_multi_strategy_optimization(auto_commit=True)
+
+        def _bg_quarantine_task():
+            from agent.strategy_quarantine import run_weekly_strategy_quarantine
+            reports, flag_updates = run_weekly_strategy_quarantine(apply_via_governor=True)
+            return {"reports": len(reports), "flag_updates": flag_updates}
 
         def _bg_discovery_task():
             from agent.asset_selector import (
@@ -541,6 +548,15 @@ def _run(args):
                                 f"({done_task.duration_sec:.1f}s non-blocking | Rehabilitated: {len(res.get('rehab_syms', []))}, "
                                 f"Pruned: {len(res.get('blacklisted', []))})."
                             )
+                    elif done_task.task_key == "strategy_quarantine":
+                        res = done_task.result or {}
+                        updates = res.get("flag_updates") or {}
+                        if updates:
+                            coordinator.reload_config(load_config())
+                        log(
+                            f"[Strategy Quarantine] Evaluated {res.get('reports', 0)} strategies "
+                            f"({done_task.duration_sec:.1f}s non-blocking | Flag updates: {updates or 'none'})"
+                        )
 
                 # Event-driven + periodic post-trade forensic audit trigger (every X closed trades, or every 12h if new trades closed)
                 cur_closed_list = account.state.get("closed_trades", [])
@@ -588,6 +604,15 @@ def _run(args):
                     log("=" * 68)
                     async_runner.submit_task("asset_selector_discovery", _bg_discovery_task)
                     last_scan_time = time.time()
+
+                # Weekly OOS strategy quarantine & auto-return audit
+                quarantine_elapsed = time.time() - last_quarantine_time
+                if quarantine_elapsed >= (args.quarantine_hours * 3600) and not async_runner.is_running("strategy_quarantine"):
+                    log("\n" + "=" * 68)
+                    log("   🛡️ ASYNC WEEKLY STRATEGY QUARANTINE & AUTO-RETURN DISPATCHED")
+                    log("=" * 68)
+                    async_runner.submit_task("strategy_quarantine", _bg_quarantine_task)
+                    last_quarantine_time = time.time()
 
                 time.sleep(args.interval)
         except KeyboardInterrupt:
