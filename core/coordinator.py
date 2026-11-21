@@ -1140,14 +1140,23 @@ class PortfolioCoordinator:
         # 2. No open position: generate signals from all enabled directional strategies
         playbook_on = bool(self.config.get("enable_macro_regime_playbook", False))
         playbook_regime = ""
+        playbook_ret_pct = 0.0
         playbook_allowed: Optional[set] = None
         if playbook_on:
-            playbook_regime, _ = self.get_macro_playbook_regime()
+            playbook_regime, playbook_ret_pct = self.get_macro_playbook_regime()
             playbook_allowed = self.get_playbook_allowed_strategies(playbook_regime)
 
         dyn_route = self._resolve_dynamic_rolling_strategy(symbol, df, sym_cfg)
-        allow_mom_dyn = dyn_route in ("all", MomentumStrategy.STRATEGY_ID) and (
-            playbook_allowed is None or MomentumStrategy.STRATEGY_ID in playbook_allowed
+        mom_chop_min = float(self.config.get("momentum_choppy_min_macro_pct", 0.0))
+        mom_chop_blocked = (
+            playbook_on
+            and playbook_regime == "CHOPPY"
+            and playbook_ret_pct < mom_chop_min
+        )
+        allow_mom_dyn = (
+            dyn_route in ("all", MomentumStrategy.STRATEGY_ID)
+            and (playbook_allowed is None or MomentumStrategy.STRATEGY_ID in playbook_allowed)
+            and not mom_chop_blocked
         )
         allow_mr_dyn = dyn_route in ("all", MeanReversionStrategy.STRATEGY_ID) and (
             playbook_allowed is None or MeanReversionStrategy.STRATEGY_ID in playbook_allowed
@@ -1161,12 +1170,16 @@ class PortfolioCoordinator:
                 symbol=symbol,
                 price=cur_price,
                 reason=(
-                    f"Paused by Regime Playbook B (Macro={playbook_regime})"
-                    if playbook_allowed is not None and MomentumStrategy.STRATEGY_ID not in playbook_allowed
+                    f"Paused by Momentum Macro-Slope Guard (20d={playbook_ret_pct:+.2f}% < {mom_chop_min:+.1f}%)"
+                    if mom_chop_blocked
                     else (
-                        f"Dynamic Router selected '{dyn_route}' for {symbol}"
-                        if not allow_mom_dyn
-                        else "Momentum strategy disabled"
+                        f"Paused by Regime Playbook B (Macro={playbook_regime})"
+                        if playbook_allowed is not None and MomentumStrategy.STRATEGY_ID not in playbook_allowed
+                        else (
+                            f"Dynamic Router selected '{dyn_route}' for {symbol}"
+                            if not allow_mom_dyn
+                            else "Momentum strategy disabled"
+                        )
                     )
                 ),
             )

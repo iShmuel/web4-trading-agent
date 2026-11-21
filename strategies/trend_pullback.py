@@ -28,9 +28,10 @@ def compute_pullback_indicators(
     ema_macro: int = 200,
     rsi_period: int = 14,
     rsi_pullback_max: float = 44.0,
+    rsi_short_min: float = 56.0,
     atr_period: int = 14,
 ) -> pd.DataFrame:
-    """Compute causal EMA ribbon, RSI pullback zone, ATR, and bounce confirmation."""
+    """Compute causal EMA ribbon, RSI pullback zone, ATR, and bounce/rejection confirmation."""
     out = df.copy()
     c = out["close"].astype(float)
     o = out["open"].astype(float)
@@ -53,16 +54,24 @@ def compute_pullback_indicators(
     dip = (l <= out["ema20"] * 1.005) & (out["rsi"] <= rsi_pullback_max)
     bounce = (c > o) & (c > c.shift(1))
     out["pullback_entry"] = uptrend & dip.shift(1).fillna(False) & bounce
+
+    downtrend = (c < out["ema200"]) & (out["ema50"] < out["ema200"])
+    rally = (h >= out["ema20"] * 0.995) & (out["rsi"] >= rsi_short_min)
+    rejection = (c < o) & (c < c.shift(1))
+    out["pullback_short_entry"] = downtrend & rally.shift(1).fillna(False) & rejection
     return out
 
 
 class TrendPullbackStrategy:
-    """Confirmed-Uptrend EMA Pullback Continuation Strategy."""
+    """Confirmed-Trend EMA Pullback Continuation Strategy (Long Uptrend Dips + Short Bear Rallies)."""
 
     STRATEGY_ID = "trend_pullback"
 
     def __init__(self, config: Dict[str, Any]):
         self.rsi_pullback_max = float(config.get("pullback_rsi_max", 44.0))
+        self.rsi_short_min = float(config.get("pullback_rsi_short_min", 56.0))
+        self.allow_long = bool(config.get("pullback_allow_long", True))
+        self.allow_short = bool(config.get("pullback_allow_short", True))
         self.atr_period = int(config.get("atr_period", 14))
         self.atr_multiplier = float(config.get("pullback_atr_stop_mult", 2.0))
         self.take_profit_atr_mult = float(config.get("pullback_tp_atr_mult", 2.5))
@@ -76,7 +85,7 @@ class TrendPullbackStrategy:
         df: pd.DataFrame,
         existing_position: Optional[Dict[str, Any]] = None,
     ) -> TradingSignal:
-        """Evaluate closed bars for an uptrend pullback bounce entry or trailing exit."""
+        """Evaluate closed bars for a trend pullback entry (long or short) or trailing exit."""
         raw_px = float(df["close"].iloc[-1]) if (df is not None and not df.empty) else 0.0
         if df is None or len(df) < MIN_BARS_REQUIRED:
             return create_no_trade_signal(self.STRATEGY_ID, symbol, raw_px, "Insufficient data for pullback")
@@ -89,6 +98,7 @@ class TrendPullbackStrategy:
         ind = compute_pullback_indicators(
             closed_df,
             rsi_pullback_max=self.rsi_pullback_max,
+            rsi_short_min=self.rsi_short_min,
             atr_period=self.atr_period,
         )
         last = ind.iloc[-1]
@@ -98,11 +108,58 @@ class TrendPullbackStrategy:
             return create_no_trade_signal(self.STRATEGY_ID, symbol, price, "Invalid ATR/price for pullback")
 
         if existing_position is not None:
+            side = str(existing_position.get("side", "LONG")).upper()
             stop = float(existing_position.get("trailing_stop", 0.0))
             ep = float(existing_position.get("entry_price", price))
-            tp = float(existing_position.get("tp_target", 0.0)) or (ep + self.take_profit_atr_mult * atr)
             high_px = float(last["high"])
-            if float(last["low"]) <= stop:
+            low_px = float(last["low"])
+
+            if side == "SHORT":
+                tp = float(existing_position.get("tp_target", 0.0)) or max(0.0, ep - self.take_profit_atr_mult * atr)
+                if stop > 0 and high_px >= stop:
+                    return TradingSignal(
+                        strategy_id=self.STRATEGY_ID,
+                        symbol=symbol,
+                        timestamp=datetime.now(timezone.utc),
+                        direction=SignalDirection.SHORT,
+                        status=SignalStatus.EXIT,
+                        reference_price=price,
+                        atr=atr,
+                        suggested_stop=stop,
+                        exit_reason=f"Trend Pullback short stop hit (${stop:.2f})",
+                    )
+                if tp > 0 and tp < ep and low_px <= tp:
+                    return TradingSignal(
+                        strategy_id=self.STRATEGY_ID,
+                        symbol=symbol,
+                        timestamp=datetime.now(timezone.utc),
+                        direction=SignalDirection.SHORT,
+                        status=SignalStatus.EXIT,
+                        reference_price=min(price, tp),
+                        atr=atr,
+                        suggested_stop=stop,
+                        exit_reason=f"Trend Pullback short take-profit hit (${tp:.2f})",
+                    )
+                trough_px = min(price, low_px, float(existing_position.get("lowest_price", price)))
+                new_stop = min(stop, price + self.atr_multiplier * atr) if stop > 0 else (price + self.atr_multiplier * atr)
+                if (ep - trough_px) >= (1.0 * atr):
+                    units = float(existing_position.get("units", 0.0))
+                    notional = max(1.0, units * ep) if units > 0 else 2500.0
+                    lock_pct = (12.0 / notional) + (2.0 * self.fee_pct) + self.slippage_pct
+                    new_stop = min(new_stop, ep * (1.0 - lock_pct))
+                return TradingSignal(
+                    strategy_id=self.STRATEGY_ID,
+                    symbol=symbol,
+                    timestamp=datetime.now(timezone.utc),
+                    direction=SignalDirection.SHORT,
+                    status=SignalStatus.HOLD,
+                    reference_price=price,
+                    atr=atr,
+                    suggested_stop=new_stop,
+                )
+
+            tp = float(existing_position.get("tp_target", 0.0)) or (ep + self.take_profit_atr_mult * atr)
+            if low_px <= stop:
                 return TradingSignal(
                     strategy_id=self.STRATEGY_ID,
                     symbol=symbol,
@@ -144,7 +201,7 @@ class TrendPullbackStrategy:
                 suggested_stop=new_stop,
             )
 
-        if bool(last.get("pullback_entry", False)):
+        if self.allow_long and bool(last.get("pullback_entry", False)):
             from core.backtest_engine import compute_dynamic_tp_mult_series
             dyn_x = float(compute_dynamic_tp_mult_series(closed_df, ind["atr"].fillna(0.0).values, default_mult=self.take_profit_atr_mult)[-1])
             stop_loss = max(0.0, price - self.atr_multiplier * atr)
@@ -154,6 +211,32 @@ class TrendPullbackStrategy:
                 symbol=symbol,
                 timestamp=datetime.now(timezone.utc),
                 direction=SignalDirection.LONG,
+                status=SignalStatus.ENTRY,
+                reference_price=price,
+                atr=atr,
+                signal_strength=0.80,
+                suggested_stop=stop_loss,
+                suggested_take_profit=take_profit,
+                estimated_fee_pct=self.fee_pct,
+                estimated_slippage_pct=self.slippage_pct,
+                indicators={
+                    "ema20": float(last["ema20"]),
+                    "ema200": float(last["ema200"]),
+                    "rsi": float(last["rsi"]) if pd.notna(last["rsi"]) else 0.0,
+                    "atr": atr,
+                },
+            )
+
+        if self.allow_short and bool(last.get("pullback_short_entry", False)):
+            from core.backtest_engine import compute_dynamic_tp_mult_series
+            dyn_x = float(compute_dynamic_tp_mult_series(closed_df, ind["atr"].fillna(0.0).values, default_mult=self.take_profit_atr_mult)[-1])
+            stop_loss = price + self.atr_multiplier * atr
+            take_profit = max(0.0, price - dyn_x * atr)
+            return TradingSignal(
+                strategy_id=self.STRATEGY_ID,
+                symbol=symbol,
+                timestamp=datetime.now(timezone.utc),
+                direction=SignalDirection.SHORT,
                 status=SignalStatus.ENTRY,
                 reference_price=price,
                 atr=atr,
