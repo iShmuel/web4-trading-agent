@@ -233,8 +233,7 @@
         "SUI/USDT",
         "TRUMP/USDT",
         "RARE/USDT",
-        "NEAR/USDT",
-        "PEPE/USDT"
+        "NEAR/USDT"
       ],
       "timeframe": "1h",
       "breakout_lookback": 48,
@@ -285,7 +284,8 @@
       "bb_std": 1.6,
       "bb_period": 20,
       "rsi_oversold": 30,
-      "mr_atr_stop_mult": 2.0
+      "mr_atr_stop_mult": 2.0,
+      "hurst_mr_max": 0.58
     },
     "stocks_growth": {
       "symbols": [
