@@ -8,13 +8,13 @@
 
 ## 1. Absolute Financial Safety Invariants
 
-In compliance with the **Engineering Guidelines for Autonomous AI Agents** ([`AGENTS.md`](AGENTS.md)), the trading desk enforces immutable financial invariants that supersede all optimization objectives:
+In compliance with the **Engineering Guidelines for Autonomous AI Agents** ([`AGENTS.md`](../../AGENTS.md)), the trading desk enforces immutable financial invariants that supersede all optimization objectives:
 
 1. **Simulation-Only Execution (`PaperAccount`):**
    - The execution mode is hard-coded to simulated paper trading.
    - The system contains zero broker trading API keys, zero private wallet keys, and zero paths to transmit real-money orders.
 2. **Hard-Coded 1%–5% Risk Bounds:**
-   - In [`core/risk_engine.py`](core/risk_engine.py), `MIN_ALLOWED_RISK_PCT = 0.01` and `MAX_ALLOWED_RISK_PCT = 0.05`.
+   - In [`core/risk_engine.py`](../../core/risk_engine.py), `MIN_ALLOWED_RISK_PCT = 0.01` and `MAX_ALLOWED_RISK_PCT = 0.05`.
    - The helper `enforce_risk_bounds()` clamps any incoming risk parameter:
      ```python
      def enforce_risk_bounds(self, requested_risk: float) -> float:
@@ -26,13 +26,13 @@ In compliance with the **Engineering Guidelines for Autonomous AI Agents** ([`AG
    - Maximum concurrent open crypto positions is capped at **2** (or 3 maximum in profiles) to eliminate correlated systemic crypto drawdowns.
    - Total portfolio margin exposure cannot exceed **80% of total equity**.
 4. **Preservation of User Portfolio State:**
-   - Virtual balances and closed trade histories in [`data/paper_portfolio.json`](data/paper_portfolio.json) cannot be cleared, reset, or overwritten except through an explicit CLI `--reset` argument passed by a human operator.
+   - Virtual balances and closed trade histories in [`data/paper_portfolio.json`](../../data/paper_portfolio.json) cannot be cleared, reset, or overwritten except through an explicit CLI `--reset` argument passed by a human operator.
 
 ---
 
 ## 2. Emergency Circuit Breakers & Kill Switches
 
-The desk implements multi-layered deterministic circuit breakers in [`core/risk_engine.py`](core/risk_engine.py):
+The desk implements multi-layered deterministic circuit breakers in [`core/risk_engine.py`](../../core/risk_engine.py):
 
 ```mermaid
 flowchart TD
@@ -63,7 +63,7 @@ flowchart TD
 
 ## 3. Autonomous Multi-Agent Governance Protocol
 
-All system modifications are governed by **Agent 12: Chief Risk Governor** ([`agent/governor.py`](agent/governor.py)):
+All system modifications are governed by **Agent 12: Chief Risk Governor** ([`agent/governor.py`](../../agent/governor.py)):
 
 ### 3.1 The 4-Stage Governance Gate:
 1. **Deterministic Invariant Audit (`audit_invariants()`):**
@@ -78,7 +78,7 @@ All system modifications are governed by **Agent 12: Chief Risk Governor** ([`ag
    - Executes the complete test suite (`.venv/bin/pytest tests/`).
    - If even a single test out of 144 fails, the proposal is immediately rejected.
 4. **Mandatory Human-in-the-Loop Gate:**
-   - Any proposal that passes Stages 1–3 is staged in [`config/pending_proposals.json`](config/pending_proposals.json) with status `PENDING_HUMAN_APPROVAL`.
+   - Any proposal that passes Stages 1–3 is staged in [`config/pending_proposals.json`](../../config/pending_proposals.json) with status `PENDING_HUMAN_APPROVAL`.
    - **The system cannot deploy changes autonomously.** Deployment requires an explicit human command:
      ```bash
      .venv/bin/python agent/governor.py --approve PROP-XXXXXXXX --approver "operator_name"

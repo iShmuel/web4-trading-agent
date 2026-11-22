@@ -44,7 +44,7 @@ sequenceDiagram
 ## 2. The 22 Detailed Lifecycle Stages
 
 ### Stage 1: Market Data Retrieval
-- **File:** [`core/data_loader.py`](core/data_loader.py)
+- **File:** [`core/data_loader.py`](../../core/data_loader.py)
 - **Function:** `fetch_ohlcv_batch(symbols, symbol_params)`
 - **Inputs:** List of ticker symbols, timeframes (`1h`), lookback days (`30d` crypto, `90d` stocks).
 - **Outputs:** Dictionary `{symbol: pd.DataFrame}` with standard OHLCV columns (`open`, `high`, `low`, `close`, `volume`).
@@ -52,7 +52,7 @@ sequenceDiagram
 - **Failure Mode:** Network timeout, rate limiting, or exchange downtime. Caught safely; logs warning and skips missing asset.
 
 ### Stage 2: Data Validation & Freshness
-- **File:** [`core/data_loader.py`](core/data_loader.py)
+- **File:** [`core/data_loader.py`](../../core/data_loader.py)
 - **Function:** `check_data_quality(df, max_stale_minutes=180, min_bars=30)`
 - **Inputs:** `pd.DataFrame`.
 - **Validation Rules:**
@@ -65,12 +65,12 @@ sequenceDiagram
 - **Failure Mode:** Rejects corrupt or stale feeds; logs `Data quality warning` and drops asset for the current tick.
 
 ### Stage 3: Candle Construction & Preprocessing
-- **File:** [`core/data_loader.py`](core/data_loader.py)
+- **File:** [`core/data_loader.py`](../../core/data_loader.py)
 - **Inputs:** Validated OHLCV DataFrame.
 - **Outputs:** DataFrame with verified UTC timestamps, attributes (`quote_time`), and normalized floating point numeric types.
 
 ### Stage 4: Indicator Calculation
-- **File:** [`core/strategy.py`](core/strategy.py)
+- **File:** [`core/strategy.py`](../../core/strategy.py)
 - **Function:** `compute_indicators(df, breakout_lookback=48, ema_trend_filter=50, atr_period=14, macro_ema_period=200)`
 - **Calculations:**
   - **Donchian Breakout High:** $\text{Highest High}(N)_{t-1}$.
@@ -84,7 +84,7 @@ sequenceDiagram
 - **Failure Mode:** Insufficient bars for rolling warmup returns `NaN`, signaling warmup phase.
 
 ### Stage 5: Market Regime Detection
-- **File:** [`core/coordinator.py`](core/coordinator.py)
+- **File:** [`core/coordinator.py`](../../core/coordinator.py)
 - **Function:** `_process_symbol()` (lines 915–927)
 - **Logic:**
   ```python
@@ -100,7 +100,7 @@ sequenceDiagram
 - **Outputs:** Merged indicator context containing exact market state.
 
 ### Stage 6: Strategy Evaluation
-- **File:** [`strategies/momentum.py`](strategies/momentum.py) & [`strategies/mean_reversion.py`](strategies/mean_reversion.py)
+- **File:** [`strategies/momentum.py`](../../strategies/momentum.py) & [`strategies/mean_reversion.py`](../../strategies/mean_reversion.py)
 - **Function:** `evaluate(symbol, df, existing_position)`
 - **Mechanics:** Each bot evaluates its rules independently against the latest closed bar.
 
@@ -114,11 +114,11 @@ sequenceDiagram
   - `indicators`: Dictionary of all computed indicator values.
 
 ### Stage 8: Signal Validation
-- **File:** [`core/signals.py`](core/signals.py)
+- **File:** [`core/signals.py`](../../core/signals.py)
 - **Checks:** Validates that proposed entry price is finite, positive, and that stop loss is strictly on the correct side of price (Stop < Price for Longs; Stop > Price for Shorts).
 
 ### Stage 9: Coordinator Conflict Arbitration
-- **File:** [`core/coordinator.py`](core/coordinator.py)
+- **File:** [`core/coordinator.py`](../../core/coordinator.py)
 - **Function:** `reconcile_signals(symbol, mom_sig, mr_sig, extra_signals, context)`
 - **Rules:**
   1. In `TREND_EXPANSION` (ADX $\ge 28$), counter-trend Mean Reversion entries are strictly suppressed.
@@ -127,7 +127,7 @@ sequenceDiagram
   4. If opposite signals occur simultaneously, both are suppressed (`CONFLICT_SUPPRESSED`) unless one strategy has $>1.5\times$ edge conviction.
 
 ### Stage 10: External Preflight Gating
-- **File:** [`core/coordinator.py`](core/coordinator.py) (lines 1000–1080)
+- **File:** [`core/coordinator.py`](../../core/coordinator.py) (lines 1000–1080)
 - **Checks:**
   - *NYSE Clock Check:* Rejects stock trades when NYSE is closed.
   - *SEC 8-K Gate:* Rejects stock entries within 48 hours of material corporate filings.
@@ -135,7 +135,7 @@ sequenceDiagram
   - *Streak Guard:* Rejects entries if symbol has 3 consecutive losses in the past 24 hours.
 
 ### Stage 11: Risk Evaluation & Position Sizing
-- **File:** [`core/risk_engine.py`](core/risk_engine.py)
+- **File:** [`core/risk_engine.py`](../../core/risk_engine.py)
 - **Function:** `validate_proposed_entry(...)`
 - **Calculations:**
   - Circuit Breaker Check: Halts if daily loss $> 5\%$ or drawdown $> 15\%$.
@@ -147,11 +147,11 @@ sequenceDiagram
 - **Outputs:** `RiskVerdict(approved=True, suggested_units=..., suggested_stop=...)`.
 
 ### Stage 12: Order Construction
-- **File:** [`core/coordinator.py`](core/coordinator.py)
+- **File:** [`core/coordinator.py`](../../core/coordinator.py)
 - **Outputs:** Constructs final `Decision` object specifying symbol, strategy ID, side (`BUY` or `SELL`), units, limit/stop prices, and justification.
 
 ### Stage 13: Paper Execution
-- **File:** [`core/paper_account.py`](core/paper_account.py)
+- **File:** [`core/paper_account.py`](../../core/paper_account.py)
 - **Function:** `open_position(symbol, entry_price, units, stop_loss, dollar_risk, ...)`
 - **Mechanics:** Modifies in-memory portfolio state under process lock.
 
@@ -166,18 +166,18 @@ sequenceDiagram
   Deducted immediately from cash balance.
 
 ### Stage 16: Position Creation & State Persistence
-- **File:** [`core/paper_account.py`](core/paper_account.py)
+- **File:** [`core/paper_account.py`](../../core/paper_account.py)
 - **State Updated:** Adds position entry to `account.positions[symbol]`. Atomically persists updated cash, positions, and equity to `data/paper_portfolio.json`.
 
 ### Stage 17: Stop-Loss & Take-Profit Monitoring (Subsequent Ticks)
-- **File:** [`core/coordinator.py`](core/coordinator.py) (lines 1150–1250)
+- **File:** [`core/coordinator.py`](../../core/coordinator.py) (lines 1150–1250)
 - **Mechanics:**
   - **Trailing Ratchet:** If price moves favorably by $> 1.0\times$ ATR, ratchets stop loss to breakeven (`breakeven_lock`). As price rises, trailing stop ratchets upward at a fixed multiple of ATR (`atr_multiplier * ATR`).
   - **Partial Scale-Out:** When unrealized gain reaches $2.5\times$ ATR, closes 50% of units to bank profit (`PARTIAL_EXIT`), trailing remaining 50%.
   - **Hard Stop Exit:** If bar low crosses below trailing stop, triggers full `EXIT`.
 
 ### Stage 18: Position Closing
-- **File:** [`core/paper_account.py`](core/paper_account.py)
+- **File:** [`core/paper_account.py`](../../core/paper_account.py)
 - **Function:** `close_position(symbol, exit_price, exit_time, reason)`
 - **Mechanics:** Removes symbol from `account.positions`.
 
@@ -192,11 +192,11 @@ sequenceDiagram
 - **Mechanics:** Adds invested capital + Net Realized PnL back into `account.cash`. Updates peak equity tracking.
 
 ### Stage 21: Strategy Performance Attribution
-- **File:** [`core/paper_account.py`](core/paper_account.py) & [`core/journal.py`](core/journal.py)
+- **File:** [`core/paper_account.py`](../../core/paper_account.py) & [`core/journal.py`](../../core/journal.py)
 - **Attribution:** Records completed trade in `account.closed_trades` with explicit tags for `strategy_id`, holding duration, win/loss flag, and gross vs. net dollar returns.
 
 ### Stage 22: Logging, Monitoring & Audit Journal
-- **File:** [`live_paper_trader.py`](live_paper_trader.py)
+- **File:** [`live_paper_trader.py`](../../live_paper_trader.py)
 - **Output:** Appends human-readable trade alert to `data/live_trader.log`. Emits JSON snapshot to `data/live_status.json` for dashboard visualization.
 
 ---

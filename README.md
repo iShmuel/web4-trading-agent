@@ -239,5 +239,13 @@ pip install -r requirements.txt
 
 ---
 
+## Security & Privacy
+
+- **Strictly Simulated Paper Trading:** Web4 operates exclusively on virtual paper funds (`core/paper_account.py`). No exchange API keys or real-money credentials are required or used.
+- **Environment-Based Optional Integrations:** Optional data-provider settings (`FRED_API_KEY`, `SEC_USER_AGENT`) are configured via environment variables — see [`.env.example`](.env.example). Never commit `.env`, `data/`, logs, or private keys.
+- **Vulnerability Reporting & Hardening Details:** See [`SECURITY.md`](SECURITY.md).
+
+---
+
 ## License
 MIT

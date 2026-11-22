@@ -47,7 +47,7 @@ The independent system-wide engineering audit identified **0 Critical Safety Vul
 ### Finding FIND-03: Sequential Data Ingestion Bottleneck at Scale
 - **Severity:** **LOW (Scalability)**
 - **Description:** `core/data_loader.py` fetches market data sequentially for assets that have stale local disk caches. For a 14-asset watchlist, this takes ~1.2 seconds. At 1,000 symbols, sequential HTTP calls would take over 2 minutes.
-- **Evidence:** [`core/data_loader.py`](core/data_loader.py), `fetch_ohlcv_batch()` sequential loop.
+- **Evidence:** [`core/data_loader.py`](../../core/data_loader.py), `fetch_ohlcv_batch()` sequential loop.
 - **Impact Analysis:** Limits dynamic market discovery scanning to ~100 symbols per batch.
 - **Recommended Correction:** Wrap network requests in `concurrent.futures.ThreadPoolExecutor(max_workers=16)` for concurrent candle downloads.
 
@@ -56,6 +56,6 @@ The independent system-wide engineering audit identified **0 Critical Safety Vul
 ### Finding FIND-04: Indicator Calculation Duplication
 - **Severity:** **LOW (Efficiency)**
 - **Description:** In `core/coordinator.py`, `_process_symbol()` calls `momentum_strategy.evaluate()` and `mean_reversion_strategy.evaluate()`. Each strategy independently calls `compute_indicators()`, calculating ATR and rolling EMAs twice per candle unless `_precomputed` columns are present.
-- **Evidence:** [`strategies/momentum.py`](strategies/momentum.py) line 98 and [`strategies/mean_reversion.py`](strategies/mean_reversion.py) line 95.
+- **Evidence:** [`strategies/momentum.py`](../../strategies/momentum.py) line 98 and [`strategies/mean_reversion.py`](../../strategies/mean_reversion.py) line 95.
 - **Impact Analysis:** Adds ~8 ms of duplicate CPU work per symbol per tick. Unnoticeable on 14 assets; relevant only at 1,000 assets.
 - **Recommended Correction:** Compute shared indicators once in `PortfolioCoordinator` and inject the precomputed DataFrame into each strategy.

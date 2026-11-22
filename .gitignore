@@ -9,25 +9,45 @@ venv/
 .venv/
 ENV/
 
-# Data & Backtest Cache
+# Caches & Testing
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Data, Runtime State & Backtest Cache
 data/
+logs/
 *.csv
 *.parquet
 *.sqlite3
 *.db
+*.lock
+*.tmp
 
-# Logs & Secrets
+# Secrets, Credentials & Local Overrides
+.env
+.env.*
+!.env.example
+.secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*credentials*.json
+*secret*.json
 *.log
 *.bak
-.env
 config.local.json
+config/*.local.json
+config/local_*.json
 config/last_deployment_snapshot.json
-.secrets/
 
-# IDE / OS
+# IDE / OS / Scratch
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
-.pytest_cache/
 scratch/

@@ -53,7 +53,7 @@
       "evidence": "Tested across 72 optimization scenarios (144 replays) in research/optimization_experiments.py"
     },
     "analyst_proposal": null,
-    "target_config_path": "<repo_root>/config/active_config.json",
+    "target_config_path": "config/active_config.json",
     "created_at": "2026-11-09T10:16:37.098306+00:00",
     "superseded_by": "PROP-A15F08C2"
   },
@@ -113,7 +113,7 @@
       "evidence": "Tested across 5 multi-strategy configurations and 4 cost stress tiers in reports/targeted_profitability_optimization/run_optimization_research.py"
     },
     "analyst_proposal": null,
-    "target_config_path": "<repo_root>/config/active_config.json",
+    "target_config_path": "config/active_config.json",
     "created_at": "2026-11-09T14:50:00+00:00",
     "approved_by": "human_quant_operator",
     "approved_at": "2026-11-09T13:13:20.540004+00:00"
@@ -233,7 +233,7 @@
       "viable_assets": 8
     },
     "analyst_proposal": null,
-    "target_config_path": "<repo_root>/config/active_config.json",
+    "target_config_path": "config/active_config.json",
     "created_at": "2026-11-11T13:24:35.617745+00:00",
     "approved_by": "human_quant_operator",
     "approved_at": "2026-11-12T05:41:17.552212+00:00"
@@ -358,7 +358,7 @@
       "viable_assets": 10
     },
     "analyst_proposal": null,
-    "target_config_path": "<repo_root>/config/active_config.json",
+    "target_config_path": "config/active_config.json",
     "created_at": "2026-11-13T17:22:15.011994+00:00",
     "approved_by": "human_quant_operator",
     "approved_at": "2026-11-14T21:55:04.123379+00:00"
@@ -421,7 +421,7 @@
       "confidence": 0.72,
       "reasoning": "Deterministic rule fallback: Momentum losses cluster during low-ADX range chop."
     },
-    "target_config_path": "<repo_root>/config/active_config.json",
+    "target_config_path": "config/active_config.json",
     "created_at": "2026-11-15T03:17:43.087660+00:00"
   },
   {
@@ -476,7 +476,7 @@
       "test_sharpe_delta": 0.9388073870881355
     },
     "analyst_proposal": null,
-    "target_config_path": "<repo_root>/config/active_config.json",
+    "target_config_path": "config/active_config.json",
     "created_at": "2026-11-17T04:51:30.038515+00:00",
     "superseded_by": "PROP-56FEC8EA",
     "superseded_at": "2026-11-17T21:50:06.225484+00:00"
@@ -538,7 +538,7 @@
       "test_sharpe_delta": 3.1285008802029015
     },
     "analyst_proposal": null,
-    "target_config_path": "<repo_root>/config/active_config.json",
+    "target_config_path": "config/active_config.json",
     "created_at": "2026-11-17T21:49:42.204020+00:00",
     "superseded_by": "PROP-2E111AF2",
     "superseded_at": "2026-11-18T04:19:18.944421+00:00"
@@ -600,7 +600,7 @@
       "test_sharpe_delta": 1.5649302195355572
     },
     "analyst_proposal": null,
-    "target_config_path": "<repo_root>/config/active_config.json",
+    "target_config_path": "config/active_config.json",
     "created_at": "2026-11-18T04:18:55.463080+00:00",
     "superseded_by": "PROP-2F5541B9",
     "superseded_at": "2026-11-19T11:46:13.505757+00:00"
@@ -661,7 +661,7 @@
       "test_sharpe_delta": 1.367105132476699
     },
     "analyst_proposal": null,
-    "target_config_path": "<repo_root>/config/active_config.json",
+    "target_config_path": "config/active_config.json",
     "created_at": "2026-11-19T11:45:49.095167+00:00"
   }
 ]

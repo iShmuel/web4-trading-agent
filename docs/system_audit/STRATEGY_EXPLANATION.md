@@ -8,7 +8,7 @@
 
 ## 1. Momentum / Trend Following Engine
 
-**Implementation:** [`strategies/momentum.py`](strategies/momentum.py) (`MomentumStrategy`)
+**Implementation:** [`strategies/momentum.py`](../../strategies/momentum.py) (`MomentumStrategy`)
 
 ### 1.1 Mathematical & Qualitative Mechanics
 The Momentum strategy is designed to capture sustained, multi-day directional trend expansions. Markets exhibit momentum due to institutional order flow accumulation, macro trend continuation, and delayed information diffusion.
@@ -39,7 +39,7 @@ The Momentum strategy is designed to capture sustained, multi-day directional tr
 
 ## 2. Mean Reversion Engine
 
-**Implementation:** [`strategies/mean_reversion.py`](strategies/mean_reversion.py) (`MeanReversionStrategy`)
+**Implementation:** [`strategies/mean_reversion.py`](../../strategies/mean_reversion.py) (`MeanReversionStrategy`)
 
 ### 2.1 Mathematical & Qualitative Mechanics
 The Mean Reversion strategy is engineered to profit from liquidity exhaustions and temporary statistical over-extensions back toward the fair-value rolling mean.
@@ -69,7 +69,7 @@ The Mean Reversion strategy is engineered to profit from liquidity exhaustions a
 
 ## 3. Statistical Arbitrage Pairs Engine
 
-**Implementation:** [`strategies/stat_arb_pairs.py`](strategies/stat_arb_pairs.py) (`StatArbPairsStrategy`)
+**Implementation:** [`strategies/stat_arb_pairs.py`](../../strategies/stat_arb_pairs.py) (`StatArbPairsStrategy`)
 
 ### 3.1 Mathematical & Qualitative Mechanics
 StatArb Pairs trades the synthetic spread between two economically cointegrated assets:
@@ -99,7 +99,7 @@ Where $\beta$ is the rolling 48-hour Ordinary Least Squares (OLS) hedge ratio.
 
 ## 4. Basis Yield Carry Engine
 
-**Implementation:** [`core/basis_yield.py`](core/basis_yield.py) (`BasisYieldEngine`)
+**Implementation:** [`core/basis_yield.py`](../../core/basis_yield.py) (`BasisYieldEngine`)
 
 ### 4.1 Mechanics & Yield Source
 In cryptocurrency markets, perpetual contracts trade with an 8-hour funding rate mechanism that tethers the perpetual price to spot. When speculators are aggressively bullish, perpetuals trade at a premium, forcing perpetual longs to pay cash to perpetual shorts every 8 hours.

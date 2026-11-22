@@ -43,6 +43,22 @@ PENDING_PROPOSALS_PATH = PROJECT_ROOT / "config" / "pending_proposals.json"
 AUDIT_LOG_FILE = PROJECT_ROOT / "data" / "agent_governance_audit.log"
 _GOVERNOR_DEPLOY_LOCK = threading.RLock()
 
+
+def _portable_config_path(cfg_file: Path) -> str:
+    """Return a repo-relative path when cfg_file is inside PROJECT_ROOT to avoid leaking local paths."""
+    try:
+        return str(cfg_file.resolve().relative_to(PROJECT_ROOT.resolve()))
+    except ValueError:
+        return str(cfg_file)
+
+
+def _resolve_target_config_path(raw_path: Optional[str]) -> Path:
+    """Resolve a stored relative or absolute target_config_path back to a local Path."""
+    if not raw_path:
+        return CONFIG_PATH
+    p = Path(raw_path)
+    return p if p.is_absolute() else (PROJECT_ROOT / p)
+
 VALID_GOVERNOR_VERDICTS = {"APPROVE", "DISAPPROVE", "NEEDS_HUMAN_REVIEW"}
 
 # Safe parameter bounds for all Web4 strategies and coordinator controls
@@ -703,7 +719,7 @@ def approve_pending_proposal(
         proposed_changes=target["proposed_changes"],
         rationale=target.get("rationale"),
         empirical_proof=target.get("empirical_proof"),
-        config_path=config_path or Path(target.get("target_config_path", str(CONFIG_PATH))),
+        config_path=config_path or _resolve_target_config_path(target.get("target_config_path")),
         verify_tests=verify_tests,
         use_llm=False,  # Already validated by Governor prior to entering pending queue
         auto_commit=auto_commit,
@@ -1222,7 +1238,7 @@ def _review_and_deploy_proposal_unlocked(
             "rationale": rationale or "Validated governance proposal awaiting human authorization.",
             "empirical_proof": empirical_proof or {},
             "analyst_proposal": analyst_proposal,
-            "target_config_path": str(cfg_file),
+            "target_config_path": _portable_config_path(cfg_file),
             "created_at": now_iso,
         }
         save_pending_proposal(pending_record, pend_file)

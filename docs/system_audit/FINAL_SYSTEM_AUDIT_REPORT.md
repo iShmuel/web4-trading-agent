@@ -24,10 +24,10 @@ The Web4 Quantitative Trading Desk is a robust, professionally engineered, mathe
 ## 2. Requirements Compliance & Architectural Evaluation
 
 ### 2.1 The Two-Primary-Bot Architecture & Supporting Modules
-- **Momentum Strategy ([`strategies/momentum.py`](strategies/momentum.py)):** Independent breakout engine with 50/200 EMA trend filtering, ATR chandelier trailing stops, and 50% partial take-profit banking.
-- **Mean Reversion Strategy ([`strategies/mean_reversion.py`](strategies/mean_reversion.py)):** Independent statistical band engine ($1.9\sigma$ Bollinger Bands) with RSI oversold/overbought exhaustion filters.
-- **Supporting Strategy: StatArb Pairs ([`strategies/stat_arb_pairs.py`](strategies/stat_arb_pairs.py)):** Operates as a market-neutral cross-asset hedging engine. Protected by a **2.5x edge-to-cost gate** that eliminates dual-leg fee bleed. Contributes +2.62% in portfolio alpha and dampens drawdown.
-- **Supporting Module: Basis Yield ([`core/basis_yield.py`](core/basis_yield.py)):** Operates as a delta-neutral cash carry engine, harvesting funding yields when APR $\ge 8\%$.
+- **Momentum Strategy ([`strategies/momentum.py`](../../strategies/momentum.py)):** Independent breakout engine with 50/200 EMA trend filtering, ATR chandelier trailing stops, and 50% partial take-profit banking.
+- **Mean Reversion Strategy ([`strategies/mean_reversion.py`](../../strategies/mean_reversion.py)):** Independent statistical band engine ($1.9\sigma$ Bollinger Bands) with RSI oversold/overbought exhaustion filters.
+- **Supporting Strategy: StatArb Pairs ([`strategies/stat_arb_pairs.py`](../../strategies/stat_arb_pairs.py)):** Operates as a market-neutral cross-asset hedging engine. Protected by a **2.5x edge-to-cost gate** that eliminates dual-leg fee bleed. Contributes +2.62% in portfolio alpha and dampens drawdown.
+- **Supporting Module: Basis Yield ([`core/basis_yield.py`](../../core/basis_yield.py)):** Operates as a delta-neutral cash carry engine, harvesting funding yields when APR $\ge 8\%$.
 - **Verdict:** The desk has **faithfully preserved the two primary bots** as the dominant directional pillars, while utilizing StatArb and Basis Yield to dampen drawdown and capture non-directional yield.
 
 ### 2.2 Timeframe Architecture Analysis
@@ -77,7 +77,7 @@ Empirical benchmarks measured on Linux x86_64:
 
 ## 5. Audit Findings Summary
 
-1. **FIND-01 (Medium - Architectural Deviation):** 1-hour candles utilized instead of 15m/5m/1m. Justified by fee economics; documented in [`REQUIREMENTS_TRACEABILITY.md`](docs/system_audit/REQUIREMENTS_TRACEABILITY.md).
+1. **FIND-01 (Medium - Architectural Deviation):** 1-hour candles utilized instead of 15m/5m/1m. Justified by fee economics; documented in [`REQUIREMENTS_TRACEABILITY.md`](../../docs/system_audit/REQUIREMENTS_TRACEABILITY.md).
 2. **FIND-02 (Medium - Configuration Isolation):** Shared configuration namespace (`config/active_config.json`). Safe today due to hard-coded `PaperAccount`, but requires dedicated `config/paper_config.json` before any future real-money broker adapter is built.
 3. **FIND-03 (Low - Scalability):** Sequential data fetching during cache misses limits single-batch universe scanning to ~100 symbols.
 4. **FIND-04 (Low - Redundant Calculations):** Strategies independently compute ATR/EMA, adding ~8 ms of duplicate CPU work per tick.
@@ -86,17 +86,17 @@ Empirical benchmarks measured on Linux x86_64:
 
 ## 6. Comprehensive Documentation Suite Created
 
-All 12 required architectural and operational documents have been generated in [`docs/system_audit/`](docs/system_audit/):
+All 12 required architectural and operational documents have been generated in [`docs/system_audit/`](../../docs/system_audit/):
 
-1. [`SYSTEM_OVERVIEW.md`](docs/system_audit/SYSTEM_OVERVIEW.md) — System purpose, operating principles, high-level architecture.
-2. [`ARCHITECTURE_DEEP_DIVE.md`](docs/system_audit/ARCHITECTURE_DEEP_DIVE.md) — Component responsibilities, bot independence, Coordinator role.
-3. [`COMPLETE_TRADING_LIFECYCLE.md`](docs/system_audit/COMPLETE_TRADING_LIFECYCLE.md) — 22-stage code trace and two complete walkthrough examples.
-4. [`STRATEGY_EXPLANATION.md`](docs/system_audit/STRATEGY_EXPLANATION.md) — Mathematical mechanics of Momentum, Mean Reversion, StatArb, Basis Yield.
-5. [`QUANTITATIVE_FORMULAS.md`](docs/system_audit/QUANTITATIVE_FORMULAS.md) — Exact mathematical formulas with numerical examples.
-6. [`RISK_AND_GOVERNANCE.md`](docs/system_audit/RISK_AND_GOVERNANCE.md) — Risk limits, circuit breakers, fail-closed LLM governance.
-7. [`DATA_AND_EXECUTION_PIPELINE.md`](docs/system_audit/DATA_AND_EXECUTION_PIPELINE.md) — Market data, timeframe rationale, simulated fill engine.
-8. [`PERFORMANCE_AND_SCALABILITY.md`](docs/system_audit/PERFORMANCE_AND_SCALABILITY.md) — Measured latencies, 100/500/1000 symbol scaling, GPU analysis.
-9. [`AUDIT_FINDINGS.md`](docs/system_audit/AUDIT_FINDINGS.md) — Categorized findings (FIND-01 to FIND-04).
-10. [`USER_GUIDE.md`](docs/system_audit/USER_GUIDE.md) — Practical operations manual with verified CLI commands.
-11. [`REQUIREMENTS_TRACEABILITY.md`](docs/system_audit/REQUIREMENTS_TRACEABILITY.md) — 20-item requirements compliance verification matrix.
-12. [`FINAL_SYSTEM_AUDIT_REPORT.md`](docs/system_audit/FINAL_SYSTEM_AUDIT_REPORT.md) — This master audit report.
+1. [`SYSTEM_OVERVIEW.md`](../../docs/system_audit/SYSTEM_OVERVIEW.md) — System purpose, operating principles, high-level architecture.
+2. [`ARCHITECTURE_DEEP_DIVE.md`](../../docs/system_audit/ARCHITECTURE_DEEP_DIVE.md) — Component responsibilities, bot independence, Coordinator role.
+3. [`COMPLETE_TRADING_LIFECYCLE.md`](../../docs/system_audit/COMPLETE_TRADING_LIFECYCLE.md) — 22-stage code trace and two complete walkthrough examples.
+4. [`STRATEGY_EXPLANATION.md`](../../docs/system_audit/STRATEGY_EXPLANATION.md) — Mathematical mechanics of Momentum, Mean Reversion, StatArb, Basis Yield.
+5. [`QUANTITATIVE_FORMULAS.md`](../../docs/system_audit/QUANTITATIVE_FORMULAS.md) — Exact mathematical formulas with numerical examples.
+6. [`RISK_AND_GOVERNANCE.md`](../../docs/system_audit/RISK_AND_GOVERNANCE.md) — Risk limits, circuit breakers, fail-closed LLM governance.
+7. [`DATA_AND_EXECUTION_PIPELINE.md`](../../docs/system_audit/DATA_AND_EXECUTION_PIPELINE.md) — Market data, timeframe rationale, simulated fill engine.
+8. [`PERFORMANCE_AND_SCALABILITY.md`](../../docs/system_audit/PERFORMANCE_AND_SCALABILITY.md) — Measured latencies, 100/500/1000 symbol scaling, GPU analysis.
+9. [`AUDIT_FINDINGS.md`](../../docs/system_audit/AUDIT_FINDINGS.md) — Categorized findings (FIND-01 to FIND-04).
+10. [`USER_GUIDE.md`](../../docs/system_audit/USER_GUIDE.md) — Practical operations manual with verified CLI commands.
+11. [`REQUIREMENTS_TRACEABILITY.md`](../../docs/system_audit/REQUIREMENTS_TRACEABILITY.md) — 20-item requirements compliance verification matrix.
+12. [`FINAL_SYSTEM_AUDIT_REPORT.md`](../../docs/system_audit/FINAL_SYSTEM_AUDIT_REPORT.md) — This master audit report.

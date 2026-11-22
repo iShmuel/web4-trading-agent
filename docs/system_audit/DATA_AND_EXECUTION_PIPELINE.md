@@ -8,7 +8,7 @@
 
 ## 1. Market Data Ingestion Architecture
 
-The desk ingests market data through [`core/data_loader.py`](core/data_loader.py), supporting two fundamentally different asset classes:
+The desk ingests market data through [`core/data_loader.py`](../../core/data_loader.py), supporting two fundamentally different asset classes:
 
 ```mermaid
 flowchart LR
@@ -44,7 +44,7 @@ flowchart LR
 - **Operating Hours:** Standard NYSE/NASDAQ session (9:30 AM – 4:00 PM EST, Monday–Friday).
 - **Gaps & Weekend Handling:**
   - Staleness limit for stocks is automatically set to `0` (bypassing the 180-minute age check outside market hours) to prevent weekend/overnight data from being discarded as corrupt.
-  - The NYSE Market Clock ([`core/preflight.py`](core/preflight.py)) blocks entry orders when US markets are closed.
+  - The NYSE Market Clock ([`core/preflight.py`](../../core/preflight.py)) blocks entry orders when US markets are closed.
 - **Short-Selling:** Governed by `allow_short` and `short_requires_macro_bear`. In equities, shorting is strictly restricted to macro downtrends ($P < \text{EMA}_{200}$) to avoid fighting long-term market upward drift.
 
 ---
@@ -76,7 +76,7 @@ The decision in the audited codebase to standardize on **1-hour candles** was dr
 ## 3. Cost-Adjusted Simulated Execution (`PaperAccount`)
 
 ### 3.1 Realistic Fill Simulation
-In [`core/paper_account.py`](core/paper_account.py):
+In [`core/paper_account.py`](../../core/paper_account.py):
 1. **Slippage Application:**
    $$\text{Long Fill Price} = \text{Bar Close} \times (1 + \text{slippage\_pct}) = \text{Close} \times 1.0004$$
    $$\text{Short Fill Price} = \text{Bar Close} \times (1 - \text{slippage\_pct}) = \text{Close} \times 0.9996$$
@@ -89,7 +89,7 @@ In [`core/paper_account.py`](core/paper_account.py):
 
 ## 4. Ledger Persistence & Accounting Reconciliation
 
-1. **Trade Journaling ([`core/journal.py`](core/journal.py)):**
+1. **Trade Journaling ([`core/journal.py`](../../core/journal.py)):**
    Every decision made by the Coordinator is logged to `data/trade_journal.jsonl` with full indicator context, ATR, regime badge, and forward alpha benchmark tracking.
 2. **Portfolio Ledger (`data/paper_portfolio.json`):**
    Stores:

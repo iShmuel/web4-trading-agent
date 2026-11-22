@@ -17,9 +17,9 @@ The user's original foundational requirement specified:
 
 **Audit Finding on Architectural Alignment:**
 The core implementation **preserves the two primary independent trading bots as the dominant directional pillars**, while seamlessly integrating two specialized supporting modules (**StatArb Pairs** and **Basis Yield**) at the portfolio level:
-- **Momentum** and **Mean Reversion** generate **83.2% of all directional trading volume** and represent the core directional engine of the desk. They are implemented in standalone modules ([`strategies/momentum.py`](strategies/momentum.py) and [`strategies/mean_reversion.py`](strategies/mean_reversion.py)) inheriting from [`core/strategy.py`](core/strategy.py).
-- **StatArb Pairs** ([`strategies/stat_arb_pairs.py`](strategies/stat_arb_pairs.py)) is a **market-neutral supporting strategy**, not an independent directional bot. It operates on synthetic spread series between paired assets (e.g., GLD vs. SLV), providing non-directional hedging that reduces portfolio volatility.
-- **Basis Yield** ([`core/basis_yield.py`](core/basis_yield.py)) is an **execution-layer yield accrual module**, not an active speculation bot. It harvests funding cash on collateralized positions, operating with zero directional market exposure.
+- **Momentum** and **Mean Reversion** generate **83.2% of all directional trading volume** and represent the core directional engine of the desk. They are implemented in standalone modules ([`strategies/momentum.py`](../../strategies/momentum.py) and [`strategies/mean_reversion.py`](../../strategies/mean_reversion.py)) inheriting from [`core/strategy.py`](../../core/strategy.py).
+- **StatArb Pairs** ([`strategies/stat_arb_pairs.py`](../../strategies/stat_arb_pairs.py)) is a **market-neutral supporting strategy**, not an independent directional bot. It operates on synthetic spread series between paired assets (e.g., GLD vs. SLV), providing non-directional hedging that reduces portfolio volatility.
+- **Basis Yield** ([`core/basis_yield.py`](../../core/basis_yield.py)) is an **execution-layer yield accrual module**, not an active speculation bot. It harvests funding cash on collateralized positions, operating with zero directional market exposure.
 
 **Verdict:** The desk has **NOT drifted** away from the two-primary-bot concept. Instead, it has implemented the two primary bots as the core directional drivers, supplemented by an institutional market-neutral hedge (StatArb) and a risk-free cash carry accrual (Basis Yield).
 
@@ -130,7 +130,7 @@ The desk operates exclusively through `PaperAccount`.
   - Standard slippage: **0.04% (4 bps)**.
   - Dual-leg crossing fee for pairs: **0.40% (40 bps roundtrip)**.
 - **State Persistence:**
-  Every trade execution, partial close, and funding accrual atomically updates [`data/paper_portfolio.json`](data/paper_portfolio.json) via a `.tmp` file replacement, ensuring portfolio state survives process crashes without data corruption.
+  Every trade execution, partial close, and funding accrual atomically updates [`data/paper_portfolio.json`](../../data/paper_portfolio.json) via a `.tmp` file replacement, ensuring portfolio state survives process crashes without data corruption.
 
 ---
 

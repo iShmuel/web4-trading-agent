@@ -59,7 +59,7 @@ A controlled, evidence-driven governance approval and deployment workflow was su
 
 ## 4. Comprehensive Pre-Deployment Safety Verification
 
-A dedicated automated regression test suite was executed: [`tests/test_pre_deployment_safety.py`](tests/test_pre_deployment_safety.py).
+A dedicated automated regression test suite was executed: [`tests/test_pre_deployment_safety.py`](../../tests/test_pre_deployment_safety.py).
 
 ```
 ============================= test session starts ==============================

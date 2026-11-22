@@ -8,7 +8,7 @@
 ## 1. Technical Indicators & Market Microstructure
 
 ### 1.1 Average True Range (ATR)
-- **Source:** [`core/strategy.py`](core/strategy.py)
+- **Source:** [`core/strategy.py`](../../core/strategy.py)
 - **Mathematical Definition:**
   For each bar $t$, True Range (TR) is the maximum of:
   $$\text{TR}_t = \max\Big(\text{High}_t - \text{Low}_t, \ |\text{High}_t - \text{Close}_{t-1}|, \ |\text{Low}_t - \text{Close}_{t-1}|\Big)$$
@@ -22,7 +22,7 @@
 ---
 
 ### 1.2 Average Directional Index (ADX)
-- **Source:** [`core/strategy.py`](core/strategy.py)
+- **Source:** [`core/strategy.py`](../../core/strategy.py)
 - **Mathematical Definition:**
   Measures trend strength regardless of trend direction.
   1. Directional Movement:
@@ -40,7 +40,7 @@
 ---
 
 ### 1.3 Bollinger Bands
-- **Source:** [`strategies/mean_reversion.py`](strategies/mean_reversion.py)
+- **Source:** [`strategies/mean_reversion.py`](../../strategies/mean_reversion.py)
 - **Mathematical Definition:**
   $$\mu_t = \frac{1}{20} \sum_{i=0}^{19} \text{Close}_{t-i}, \quad \sigma_t = \sqrt{\frac{1}{20} \sum_{i=0}^{19} (\text{Close}_{t-i} - \mu_t)^2}$$
   $$\text{Upper Band}_t = \mu_t + 1.9 \times \sigma_t, \quad \text{Lower Band}_t = \mu_t - 1.9 \times \sigma_t$$
@@ -48,7 +48,7 @@
 ---
 
 ### 1.4 Cointegrated Spread & Z-Score
-- **Source:** [`strategies/stat_arb_pairs.py`](strategies/stat_arb_pairs.py)
+- **Source:** [`strategies/stat_arb_pairs.py`](../../strategies/stat_arb_pairs.py)
 - **Mathematical Definition:**
   Hedge ratio $\beta$ estimated via rolling 48-period OLS regression:
   $$\ln(P_A) = \alpha + \beta \ln(P_B) + \epsilon$$
@@ -62,7 +62,7 @@
 ## 2. Risk Management & Position Sizing
 
 ### 2.1 Van Tharp Volatility-Adjusted Sizing
-- **Source:** [`core/risk_engine.py`](core/risk_engine.py) (`calculate_position`)
+- **Source:** [`core/risk_engine.py`](../../core/risk_engine.py) (`calculate_position`)
 - **Formula:**
   $$\text{Stop Distance } D_{\text{stop}} = |\text{Entry Price} - \text{Stop Loss Price}|$$
   $$\text{Target Dollar Risk } R_{\$} = \text{Account Equity} \times \text{Risk \%}$$
@@ -81,7 +81,7 @@
 ---
 
 ### 2.2 Exposure Cap Gating
-- **Source:** [`core/risk_engine.py`](core/risk_engine.py) (`validate_proposed_entry`)
+- **Source:** [`core/risk_engine.py`](../../core/risk_engine.py) (`validate_proposed_entry`)
 - **Single-Asset Cap:**
   $$\text{Max Notional Allowed} = \text{Account Equity} \times 0.35$$
   In the example above, $\$5,000.00$ exceeds $35\%$ of $\$10,000$ ($\$3,500.00$).
@@ -103,7 +103,7 @@
 ## 3. Transaction Costs & PnL Accounting
 
 ### 3.1 Cost-Adjusted Fill Simulation
-- **Source:** [`core/paper_account.py`](core/paper_account.py)
+- **Source:** [`core/paper_account.py`](../../core/paper_account.py)
 - **Taker Fee Rate:** $f = 0.0006$ ($6$ bps).
 - **Slippage Rate:** $s = 0.0004$ ($4$ bps).
 - **Long Execution:**
@@ -137,7 +137,7 @@ $$\text{Calmar Ratio} = \frac{\text{Annualized Net Return \%}}{\text{Maximum Dra
 ---
 
 ### 4.4 Probabilistic Sharpe Ratio (PSR) & Deflated Sharpe Ratio (DSR)
-- **Source:** [`core/institutional_stress_tester.py`](core/institutional_stress_tester.py)
+- **Source:** [`core/institutional_stress_tester.py`](../../core/institutional_stress_tester.py)
 - **Formula (Bailey & López de Prado, 2014):**
   $$\text{PSR}(S_0) = Z\left(\frac{(S - S_0) \sqrt{T - 1}}{\sqrt{1 - \gamma_3 S + \frac{\gamma_4 - 1}{4} S^2}}\right)$$
   Where:

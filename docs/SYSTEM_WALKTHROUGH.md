@@ -107,27 +107,27 @@ flowchart TD
 
 ## 2. The Live Heartbeat Loop (`live_paper_trader.py`)
 
-The file [`live_paper_trader.py`](live_paper_trader.py) is the master executable that runs continuously in background memory.
+The file [`live_paper_trader.py`](../live_paper_trader.py) is the master executable that runs continuously in background memory.
 
 ### Granular Execution Steps (Every 60 Seconds):
 1. **PID Process Locking (`core/process_lock.py`)**:
    * Uses Linux `fcntl.flock` on `data/live_trader.pid`.
    * **Purpose**: Prevents two instances of the bot from running at the same time and corrupting `paper_portfolio.json`.
 2. **Dynamic Config Hot-Reloading**:
-   * Computes the SHA-256 hash of [`config/active_config.json`](config/active_config.json).
+   * Computes the SHA-256 hash of [`config/active_config.json`](../config/active_config.json).
    * If the file was updated (by the user or by an approved AI proposal), the Coordinator immediately reloads the parameters into memory **without restarting the process**.
 3. **Market Data Fetching**:
    * Pulls the last 100 hourly candles for all configured symbols (`BTC/USDT`, `ETH/USDT`, `SOL/USDT`, `SPY`, etc.).
    * Checks staleness: If the most recent candle timestamp is older than `max_stale_minutes` (default 180 min), the asset is skipped to prevent trading on dead data.
 4. **Tick Execution (`run_portfolio_tick`)**:
-   * Sends market data to [`core/coordinator.py`](core/coordinator.py) and processes all trade signals, stop-loss movements, and basis yield distributions.
+   * Sends market data to [`core/coordinator.py`](../core/coordinator.py) and processes all trade signals, stop-loss movements, and basis yield distributions.
 
 ---
 
 ## 3. The 4 Strategy Bots in Fine Detail
 
 ### 3.1 Donchian Momentum Breakout Bot
-* **File**: [`strategies/momentum.py`](strategies/momentum.py)
+* **File**: [`strategies/momentum.py`](../strategies/momentum.py)
 * **Strategy Type**: Directional Trend-Following.
 * **Underlying Indicators**:
   * **Donchian High/Low (24 periods)**: $H_{24} = \max(\text{High}_{t-24 \dots t-1})$, $L_{24} = \min(\text{Low}_{t-24 \dots t-1})$.
@@ -145,7 +145,7 @@ The file [`live_paper_trader.py`](live_paper_trader.py) is the master executable
 ---
 
 ### 3.2 Bollinger / RSI Mean-Reversion Bot
-* **File**: [`strategies/mean_reversion.py`](strategies/mean_reversion.py)
+* **File**: [`strategies/mean_reversion.py`](../strategies/mean_reversion.py)
 * **Strategy Type**: Counter-trend Swing Trader.
 * **Underlying Indicators**:
   * **Bollinger Bands (20 periods, 2.0 std dev)**:
@@ -163,7 +163,7 @@ The file [`live_paper_trader.py`](live_paper_trader.py) is the master executable
 ---
 
 ### 3.3 Cointegrated Statistical Arbitrage Pairs Bot
-* **File**: [`strategies/stat_arb_pairs.py`](strategies/stat_arb_pairs.py)
+* **File**: [`strategies/stat_arb_pairs.py`](../strategies/stat_arb_pairs.py)
 * **Strategy Type**: Market-Neutral Relative Value.
 * **Mechanism**:
   1. Identifies pairs of assets that share an economic link (e.g. `BTC/USDT` vs `ETH/USDT`, or `SPY` vs `QQQ`).
@@ -180,7 +180,7 @@ The file [`live_paper_trader.py`](live_paper_trader.py) is the master executable
 ---
 
 ### 3.4 Delta-Neutral Perpetual Basis Yield Bot
-* **File**: [`core/basis_yield.py`](core/basis_yield.py)
+* **File**: [`core/basis_yield.py`](../core/basis_yield.py)
 * **Strategy Type**: Delta-Neutral Cash-and-Carry / Funding Arbitrage.
 * **Underlying Principle**:
   * Perpetual futures traders pay a funding fee every 8 hours.
@@ -190,7 +190,7 @@ The file [`live_paper_trader.py`](live_paper_trader.py) is the master executable
   $$\text{Annualized APR} = \text{Rate}_{8h} \times 3 \times 365 \times 100$$
   $$\text{8h Cash Payout} = \text{Notional Allocated} \times \text{Rate}_{8h}$$
 * **Execution Rules**:
-  * Minimum APR Hurdle: [`basis_hurdle_apr = 8.0%`](config/active_config.json).
+  * Minimum APR Hurdle: [`basis_hurdle_apr = 8.0%`](../config/active_config.json).
   * Automatically records a verified audit record in `closed_trades` every 8 hours (Trades 31–39).
 
 ---
@@ -222,7 +222,7 @@ sequenceDiagram
   * Prevents total crypto exposure from exceeding configured portfolio risk limits (default 80% maximum).
 
 ### 4.1 Multi-Source Market Data Pipeline (`core/data_loader.py`)
-To ensure reliable inputs across both cryptocurrency and equity desks, [`core/data_loader.py`](core/data_loader.py) orchestrates market ingestion, data sanitation, and high-performance local caching:
+To ensure reliable inputs across both cryptocurrency and equity desks, [`core/data_loader.py`](../core/data_loader.py) orchestrates market ingestion, data sanitation, and high-performance local caching:
 * **Dual-Market Ingestion**:
   * **Crypto Pairs**: Direct public CCXT ingestion (Binance Spot & Perpetual Futures) normalizing symbols (`BTC/USDT`, `ETH/USDT`, `SOL/USDT`).
   * **Traditional Equities**: Historical and intraday candle feeds via `yfinance` (`SPY`, `QQQ`, `AAPL`, `NVDA`, `MCHP`, `XLE`, etc.).
@@ -239,7 +239,7 @@ To ensure reliable inputs across both cryptocurrency and equity desks, [`core/da
 
 ## 5. The Risk Fortress & Sizing Formulas (`core/risk_engine.py`)
 
-No trade is ever placed without passing through the mathematical constraints in [`core/risk_engine.py`](core/risk_engine.py):
+No trade is ever placed without passing through the mathematical constraints in [`core/risk_engine.py`](../core/risk_engine.py):
 
 ### 5.1 Position Sizing Formula
 $$\text{Dollar Risk} = \text{Account Equity} \times \text{Risk Percent}$$
@@ -264,11 +264,11 @@ $$\text{Position Units} = \frac{\text{Dollar Risk}}{\text{Stop Distance}}$$
 
 ## 6. The Virtual Ledger & Execution Drag (`core/paper_account.py`)
 
-To ensure paper-trading numbers reflect real-world execution, [`core/paper_account.py`](core/paper_account.py) enforces full execution friction:
+To ensure paper-trading numbers reflect real-world execution, [`core/paper_account.py`](../core/paper_account.py) enforces full execution friction:
 
 * **Taker Exchange Fees**: $0.06\%$ ($6\text{ basis points}$) deducted on both Entry and Exit.
 * **Market Slippage**: $0.04\%$ ($4\text{ basis points}$) adverse price movement applied against every fill.
-* **Concurrency Protection**: Uses file locks to ensure that data in [`data/paper_portfolio.json`](data/paper_portfolio.json) is atomic and crash-resistant.
+* **Concurrency Protection**: Uses file locks to ensure that data in [`data/paper_portfolio.json`](../data/paper_portfolio.json) is atomic and crash-resistant.
 
 ### 6.1 Pre-Flight Execution Safety Guards (`core/preflight.py`)
 Before any proposed order is routed from the Coordinator to the Virtual Ledger, it must pass 5 execution safety guards orchestrated by `PreFlightGuard`:
@@ -287,9 +287,9 @@ Before any proposed order is routed from the Coordinator to the Virtual Ledger, 
    * If the LLM returns a veto verdict, the entry is aborted before capital is risked.
 
 ### 6.2 Decision Journal & 24h Settlement Engine (`core/journal.py`)
-To ensure continuous empirical accountability, [`core/journal.py`](core/journal.py) tracks every decision and audits risk efficacy:
+To ensure continuous empirical accountability, [`core/journal.py`](../core/journal.py) tracks every decision and audits risk efficacy:
 * **Append-Only Decision Logging**:
-   * Logs every tick decision (`APPROVED`, `BLOCKED_BY_RISK`, `BLOCKED_BY_PREFLIGHT`, `NO_SIGNAL`) along with complete indicator states and market context directly to [`data/decision_journal.jsonl`](data/decision_journal.jsonl).
+   * Logs every tick decision (`APPROVED`, `BLOCKED_BY_RISK`, `BLOCKED_BY_PREFLIGHT`, `NO_SIGNAL`) along with complete indicator states and market context directly to [`data/decision_journal.jsonl`](../data/decision_journal.jsonl).
 * **24-Hour Settlement Math & Benchmark Alpha**:
    * Re-evaluates each logged entry once 24 hours have elapsed:
      $$\text{Forward Return} = \frac{P_{t+24\text{h}} - P_t}{P_t}$$
@@ -389,7 +389,7 @@ flowchart TD
 * **Role**: Autonomous executive and safety gatekeeper.
 * **Invariant Enforcer**: Audits all proposals against the immutable risk bounds ($1.0\% \le \text{risk} \le 5.0\%$, paper-trading mode).
 * **Automated Test Harness**: Executes all 194 regression tests via subprocess `pytest`. If even one test fails, the proposal is rejected immediately.
-* **Cryptographic Deployment**: Upon clearing all 4 gates, the Governor computes the SHA-256 hash of the configuration, merges the changes into [`config/active_config.json`](config/active_config.json), appends the audit trail to `governance_audit.jsonl`, and Git-commits the verified patch.
+* **Cryptographic Deployment**: Upon clearing all 4 gates, the Governor computes the SHA-256 hash of the configuration, merges the changes into [`config/active_config.json`](../config/active_config.json), appends the audit trail to `governance_audit.jsonl`, and Git-commits the verified patch.
 
 ### 8.4 Autonomous Asset Universe Screener & Toxic Drag Pruning (`agent/asset_selector.py`)
 * **Role**: Dynamic portfolio universe optimizer (Agent 9).
@@ -405,14 +405,14 @@ flowchart TD
 
 To prevent the trading bot from blindly entering technical breakout trades right before a macroeconomic catastrophe or Fed interest rate shock, the system monitors macro regime indicators:
 
-### 9.1 FRED Macro Regime Radar ([`core/fred_radar.py`](core/fred_radar.py))
+### 9.1 FRED Macro Regime Radar ([`core/fred_radar.py`](../core/fred_radar.py))
 * **CBOE VIX Volatility Index**: Gauges market-wide panic.
   * If $\text{VIX} \ge 30.0$: Activates **`CRASH_DEFENSE`** regime. Disables breakout longs and cuts position risk by $50\%$ (`risk_scale_factor = 0.50`).
   * If $\text{VIX} \in [22.0, 30.0)$: Activates **`VOLATILITY_EXPANSION`** regime with caution sizing.
 * **High-Yield OAS Credit Spreads**: Measures junk bond default risk and liquidity contraction. Spreads $> 500\text{ bps}$ force defensive cash preservation.
 * **10Y-2Y Treasury Yield Spread**: Monitors yield curve inversion and steepening regimes.
 
-### 9.2 Polymarket Decentralized Prediction Radar ([`core/polymarket_radar.py`](core/polymarket_radar.py))
+### 9.2 Polymarket Decentralized Prediction Radar ([`core/polymarket_radar.py`](../core/polymarket_radar.py))
 * Uses the public Polymarket Gamma API (zero API keys required) to read crowd-priced implied probabilities for binary macro events:
   * **Fed Interest Rate Decision Odds**: Flags impending FOMC rate decisions to throttle risk 2 hours prior to rate announcements.
   * **U.S. Recession Probabilities**: Detects spike in event-driven tail risks.
@@ -437,7 +437,7 @@ Formulated by Marcos López de Prado (*Advances in Financial Machine Learning*):
 * **Margin of Safety**: A strategy must survive at least $2.5\times$ normal fees and slippage before it is deemed safe for production.
 
 ### 10.4 Event-Driven Backtesting & Simulation Engine (`core/backtest_engine.py`)
-To validate strategies before deployment, [`core/backtest_engine.py`](core/backtest_engine.py) provides a high-fidelity event-driven simulation loop:
+To validate strategies before deployment, [`core/backtest_engine.py`](../core/backtest_engine.py) provides a high-fidelity event-driven simulation loop:
 * **Lookahead-Free Execution Simulation**: Iterates bar-by-bar across historical candles, updating active position state, dynamic trailing ATR stops, and scale-out triggers strictly on finalized candle closes.
 * **Realistic Execution Frictions**: Automatically applies $0.06\%$ taker fees and $0.04\%$ adverse market slippage to every entry and exit fill.
 * **Dynamic Timeframe Annualization (`_estimate_bars_per_year`)**: Incurs no hardcoded annualization assumptions; dynamically inspects median bar spacing from datetime indices to accurately annualize Sharpe, Sortino, and Calmar ratios for hourly crypto (8,760 bars/yr) or daily equities (252 bars/yr).
@@ -465,7 +465,7 @@ flowchart LR
 2. **Loss Attribution**:
    * Categorizes whether losses were caused by **Trend Exhaustion**, **Whipsaw Chop**, **Bad Entry Timing**, or **Macro Volatility**.
 3. **Local LLM Cognitive Reasoning**:
-   * Uses a locally hosted model via Ollama ([`agent/llm_client.py`](agent/llm_client.py)) with zero API keys and zero cost.
+   * Uses a locally hosted model via Ollama ([`agent/llm_client.py`](../agent/llm_client.py)) with zero API keys and zero cost.
    * Prompts the local LLM with the exact indicators, entry/exit prices, and market context at the moment of the loss, instructing it to synthesize a formal mathematical tuning proposal for the Optimizer.
 
 ### 11.2 Why Microsoft phi4-mini Was Chosen (Model Selection Rationale)
@@ -474,7 +474,7 @@ The system uses **`phi4-mini:latest`** (3.8B parameters) by Microsoft as its def
 2. **The 3.8B Sweet Spot (Resource Isolation)**: Larger 8B–14B models (e.g. Llama-3-8B, Gemma-2-9B) consume 6 to 10 GB of VRAM, competing with pandas dataframes, websocket polling, and backtesting simulations. `phi4-mini` takes only **~2.5 GB**, leaving 80%+ of system RAM/VRAM free for the trading engine.
 3. **Sub-Second Low Latency (< 800ms)**: Live trading checks occur on 60-second cycles. Deep reasoning models (like `deepseek-r1`) produce 1,000+ internal "Chain of Thought" tokens, taking 20–40 seconds per query. `phi4-mini` responds in under 800ms, never freezing the tick loop.
 4. **Strict JSON Schema Compliance**: Agent 10 enforces an 11-field JSON proposal schema. Math-olympiad models (e.g. WizardMath) often output LaTeX equations rather than valid Python dictionary keys, breaking automated code parsers. `phi4-mini` adheres strictly to raw JSON output without conversational chatter.
-5. **Model-Agnostic Flexibility**: The client in [`agent/llm_client.py`](agent/llm_client.py) is completely plug-and-play. If a user prefers another model (e.g. `qwen3:8b`, `gemma2:9b`), it can be swapped with a single CLI argument (`--model`) without rewriting code.
+5. **Model-Agnostic Flexibility**: The client in [`agent/llm_client.py`](../agent/llm_client.py) is completely plug-and-play. If a user prefers another model (e.g. `qwen3:8b`, `gemma2:9b`), it can be swapped with a single CLI argument (`--model`) without rewriting code.
 
 ### 11.3 Why We Do Not Fine-Tune the LLM (Architectural Rationale)
 In institutional quantitative trading, fine-tuning an LLM on price history is considered an anti-pattern. We intentionally do not fine-tune for four core reasons:
@@ -487,9 +487,9 @@ In institutional quantitative trading, fine-tuning an LLM on price history is co
 
 ## 12. Real-Time Terminal Monitoring Dashboard (`dashboard.py`)
 
-For live institutional monitoring without heavy GUI or web frameworks, [`dashboard.py`](dashboard.py) provides a high-performance, curses-style ANSI terminal dashboard:
+For live institutional monitoring without heavy GUI or web frameworks, [`dashboard.py`](../dashboard.py) provides a high-performance, curses-style ANSI terminal dashboard:
 
-* **Zero-Impact Read-Only Architecture**: Operates exclusively in read-only mode using non-blocking checks against `data/live_trader.lock`. It can be run in multiple terminal splits simultaneously (`python dashboard.py --interval 2` or `--once`) without ever risking data corruption on [`data/paper_portfolio.json`](data/paper_portfolio.json).
+* **Zero-Impact Read-Only Architecture**: Operates exclusively in read-only mode using non-blocking checks against `data/live_trader.lock`. It can be run in multiple terminal splits simultaneously (`python dashboard.py --interval 2` or `--once`) without ever risking data corruption on [`data/paper_portfolio.json`](../data/paper_portfolio.json).
 * **Live System Metrics**:
   * **Daemon Status & PID**: Visual confirmation of whether `live_paper_trader.py` is actively ticking or halted.
   * **Portfolio Accounting**: Real-time display of Starting Capital, Current Cash, Total Equity, Realized P&L, and Active Drawdown from peak.
@@ -549,4 +549,4 @@ web4-trading-agent/
 ```
 
 > [!NOTE]
-> For the exhaustive, granular directory detailing the role (**WHAT**), caller execution paths (**USED BY**), and architectural purpose (**WHY NEEDED**) for every single script, sub-report, presentation asset, and test suite across the repository, see the dedicated [Repository File Map & Component Directory](docs/REPOSITORY_FILE_MAP.md).
+> For the exhaustive, granular directory detailing the role (**WHAT**), caller execution paths (**USED BY**), and architectural purpose (**WHY NEEDED**) for every single script, sub-report, presentation asset, and test suite across the repository, see the dedicated [Repository File Map & Component Directory](../docs/REPOSITORY_FILE_MAP.md).
