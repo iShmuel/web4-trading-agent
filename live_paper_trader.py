@@ -151,7 +151,8 @@ def run_portfolio_tick(
     symbol_params = {}
     for symbol in poll_symbols:
         timeframe = coordinator.symbol_config(symbol).get("timeframe", config.get("timeframe", "1h"))
-        fetch_days = 95 if is_crypto_symbol(symbol) else 100
+        # Crypto trades 24/7 (~2280 bars in 95d); US equities trade 6.5h/5d (~1750 bars in 365d)
+        fetch_days = 95 if is_crypto_symbol(symbol) else 365
         symbol_params[symbol] = {
             "timeframe": timeframe,
             "days": fetch_days,

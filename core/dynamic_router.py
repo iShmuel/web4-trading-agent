@@ -129,6 +129,9 @@ def select_rolling_strategy(
             r_pb = run_trend_pullback_backtest(
                 df_win,
                 account_risk_pct=float(sym_cfg.get("account_risk_pct", 0.02)),
+                rsi_pullback_max=float(sym_cfg.get("pullback_rsi_max", 38.0)),
+                stop_atr_mult=float(sym_cfg.get("pullback_atr_stop_mult", 2.0)),
+                tp_atr_mult=float(sym_cfg.get("pullback_tp_atr_mult", 2.5)),
                 fee_pct=router_fee,
                 slippage_pct=router_slip,
             )
