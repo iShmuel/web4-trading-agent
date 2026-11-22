@@ -95,7 +95,10 @@ def select_rolling_strategy(
             if r_mom.total_trades >= min_tr and r_mom.profit_factor >= min_pf:
                 cands.append((r_mom.sharpe_ratio, MomentumStrategy.STRATEGY_ID))
 
-        if _dir_allowed(MeanReversionStrategy.STRATEGY_ID):
+        is_altcoin = is_crypto and symbol.upper() not in ("BTC/USDT", "ETH/USDT")
+        suppress_mr = is_altcoin and bool(config.get("crypto_altcoin_momentum_only", False))
+
+        if _dir_allowed(MeanReversionStrategy.STRATEGY_ID) and not suppress_mr:
             r_mr = run_mean_reversion_backtest(
                 df_win,
                 bb_period=int(sym_cfg.get("bb_period", 20)),

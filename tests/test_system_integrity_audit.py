@@ -103,3 +103,24 @@ def test_dynamic_router_logs_warning_on_exception(caplog):
             )
     assert route == "all"
     assert any("Strategy routing failed for SOL/USDT" in rec.message for rec in caplog.records)
+
+
+def test_dynamic_router_skips_suppressed_altcoin_mean_reversion():
+    """When crypto_altcoin_momentum_only=True, router must never select mean_reversion on altcoins."""
+    idx = pd.date_range("2026-01-01", periods=300, freq="1h", tz="UTC")
+    df = pd.DataFrame(
+        {"open": [10.0] * 300, "high": [11.0] * 300, "low": [9.0] * 300, "close": [10.0] * 300, "volume": [100.0] * 300},
+        index=idx,
+    )
+    fake_mr = MagicMock(total_trades=10, profit_factor=3.5, sharpe_ratio=4.0)
+    with patch("core.backtest_engine.run_mean_reversion_backtest", return_value=fake_mr) as mr_mock:
+        route = select_rolling_strategy(
+            symbol="SOL/USDT",
+            df=df,
+            sym_cfg={},
+            config={"crypto_altcoin_momentum_only": True, "dynamic_router_min_pf": 1.4, "dynamic_router_min_trades": 6},
+            is_strategy_enabled_fn=lambda sid: sid == "mean_reversion",
+            allowed_playbook={"mean_reversion", "basis_yield"},
+        )
+    assert mr_mock.call_count == 0
+    assert route == "basis_yield"
