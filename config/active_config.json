@@ -438,7 +438,7 @@
   "min_pair_price": 0.1,
   "min_pair_hourly_dollar_vol": 25000.0,
   "stat_arb_max_leg_equity_pct": 0.15,
-  "pullback_rsi_max": 38.0,
+  "pullback_rsi_max": 48.0,
   "pullback_rsi_short_min": 56.0,
   "pullback_allow_long": true,
   "pullback_allow_short": false,
